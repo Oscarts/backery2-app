@@ -1,0 +1,380 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  role          UserRole @default(STAFF)
+  firstName     String
+  lastName      String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  sessions            UserSession[]
+  createdRecipes      Recipe[]              @relation("RecipeCreator")
+  productionBatches   ProductionBatch[]     @relation("BatchCreator")
+  contaminations      ContaminationIncident[] @relation("ContaminationReporter")
+
+  @@map("users")
+}
+
+model UserSession {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_sessions")
+}
+
+model Category {
+  id          String      @id @default(cuid())
+  name        String
+  type        CategoryType
+  description String?
+  createdAt   DateTime    @default(now())
+
+  // Relations
+  rawMaterials     RawMaterial[]
+  finishedProducts FinishedProduct[]
+  recipes          Recipe[]
+
+  @@map("categories")
+}
+
+model Supplier {
+  id          String  @id @default(cuid())
+  name        String
+  contactInfo Json? // Store contact details as JSON
+  address     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  rawMaterials RawMaterial[]
+
+  @@map("suppliers")
+}
+
+model StorageLocation {
+  id         String  @id @default(cuid())
+  name       String
+  conditions String? // Storage conditions description
+  capacity   Float?  // Optional capacity limit
+  createdAt  DateTime @default(now())
+
+  // Relations
+  rawMaterials         RawMaterial[]
+  intermediateProducts IntermediateProduct[]
+  finishedProducts     FinishedProduct[]
+
+  @@map("storage_locations")
+}
+
+model RawMaterial {
+  id             String    @id @default(cuid())
+  name           String
+  categoryId     String
+  supplierId     String
+  batchNumber    String
+  purchaseDate   DateTime
+  expirationDate DateTime
+  quantity       Float
+  unit           String
+  costPerUnit    Float
+  storageLocationId String
+  contaminated   Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  category        Category        @relation(fields: [categoryId], references: [id])
+  supplier        Supplier        @relation(fields: [supplierId], references: [id])
+  storageLocation StorageLocation @relation(fields: [storageLocationId], references: [id])
+  
+  // Recipe relationships
+  recipeIngredients RecipeIngredient[]
+  batchMaterials    BatchMaterial[]
+  
+  // Contamination tracking
+  contaminationIncidents ContaminationIncident[] @relation("ContaminatedRawMaterial")
+  contaminationImpacts   ContaminationImpact[]   @relation("ImpactedRawMaterial")
+
+  @@map("raw_materials")
+}
+
+model IntermediateProduct {
+  id                String   @id @default(cuid())
+  name              String
+  batchNumber       String
+  productionDate    DateTime
+  expirationDate    DateTime
+  quantity          Float
+  unit              String
+  storageLocationId String
+  contaminated      Boolean  @default(false)
+  qualityStatus     QualityStatus @default(PENDING)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  storageLocation StorageLocation @relation(fields: [storageLocationId], references: [id])
+  
+  // Recipe relationships
+  recipeIngredients RecipeIngredient[]
+  batchMaterials    BatchMaterial[]
+  
+  // Production tracking
+  productionBatch   ProductionBatch? @relation(fields: [productionBatchId], references: [id])
+  productionBatchId String?
+  
+  // Contamination tracking
+  contaminationIncidents ContaminationIncident[] @relation("ContaminatedIntermediateProduct")
+  contaminationImpacts   ContaminationImpact[]   @relation("ImpactedIntermediateProduct")
+
+  @@map("intermediate_products")
+}
+
+model FinishedProduct {
+  id                String   @id @default(cuid())
+  name              String
+  sku               String   @unique
+  categoryId        String
+  batchNumber       String
+  productionDate    DateTime
+  expirationDate    DateTime
+  shelfLife         Int      // Days
+  quantity          Float
+  reservedQuantity  Float    @default(0)
+  unit              String
+  salePrice         Float
+  costToProduce     Float?
+  packagingInfo     String?
+  storageLocationId String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  category        Category         @relation(fields: [categoryId], references: [id])
+  storageLocation StorageLocation? @relation(fields: [storageLocationId], references: [id])
+  
+  // Recipe relationships
+  recipeIngredients RecipeIngredient[]
+  
+  // Production tracking
+  productionBatch   ProductionBatch? @relation(fields: [productionBatchId], references: [id])
+  productionBatchId String?
+  
+  // Contamination tracking
+  contaminationIncidents ContaminationIncident[] @relation("ContaminatedFinishedProduct")
+  contaminationImpacts   ContaminationImpact[]   @relation("ImpactedFinishedProduct")
+
+  @@map("finished_products")
+}
+
+model Recipe {
+  id           String  @id @default(cuid())
+  name         String
+  description  String?
+  categoryId   String
+  yieldQuantity Float
+  yieldUnit    String
+  prepTime     Int     // Minutes
+  instructions Json    // Array of step-by-step instructions
+  createdById  String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  category    Category           @relation(fields: [categoryId], references: [id])
+  createdBy   User               @relation("RecipeCreator", fields: [createdById], references: [id])
+  ingredients RecipeIngredient[]
+  productionBatches ProductionBatch[]
+
+  @@map("recipes")
+}
+
+model RecipeIngredient {
+  id             String  @id @default(cuid())
+  recipeId       String
+  ingredientType IngredientType
+  ingredientId   String  // References either RawMaterial, IntermediateProduct, or FinishedProduct
+  quantity       Float
+  unit           String
+  optional       Boolean @default(false)
+
+  // Relations
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  
+  // Polymorphic relationships
+  rawMaterial         RawMaterial?         @relation(fields: [rawMaterialId], references: [id])
+  rawMaterialId       String?
+  intermediateProduct IntermediateProduct? @relation(fields: [intermediateProductId], references: [id])
+  intermediateProductId String?
+  finishedProduct     FinishedProduct?     @relation(fields: [finishedProductId], references: [id])
+  finishedProductId   String?
+
+  @@map("recipe_ingredients")
+}
+
+model ProductionBatch {
+  id               String           @id @default(cuid())
+  recipeId         String
+  batchNumber      String           @unique
+  productionDate   DateTime
+  quantityProduced Float
+  status           ProductionStatus @default(PLANNED)
+  createdById      String
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  // Relations
+  recipe                Recipe                @relation(fields: [recipeId], references: [id])
+  createdBy             User                  @relation("BatchCreator", fields: [createdById], references: [id])
+  materials             BatchMaterial[]
+  intermediateProducts  IntermediateProduct[]
+  finishedProducts      FinishedProduct[]
+
+  @@map("production_batches")
+}
+
+model BatchMaterial {
+  id           String @id @default(cuid())
+  batchId      String
+  materialType MaterialType
+  materialId   String // References either RawMaterial or IntermediateProduct
+  quantityUsed Float
+  batchNumber  String
+
+  // Relations
+  batch               ProductionBatch     @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  rawMaterial         RawMaterial?        @relation(fields: [rawMaterialId], references: [id])
+  rawMaterialId       String?
+  intermediateProduct IntermediateProduct? @relation(fields: [intermediateProductId], references: [id])
+  intermediateProductId String?
+
+  @@map("batch_materials")
+}
+
+model ContaminationIncident {
+  id           String               @id @default(cuid())
+  itemType     ContaminationItemType
+  itemId       String               // References the contaminated item
+  incidentDate DateTime
+  reason       String
+  severity     ContaminationSeverity
+  resolved     Boolean              @default(false)
+  createdById  String
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  // Relations
+  createdBy User                  @relation("ContaminationReporter", fields: [createdById], references: [id])
+  impacts   ContaminationImpact[]
+  
+  // Polymorphic relationships to contaminated items
+  rawMaterial         RawMaterial?         @relation("ContaminatedRawMaterial", fields: [rawMaterialId], references: [id])
+  rawMaterialId       String?
+  intermediateProduct IntermediateProduct? @relation("ContaminatedIntermediateProduct", fields: [intermediateProductId], references: [id])
+  intermediateProductId String?
+  finishedProduct     FinishedProduct?     @relation("ContaminatedFinishedProduct", fields: [finishedProductId], references: [id])
+  finishedProductId   String?
+
+  @@map("contamination_incidents")
+}
+
+model ContaminationImpact {
+  id            String                    @id @default(cuid())
+  incidentId    String
+  affectedType  ContaminationItemType
+  affectedId    String                    // References the affected item
+  actionTaken   ContaminationAction
+  createdAt     DateTime                  @default(now())
+
+  // Relations
+  incident            ContaminationIncident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  
+  // Polymorphic relationships to affected items
+  rawMaterial         RawMaterial?          @relation("ImpactedRawMaterial", fields: [rawMaterialId], references: [id])
+  rawMaterialId       String?
+  intermediateProduct IntermediateProduct?  @relation("ImpactedIntermediateProduct", fields: [intermediateProductId], references: [id])
+  intermediateProductId String?
+  finishedProduct     FinishedProduct?      @relation("ImpactedFinishedProduct", fields: [finishedProductId], references: [id])
+  finishedProductId   String?
+
+  @@map("contamination_impacts")
+}
+
+// Enums
+enum UserRole {
+  ADMIN
+  MANAGER
+  STAFF
+  VIEWER
+}
+
+enum CategoryType {
+  RAW_MATERIAL
+  INTERMEDIATE
+  FINISHED_PRODUCT
+  RECIPE
+}
+
+enum QualityStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  UNDER_REVIEW
+}
+
+enum IngredientType {
+  RAW_MATERIAL
+  INTERMEDIATE_PRODUCT
+  FINISHED_PRODUCT
+}
+
+enum MaterialType {
+  RAW_MATERIAL
+  INTERMEDIATE_PRODUCT
+}
+
+enum ProductionStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ContaminationItemType {
+  RAW_MATERIAL
+  INTERMEDIATE_PRODUCT
+  FINISHED_PRODUCT
+}
+
+enum ContaminationSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ContaminationAction {
+  QUARANTINE
+  DISPOSE
+  REPROCESS
+  MONITOR
+}
