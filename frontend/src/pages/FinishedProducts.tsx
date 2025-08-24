@@ -7,7 +7,7 @@ const FinishedProducts: React.FC = () => {
       <Typography variant="h3" component="h1" gutterBottom>
         Finished Products
       </Typography>
-      
+
       <Paper sx={{ p: 3 }}>
         <Typography variant="body1">
           Finished Products management interface will be implemented here.

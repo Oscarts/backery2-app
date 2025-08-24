@@ -7,7 +7,7 @@ const Reports: React.FC = () => {
       <Typography variant="h3" component="h1" gutterBottom>
         Reports & Analytics
       </Typography>
-      
+
       <Paper sx={{ p: 3 }}>
         <Typography variant="body1">
           Reports and analytics dashboard will be implemented here.

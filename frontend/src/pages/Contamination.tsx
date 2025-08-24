@@ -7,7 +7,7 @@ const Contamination: React.FC = () => {
       <Typography variant="h3" component="h1" gutterBottom>
         Contamination Tracking
       </Typography>
-      
+
       <Paper sx={{ p: 3 }}>
         <Typography variant="body1">
           Contamination tracking and batch traceability interface will be implemented here.

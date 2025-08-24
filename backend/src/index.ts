@@ -86,7 +86,7 @@ const PORT = process.env.PORT || 5000;
 // Graceful shutdown
 const gracefulShutdown = async () => {
   console.log('\nReceived shutdown signal. Starting graceful shutdown...');
-  
+
   try {
     await prisma.$disconnect();
     console.log('Database connection closed.');

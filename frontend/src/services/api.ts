@@ -1,6 +1,6 @@
-import { 
-  RawMaterial, 
-  CreateRawMaterialData, 
+import {
+  RawMaterial,
+  CreateRawMaterialData,
   UpdateRawMaterialData,
   Category,
   Supplier,
@@ -30,7 +30,7 @@ export const rawMaterialsApi = {
     if (params?.supplierId) queryParams.append('supplierId', params.supplierId);
     if (params?.expiringSoon) queryParams.append('expiringSoon', 'true');
     if (params?.contaminated !== undefined) queryParams.append('contaminated', params.contaminated.toString());
-    
+
     const url = `/raw-materials${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     return apiGet<PaginatedResponse<RawMaterial>>(url);
   },

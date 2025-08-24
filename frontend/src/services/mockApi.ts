@@ -8,128 +8,128 @@ let mockCategories: Category[] = [
   { id: '3', name: 'Dairy', type: CategoryType.RAW_MATERIAL, description: 'Milk, butter, cream', createdAt: '2024-01-01' },
   { id: '4', name: 'Chocolate', type: CategoryType.RAW_MATERIAL, description: 'Cocoa and chocolate products', createdAt: '2024-01-01' },
   { id: '5', name: 'Spices', type: CategoryType.RAW_MATERIAL, description: 'Vanilla, cinnamon, etc.', createdAt: '2024-01-01' },
-  
+
   // Intermediate Product Categories
   { id: '6', name: 'Dough', type: CategoryType.INTERMEDIATE, description: 'Pre-made doughs and bases', createdAt: '2024-01-01' },
   { id: '7', name: 'Fillings', type: CategoryType.INTERMEDIATE, description: 'Creams, jams, and fillings', createdAt: '2024-01-01' },
   { id: '8', name: 'Glazes', type: CategoryType.INTERMEDIATE, description: 'Icings and glazes', createdAt: '2024-01-01' },
-  
+
   // Finished Product Categories
   { id: '9', name: 'Breads', type: CategoryType.FINISHED_PRODUCT, description: 'All types of bread', createdAt: '2024-01-01' },
   { id: '10', name: 'Pastries', type: CategoryType.FINISHED_PRODUCT, description: 'Croissants, danishes, etc.', createdAt: '2024-01-01' },
   { id: '11', name: 'Cakes', type: CategoryType.FINISHED_PRODUCT, description: 'Layer cakes and cupcakes', createdAt: '2024-01-01' },
   { id: '12', name: 'Cookies', type: CategoryType.FINISHED_PRODUCT, description: 'All cookie varieties', createdAt: '2024-01-01' },
-  
+
   // Recipe Categories
   { id: '13', name: 'Basic Recipes', type: CategoryType.RECIPE, description: 'Fundamental baking recipes', createdAt: '2024-01-01' },
   { id: '14', name: 'Seasonal Recipes', type: CategoryType.RECIPE, description: 'Holiday and seasonal items', createdAt: '2024-01-01' },
 ];
 
 const mockSuppliers: Supplier[] = [
-  { 
-    id: '1', 
-    name: 'Premium Flour Co.', 
-    contactInfo: { email: 'contact@premiumflour.com', phone: '+1-555-0101' }, 
-    address: '123 Mill St, Wheat Valley, CA 90210', 
-    isActive: true, 
+  {
+    id: '1',
+    name: 'Premium Flour Co.',
+    contactInfo: { email: 'contact@premiumflour.com', phone: '+1-555-0101' },
+    address: '123 Mill St, Wheat Valley, CA 90210',
+    isActive: true,
     createdAt: '2024-01-01',
     updatedAt: '2024-01-01'
   },
-  { 
-    id: '2', 
-    name: 'Sweet Supply Inc.', 
-    contactInfo: { email: 'info@sweetsupply.com', phone: '+1-555-0202' }, 
-    address: '456 Sugar Ave, Sweettown, TX 75001', 
-    isActive: true, 
+  {
+    id: '2',
+    name: 'Sweet Supply Inc.',
+    contactInfo: { email: 'info@sweetsupply.com', phone: '+1-555-0202' },
+    address: '456 Sugar Ave, Sweettown, TX 75001',
+    isActive: true,
     createdAt: '2024-01-01',
     updatedAt: '2024-01-01'
   },
-  { 
-    id: '3', 
-    name: 'Dairy Fresh Ltd.', 
-    contactInfo: { email: 'sales@dairyfresh.com', phone: '+1-555-0303' }, 
-    address: '789 Cream Rd, Milkshire, WI 53001', 
-    isActive: true, 
+  {
+    id: '3',
+    name: 'Dairy Fresh Ltd.',
+    contactInfo: { email: 'sales@dairyfresh.com', phone: '+1-555-0303' },
+    address: '789 Cream Rd, Milkshire, WI 53001',
+    isActive: true,
     createdAt: '2024-01-01',
     updatedAt: '2024-01-01'
   },
-  { 
-    id: '4', 
-    name: 'Cocoa Masters', 
-    contactInfo: { email: 'orders@cocoamasters.com', phone: '+1-555-0404' }, 
-    address: '321 Chocolate Blvd, Cacao City, NY 10001', 
-    isActive: true, 
+  {
+    id: '4',
+    name: 'Cocoa Masters',
+    contactInfo: { email: 'orders@cocoamasters.com', phone: '+1-555-0404' },
+    address: '321 Chocolate Blvd, Cacao City, NY 10001',
+    isActive: true,
     createdAt: '2024-01-01',
     updatedAt: '2024-01-01'
   },
-  { 
-    id: '5', 
-    name: 'Organic Vanilla Co.', 
-    contactInfo: { email: 'hello@organicvanilla.com', phone: '+1-555-0505' }, 
-    address: '987 Vanilla Lane, Spice Town, OR 97001', 
-    isActive: true, 
+  {
+    id: '5',
+    name: 'Organic Vanilla Co.',
+    contactInfo: { email: 'hello@organicvanilla.com', phone: '+1-555-0505' },
+    address: '987 Vanilla Lane, Spice Town, OR 97001',
+    isActive: true,
     createdAt: '2024-01-05',
     updatedAt: '2024-01-05'
   },
-  { 
-    id: '6', 
-    name: 'Local Eggs Farm', 
-    contactInfo: { email: 'farm@localeggs.com', phone: '+1-555-0606' }, 
-    address: '654 Farm Road, Eggville, IA 50001', 
-    isActive: true, 
+  {
+    id: '6',
+    name: 'Local Eggs Farm',
+    contactInfo: { email: 'farm@localeggs.com', phone: '+1-555-0606' },
+    address: '654 Farm Road, Eggville, IA 50001',
+    isActive: true,
     createdAt: '2024-01-10',
     updatedAt: '2024-01-10'
   },
 ];
 
 const mockStorageLocations: StorageLocation[] = [
-  { 
-    id: '1', 
-    name: 'Dry Storage A', 
-    type: 'DRY', 
-    description: 'Main dry ingredients storage with climate control', 
-    capacity: '500 kg', 
-    createdAt: '2024-01-01' 
+  {
+    id: '1',
+    name: 'Dry Storage A',
+    type: 'DRY',
+    description: 'Main dry ingredients storage with climate control',
+    capacity: '500 kg',
+    createdAt: '2024-01-01'
   },
-  { 
-    id: '2', 
-    name: 'Cold Storage B', 
-    type: 'COLD', 
-    description: 'Refrigerated storage for dairy and perishables (2-8°C)', 
-    capacity: '200 kg', 
-    createdAt: '2024-01-01' 
+  {
+    id: '2',
+    name: 'Cold Storage B',
+    type: 'COLD',
+    description: 'Refrigerated storage for dairy and perishables (2-8°C)',
+    capacity: '200 kg',
+    createdAt: '2024-01-01'
   },
-  { 
-    id: '3', 
-    name: 'Freezer C', 
-    type: 'FROZEN', 
-    description: 'Frozen storage unit (-18°C)', 
-    capacity: '100 kg', 
-    createdAt: '2024-01-01' 
+  {
+    id: '3',
+    name: 'Freezer C',
+    type: 'FROZEN',
+    description: 'Frozen storage unit (-18°C)',
+    capacity: '100 kg',
+    createdAt: '2024-01-01'
   },
-  { 
-    id: '4', 
-    name: 'Pantry D', 
-    type: 'DRY', 
-    description: 'Secondary dry storage for overflow items', 
-    capacity: '300 kg', 
-    createdAt: '2024-01-01' 
+  {
+    id: '4',
+    name: 'Pantry D',
+    type: 'DRY',
+    description: 'Secondary dry storage for overflow items',
+    capacity: '300 kg',
+    createdAt: '2024-01-01'
   },
-  { 
-    id: '5', 
-    name: 'Spice Cabinet', 
-    type: 'DRY', 
-    description: 'Temperature-controlled storage for spices and extracts', 
-    capacity: '50 kg', 
-    createdAt: '2024-01-05' 
+  {
+    id: '5',
+    name: 'Spice Cabinet',
+    type: 'DRY',
+    description: 'Temperature-controlled storage for spices and extracts',
+    capacity: '50 kg',
+    createdAt: '2024-01-05'
   },
-  { 
-    id: '6', 
-    name: 'Prep Area Storage', 
-    type: 'AMBIENT', 
-    description: 'Quick access storage near preparation area', 
-    capacity: '75 kg', 
-    createdAt: '2024-01-08' 
+  {
+    id: '6',
+    name: 'Prep Area Storage',
+    type: 'AMBIENT',
+    description: 'Quick access storage near preparation area',
+    capacity: '75 kg',
+    createdAt: '2024-01-08'
   },
 ];
 
@@ -228,25 +228,25 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 export const rawMaterialsApi = {
   getAll: async (params?: any): Promise<PaginatedResponse<RawMaterial>> => {
     await delay(500);
-    
+
     let filtered = [...mockRawMaterials];
-    
+
     // Apply filters
     if (params?.search) {
-      filtered = filtered.filter(item => 
+      filtered = filtered.filter(item =>
         item.name.toLowerCase().includes(params.search.toLowerCase()) ||
         (item.description && item.description.toLowerCase().includes(params.search.toLowerCase()))
       );
     }
-    
+
     if (params?.categoryId) {
       filtered = filtered.filter(item => item.categoryId === params.categoryId);
     }
-    
+
     if (params?.supplierId) {
       filtered = filtered.filter(item => item.supplierId === params.supplierId);
     }
-    
+
     if (params?.showExpiring) {
       const now = new Date();
       const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
@@ -255,14 +255,14 @@ export const rawMaterialsApi = {
         return expDate <= thirtyDaysFromNow;
       });
     }
-    
+
     // Pagination
     const page = params?.page || 1;
     const limit = params?.limit || 10;
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;
     const paginatedItems = filtered.slice(startIndex, endIndex);
-    
+
     return {
       success: true,
       data: paginatedItems,
@@ -302,13 +302,13 @@ export const rawMaterialsApi = {
     if (index === -1) {
       throw new Error('Raw material not found');
     }
-    
+
     mockRawMaterials[index] = {
       ...mockRawMaterials[index],
       ...data,
       updatedAt: new Date().toISOString(),
     };
-    
+
     return { success: true, data: mockRawMaterials[index] };
   },
 
@@ -318,7 +318,7 @@ export const rawMaterialsApi = {
     if (index === -1) {
       throw new Error('Raw material not found');
     }
-    
+
     mockRawMaterials.splice(index, 1);
     return { success: true, data: undefined };
   },
@@ -360,12 +360,12 @@ export const categoriesApi = {
     if (index === -1) {
       throw new Error('Category not found');
     }
-    
+
     mockCategories[index] = {
       ...mockCategories[index],
       ...data,
     };
-    
+
     return { success: true, data: mockCategories[index] };
   },
 
@@ -375,7 +375,7 @@ export const categoriesApi = {
     if (index === -1) {
       throw new Error('Category not found');
     }
-    
+
     mockCategories.splice(index, 1);
     return { success: true, data: undefined };
   },
@@ -414,13 +414,13 @@ export const suppliersApi = {
     if (index === -1) {
       throw new Error('Supplier not found');
     }
-    
+
     mockSuppliers[index] = {
       ...mockSuppliers[index],
       ...data,
       updatedAt: new Date().toISOString(),
     };
-    
+
     return { success: true, data: mockSuppliers[index] };
   },
 
@@ -430,7 +430,7 @@ export const suppliersApi = {
     if (index === -1) {
       throw new Error('Supplier not found');
     }
-    
+
     mockSuppliers.splice(index, 1);
     return { success: true, data: undefined };
   },
@@ -468,12 +468,12 @@ export const storageLocationsApi = {
     if (index === -1) {
       throw new Error('Storage location not found');
     }
-    
+
     mockStorageLocations[index] = {
       ...mockStorageLocations[index],
       ...data,
     };
-    
+
     return { success: true, data: mockStorageLocations[index] };
   },
 
@@ -483,7 +483,7 @@ export const storageLocationsApi = {
     if (index === -1) {
       throw new Error('Storage location not found');
     }
-    
+
     mockStorageLocations.splice(index, 1);
     return { success: true, data: undefined };
   },

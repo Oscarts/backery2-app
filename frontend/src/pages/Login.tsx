@@ -1,10 +1,10 @@
 import React from 'react';
-import { 
-  Container, 
-  Paper, 
-  TextField, 
-  Button, 
-  Typography, 
+import {
+  Container,
+  Paper,
+  TextField,
+  Button,
+  Typography,
   Box,
   Alert
 } from '@mui/material';
@@ -27,7 +27,7 @@ const Login: React.FC = () => {
           <Typography variant="h6" align="center" color="text.secondary" gutterBottom>
             Sign in to your account
           </Typography>
-          
+
           <Alert severity="info" sx={{ mb: 3 }}>
             Login functionality will be implemented with authentication system.
           </Alert>

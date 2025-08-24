@@ -7,7 +7,7 @@ const Recipes: React.FC = () => {
       <Typography variant="h3" component="h1" gutterBottom>
         Recipes
       </Typography>
-      
+
       <Paper sx={{ p: 3 }}>
         <Typography variant="body1">
           Recipe management interface will be implemented here.

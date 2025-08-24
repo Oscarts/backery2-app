@@ -1,15 +1,15 @@
 import React from 'react';
-import { 
-  Container, 
-  Typography, 
-  Grid, 
-  Card, 
-  CardContent, 
+import {
+  Container,
+  Typography,
+  Grid,
+  Card,
+  CardContent,
   Box,
   Alert,
   Chip
 } from '@mui/material';
-import { 
+import {
   Inventory as InventoryIcon,
   Warning as WarningIcon,
   TrendingUp as TrendingUpIcon,
@@ -22,7 +22,7 @@ const Dashboard: React.FC = () => {
       <Typography variant="h3" component="h1" gutterBottom>
         Dashboard
       </Typography>
-      
+
       <Alert severity="info" sx={{ mb: 3 }}>
         Welcome to your Bakery Inventory Management System! This is a development version.
       </Alert>

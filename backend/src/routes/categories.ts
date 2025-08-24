@@ -8,7 +8,7 @@ router.get('/', async (req, res, next) => {
   try {
     const type = req.query.type as string;
     const where = type ? { type: type as any } : {};
-    
+
     const categories = await prisma.category.findMany({
       where,
       orderBy: { name: 'asc' },

@@ -66,7 +66,7 @@ const RawMaterials: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [editingItem, setEditingItem] = useState<RawMaterial | null>(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
-  
+
   const [formData, setFormData] = useState<FormData>({
     name: '',
     description: '',
@@ -237,8 +237,8 @@ const RawMaterials: React.FC = () => {
     const value = event.target.value;
     setFormData(prev => ({
       ...prev,
-      [field]: field === 'quantity' || field === 'unitPrice' || field === 'reorderLevel' 
-        ? Number(value) 
+      [field]: field === 'quantity' || field === 'unitPrice' || field === 'reorderLevel'
+        ? Number(value)
         : value
     }));
   };

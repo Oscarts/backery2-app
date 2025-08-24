@@ -73,7 +73,7 @@ export interface RawMaterial {
   isContaminated: boolean;
   createdAt: string;
   updatedAt: string;
-  
+
   // Relations
   category?: Category;
   supplier?: Supplier;
@@ -111,7 +111,7 @@ export interface IntermediateProduct {
   qualityStatus: QualityStatus;
   createdAt: string;
   updatedAt: string;
-  
+
   // Relations
   storageLocation?: StorageLocation;
 }
@@ -142,7 +142,7 @@ export interface FinishedProduct {
   storageLocationId?: string;
   createdAt: string;
   updatedAt: string;
-  
+
   // Relations
   category?: Category;
   storageLocation?: StorageLocation;
@@ -161,7 +161,7 @@ export interface Recipe {
   createdById: string;
   createdAt: string;
   updatedAt: string;
-  
+
   // Relations
   category?: Category;
   createdBy?: User;

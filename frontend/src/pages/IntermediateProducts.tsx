@@ -7,7 +7,7 @@ const IntermediateProducts: React.FC = () => {
       <Typography variant="h3" component="h1" gutterBottom>
         Intermediate Products
       </Typography>
-      
+
       <Paper sx={{ p: 3 }}>
         <Typography variant="body1">
           Intermediate Products management interface will be implemented here.

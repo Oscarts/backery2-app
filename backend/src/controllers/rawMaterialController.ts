@@ -17,7 +17,7 @@ const createRawMaterialSchema = Joi.object({
 });
 
 const updateRawMaterialSchema = createRawMaterialSchema.fork([
-  'name', 'categoryId', 'supplierId', 'batchNumber', 'purchaseDate', 
+  'name', 'categoryId', 'supplierId', 'batchNumber', 'purchaseDate',
   'expirationDate', 'quantity', 'unit', 'costPerUnit', 'storageLocationId'
 ], (schema) => schema.optional()).keys({
   contaminated: Joi.boolean().optional(),
@@ -33,25 +33,25 @@ export const rawMaterialController = {
       const categoryId = req.query.categoryId as string;
       const supplierId = req.query.supplierId as string;
       const expiringSoon = req.query.expiringSoon === 'true';
-      const contaminated = req.query.contaminated === 'true' ? true : 
-                          req.query.contaminated === 'false' ? false : undefined;
+      const contaminated = req.query.contaminated === 'true' ? true :
+        req.query.contaminated === 'false' ? false : undefined;
 
       const skip = (page - 1) * limit;
 
       // Build where clause
       const where: any = {};
-      
+
       if (search) {
         where.OR = [
           { name: { contains: search, mode: 'insensitive' } },
           { batchNumber: { contains: search, mode: 'insensitive' } },
         ];
       }
-      
+
       if (categoryId) where.categoryId = categoryId;
       if (supplierId) where.supplierId = supplierId;
       if (contaminated !== undefined) where.contaminated = contaminated;
-      
+
       if (expiringSoon) {
         const sevenDaysFromNow = new Date();
         sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
@@ -125,7 +125,7 @@ export const rawMaterialController = {
   create: async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { error, value } = createRawMaterialSchema.validate(req.body);
-      
+
       if (error) {
         return res.status(400).json({
           success: false,
@@ -204,7 +204,7 @@ export const rawMaterialController = {
     try {
       const { id } = req.params;
       const { error, value } = updateRawMaterialSchema.validate(req.body);
-      
+
       if (error) {
         return res.status(400).json({
           success: false,
