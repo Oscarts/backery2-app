@@ -42,6 +42,7 @@ const menuItems = [
   { text: 'Contamination', icon: <WarningIcon />, path: '/contamination' },
   { text: 'Reports', icon: <AssessmentIcon />, path: '/reports' },
   { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
+  { text: 'API Test', icon: <AssessmentIcon />, path: '/api-test' },
 ];
 
 const Layout: React.FC = () => {

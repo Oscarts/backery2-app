@@ -100,19 +100,6 @@ model StorageLocation {
   @@map("storage_locations")
 }
 
-model Unit {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  symbol      String   @unique
-  category    String   // e.g., "weight", "volume", "count"
-  description String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@map("units")
-}
-
 // Inventory Models
 model RawMaterial {
   id                String    @id @default(cuid())

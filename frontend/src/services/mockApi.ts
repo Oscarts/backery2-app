@@ -1,6 +1,74 @@
-import { RawMaterial, Category, Supplier, StorageLocation, ApiResponse, PaginatedResponse, CategoryType } from '../types';
+import { 
+  RawMaterial, 
+  Category, 
+  Supplier, 
+  StorageLocation, 
+  IntermediateProduct,
+  IntermediateProductStatus,
+  QualityStatus,
+  ApiResponse, 
+  PaginatedResponse, 
+  CategoryType 
+} from '../types';
 
 // Mock data
+let mockIntermediateProducts: IntermediateProduct[] = [
+  {
+    id: '1',
+    name: 'Basic Bread Dough',
+    description: 'Pre-fermented bread dough base',
+    categoryId: '6', // Dough category
+    storageLocationId: '3',
+    recipeId: '1',
+    batchNumber: 'BD001',
+    productionDate: '2024-08-20',
+    expirationDate: '2024-08-22',
+    quantity: 25.5,
+    unit: 'kg',
+    status: IntermediateProductStatus.COMPLETED,
+    contaminated: false,
+    qualityStatus: QualityStatus.APPROVED,
+    createdAt: '2024-08-20',
+    updatedAt: '2024-08-20'
+  },
+  {
+    id: '2',
+    name: 'Vanilla Pastry Cream',
+    description: 'Basic pastry cream for fillings',
+    categoryId: '7', // Fillings category
+    storageLocationId: '2',
+    recipeId: '2',
+    batchNumber: 'PC001',
+    productionDate: '2024-08-24',
+    expirationDate: '2024-08-26',
+    quantity: 10,
+    unit: 'L',
+    status: IntermediateProductStatus.IN_PRODUCTION,
+    contaminated: false,
+    qualityStatus: QualityStatus.PENDING,
+    createdAt: '2024-08-24',
+    updatedAt: '2024-08-24'
+  },
+  {
+    id: '3',
+    name: 'Chocolate Ganache',
+    description: 'Dark chocolate ganache for cake coating',
+    categoryId: '8', // Glazes category
+    storageLocationId: '4',
+    recipeId: '3',
+    batchNumber: 'CG001',
+    productionDate: '2024-08-23',
+    expirationDate: '2024-08-30',
+    quantity: 15,
+    unit: 'kg',
+    status: IntermediateProductStatus.COMPLETED,
+    contaminated: false,
+    qualityStatus: QualityStatus.APPROVED,
+    createdAt: '2024-08-23',
+    updatedAt: '2024-08-23'
+  }
+];
+
 let mockCategories: Category[] = [
   // Raw Material Categories
   { id: '1', name: 'Flour', type: CategoryType.RAW_MATERIAL, description: 'Various types of flour', createdAt: '2024-01-01' },
@@ -377,6 +445,61 @@ export const categoriesApi = {
     }
 
     mockCategories.splice(index, 1);
+    return { success: true, data: undefined };
+  },
+};
+
+export const intermediateProductsApi = {
+  getAll: async (): Promise<ApiResponse<IntermediateProduct[]>> => {
+    await delay(300);
+    return { success: true, data: mockIntermediateProducts };
+  },
+
+  getById: async (id: string): Promise<ApiResponse<IntermediateProduct>> => {
+    await delay(300);
+    const item = mockIntermediateProducts.find(p => p.id === id);
+    if (!item) {
+      throw new Error('Intermediate product not found');
+    }
+    return { success: true, data: item };
+  },
+
+  create: async (data: Omit<IntermediateProduct, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<IntermediateProduct>> => {
+    await delay(800);
+    const newItem: IntermediateProduct = {
+      ...data,
+      id: (mockIntermediateProducts.length + 1).toString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    mockIntermediateProducts.push(newItem);
+    return { success: true, data: newItem };
+  },
+
+  update: async (id: string, data: Partial<Omit<IntermediateProduct, 'id' | 'createdAt'>>): Promise<ApiResponse<IntermediateProduct>> => {
+    await delay(700);
+    const index = mockIntermediateProducts.findIndex(p => p.id === id);
+    if (index === -1) {
+      throw new Error('Intermediate product not found');
+    }
+
+    mockIntermediateProducts[index] = {
+      ...mockIntermediateProducts[index],
+      ...data,
+      updatedAt: new Date().toISOString(),
+    };
+
+    return { success: true, data: mockIntermediateProducts[index] };
+  },
+
+  delete: async (id: string): Promise<ApiResponse<void>> => {
+    await delay(500);
+    const index = mockIntermediateProducts.findIndex(p => p.id === id);
+    if (index === -1) {
+      throw new Error('Intermediate product not found');
+    }
+
+    mockIntermediateProducts.splice(index, 1);
     return { success: true, data: undefined };
   },
 };

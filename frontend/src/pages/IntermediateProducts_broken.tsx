@@ -34,9 +34,10 @@ import {
   Delete as DeleteIcon,
   Warning as WarningIcon,
   Search as SearchIcon,
+  Restaurant as RecipeIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { intermediateProductsApi, categoriesApi, storageLocationsApi, unitsApi } from '../services/realApi';
+import { intermediateProductsApi, categoriesApi, storageLocationsApi } from '../services/realApi';
 import { IntermediateProduct, CategoryType, QualityStatus, IntermediateProductStatus } from '../types';
 import { formatDate, formatQuantity, isExpired, isExpiringSoon, getDaysUntilExpiration } from '../utils/api';
 
@@ -60,11 +61,24 @@ const IntermediateProducts: React.FC = () => {
   const { data: products } = useQuery(['intermediateProducts'], intermediateProductsApi.getAll);
   const { data: categoriesResponse } = useQuery(['categories'], () => categoriesApi.getAll());
   const { data: storageLocationsResponse } = useQuery(['storageLocations'], storageLocationsApi.getAll);
-  const { data: unitsResponse } = useQuery(['units'], unitsApi.getAll);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
+
+  const queryClient = useQueryClient();
+
+  // Fetch data
+  const { data: products, isLoading } = useQuery(['intermediateProducts'], intermediateProductsApi.getAll);
+  const { data: categoriesResponse } = useQuery(['categories'], () => categoriesApi.getAll());
+  const { data: storageLocationsResponse } = useQuery(['storageLocations'], storageLocationsApi.getAll);
   
   const categories = categoriesResponse?.data?.filter(c => c.type === CategoryType.INTERMEDIATE);
   const storageLocations = storageLocationsResponse?.data;
-  const units = unitsResponse?.data;
 
   // Mutations
   const createMutation = useMutation(intermediateProductsApi.create, {
@@ -78,9 +92,9 @@ const IntermediateProducts: React.FC = () => {
     },
   });
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<IntermediateProduct> }) => 
-      intermediateProductsApi.update(id, data),
+  const updateMutation = useMutation(
+    ({ id, data }: { id: string; data: Partial<IntermediateProduct> }) => intermediateProductsApi.update(id, data),
+    {
     onSuccess: () => {
       queryClient.invalidateQueries(['intermediateProducts']);
       handleCloseForm();
@@ -101,9 +115,27 @@ const IntermediateProducts: React.FC = () => {
     },
   });
 
+  // Event handlers
+  const handleChangePage = (_: unknown, newPage: number) => setPage(newPage);
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const handleOpenForm = (product?: IntermediateProduct) => {
+    setEditingProduct(product || null);
+    setOpenForm(true);
+  };
+
   const handleCloseForm = () => {
-    setOpenForm(false);
     setEditingProduct(null);
+    setOpenForm(false);
+  };
+
+  const handleDelete = (id: string) => {
+    if (window.confirm('Are you sure you want to delete this intermediate product?')) {
+      deleteMutation.mutate(id);
+    }
   };
 
   const showSnackbar = (message: string, severity: 'success' | 'error') => {
@@ -224,10 +256,10 @@ const IntermediateProducts: React.FC = () => {
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
                   <MenuItem value="">All Statuses</MenuItem>
-                  <MenuItem value={IntermediateProductStatus.IN_PRODUCTION}>In Production</MenuItem>
-                  <MenuItem value={IntermediateProductStatus.COMPLETED}>Completed</MenuItem>
-                  <MenuItem value={IntermediateProductStatus.ON_HOLD}>On Hold</MenuItem>
-                  <MenuItem value={IntermediateProductStatus.DISCARDED}>Discarded</MenuItem>
+                  <MenuItem value="in_production">In Production</MenuItem>
+                  <MenuItem value="completed">Completed</MenuItem>
+                  <MenuItem value="on_hold">On Hold</MenuItem>
+                  <MenuItem value="discarded">Discarded</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -236,7 +268,7 @@ const IntermediateProducts: React.FC = () => {
                 fullWidth
                 variant="contained"
                 startIcon={<AddIcon />}
-                onClick={() => setOpenForm(true)}
+                onClick={() => handleOpenForm()}
               >
                 Add Product
               </Button>
@@ -264,7 +296,9 @@ const IntermediateProducts: React.FC = () => {
               {displayedProducts.map((product) => (
                 <TableRow key={product.id}>
                   <TableCell>{product.name}</TableCell>
-                  <TableCell>{product.category?.name || 'N/A'}</TableCell>
+                  <TableCell>
+                    {categories?.find((c) => c.id === product.categoryId)?.name}
+                  </TableCell>
                   <TableCell>{product.batchNumber}</TableCell>
                   <TableCell>
                     <Chip
@@ -294,197 +328,184 @@ const IntermediateProducts: React.FC = () => {
                     </Box>
                   </TableCell>
                   <TableCell>{formatQuantity(product.quantity, product.unit)}</TableCell>
-                  <TableCell>{product.storageLocation?.name || 'N/A'}</TableCell>
+                  <TableCell>
+                    {storageLocations?.find((l) => l.id === product.storageLocationId)?.name}
+                  </TableCell>
                   <TableCell>
                     <IconButton
+                      color="primary"
+                      onClick={() => handleOpenForm(product)}
                       size="small"
-                      onClick={() => {
-                        setEditingProduct(product);
-                        setOpenForm(true);
-                      }}
                     >
                       <EditIcon />
                     </IconButton>
                     <IconButton
+                      color="error"
+                      onClick={() => handleDelete(product.id)}
                       size="small"
-                      onClick={() => {
-                        if (window.confirm('Are you sure you want to delete this product?')) {
-                          deleteMutation.mutate(product.id);
-                        }
-                      }}
                     >
                       <DeleteIcon />
                     </IconButton>
+                    {product.recipeId && (
+                      <IconButton
+                        color="info"
+                        size="small"
+                      >
+                        <RecipeIcon />
+                      </IconButton>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
           <TablePagination
-            rowsPerPageOptions={[5, 10, 25]}
             component="div"
             count={filteredProducts.length}
-            rowsPerPage={rowsPerPage}
             page={page}
-            onPageChange={(_, newPage) => setPage(newPage)}
-            onRowsPerPageChange={(e) => {
-              setRowsPerPage(parseInt(e.target.value, 10));
-              setPage(0);
-            }}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
           />
         </TableContainer>
       </Box>
 
       {/* Form Dialog */}
-      <Dialog 
-        open={openForm} 
-        onClose={handleCloseForm}
-        maxWidth="md"
-        fullWidth
-      >
-        <form onSubmit={handleSubmitForm}>
-          <DialogTitle>
-            {editingProduct ? 'Edit' : 'Add'} Intermediate Product
-          </DialogTitle>
-          <DialogContent>
-            <Box sx={{ pt: 2 }}>
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    required
-                    label="Product Name"
-                    name="name"
-                    defaultValue={editingProduct?.name || ''}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    required
-                    label="Batch Number"
-                    name="batchNumber"
-                    defaultValue={editingProduct?.batchNumber || ''}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    multiline
-                    rows={3}
-                    label="Description"
-                    name="description"
-                    defaultValue={editingProduct?.description || ''}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth required>
-                    <InputLabel>Category</InputLabel>
-                    <Select
-                      name="categoryId"
-                      defaultValue={editingProduct?.categoryId || ''}
-                      label="Category"
-                    >
-                      {categories?.map((category) => (
-                        <MenuItem key={category.id} value={category.id}>
-                          {category.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth required>
-                    <InputLabel>Storage Location</InputLabel>
-                    <Select
-                      name="storageLocationId"
-                      defaultValue={editingProduct?.storageLocationId || ''}
-                      label="Storage Location"
-                    >
-                      {storageLocations?.map((location) => (
-                        <MenuItem key={location.id} value={location.id}>
-                          {location.name}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    required
-                    type="date"
-                    label="Production Date"
-                    name="productionDate"
-                    defaultValue={editingProduct?.productionDate?.split('T')[0] || ''}
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    required
-                    type="date"
-                    label="Expiration Date"
-                    name="expirationDate"
-                    defaultValue={editingProduct?.expirationDate?.split('T')[0] || ''}
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    required
-                    type="number"
-                    label="Quantity"
-                    name="quantity"
-                    defaultValue={editingProduct?.quantity || ''}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth required>
-                    <InputLabel>Unit</InputLabel>
-                    <Select
-                      name="unit"
-                      defaultValue={editingProduct?.unit || ''}
-                      label="Unit"
-                    >
-                      {units?.map((unit) => (
-                        <MenuItem key={unit.id} value={unit.symbol}>
-                          {unit.name} ({unit.symbol})
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12}>
-                  <FormControl fullWidth required>
-                    <InputLabel>Status</InputLabel>
-                    <Select
-                      name="status"
-                      defaultValue={editingProduct?.status || IntermediateProductStatus.IN_PRODUCTION}
-                      label="Status"
-                    >
-                      <MenuItem value={IntermediateProductStatus.IN_PRODUCTION}>In Production</MenuItem>
-                      <MenuItem value={IntermediateProductStatus.COMPLETED}>Completed</MenuItem>
-                      <MenuItem value={IntermediateProductStatus.ON_HOLD}>On Hold</MenuItem>
-                      <MenuItem value={IntermediateProductStatus.DISCARDED}>Discarded</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
+      <Dialog open={openForm} onClose={handleCloseForm} maxWidth="md" fullWidth>
+        <DialogTitle>
+          {editingProduct ? 'Edit Intermediate Product' : 'Add Intermediate Product'}
+        </DialogTitle>
+        <DialogContent>
+          <Box component="form" onSubmit={handleSubmitForm} sx={{ mt: 2 }}>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  required
+                  label="Name"
+                  name="name"
+                  value={editingProduct?.name || ''}
+                />
               </Grid>
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseForm}>Cancel</Button>
-            <Button
-              variant="contained"
-              type="submit"
-            >
-              {editingProduct ? 'Update' : 'Create'}
-            </Button>
-          </DialogActions>
-        </form>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  required
+                  label="Batch Number"
+                  name="batchNumber"
+                  defaultValue={editingProduct?.batchNumber || ''}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={3}
+                  label="Description"
+                  name="description"
+                  defaultValue={editingProduct?.description || ''}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth required>
+                  <InputLabel>Category</InputLabel>
+                  <Select
+                    name="categoryId"
+                    defaultValue={editingProduct?.categoryId || ''}
+                    label="Category"
+                  >
+                    {categories?.map((category) => (
+                      <MenuItem key={category.id} value={category.id}>
+                        {category.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth required>
+                  <InputLabel>Storage Location</InputLabel>
+                  <Select
+                    name="storageLocationId"
+                    defaultValue={editingProduct?.storageLocationId || ''}
+                    label="Storage Location"
+                  >
+                    {storageLocations?.map((location) => (
+                      <MenuItem key={location.id} value={location.id}>
+                        {location.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  required
+                  type="date"
+                  label="Production Date"
+                  name="productionDate"
+                  defaultValue={editingProduct?.productionDate?.split('T')[0] || ''}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  required
+                  type="date"
+                  label="Expiration Date"
+                  name="expirationDate"
+                  defaultValue={editingProduct?.expirationDate?.split('T')[0] || ''}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  required
+                  type="number"
+                  label="Quantity"
+                  name="quantity"
+                  defaultValue={editingProduct?.quantity || ''}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  required
+                  label="Unit"
+                  name="unit"
+                  defaultValue={editingProduct?.unit || ''}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <FormControl fullWidth required>
+                  <InputLabel>Status</InputLabel>
+                  <Select
+                    name="status"
+                    defaultValue={editingProduct?.status || IntermediateProductStatus.IN_PRODUCTION}
+                    label="Status"
+                  >
+                    <MenuItem value={IntermediateProductStatus.IN_PRODUCTION}>In Production</MenuItem>
+                    <MenuItem value={IntermediateProductStatus.COMPLETED}>Completed</MenuItem>
+                    <MenuItem value={IntermediateProductStatus.ON_HOLD}>On Hold</MenuItem>
+                    <MenuItem value={IntermediateProductStatus.DISCARDED}>Discarded</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+            </Grid>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseForm}>Cancel</Button>
+          <Button
+            variant="contained"
+            type="submit"
+          >
+            {editingProduct ? 'Update' : 'Create'}
+          </Button>
+        </DialogActions>
       </Dialog>
 
       {/* Snackbar for notifications */}
@@ -494,7 +515,11 @@ const IntermediateProducts: React.FC = () => {
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>

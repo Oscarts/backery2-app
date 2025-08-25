@@ -11,6 +11,7 @@ import Production from './pages/Production';
 import Contamination from './pages/Contamination';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import ApiTest from './pages/ApiTest';
 import Login from './pages/Login';
 
 // Import components
@@ -39,6 +40,7 @@ function App() {
           <Route path="contamination" element={<Contamination />} />
           <Route path="reports" element={<Reports />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="api-test" element={<ApiTest />} />
         </Route>
       </Routes>
     </Box>

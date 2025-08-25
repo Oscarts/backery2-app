@@ -39,6 +39,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { categoriesApi, suppliersApi, storageLocationsApi } from '../services/mockApi';
 import { Category, CategoryType, Supplier, StorageLocation } from '../types';
+import UnitsManagement from '../components/Settings/UnitsManagement';
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -740,6 +741,7 @@ const Settings: React.FC = () => {
                     <Tab label="Recipes" />
                     <Tab label="Suppliers" />
                     <Tab label="Storage Locations" />
+                    <Tab label="Units" />
                 </Tabs>
             </Paper>
 
@@ -765,6 +767,10 @@ const Settings: React.FC = () => {
 
             <TabPanel value={tabValue} index={5}>
                 {renderStorageLocationsTable()}
+            </TabPanel>
+
+            <TabPanel value={tabValue} index={6}>
+                <UnitsManagement />
             </TabPanel>
 
             {/* Add/Edit Category Dialog */}

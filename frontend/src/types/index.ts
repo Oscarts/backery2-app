@@ -53,6 +53,50 @@ export interface StorageLocation {
   createdAt: string;
 }
 
+// Unit types
+export interface Unit {
+  id: string;
+  name: string;
+  symbol: string;
+  category: string;
+  description?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Intermediate Product types
+export interface IntermediateProduct {
+  id: string;
+  name: string;
+  description: string;
+  categoryId: string;
+  storageLocationId: string;
+  recipeId?: string;
+  batchNumber: string;
+  productionDate: string;
+  expirationDate: string;
+  quantity: number;
+  unit: string;
+  status: IntermediateProductStatus;
+  contaminated: boolean;
+  qualityStatus: QualityStatus;
+  createdAt: string;
+  updatedAt: string;
+
+  // Relations (optional for populated data)
+  category?: Category;
+  storageLocation?: StorageLocation;
+  recipe?: Recipe;
+}
+
+export enum IntermediateProductStatus {
+  IN_PRODUCTION = 'IN_PRODUCTION',
+  COMPLETED = 'COMPLETED', 
+  ON_HOLD = 'ON_HOLD',
+  DISCARDED = 'DISCARDED'
+}
+
 // Raw Material types
 export interface RawMaterial {
   id: string;
@@ -95,25 +139,6 @@ export interface CreateRawMaterialData {
 
 export interface UpdateRawMaterialData extends Partial<CreateRawMaterialData> {
   contaminated?: boolean;
-}
-
-// Intermediate Product types
-export interface IntermediateProduct {
-  id: string;
-  name: string;
-  batchNumber: string;
-  productionDate: string;
-  expirationDate: string;
-  quantity: number;
-  unit: string;
-  storageLocationId: string;
-  contaminated: boolean;
-  qualityStatus: QualityStatus;
-  createdAt: string;
-  updatedAt: string;
-
-  // Relations
-  storageLocation?: StorageLocation;
 }
 
 export enum QualityStatus {

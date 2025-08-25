@@ -19,6 +19,7 @@ import reportsRoutes from './routes/reports';
 import categoryRoutes from './routes/categories';
 import supplierRoutes from './routes/suppliers';
 import storageLocationRoutes from './routes/storageLocations';
+import unitRoutes from './routes/units';
 
 // Import middleware
 import { errorHandler } from './middleware/errorHandler';
@@ -36,7 +37,7 @@ const app = express();
 // Security middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin: process.env.CORS_ORIGIN || 'http://localhost:3002',
   credentials: true
 }));
 
@@ -76,6 +77,7 @@ app.use('/api/reports', reportsRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/storage-locations', storageLocationRoutes);
+app.use('/api/units', unitRoutes);
 
 // Error handling middleware
 app.use(notFound);
