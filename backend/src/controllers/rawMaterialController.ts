@@ -13,12 +13,13 @@ const createRawMaterialSchema = Joi.object({
   quantity: Joi.number().required().positive(),
   unit: Joi.string().required().min(1).max(50),
   costPerUnit: Joi.number().required().positive(),
+  reorderLevel: Joi.number().required().min(0),
   storageLocationId: Joi.string().required(),
 });
 
 const updateRawMaterialSchema = createRawMaterialSchema.fork([
   'name', 'categoryId', 'supplierId', 'batchNumber', 'purchaseDate',
-  'expirationDate', 'quantity', 'unit', 'costPerUnit', 'storageLocationId'
+  'expirationDate', 'quantity', 'unit', 'costPerUnit', 'reorderLevel', 'storageLocationId'
 ], (schema) => schema.optional()).keys({
   contaminated: Joi.boolean().optional(),
 });
@@ -176,12 +177,17 @@ export const rawMaterialController = {
         });
       }
 
+      // Prepare create data with field mapping
+      const createData = {
+        ...value,
+        purchaseDate: new Date(value.purchaseDate),
+        expirationDate: new Date(value.expirationDate),
+        unitPrice: value.costPerUnit, // Map costPerUnit to unitPrice
+      };
+      delete createData.costPerUnit; // Remove the frontend field
+
       const rawMaterial = await prisma.rawMaterial.create({
-        data: {
-          ...value,
-          purchaseDate: new Date(value.purchaseDate),
-          expirationDate: new Date(value.expirationDate),
-        },
+        data: createData,
         include: {
           category: true,
           supplier: true,
@@ -246,6 +252,16 @@ export const rawMaterialController = {
       const updateData: any = { ...value };
       if (value.purchaseDate) updateData.purchaseDate = new Date(value.purchaseDate);
       if (value.expirationDate) updateData.expirationDate = new Date(value.expirationDate);
+      
+      // Map frontend field names to database field names
+      if (value.costPerUnit !== undefined) {
+        updateData.unitPrice = value.costPerUnit;
+        delete updateData.costPerUnit;
+      }
+      if (value.contaminated !== undefined) {
+        updateData.isContaminated = value.contaminated;
+        delete updateData.contaminated;
+      }
 
       const rawMaterial = await prisma.rawMaterial.update({
         where: { id },

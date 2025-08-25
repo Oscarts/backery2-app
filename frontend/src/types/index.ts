@@ -109,11 +109,9 @@ export interface RawMaterial {
   expirationDate: string;
   quantity: number;
   unit: string;
-  costPerUnit?: number;
   unitPrice: number;
   reorderLevel: number;
   storageLocationId: string;
-  contaminated?: boolean;
   isContaminated: boolean;
   createdAt: string;
   updatedAt: string;
@@ -133,12 +131,13 @@ export interface CreateRawMaterialData {
   expirationDate: string;
   quantity: number;
   unit: string;
-  costPerUnit: number;
+  costPerUnit: number; // Frontend uses costPerUnit, backend maps to unitPrice
+  reorderLevel: number;
   storageLocationId: string;
 }
 
 export interface UpdateRawMaterialData extends Partial<CreateRawMaterialData> {
-  contaminated?: boolean;
+  contaminated?: boolean; // Frontend uses contaminated, backend maps to isContaminated
 }
 
 export enum QualityStatus {

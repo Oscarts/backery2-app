@@ -160,37 +160,6 @@ export const unitsApi = {
   },
 };
 
-// Raw Materials API
-export const rawMaterialsApi = {
-  getAll: async (): Promise<ApiResponse<RawMaterial[]>> => {
-    return apiCall<RawMaterial[]>('/raw-materials');
-  },
-
-  getById: async (id: string): Promise<ApiResponse<RawMaterial>> => {
-    return apiCall<RawMaterial>(`/raw-materials/${id}`);
-  },
-
-  create: async (data: CreateRawMaterialData): Promise<ApiResponse<RawMaterial>> => {
-    return apiCall<RawMaterial>('/raw-materials', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  update: async (id: string, data: UpdateRawMaterialData): Promise<ApiResponse<RawMaterial>> => {
-    return apiCall<RawMaterial>(`/raw-materials/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  },
-
-  delete: async (id: string): Promise<ApiResponse<void>> => {
-    return apiCall<void>(`/raw-materials/${id}`, {
-      method: 'DELETE',
-    });
-  },
-};
-
 // Suppliers API
 export const suppliersApi = {
   getAll: async (): Promise<ApiResponse<Supplier[]>> => {
@@ -217,6 +186,37 @@ export const suppliersApi = {
 
   delete: async (id: string): Promise<ApiResponse<void>> => {
     return apiCall<void>(`/suppliers/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Raw Materials API
+export const rawMaterialsApi = {
+  getAll: async (): Promise<ApiResponse<RawMaterial[]>> => {
+    return apiCall<RawMaterial[]>('/raw-materials');
+  },
+
+  getById: async (id: string): Promise<ApiResponse<RawMaterial>> => {
+    return apiCall<RawMaterial>(`/raw-materials/${id}`);
+  },
+
+  create: async (data: CreateRawMaterialData): Promise<ApiResponse<RawMaterial>> => {
+    return apiCall<RawMaterial>('/raw-materials', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  update: async (id: string, data: UpdateRawMaterialData): Promise<ApiResponse<RawMaterial>> => {
+    return apiCall<RawMaterial>(`/raw-materials/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  delete: async (id: string): Promise<ApiResponse<void>> => {
+    return apiCall<void>(`/raw-materials/${id}`, {
       method: 'DELETE',
     });
   },

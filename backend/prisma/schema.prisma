@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,7 +7,163 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Enums
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         UserRole @default(STAFF)
+  firstName    String
+  lastName     String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Category {
+  id                   String                @id @default(cuid())
+  name                 String
+  type                 CategoryType
+  description          String?
+  createdAt            DateTime              @default(now())
+  finishedProducts     FinishedProduct[]
+  intermediateProducts IntermediateProduct[]
+  rawMaterials         RawMaterial[]
+  recipes              Recipe[]
+
+  @@map("categories")
+}
+
+model Supplier {
+  id           String        @id @default(cuid())
+  name         String
+  contactInfo  Json?
+  address      String?
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  rawMaterials RawMaterial[]
+
+  @@map("suppliers")
+}
+
+model StorageLocation {
+  id                   String                @id @default(cuid())
+  name                 String
+  type                 String?
+  description          String?
+  capacity             String?
+  createdAt            DateTime              @default(now())
+  finishedProducts     FinishedProduct[]
+  intermediateProducts IntermediateProduct[]
+  rawMaterials         RawMaterial[]
+
+  @@map("storage_locations")
+}
+
+model Unit {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  symbol      String   @unique
+  category    String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("units")
+}
+
+model RawMaterial {
+  id                String          @id @default(cuid())
+  name              String
+  description       String?
+  categoryId        String
+  supplierId        String
+  batchNumber       String
+  purchaseDate      DateTime?
+  expirationDate    DateTime
+  quantity          Float
+  unit              String
+  unitPrice         Float
+  reorderLevel      Float
+  storageLocationId String
+  isContaminated    Boolean         @default(false)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  category          Category        @relation(fields: [categoryId], references: [id])
+  storageLocation   StorageLocation @relation(fields: [storageLocationId], references: [id])
+  supplier          Supplier        @relation(fields: [supplierId], references: [id])
+
+  @@map("raw_materials")
+}
+
+model IntermediateProduct {
+  id                String                    @id @default(cuid())
+  name              String
+  description       String
+  categoryId        String
+  batchNumber       String                    @unique
+  productionDate    DateTime
+  expirationDate    DateTime
+  quantity          Float
+  unit              String
+  storageLocationId String
+  status            IntermediateProductStatus @default(IN_PRODUCTION)
+  contaminated      Boolean                   @default(false)
+  qualityStatus     QualityStatus             @default(PENDING)
+  recipeId          String?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  category          Category                  @relation(fields: [categoryId], references: [id])
+  recipe            Recipe?                   @relation(fields: [recipeId], references: [id])
+  storageLocation   StorageLocation           @relation(fields: [storageLocationId], references: [id])
+
+  @@map("intermediate_products")
+}
+
+model FinishedProduct {
+  id                String           @id @default(cuid())
+  name              String
+  description       String?
+  sku               String           @unique
+  categoryId        String
+  batchNumber       String
+  productionDate    DateTime
+  expirationDate    DateTime
+  shelfLife         Int
+  quantity          Float
+  reservedQuantity  Float            @default(0)
+  unit              String
+  salePrice         Float
+  costToProduce     Float?
+  packagingInfo     String?
+  storageLocationId String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  category          Category         @relation(fields: [categoryId], references: [id])
+  storageLocation   StorageLocation? @relation(fields: [storageLocationId], references: [id])
+
+  @@map("finished_products")
+}
+
+model Recipe {
+  id                   String                @id @default(cuid())
+  name                 String
+  description          String?
+  categoryId           String
+  yieldQuantity        Float
+  yieldUnit            String
+  prepTime             Int?
+  instructions         Json?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  intermediateProducts IntermediateProduct[]
+  category             Category              @relation(fields: [categoryId], references: [id])
+
+  @@map("recipes")
+}
+
 enum UserRole {
   ADMIN
   MANAGER
@@ -37,177 +190,4 @@ enum IntermediateProductStatus {
   COMPLETED
   ON_HOLD
   DISCARDED
-}
-
-// Core Models
-model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
-  passwordHash  String
-  role          UserRole @default(STAFF)
-  firstName     String
-  lastName      String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  @@map("users")
-}
-
-model Category {
-  id          String      @id @default(cuid())
-  name        String
-  type        CategoryType
-  description String?
-  createdAt   DateTime    @default(now())
-
-  // Relations
-  intermediateProducts IntermediateProduct[]
-  rawMaterials        RawMaterial[]
-  finishedProducts    FinishedProduct[]
-  recipes             Recipe[]
-
-  @@map("categories")
-}
-
-model Supplier {
-  id          String  @id @default(cuid())
-  name        String
-  contactInfo Json? // Store contact details as JSON
-  address     String?
-  isActive    Boolean @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  rawMaterials RawMaterial[]
-
-  @@map("suppliers")
-}
-
-model StorageLocation {
-  id          String  @id @default(cuid())
-  name        String
-  type        String?
-  description String?
-  capacity    String?
-  createdAt   DateTime @default(now())
-
-  // Relations
-  intermediateProducts IntermediateProduct[]
-  rawMaterials        RawMaterial[]
-  finishedProducts    FinishedProduct[]
-
-  @@map("storage_locations")
-}
-
-model Unit {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  symbol      String   @unique
-  category    String   // e.g., "weight", "volume", "count"
-  description String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@map("units")
-}
-
-// Inventory Models
-model RawMaterial {
-  id                String    @id @default(cuid())
-  name              String
-  description       String?
-  categoryId        String
-  supplierId        String
-  batchNumber       String
-  purchaseDate      DateTime?
-  expirationDate    DateTime
-  quantity          Float
-  unit              String
-  unitPrice         Float
-  reorderLevel      Float
-  storageLocationId String
-  isContaminated    Boolean   @default(false)
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-
-  // Relations
-  category        Category        @relation(fields: [categoryId], references: [id])
-  supplier        Supplier        @relation(fields: [supplierId], references: [id])
-  storageLocation StorageLocation @relation(fields: [storageLocationId], references: [id])
-
-  @@map("raw_materials")
-}
-
-model IntermediateProduct {
-  id                String                   @id @default(cuid())
-  name              String
-  description       String
-  categoryId        String
-  batchNumber       String                   @unique
-  productionDate    DateTime
-  expirationDate    DateTime
-  quantity          Float
-  unit              String
-  storageLocationId String
-  status            IntermediateProductStatus @default(IN_PRODUCTION)
-  contaminated      Boolean                  @default(false)
-  qualityStatus     QualityStatus            @default(PENDING)
-  recipeId          String?
-  createdAt         DateTime                 @default(now())
-  updatedAt         DateTime                 @updatedAt
-
-  // Relations
-  category         Category        @relation(fields: [categoryId], references: [id])
-  storageLocation StorageLocation @relation(fields: [storageLocationId], references: [id])
-  recipe          Recipe?         @relation(fields: [recipeId], references: [id])
-
-  @@map("intermediate_products")
-}
-
-model FinishedProduct {
-  id                String   @id @default(cuid())
-  name              String
-  description       String?
-  sku               String   @unique
-  categoryId        String
-  batchNumber       String
-  productionDate    DateTime
-  expirationDate    DateTime
-  shelfLife         Int      // Days
-  quantity          Float
-  reservedQuantity  Float    @default(0)
-  unit              String
-  salePrice         Float
-  costToProduce     Float?
-  packagingInfo     String?
-  storageLocationId String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  // Relations
-  category        Category         @relation(fields: [categoryId], references: [id])
-  storageLocation StorageLocation? @relation(fields: [storageLocationId], references: [id])
-
-  @@map("finished_products")
-}
-
-model Recipe {
-  id           String  @id @default(cuid())
-  name         String
-  description  String?
-  categoryId   String
-  yieldQuantity Float
-  yieldUnit    String
-  prepTime     Int?     // Minutes
-  instructions Json?    // Array of step-by-step instructions
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  // Relations
-  category             Category              @relation(fields: [categoryId], references: [id])
-  intermediateProducts IntermediateProduct[]
-
-  @@map("recipes")
 }

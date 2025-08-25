@@ -27,6 +27,8 @@ import {
   Alert,
   Snackbar,
   Tooltip,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -356,9 +358,16 @@ const RawMaterials: React.FC = () => {
         suppliers={suppliers || []}
         onSubmit={(data) => {
           if (editingMaterial) {
-            updateMutation.mutate({ id: editingMaterial.id, data });
+            // For updates, include contaminated field if it exists
+            const updateData: UpdateRawMaterialData = { ...data };
+            if (data.contaminated !== undefined) {
+              updateData.contaminated = data.contaminated;
+            }
+            updateMutation.mutate({ id: editingMaterial.id, data: updateData });
           } else {
-            createMutation.mutate(data);
+            // For creation, remove contaminated field since new materials are not contaminated
+            const { contaminated, ...createData } = data;
+            createMutation.mutate(createData);
           }
         }}
       />
@@ -382,6 +391,10 @@ const RawMaterials: React.FC = () => {
 };
 
 // Raw Material Form Component
+interface RawMaterialFormData extends CreateRawMaterialData {
+  contaminated?: boolean;
+}
+
 interface RawMaterialFormProps {
   open: boolean;
   onClose: () => void;
@@ -390,7 +403,7 @@ interface RawMaterialFormProps {
   storageLocations: any[];
   units: any[];
   suppliers: any[];
-  onSubmit: (data: CreateRawMaterialData) => void;
+  onSubmit: (data: RawMaterialFormData) => void;
 }
 
 const RawMaterialForm: React.FC<RawMaterialFormProps> = ({
@@ -403,7 +416,7 @@ const RawMaterialForm: React.FC<RawMaterialFormProps> = ({
   suppliers,
   onSubmit,
 }) => {
-  const [formData, setFormData] = useState<CreateRawMaterialData>({
+  const [formData, setFormData] = useState<RawMaterialFormData>({
     name: '',
     categoryId: '',
     supplierId: '', // We'll handle suppliers later
@@ -413,7 +426,9 @@ const RawMaterialForm: React.FC<RawMaterialFormProps> = ({
     quantity: 0,
     unit: '',
     costPerUnit: 0,
+    reorderLevel: 0,
     storageLocationId: '',
+    contaminated: false,
   });
 
   React.useEffect(() => {
@@ -427,8 +442,10 @@ const RawMaterialForm: React.FC<RawMaterialFormProps> = ({
         expirationDate: material.expirationDate.split('T')[0],
         quantity: material.quantity,
         unit: material.unit,
-        costPerUnit: material.costPerUnit || material.unitPrice,
+        costPerUnit: material.unitPrice,
+        reorderLevel: material.reorderLevel,
         storageLocationId: material.storageLocationId,
+        contaminated: material.isContaminated,
       });
     } else {
       setFormData({
@@ -441,7 +458,9 @@ const RawMaterialForm: React.FC<RawMaterialFormProps> = ({
         quantity: 0,
         unit: '',
         costPerUnit: 0,
+        reorderLevel: 0,
         storageLocationId: '',
+        contaminated: false,
       });
     }
   }, [material, open]);
@@ -457,7 +476,7 @@ const RawMaterialForm: React.FC<RawMaterialFormProps> = ({
     const value = event.target.value;
     setFormData(prev => ({
       ...prev,
-      [field]: ['quantity', 'costPerUnit'].includes(field) ? parseFloat(value) || 0 : value,
+      [field]: ['quantity', 'costPerUnit', 'reorderLevel'].includes(field) ? parseFloat(value) || 0 : value,
     }));
   };
 
@@ -584,6 +603,20 @@ const RawMaterialForm: React.FC<RawMaterialFormProps> = ({
                 </Select>
               </FormControl>
             </Grid>
+            {material && (
+              <Grid item xs={12} sm={4}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.contaminated || false}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData(prev => ({ ...prev, contaminated: e.target.checked }))}
+                      color="error"
+                    />
+                  }
+                  label="Contaminated"
+                />
+              </Grid>
+            )}
             <Grid item xs={12} sm={4}>
               <TextField
                 fullWidth
@@ -594,6 +627,18 @@ const RawMaterialForm: React.FC<RawMaterialFormProps> = ({
                 onChange={handleChange('costPerUnit')}
                 inputProps={{ min: 0, step: 0.01 }}
                 InputProps={{ startAdornment: '$' }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                fullWidth
+                required
+                label="Reorder Level"
+                type="number"
+                value={formData.reorderLevel}
+                onChange={handleChange('reorderLevel')}
+                inputProps={{ min: 0, step: 0.1 }}
+                helperText="Minimum quantity before reordering"
               />
             </Grid>
           </Grid>
