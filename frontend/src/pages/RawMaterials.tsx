@@ -27,7 +27,6 @@ import {
   Alert,
   Snackbar,
   Tooltip,
-  SelectChangeEvent,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -35,131 +34,93 @@ import {
   Delete as DeleteIcon,
   Warning as WarningIcon,
   Search as SearchIcon,
-  Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { rawMaterialsApi, categoriesApi, suppliersApi, storageLocationsApi } from '../services/mockApi';
-import { RawMaterial, Category, Supplier, StorageLocation } from '../types';
-import { formatDate, formatCurrency, formatQuantity, isExpired, isExpiringSoon, getDaysUntilExpiration } from '../utils/api';
-
-interface FormData {
-  name: string;
-  description: string;
-  categoryId: string;
-  supplierId: string;
-  storageLocationId: string;
-  quantity: number;
-  unit: string;
-  unitPrice: number;
-  reorderLevel: number;
-  expirationDate: string;
-  batchNumber: string;
-}
+import { rawMaterialsApi, categoriesApi, storageLocationsApi, unitsApi, suppliersApi } from '../services/realApi';
+import { RawMaterial, CategoryType, CreateRawMaterialData, UpdateRawMaterialData } from '../types';
+import { formatDate, formatQuantity, isExpired, isExpiringSoon, getDaysUntilExpiration } from '../utils/api';
 
 const RawMaterials: React.FC = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [search, setSearch] = useState('');
+  const [openForm, setOpenForm] = useState(false);
+  const [editingMaterial, setEditingMaterial] = useState<RawMaterial | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
-  const [supplierFilter, setSupplierFilter] = useState('');
-  const [showExpiring, setShowExpiring] = useState(false);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [editingItem, setEditingItem] = useState<RawMaterial | null>(null);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
-
-  const [formData, setFormData] = useState<FormData>({
-    name: '',
-    description: '',
-    categoryId: '',
-    supplierId: '',
-    storageLocationId: '',
-    quantity: 0,
-    unit: 'kg',
-    unitPrice: 0,
-    reorderLevel: 0,
-    expirationDate: '',
-    batchNumber: '',
+  const [expirationFilter, setExpirationFilter] = useState('');
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+    open: false,
+    message: '',
+    severity: 'success',
   });
 
   const queryClient = useQueryClient();
 
-  // Fetch raw materials
-  const { data: rawMaterialsData, isLoading, error } = useQuery({
-    queryKey: ['rawMaterials', page + 1, rowsPerPage, search, categoryFilter, supplierFilter, showExpiring],
-    queryFn: () => rawMaterialsApi.getAll({
-      page: page + 1,
-      limit: rowsPerPage,
-      search,
-      categoryId: categoryFilter,
-      supplierId: supplierFilter,
-      showExpiring,
-    }),
-  });
-
-  // Fetch categories
-  const { data: categoriesData } = useQuery({
-    queryKey: ['categories', 'RAW_MATERIAL'],
-    queryFn: () => categoriesApi.getAll('RAW_MATERIAL'),
-  });
-
-  // Fetch suppliers
-  const { data: suppliersData } = useQuery({
-    queryKey: ['suppliers'],
-    queryFn: () => suppliersApi.getAll(),
-  });
-
-  // Fetch storage locations
-  const { data: storageLocationsData } = useQuery({
-    queryKey: ['storageLocations'],
-    queryFn: () => storageLocationsApi.getAll(),
-  });
+  // Fetch data
+  const { data: materials } = useQuery(['rawMaterials'], rawMaterialsApi.getAll);
+  const { data: categoriesResponse } = useQuery(['categories'], () => categoriesApi.getAll());
+  const { data: storageLocationsResponse } = useQuery(['storageLocations'], storageLocationsApi.getAll);
+  const { data: unitsResponse } = useQuery(['units'], unitsApi.getAll);
+  const { data: suppliersResponse } = useQuery(['suppliers'], suppliersApi.getAll);
+  
+  const categories = categoriesResponse?.data?.filter(c => c.type === CategoryType.RAW_MATERIAL);
+  const storageLocations = storageLocationsResponse?.data;
+  const units = unitsResponse?.data;
+  const suppliers = suppliersResponse?.data;
 
   // Mutations
-  const createMutation = useMutation({
-    mutationFn: (data: Omit<RawMaterial, 'id' | 'createdAt' | 'updatedAt'>) => rawMaterialsApi.create(data),
+  const createMutation = useMutation(rawMaterialsApi.create, {
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['rawMaterials'] });
-      setOpenDialog(false);
-      resetForm();
-      setSnackbar({ open: true, message: 'Raw material created successfully', severity: 'success' });
+      queryClient.invalidateQueries(['rawMaterials']);
+      handleCloseForm();
+      showSnackbar('Raw material created successfully', 'success');
     },
-    onError: (error: any) => {
-      setSnackbar({ open: true, message: error.message || 'Failed to create raw material', severity: 'error' });
+    onError: () => {
+      showSnackbar('Error creating raw material', 'error');
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<RawMaterial> }) => rawMaterialsApi.update(id, data),
+    mutationFn: ({ id, data }: { id: string; data: UpdateRawMaterialData }) => 
+      rawMaterialsApi.update(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['rawMaterials'] });
-      setOpenDialog(false);
-      setEditingItem(null);
-      resetForm();
-      setSnackbar({ open: true, message: 'Raw material updated successfully', severity: 'success' });
+      queryClient.invalidateQueries(['rawMaterials']);
+      handleCloseForm();
+      showSnackbar('Raw material updated successfully', 'success');
     },
-    onError: (error: any) => {
-      setSnackbar({ open: true, message: error.message || 'Failed to update raw material', severity: 'error' });
+    onError: () => {
+      showSnackbar('Error updating raw material', 'error');
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => rawMaterialsApi.delete(id),
+  const deleteMutation = useMutation(rawMaterialsApi.delete, {
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['rawMaterials'] });
-      setSnackbar({ open: true, message: 'Raw material deleted successfully', severity: 'success' });
+      queryClient.invalidateQueries(['rawMaterials']);
+      showSnackbar('Raw material deleted successfully', 'success');
     },
-    onError: (error: any) => {
-      setSnackbar({ open: true, message: error.message || 'Failed to delete raw material', severity: 'error' });
+    onError: () => {
+      showSnackbar('Error deleting raw material', 'error');
     },
   });
 
-  const rawMaterials = rawMaterialsData?.data || [];
-  const categories = categoriesData?.data || [];
-  const suppliers = suppliersData?.data || [];
-  const storageLocations = storageLocationsData?.data || [];
-  const totalCount = rawMaterialsData?.pagination?.total || 0;
+  // Filter materials
+  const filteredMaterials = materials?.data?.filter((material) => {
+    const matchesSearch = !searchTerm || 
+      material.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      material.batchNumber.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesCategory = !categoryFilter || material.categoryId === categoryFilter;
+    
+    const matchesExpiration = !expirationFilter || 
+      (expirationFilter === 'expired' && isExpired(material.expirationDate)) ||
+      (expirationFilter === 'expiring' && isExpiringSoon(material.expirationDate)) ||
+      (expirationFilter === 'contaminated' && material.isContaminated);
 
-  const handleChangePage = (_event: unknown, newPage: number) => {
+    return matchesSearch && matchesCategory && matchesExpiration;
+  }) || [];
+
+  // Handlers
+  const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
   };
 
@@ -168,126 +129,68 @@ const RawMaterials: React.FC = () => {
     setPage(0);
   };
 
-  const handleSearch = () => {
-    setPage(0);
+  const handleOpenForm = (material?: RawMaterial) => {
+    setEditingMaterial(material || null);
+    setOpenForm(true);
   };
 
-  const handleEdit = (item: RawMaterial) => {
-    setEditingItem(item);
-    setFormData({
-      name: item.name,
-      description: item.description || '',
-      categoryId: item.categoryId,
-      supplierId: item.supplierId,
-      storageLocationId: item.storageLocationId,
-      quantity: item.quantity,
-      unit: item.unit,
-      unitPrice: item.unitPrice,
-      reorderLevel: item.reorderLevel,
-      expirationDate: item.expirationDate,
-      batchNumber: item.batchNumber,
-    });
-    setOpenDialog(true);
+  const handleCloseForm = () => {
+    setOpenForm(false);
+    setEditingMaterial(null);
   };
 
-  const handleDelete = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this raw material?')) {
-      deleteMutation.mutate(id);
+  const handleDelete = (material: RawMaterial) => {
+    if (window.confirm(`Are you sure you want to delete "${material.name}"?`)) {
+      deleteMutation.mutate(material.id);
     }
   };
 
-  const handleAdd = () => {
-    resetForm();
-    setEditingItem(null);
-    setOpenDialog(true);
+  const showSnackbar = (message: string, severity: 'success' | 'error') => {
+    setSnackbar({ open: true, message, severity });
   };
 
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      description: '',
-      categoryId: '',
-      supplierId: '',
-      storageLocationId: '',
-      quantity: 0,
-      unit: 'kg',
-      unitPrice: 0,
-      reorderLevel: 0,
-      expirationDate: '',
-      batchNumber: '',
-    });
-  };
-
-  const handleFormSubmit = () => {
-    const data = {
-      ...formData,
-      isContaminated: false,
-    };
-
-    if (editingItem) {
-      updateMutation.mutate({ id: editingItem.id, data });
-    } else {
-      createMutation.mutate(data);
+  const getContaminationChip = (isContaminated: boolean) => {
+    if (isContaminated) {
+      return <Chip label="CONTAMINATED" color="error" size="small" />;
     }
+    return <Chip label="Clean" color="success" size="small" />;
   };
 
-  const handleFormChange = (field: keyof FormData) => (
-    event: React.ChangeEvent<HTMLInputElement | { value: unknown }> | SelectChangeEvent<string>
-  ) => {
-    const value = event.target.value;
-    setFormData(prev => ({
-      ...prev,
-      [field]: field === 'quantity' || field === 'unitPrice' || field === 'reorderLevel'
-        ? Number(value)
-        : value
-    }));
-  };
-
-  const getStatusChip = (item: RawMaterial) => {
-    if (item.isContaminated) {
-      return <Chip label="Contaminated" color="error" size="small" />;
+  const getExpirationChip = (expirationDate: string) => {
+    if (isExpired(expirationDate)) {
+      return <Chip label="EXPIRED" color="error" size="small" />;
     }
-    if (isExpired(item.expirationDate)) {
-      return <Chip label="Expired" color="error" size="small" />;
+    if (isExpiringSoon(expirationDate)) {
+      const days = getDaysUntilExpiration(expirationDate);
+      return <Chip label={`Expires in ${days} days`} color="warning" size="small" />;
     }
-    if (isExpiringSoon(item.expirationDate)) {
-      return <Chip label={`Expires in ${getDaysUntilExpiration(item.expirationDate)} days`} color="warning" size="small" />;
-    }
-    if (item.quantity <= item.reorderLevel) {
-      return <Chip label="Low Stock" color="warning" size="small" />;
-    }
-    return <Chip label="Good" color="success" size="small" />;
+    const days = getDaysUntilExpiration(expirationDate);
+    return <Chip label={`${days} days left`} color="success" size="small" />;
   };
 
-  const getCategoryName = (categoryId: string) => {
-    const category = categories.find((c: Category) => c.id === categoryId);
-    return category?.name || 'Unknown';
+  const getStockLevelChip = (quantity: number, reorderLevel: number) => {
+    if (quantity <= 0) {
+      return <Chip label="OUT OF STOCK" color="error" size="small" />;
+    }
+    if (quantity <= reorderLevel) {
+      return <Chip label="LOW STOCK" color="warning" size="small" />;
+    }
+    return <Chip label="In Stock" color="success" size="small" />;
   };
-
-  const getSupplierName = (supplierId: string) => {
-    const supplier = suppliers.find((s: Supplier) => s.id === supplierId);
-    return supplier?.name || 'Unknown';
-  };
-
-  if (error) {
-    return (
-      <Container maxWidth="xl">
-        <Alert severity="error">
-          Error loading raw materials. Using mock data for demonstration.
-        </Alert>
-      </Container>
-    );
-  }
 
   return (
-    <Container maxWidth="xl">
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
+    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" component="h1">
           Raw Materials
         </Typography>
-        <Typography variant="body1" color="text.secondary" paragraph>
-          Manage raw materials inventory, track expiration dates, and monitor stock levels.
-        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => handleOpenForm()}
+        >
+          Add Raw Material
+        </Button>
       </Box>
 
       {/* Filters */}
@@ -297,18 +200,14 @@ const RawMaterials: React.FC = () => {
             <TextField
               fullWidth
               label="Search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               InputProps={{
-                endAdornment: (
-                  <IconButton onClick={handleSearch}>
-                    <SearchIcon />
-                  </IconButton>
-                ),
+                startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
               }}
             />
           </Grid>
-          <Grid item xs={12} sm={2}>
+          <Grid item xs={12} sm={3}>
             <FormControl fullWidth>
               <InputLabel>Category</InputLabel>
               <Select
@@ -317,7 +216,7 @@ const RawMaterials: React.FC = () => {
                 onChange={(e) => setCategoryFilter(e.target.value)}
               >
                 <MenuItem value="">All Categories</MenuItem>
-                {categories.map((category: Category) => (
+                {categories?.map((category) => (
                   <MenuItem key={category.id} value={category.id}>
                     {category.name}
                   </MenuItem>
@@ -325,115 +224,120 @@ const RawMaterials: React.FC = () => {
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={12} sm={2}>
+          <Grid item xs={12} sm={3}>
             <FormControl fullWidth>
-              <InputLabel>Supplier</InputLabel>
+              <InputLabel>Filter</InputLabel>
               <Select
-                value={supplierFilter}
-                label="Supplier"
-                onChange={(e) => setSupplierFilter(e.target.value)}
+                value={expirationFilter}
+                label="Filter"
+                onChange={(e) => setExpirationFilter(e.target.value)}
               >
-                <MenuItem value="">All Suppliers</MenuItem>
-                {suppliers.map((supplier: Supplier) => (
-                  <MenuItem key={supplier.id} value={supplier.id}>
-                    {supplier.name}
-                  </MenuItem>
-                ))}
+                <MenuItem value="">All Items</MenuItem>
+                <MenuItem value="expired">Expired</MenuItem>
+                <MenuItem value="expiring">Expiring Soon</MenuItem>
+                <MenuItem value="contaminated">Contaminated</MenuItem>
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={12} sm={2}>
-            <Button
-              variant={showExpiring ? "contained" : "outlined"}
-              onClick={() => setShowExpiring(!showExpiring)}
-              startIcon={<WarningIcon />}
-            >
-              Expiring Soon
-            </Button>
-          </Grid>
           <Grid item xs={12} sm={3}>
-            <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={handleAdd}
-              >
-                Add Raw Material
-              </Button>
-              <IconButton onClick={() => queryClient.invalidateQueries({ queryKey: ['rawMaterials'] })}>
-                <RefreshIcon />
-              </IconButton>
-            </Box>
+            <Typography variant="body2" color="text.secondary">
+              Total: {filteredMaterials.length} items
+            </Typography>
           </Grid>
         </Grid>
       </Paper>
 
-      {/* Table */}
-      <Paper>
+      {/* Materials Table */}
+      <Paper sx={{ width: '100%', mb: 2 }}>
         <TableContainer>
-          <Table>
+          <Table sx={{ minWidth: 750 }}>
             <TableHead>
               <TableRow>
-                <TableCell>Name</TableCell>
+                <TableCell>Name & Batch</TableCell>
                 <TableCell>Category</TableCell>
                 <TableCell>Supplier</TableCell>
                 <TableCell>Quantity</TableCell>
                 <TableCell>Unit Price</TableCell>
+                <TableCell>Stock Level</TableCell>
                 <TableCell>Expiration</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={8} align="center">Loading...</TableCell>
-                </TableRow>
-              ) : rawMaterials.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} align="center">No raw materials found</TableCell>
-                </TableRow>
-              ) : (
-                rawMaterials.map((item: RawMaterial) => (
-                  <TableRow key={item.id}>
+              {filteredMaterials
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((material) => (
+                  <TableRow hover key={material.id}>
                     <TableCell>
                       <Box>
-                        <Typography variant="body2" fontWeight="medium">
-                          {item.name}
+                        <Typography variant="subtitle2" fontWeight="bold">
+                          {material.name}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          Batch: {item.batchNumber}
+                          Batch: {material.batchNumber}
                         </Typography>
                       </Box>
                     </TableCell>
-                    <TableCell>{getCategoryName(item.categoryId)}</TableCell>
-                    <TableCell>{getSupplierName(item.supplierId)}</TableCell>
-                    <TableCell>{formatQuantity(item.quantity, item.unit)}</TableCell>
-                    <TableCell>{formatCurrency(item.unitPrice)}</TableCell>
-                    <TableCell>{formatDate(item.expirationDate)}</TableCell>
-                    <TableCell>{getStatusChip(item)}</TableCell>
+                    <TableCell>
+                      {material.category?.name || 'Unknown'}
+                    </TableCell>
+                    <TableCell>
+                      {material.supplier?.name || 'Unknown'}
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {formatQuantity(material.quantity, material.unit)}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Reorder: {formatQuantity(material.reorderLevel, material.unit)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      ${material.unitPrice?.toFixed(2) || 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      {getStockLevelChip(material.quantity, material.reorderLevel)}
+                    </TableCell>
+                    <TableCell>
+                      <Box>
+                        <Typography variant="body2">
+                          {formatDate(material.expirationDate)}
+                        </Typography>
+                        {getExpirationChip(material.expirationDate)}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      {getContaminationChip(material.isContaminated)}
+                    </TableCell>
                     <TableCell>
                       <Tooltip title="Edit">
-                        <IconButton size="small" onClick={() => handleEdit(item)}>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleOpenForm(material)}
+                        >
                           <EditIcon />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Delete">
-                        <IconButton size="small" onClick={() => handleDelete(item.id)}>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleDelete(material)}
+                          color="error"
+                        >
                           <DeleteIcon />
                         </IconButton>
                       </Tooltip>
                     </TableCell>
                   </TableRow>
-                ))
-              )}
+                ))}
             </TableBody>
           </Table>
         </TableContainer>
         <TablePagination
           rowsPerPageOptions={[5, 10, 25]}
           component="div"
-          count={totalCount}
+          count={filteredMaterials.length}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
@@ -441,39 +345,146 @@ const RawMaterials: React.FC = () => {
         />
       </Paper>
 
-      {/* Add/Edit Dialog */}
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="md" fullWidth>
+      {/* Form Dialog */}
+      <RawMaterialForm
+        open={openForm}
+        onClose={handleCloseForm}
+        material={editingMaterial}
+        categories={categories || []}
+        storageLocations={storageLocations || []}
+        units={units || []}
+        suppliers={suppliers || []}
+        onSubmit={(data) => {
+          if (editingMaterial) {
+            updateMutation.mutate({ id: editingMaterial.id, data });
+          } else {
+            createMutation.mutate(data);
+          }
+        }}
+      />
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Container>
+  );
+};
+
+// Raw Material Form Component
+interface RawMaterialFormProps {
+  open: boolean;
+  onClose: () => void;
+  material: RawMaterial | null;
+  categories: any[];
+  storageLocations: any[];
+  units: any[];
+  suppliers: any[];
+  onSubmit: (data: CreateRawMaterialData) => void;
+}
+
+const RawMaterialForm: React.FC<RawMaterialFormProps> = ({
+  open,
+  onClose,
+  material,
+  categories,
+  storageLocations,
+  units,
+  suppliers,
+  onSubmit,
+}) => {
+  const [formData, setFormData] = useState<CreateRawMaterialData>({
+    name: '',
+    categoryId: '',
+    supplierId: '', // We'll handle suppliers later
+    batchNumber: '',
+    purchaseDate: new Date().toISOString().split('T')[0],
+    expirationDate: '',
+    quantity: 0,
+    unit: '',
+    costPerUnit: 0,
+    storageLocationId: '',
+  });
+
+  React.useEffect(() => {
+    if (material) {
+      setFormData({
+        name: material.name,
+        categoryId: material.categoryId,
+        supplierId: material.supplierId,
+        batchNumber: material.batchNumber,
+        purchaseDate: material.purchaseDate ? material.purchaseDate.split('T')[0] : '',
+        expirationDate: material.expirationDate.split('T')[0],
+        quantity: material.quantity,
+        unit: material.unit,
+        costPerUnit: material.costPerUnit || material.unitPrice,
+        storageLocationId: material.storageLocationId,
+      });
+    } else {
+      setFormData({
+        name: '',
+        categoryId: '',
+        supplierId: '',
+        batchNumber: '',
+        purchaseDate: new Date().toISOString().split('T')[0],
+        expirationDate: '',
+        quantity: 0,
+        unit: '',
+        costPerUnit: 0,
+        storageLocationId: '',
+      });
+    }
+  }, [material, open]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
+
+  const handleChange = (field: keyof CreateRawMaterialData) => (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | any
+  ) => {
+    const value = event.target.value;
+    setFormData(prev => ({
+      ...prev,
+      [field]: ['quantity', 'costPerUnit'].includes(field) ? parseFloat(value) || 0 : value,
+    }));
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <form onSubmit={handleSubmit}>
         <DialogTitle>
-          {editingItem ? 'Edit Raw Material' : 'Add Raw Material'}
+          {material ? 'Edit Raw Material' : 'Add New Raw Material'}
         </DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
+                required
                 label="Name"
                 value={formData.name}
-                onChange={handleFormChange('name')}
-                required
+                onChange={handleChange('name')}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
+                required
                 label="Batch Number"
                 value={formData.batchNumber}
-                onChange={handleFormChange('batchNumber')}
-                required
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Description"
-                value={formData.description}
-                onChange={handleFormChange('description')}
-                multiline
-                rows={2}
+                onChange={handleChange('batchNumber')}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -482,9 +493,9 @@ const RawMaterials: React.FC = () => {
                 <Select
                   value={formData.categoryId}
                   label="Category"
-                  onChange={handleFormChange('categoryId')}
+                  onChange={handleChange('categoryId')}
                 >
-                  {categories.map((category: Category) => (
+                  {categories.map((category) => (
                     <MenuItem key={category.id} value={category.id}>
                       {category.name}
                     </MenuItem>
@@ -498,9 +509,9 @@ const RawMaterials: React.FC = () => {
                 <Select
                   value={formData.supplierId}
                   label="Supplier"
-                  onChange={handleFormChange('supplierId')}
+                  onChange={handleChange('supplierId')}
                 >
-                  {suppliers.map((supplier: Supplier) => (
+                  {suppliers.map((supplier) => (
                     <MenuItem key={supplier.id} value={supplier.id}>
                       {supplier.name}
                     </MenuItem>
@@ -514,9 +525,9 @@ const RawMaterials: React.FC = () => {
                 <Select
                   value={formData.storageLocationId}
                   label="Storage Location"
-                  onChange={handleFormChange('storageLocationId')}
+                  onChange={handleChange('storageLocationId')}
                 >
-                  {storageLocations.map((location: StorageLocation) => (
+                  {storageLocations.map((location) => (
                     <MenuItem key={location.id} value={location.id}>
                       {location.name}
                     </MenuItem>
@@ -527,78 +538,74 @@ const RawMaterials: React.FC = () => {
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
-                label="Unit"
-                value={formData.unit}
-                onChange={handleFormChange('unit')}
                 required
+                label="Purchase Date"
+                type="date"
+                value={formData.purchaseDate}
+                onChange={handleChange('purchaseDate')}
+                InputLabelProps={{ shrink: true }}
               />
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
-                label="Quantity"
-                type="number"
-                value={formData.quantity}
-                onChange={handleFormChange('quantity')}
                 required
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                label="Unit Price"
-                type="number"
-                value={formData.unitPrice}
-                onChange={handleFormChange('unitPrice')}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                label="Reorder Level"
-                type="number"
-                value={formData.reorderLevel}
-                onChange={handleFormChange('reorderLevel')}
-                required
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
                 label="Expiration Date"
                 type="date"
                 value={formData.expirationDate}
-                onChange={handleFormChange('expirationDate')}
+                onChange={handleChange('expirationDate')}
                 InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                fullWidth
                 required
+                label="Quantity"
+                type="number"
+                value={formData.quantity}
+                onChange={handleChange('quantity')}
+                inputProps={{ min: 0, step: 0.01 }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <FormControl fullWidth required>
+                <InputLabel>Unit</InputLabel>
+                <Select
+                  value={formData.unit}
+                  label="Unit"
+                  onChange={handleChange('unit')}
+                >
+                  {units.map((unit) => (
+                    <MenuItem key={unit.id} value={unit.symbol}>
+                      {unit.name} ({unit.symbol})
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <TextField
+                fullWidth
+                required
+                label="Cost per Unit"
+                type="number"
+                value={formData.costPerUnit}
+                onChange={handleChange('costPerUnit')}
+                inputProps={{ min: 0, step: 0.01 }}
+                InputProps={{ startAdornment: '$' }}
               />
             </Grid>
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-          <Button
-            onClick={handleFormSubmit}
-            variant="contained"
-            disabled={createMutation.isPending || updateMutation.isPending}
-          >
-            {editingItem ? 'Update' : 'Create'}
+          <Button onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="contained">
+            {material ? 'Update' : 'Create'}
           </Button>
         </DialogActions>
-      </Dialog>
-
-      {/* Snackbar */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-      >
-        <Alert severity={snackbar.severity} onClose={() => setSnackbar({ ...snackbar, open: false })}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Container>
+      </form>
+    </Dialog>
   );
 };
 

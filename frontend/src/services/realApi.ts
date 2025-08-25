@@ -1,5 +1,15 @@
 // Real API service for backend communication
-import { IntermediateProduct, Category, StorageLocation, Unit, ApiResponse } from '../types';
+import { 
+  IntermediateProduct, 
+  Category, 
+  StorageLocation, 
+  Unit, 
+  RawMaterial, 
+  CreateRawMaterialData, 
+  UpdateRawMaterialData, 
+  Supplier,
+  ApiResponse 
+} from '../types';
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
@@ -145,6 +155,68 @@ export const unitsApi = {
 
   delete: async (id: string): Promise<ApiResponse<void>> => {
     return apiCall<void>(`/units/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Raw Materials API
+export const rawMaterialsApi = {
+  getAll: async (): Promise<ApiResponse<RawMaterial[]>> => {
+    return apiCall<RawMaterial[]>('/raw-materials');
+  },
+
+  getById: async (id: string): Promise<ApiResponse<RawMaterial>> => {
+    return apiCall<RawMaterial>(`/raw-materials/${id}`);
+  },
+
+  create: async (data: CreateRawMaterialData): Promise<ApiResponse<RawMaterial>> => {
+    return apiCall<RawMaterial>('/raw-materials', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  update: async (id: string, data: UpdateRawMaterialData): Promise<ApiResponse<RawMaterial>> => {
+    return apiCall<RawMaterial>(`/raw-materials/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  delete: async (id: string): Promise<ApiResponse<void>> => {
+    return apiCall<void>(`/raw-materials/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Suppliers API
+export const suppliersApi = {
+  getAll: async (): Promise<ApiResponse<Supplier[]>> => {
+    return apiCall<Supplier[]>('/suppliers');
+  },
+
+  getById: async (id: string): Promise<ApiResponse<Supplier>> => {
+    return apiCall<Supplier>(`/suppliers/${id}`);
+  },
+
+  create: async (data: Omit<Supplier, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<Supplier>> => {
+    return apiCall<Supplier>('/suppliers', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  update: async (id: string, data: Partial<Supplier>): Promise<ApiResponse<Supplier>> => {
+    return apiCall<Supplier>(`/suppliers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  delete: async (id: string): Promise<ApiResponse<void>> => {
+    return apiCall<void>(`/suppliers/${id}`, {
       method: 'DELETE',
     });
   },
