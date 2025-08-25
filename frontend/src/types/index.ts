@@ -172,6 +172,41 @@ export interface FinishedProduct {
   storageLocation?: StorageLocation;
 }
 
+export interface CreateFinishedProductData {
+  name: string;
+  description?: string;
+  sku: string;
+  categoryId: string;
+  batchNumber: string;
+  productionDate: string;
+  expirationDate: string;
+  shelfLife: number;
+  quantity: number;
+  unit: string;
+  salePrice: number;
+  costToProduce?: number;
+  packagingInfo?: string;
+  storageLocationId?: string;
+}
+
+export interface UpdateFinishedProductData {
+  name?: string;
+  description?: string;
+  sku?: string;
+  categoryId?: string;
+  batchNumber?: string;
+  productionDate?: string;
+  expirationDate?: string;
+  shelfLife?: number;
+  quantity?: number;
+  reservedQuantity?: number;
+  unit?: string;
+  salePrice?: number;
+  costToProduce?: number;
+  packagingInfo?: string;
+  storageLocationId?: string;
+}
+
 // Recipe types
 export interface Recipe {
   id: string;

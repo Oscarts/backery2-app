@@ -21,7 +21,7 @@ import {
   Error as ErrorIcon,
   Refresh as RefreshIcon
 } from '@mui/icons-material';
-import { intermediateProductsApi, categoriesApi, storageLocationsApi, unitsApi, rawMaterialsApi, suppliersApi } from '../services/realApi';
+import { intermediateProductsApi, categoriesApi, storageLocationsApi, unitsApi, rawMaterialsApi, suppliersApi, finishedProductsApi } from '../services/realApi';
 import { IntermediateProductStatus, QualityStatus, CategoryType } from '../types';
 
 interface TestResult {
@@ -44,7 +44,15 @@ const ApiTestPage: React.FC = () => {
     { name: 'Raw Materials API', status: 'idle' },
     { name: 'Create Raw Material', status: 'idle' },
     { name: 'Update Raw Material', status: 'idle' },
-    { name: 'Delete Raw Material', status: 'idle' }
+    { name: 'Delete Raw Material', status: 'idle' },
+    { name: 'Finished Products API', status: 'idle' },
+    { name: 'Create Finished Product', status: 'idle' },
+    { name: 'Update Finished Product', status: 'idle' },
+    { name: 'Delete Finished Product', status: 'idle' },
+    { name: 'Get Expiring Products', status: 'idle' },
+    { name: 'Get Low Stock Products', status: 'idle' },
+    { name: 'Reserve Product Quantity', status: 'idle' },
+    { name: 'Release Product Reservation', status: 'idle' }
   ]);
 
   const updateTest = (index: number, updates: Partial<TestResult>) => {
@@ -320,6 +328,178 @@ const ApiTestPage: React.FC = () => {
         status: 'error', 
         message: `Create error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
+    }
+
+    // Test 13: Finished Products API
+    updateTest(12, { status: 'testing' });
+    try {
+      const finishedProductsResult = await finishedProductsApi.getAll();
+      updateTest(12, { 
+        status: 'success', 
+        message: `Found ${finishedProductsResult.data?.length || 0} finished products`,
+        data: finishedProductsResult.data
+      });
+    } catch (error) {
+      updateTest(12, { 
+        status: 'error', 
+        message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+
+    // Test 14: Create Finished Product
+    updateTest(13, { status: 'testing' });
+    try {
+      const categoriesResult = await categoriesApi.getAll();
+      const finishedProductCategories = categoriesResult.data?.filter(c => c.type === 'FINISHED_PRODUCT');
+      
+      if (!finishedProductCategories || finishedProductCategories.length === 0) {
+        updateTest(13, { 
+          status: 'error', 
+          message: 'No finished product categories found for testing'
+        });
+        return;
+      }
+
+      const createFinishedData = {
+        name: 'Test Finished Product',
+        sku: `TEST-FP-${Date.now()}`,
+        categoryId: finishedProductCategories[0].id,
+        batchNumber: `BATCH-${Date.now()}`,
+        productionDate: new Date().toISOString().split('T')[0],
+        expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+        shelfLife: 30,
+        quantity: 100,
+        unit: 'pcs',
+        salePrice: 15.99,
+        costToProduce: 10.50,
+        packagingInfo: 'Individual packaging'
+      };
+
+      const createFinishedResult = await finishedProductsApi.create(createFinishedData);
+      updateTest(13, { 
+        status: 'success', 
+        message: `Created finished product: ${createFinishedResult.data?.name}`,
+        data: createFinishedResult.data
+      });
+
+      if (createFinishedResult.data) {
+        // Test 15: Update the created finished product
+        updateTest(14, { status: 'testing' });
+        try {
+          const updateFinishedData = {
+            quantity: 150,
+            salePrice: 17.99
+          };
+
+          const updateFinishedResult = await finishedProductsApi.update(createFinishedResult.data.id, updateFinishedData);
+          updateTest(14, { 
+            status: 'success', 
+            message: `Updated finished product quantity to ${updateFinishedResult.data?.quantity}`,
+            data: updateFinishedResult.data
+          });
+
+          // Test 16: Delete the created finished product
+          updateTest(15, { status: 'testing' });
+          try {
+            await finishedProductsApi.delete(createFinishedResult.data.id);
+            updateTest(15, { 
+              status: 'success', 
+              message: 'Finished product deleted successfully'
+            });
+          } catch (error) {
+            updateTest(15, { 
+              status: 'error', 
+              message: `Delete error: ${error instanceof Error ? error.message : 'Unknown error'}`
+            });
+          }
+        } catch (error) {
+          updateTest(14, { 
+            status: 'error', 
+            message: `Update error: ${error instanceof Error ? error.message : 'Unknown error'}`
+          });
+        }
+      }
+    } catch (error) {
+      updateTest(13, { 
+        status: 'error', 
+        message: `Create error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+
+    // Test 17: Get Expiring Products
+    updateTest(16, { status: 'testing' });
+    try {
+      const expiringResult = await finishedProductsApi.getExpiring(7);
+      updateTest(16, { 
+        status: 'success', 
+        message: `Found ${expiringResult.data?.length || 0} products expiring in 7 days`,
+        data: expiringResult.data
+      });
+    } catch (error) {
+      updateTest(16, { 
+        status: 'error', 
+        message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+
+    // Test 18: Get Low Stock Products
+    updateTest(17, { status: 'testing' });
+    try {
+      const lowStockResult = await finishedProductsApi.getLowStock(10);
+      updateTest(17, { 
+        status: 'success', 
+        message: `Found ${lowStockResult.data?.length || 0} low stock products`,
+        data: lowStockResult.data
+      });
+    } catch (error) {
+      updateTest(17, { 
+        status: 'error', 
+        message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+
+    // Test 19: Reserve Product Quantity
+    updateTest(18, { status: 'testing' });
+    try {
+      const allProducts = await finishedProductsApi.getAll();
+      const availableProduct = allProducts.data?.find(p => p.quantity > p.reservedQuantity);
+      
+      if (availableProduct) {
+        const reserveResult = await finishedProductsApi.reserveQuantity(availableProduct.id, 5);
+        updateTest(18, { 
+          status: 'success', 
+          message: `Reserved 5 units of ${availableProduct.name}`,
+          data: reserveResult.data
+        });
+
+        // Test 20: Release Product Reservation
+        updateTest(19, { status: 'testing' });
+        try {
+          const releaseResult = await finishedProductsApi.releaseReservation(availableProduct.id, 5);
+          updateTest(19, { 
+            status: 'success', 
+            message: `Released 5 units reservation for ${availableProduct.name}`,
+            data: releaseResult.data
+          });
+        } catch (error) {
+          updateTest(19, { 
+            status: 'error', 
+            message: `Release error: ${error instanceof Error ? error.message : 'Unknown error'}`
+          });
+        }
+      } else {
+        updateTest(18, { 
+          status: 'error', 
+          message: 'No available products found for reservation testing'
+        });
+        updateTest(19, { status: 'idle' });
+      }
+    } catch (error) {
+      updateTest(18, { 
+        status: 'error', 
+        message: `Reserve error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+      updateTest(19, { status: 'idle' });
     }
   };
 

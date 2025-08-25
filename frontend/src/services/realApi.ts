@@ -7,6 +7,9 @@ import {
   RawMaterial, 
   CreateRawMaterialData, 
   UpdateRawMaterialData, 
+  FinishedProduct,
+  CreateFinishedProductData,
+  UpdateFinishedProductData,
   Supplier,
   ApiResponse 
 } from '../types';
@@ -218,6 +221,61 @@ export const rawMaterialsApi = {
   delete: async (id: string): Promise<ApiResponse<void>> => {
     return apiCall<void>(`/raw-materials/${id}`, {
       method: 'DELETE',
+    });
+  },
+};
+
+// Finished Products API
+export const finishedProductsApi = {
+  getAll: async (): Promise<ApiResponse<FinishedProduct[]>> => {
+    return apiCall<FinishedProduct[]>('/finished-products');
+  },
+
+  getById: async (id: string): Promise<ApiResponse<FinishedProduct>> => {
+    return apiCall<FinishedProduct>(`/finished-products/${id}`);
+  },
+
+  create: async (data: CreateFinishedProductData): Promise<ApiResponse<FinishedProduct>> => {
+    return apiCall<FinishedProduct>('/finished-products', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  update: async (id: string, data: UpdateFinishedProductData): Promise<ApiResponse<FinishedProduct>> => {
+    return apiCall<FinishedProduct>(`/finished-products/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  delete: async (id: string): Promise<ApiResponse<void>> => {
+    return apiCall<void>(`/finished-products/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  getExpiring: async (days?: number): Promise<ApiResponse<FinishedProduct[]>> => {
+    const params = days ? `?days=${days}` : '';
+    return apiCall<FinishedProduct[]>(`/finished-products/expiring${params}`);
+  },
+
+  getLowStock: async (threshold?: number): Promise<ApiResponse<FinishedProduct[]>> => {
+    const params = threshold ? `?threshold=${threshold}` : '';
+    return apiCall<FinishedProduct[]>(`/finished-products/low-stock${params}`);
+  },
+
+  reserveQuantity: async (id: string, quantity: number, reason?: string): Promise<ApiResponse<FinishedProduct>> => {
+    return apiCall<FinishedProduct>(`/finished-products/${id}/reserve`, {
+      method: 'PUT',
+      body: JSON.stringify({ quantity, reason }),
+    });
+  },
+
+  releaseReservation: async (id: string, quantity: number, reason?: string): Promise<ApiResponse<FinishedProduct>> => {
+    return apiCall<FinishedProduct>(`/finished-products/${id}/release`, {
+      method: 'PUT',
+      body: JSON.stringify({ quantity, reason }),
     });
   },
 };
