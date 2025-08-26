@@ -31,6 +31,8 @@ import {
   ArrowUpward as ArrowUpIcon,
   ArrowDownward as ArrowDownIcon,
   Restaurant as RecipeIcon,
+  Edit as EditIcon,
+  CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
@@ -170,6 +172,26 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const formatAlertType = (alertType: string) => {
+    switch (alertType) {
+      case 'expired': return 'Expired';
+      case 'expiring_soon': return 'Expiring Soon';
+      case 'low_stock': return 'Low Inventory';
+      case 'out_of_stock': return 'Out of Stock';
+      case 'contaminated': return 'Contaminated';
+      default: return alertType.replace('_', ' ');
+    }
+  };
+
+  const formatProductType = (type: string) => {
+    switch (type) {
+      case 'raw_material': return 'Raw Material';
+      case 'intermediate_product': return 'Intermediate Product';
+      case 'finished_product': return 'Finished Product';
+      default: return type.replace('_', ' ');
+    }
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -225,9 +247,9 @@ const Dashboard: React.FC = () => {
       {summary && (
         <>
           {/* Key Metrics Row */}
-          <Grid container spacing={3} sx={{ mb: 3 }}>
+          <Grid container spacing={2} sx={{ mb: 3 }}>
             {/* Total Inventory Value with Breakdown */}
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
                   <Box display="flex" alignItems="center" mb={2}>
@@ -295,29 +317,76 @@ const Dashboard: React.FC = () => {
               </Card>
             </Grid>
 
-            {/* Total Items */}
-            <Grid item xs={12} md={4}>
+            {/* Total Inventory Items */}
+            <Grid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
                   <Box display="flex" alignItems="center" mb={2}>
                     <InventoryIcon color="secondary" sx={{ mr: 1 }} />
-                    <Typography variant="h6">Total Items</Typography>
+                    <Typography variant="h6">Inventory Items</Typography>
                   </Box>
                   <Typography variant="h4" color="secondary" gutterBottom>
                     {summary.inventoryCounts.total}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Raw: {summary.inventoryCounts.rawMaterials} | 
-                    Intermediate: {summary.inventoryCounts.intermediateProducts} | 
-                    Finished: {summary.inventoryCounts.finishedProducts} | 
-                    Recipes: {summary.inventoryCounts.recipes}
+                  <Box mt={2}>
+                    <Typography variant="caption" color="text.secondary" gutterBottom display="block">
+                      Breakdown:
+                    </Typography>
+                    
+                    {/* Raw Materials */}
+                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
+                      <Typography variant="caption" color="text.secondary">
+                        Raw Materials
+                      </Typography>
+                      <Typography variant="caption" color="text.primary">
+                        {summary.inventoryCounts.rawMaterials}
+                      </Typography>
+                    </Box>
+
+                    {/* Intermediate Products */}
+                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
+                      <Typography variant="caption" color="text.secondary">
+                        Intermediate
+                      </Typography>
+                      <Typography variant="caption" color="text.primary">
+                        {summary.inventoryCounts.intermediateProducts}
+                      </Typography>
+                    </Box>
+
+                    {/* Finished Products */}
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                      <Typography variant="caption" color="text.secondary">
+                        Finished Products
+                      </Typography>
+                      <Typography variant="caption" color="text.primary">
+                        {summary.inventoryCounts.finishedProducts}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Recipes */}
+            <Grid item xs={12} sm={6} md={3}>
+              <Card>
+                <CardContent>
+                  <Box display="flex" alignItems="center" mb={2}>
+                    <RecipeIcon color="info" sx={{ mr: 1 }} />
+                    <Typography variant="h6">Active Recipes</Typography>
+                  </Box>
+                  <Typography variant="h4" color="info.main" gutterBottom>
+                    {summary.inventoryCounts.recipes}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                    Production-ready recipes for creating intermediate and finished products
                   </Typography>
                 </CardContent>
               </Card>
             </Grid>
 
             {/* Active Alerts Breakdown */}
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
                   <Box display="flex" alignItems="center" mb={2}>
@@ -330,42 +399,46 @@ const Dashboard: React.FC = () => {
                   
                   {/* Alert Breakdown by Type */}
                   <Box mt={2}>
+                    <Typography variant="caption" color="text.secondary" gutterBottom display="block">
+                      Alert Breakdown:
+                    </Typography>
+                    
                     {/* Raw Materials */}
                     <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="caption" color="text.secondary">
                         Raw Materials
                       </Typography>
-                      <Box display="flex" gap={0.5}>
+                      <Box display="flex" gap={0.5} flexWrap="wrap">
                         {summary.alertBreakdown.rawMaterials.expiring > 0 && (
                           <Chip 
-                            label={`${summary.alertBreakdown.rawMaterials.expiring} exp`} 
+                            label={`${summary.alertBreakdown.rawMaterials.expiring} Expired`} 
                             size="small" 
                             color="error" 
-                            sx={{ fontSize: '0.7rem', height: '18px' }}
+                            sx={{ fontSize: '0.65rem', height: '18px' }}
                           />
                         )}
                         {summary.alertBreakdown.rawMaterials.lowStock > 0 && (
                           <Chip 
-                            label={`${summary.alertBreakdown.rawMaterials.lowStock} low`} 
+                            label={`${summary.alertBreakdown.rawMaterials.lowStock} Low Stock`} 
                             size="small" 
                             color="warning" 
-                            sx={{ fontSize: '0.7rem', height: '18px' }}
+                            sx={{ fontSize: '0.65rem', height: '18px' }}
                           />
                         )}
                         {summary.alertBreakdown.rawMaterials.contaminated > 0 && (
                           <Chip 
-                            label={`${summary.alertBreakdown.rawMaterials.contaminated} cont`} 
+                            label={`${summary.alertBreakdown.rawMaterials.contaminated} Contaminated`} 
                             size="small" 
                             color="error" 
-                            sx={{ fontSize: '0.7rem', height: '18px' }}
+                            sx={{ fontSize: '0.65rem', height: '18px' }}
                           />
                         )}
                         {summary.alertBreakdown.rawMaterials.total === 0 && (
                           <Chip 
-                            label="OK" 
+                            label="All Good" 
                             size="small" 
                             color="success" 
-                            sx={{ fontSize: '0.7rem', height: '18px' }}
+                            sx={{ fontSize: '0.65rem', height: '18px' }}
                           />
                         )}
                       </Box>
@@ -373,32 +446,32 @@ const Dashboard: React.FC = () => {
 
                     {/* Intermediate Products */}
                     <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="caption" color="text.secondary">
                         Intermediate
                       </Typography>
-                      <Box display="flex" gap={0.5}>
+                      <Box display="flex" gap={0.5} flexWrap="wrap">
                         {summary.alertBreakdown.intermediateProducts.expiring > 0 && (
                           <Chip 
-                            label={`${summary.alertBreakdown.intermediateProducts.expiring} exp`} 
+                            label={`${summary.alertBreakdown.intermediateProducts.expiring} Expired`} 
                             size="small" 
                             color="error" 
-                            sx={{ fontSize: '0.7rem', height: '18px' }}
+                            sx={{ fontSize: '0.65rem', height: '18px' }}
                           />
                         )}
                         {summary.alertBreakdown.intermediateProducts.contaminated > 0 && (
                           <Chip 
-                            label={`${summary.alertBreakdown.intermediateProducts.contaminated} cont`} 
+                            label={`${summary.alertBreakdown.intermediateProducts.contaminated} Contaminated`} 
                             size="small" 
                             color="error" 
-                            sx={{ fontSize: '0.7rem', height: '18px' }}
+                            sx={{ fontSize: '0.65rem', height: '18px' }}
                           />
                         )}
                         {summary.alertBreakdown.intermediateProducts.total === 0 && (
                           <Chip 
-                            label="OK" 
+                            label="All Good" 
                             size="small" 
                             color="success" 
-                            sx={{ fontSize: '0.7rem', height: '18px' }}
+                            sx={{ fontSize: '0.65rem', height: '18px' }}
                           />
                         )}
                       </Box>
@@ -406,40 +479,40 @@ const Dashboard: React.FC = () => {
 
                     {/* Finished Products */}
                     <Box display="flex" justifyContent="space-between" alignItems="center">
-                      <Typography variant="body2" color="text.secondary">
-                        Finished
+                      <Typography variant="caption" color="text.secondary">
+                        Finished Products
                       </Typography>
-                      <Box display="flex" gap={0.5}>
+                      <Box display="flex" gap={0.5} flexWrap="wrap">
                         {summary.alertBreakdown.finishedProducts.expiring > 0 && (
                           <Chip 
-                            label={`${summary.alertBreakdown.finishedProducts.expiring} exp`} 
+                            label={`${summary.alertBreakdown.finishedProducts.expiring} Expired`} 
                             size="small" 
                             color="error" 
-                            sx={{ fontSize: '0.7rem', height: '18px' }}
+                            sx={{ fontSize: '0.65rem', height: '18px' }}
                           />
                         )}
                         {summary.alertBreakdown.finishedProducts.lowStock > 0 && (
                           <Chip 
-                            label={`${summary.alertBreakdown.finishedProducts.lowStock} low`} 
+                            label={`${summary.alertBreakdown.finishedProducts.lowStock} Low Stock`} 
                             size="small" 
                             color="warning" 
-                            sx={{ fontSize: '0.7rem', height: '18px' }}
+                            sx={{ fontSize: '0.65rem', height: '18px' }}
                           />
                         )}
                         {summary.alertBreakdown.finishedProducts.reserved > 0 && (
                           <Chip 
-                            label={`${summary.alertBreakdown.finishedProducts.reserved} res`} 
+                            label={`${summary.alertBreakdown.finishedProducts.reserved} Reserved`} 
                             size="small" 
                             color="info" 
-                            sx={{ fontSize: '0.7rem', height: '18px' }}
+                            sx={{ fontSize: '0.65rem', height: '18px' }}
                           />
                         )}
                         {summary.alertBreakdown.finishedProducts.total === 0 && (
                           <Chip 
-                            label="OK" 
+                            label="All Good" 
                             size="small" 
                             color="success" 
-                            sx={{ fontSize: '0.7rem', height: '18px' }}
+                            sx={{ fontSize: '0.65rem', height: '18px' }}
                           />
                         )}
                       </Box>
@@ -523,26 +596,27 @@ const Dashboard: React.FC = () => {
                                     {alert.name}
                                   </Typography>
                                   <Chip 
-                                    label={alert.type.replace('_', ' ')} 
+                                    label={formatProductType(alert.type)} 
                                     size="small" 
                                     color="default"
-                                    sx={{ fontSize: '0.7rem', height: '20px' }}
+                                    sx={{ fontSize: '0.65rem', height: '20px' }}
                                   />
                                   <Chip 
-                                    label={alert.alertType.replace('_', ' ')} 
+                                    label={formatAlertType(alert.alertType)} 
                                     size="small" 
                                     color={getAlertColor(alert.severity) as any}
-                                    sx={{ fontSize: '0.7rem', height: '20px' }}
+                                    sx={{ fontSize: '0.65rem', height: '20px' }}
                                   />
                                 </Box>
                               }
                               secondary={
                                 <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
                                   {alert.category}
+                                  {alert.location && <> • {alert.location}</>}
                                   {alert.daysUntilExpiration !== undefined && (
                                     <> • {alert.daysUntilExpiration > 0 
-                                      ? `${alert.daysUntilExpiration}d left`
-                                      : `${Math.abs(alert.daysUntilExpiration)}d expired`
+                                      ? `${alert.daysUntilExpiration} days remaining`
+                                      : `${Math.abs(alert.daysUntilExpiration)} days overdue`
                                     }</>
                                   )}
                                   {alert.quantity && <> • {alert.quantity} {alert.unit}</>}
@@ -561,55 +635,71 @@ const Dashboard: React.FC = () => {
           </Grid>
 
           {/* Activity Summary */}
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Today's Activity
+                  <Box display="flex" alignItems="center" mb={2}>
+                    <ArrowUpIcon color="primary" sx={{ mr: 1 }} />
+                    <Typography variant="h6">Created Today</Typography>
+                  </Box>
+                  <Typography variant="h4" color="primary" gutterBottom>
+                    {summary.recentActivity.itemsCreatedToday}
                   </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={6} md={3}>
-                      <Box textAlign="center">
-                        <Typography variant="h5" color="primary">
-                          {summary.recentActivity.itemsCreatedToday}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Items Created
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={6} md={3}>
-                      <Box textAlign="center">
-                        <Typography variant="h5" color="secondary">
-                          {summary.recentActivity.itemsUpdatedToday}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Items Updated
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={6} md={3}>
-                      <Box textAlign="center">
-                        <Typography variant="h5" color="info.main">
-                          {summary.stockStatus.reserved}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Reserved Items
-                        </Typography>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={6} md={3}>
-                      <Box textAlign="center">
-                        <Typography variant="h5" color="success.main">
-                          {summary.inventoryCounts.total - summary.stockStatus.expiring - summary.stockStatus.contaminated}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Available Items
-                        </Typography>
-                      </Box>
-                    </Grid>
-                  </Grid>
+                  <Typography variant="body2" color="text.secondary">
+                    New items added to inventory
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            
+            <Grid item xs={12} sm={6} md={3}>
+              <Card>
+                <CardContent>
+                  <Box display="flex" alignItems="center" mb={2}>
+                    <EditIcon color="secondary" sx={{ mr: 1 }} />
+                    <Typography variant="h6">Updated Today</Typography>
+                  </Box>
+                  <Typography variant="h4" color="secondary" gutterBottom>
+                    {summary.recentActivity.itemsUpdatedToday}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Items modified or adjusted
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            
+            <Grid item xs={12} sm={6} md={3}>
+              <Card>
+                <CardContent>
+                  <Box display="flex" alignItems="center" mb={2}>
+                    <ScheduleIcon color="info" sx={{ mr: 1 }} />
+                    <Typography variant="h6">Reserved Items</Typography>
+                  </Box>
+                  <Typography variant="h4" color="info.main" gutterBottom>
+                    {summary.stockStatus.reserved}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Items held for orders
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            
+            <Grid item xs={12} sm={6} md={3}>
+              <Card>
+                <CardContent>
+                  <Box display="flex" alignItems="center" mb={2}>
+                    <CheckCircleIcon color="success" sx={{ mr: 1 }} />
+                    <Typography variant="h6">Available Items</Typography>
+                  </Box>
+                  <Typography variant="h4" color="success.main" gutterBottom>
+                    {summary.inventoryCounts.total - summary.stockStatus.expiring - summary.stockStatus.contaminated}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Ready for use or sale
+                  </Typography>
                 </CardContent>
               </Card>
             </Grid>
