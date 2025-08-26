@@ -26,15 +26,18 @@ import {
   Grid,
   Alert,
   Snackbar,
+  Tooltip,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
+  Warning as WarningIcon,
   Search as SearchIcon,
+  Restaurant as RecipeIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { intermediateProductsApi, categoriesApi, storageLocationsApi, unitsApi } from '../services/realApi';
+import { intermediateProductsApi, categoriesApi, storageLocationsApi } from '../services/realApi';
 import { IntermediateProduct, CategoryType, QualityStatus, IntermediateProductStatus } from '../types';
 import { formatDate, formatQuantity, isExpired, isExpiringSoon, getDaysUntilExpiration } from '../utils/api';
 
@@ -54,35 +57,13 @@ const IntermediateProducts: React.FC = () => {
 
   const queryClient = useQueryClient();
 
-  // Helper functions for status chips (matching RawMaterials format)
-  const getContaminationChip = (contaminated: boolean) => {
-    if (contaminated) {
-      return <Chip label="CONTAMINATED" color="error" size="small" />;
-    }
-    return <Chip label="Clean" color="success" size="small" />;
-  };
-
-  const getExpirationChip = (expirationDate: string) => {
-    if (isExpired(expirationDate)) {
-      return <Chip label="EXPIRED" color="error" size="small" />;
-    }
-    if (isExpiringSoon(expirationDate)) {
-      const days = getDaysUntilExpiration(expirationDate);
-      return <Chip label={`Expires in ${days} days`} color="warning" size="small" />;
-    }
-    const days = getDaysUntilExpiration(expirationDate);
-    return <Chip label={`${days} days left`} color="success" size="small" />;
-  };
-
   // Fetch data
   const { data: products } = useQuery(['intermediateProducts'], intermediateProductsApi.getAll);
   const { data: categoriesResponse } = useQuery(['categories'], () => categoriesApi.getAll());
   const { data: storageLocationsResponse } = useQuery(['storageLocations'], storageLocationsApi.getAll);
-  const { data: unitsResponse } = useQuery(['units'], unitsApi.getAll);
   
   const categories = categoriesResponse?.data?.filter(c => c.type === CategoryType.INTERMEDIATE);
   const storageLocations = storageLocationsResponse?.data;
-  const units = unitsResponse?.data;
 
   // Mutations
   const createMutation = useMutation(intermediateProductsApi.create, {
@@ -297,20 +278,22 @@ const IntermediateProducts: React.FC = () => {
                   </TableCell>
                   <TableCell>{formatDate(product.productionDate)}</TableCell>
                   <TableCell>
-                    <Box>
-                      <Typography variant="body2">
-                        {formatDate(product.expirationDate)}
-                      </Typography>
-                      {getExpirationChip(product.expirationDate)}
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      {formatDate(product.expirationDate)}
+                      {isExpired(product.expirationDate) && (
+                        <Tooltip title="Expired">
+                          <WarningIcon color="error" sx={{ ml: 1 }} />
+                        </Tooltip>
+                      )}
+                      {isExpiringSoon(product.expirationDate) && !isExpired(product.expirationDate) && (
+                        <Tooltip title={`Expires in ${getDaysUntilExpiration(product.expirationDate)} days`}>
+                          <WarningIcon color="warning" sx={{ ml: 1 }} />
+                        </Tooltip>
+                      )}
                     </Box>
                   </TableCell>
                   <TableCell>{formatQuantity(product.quantity, product.unit)}</TableCell>
-                  <TableCell>
-                    <Box display="flex" flexDirection="column" gap={0.5}>
-                      {product.storageLocation?.name || 'N/A'}
-                      {getContaminationChip(product.contaminated)}
-                    </Box>
-                  </TableCell>
+                  <TableCell>{product.storageLocation?.name || 'N/A'}</TableCell>
                   <TableCell>
                     <IconButton
                       size="small"
@@ -458,20 +441,13 @@ const IntermediateProducts: React.FC = () => {
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth required>
-                    <InputLabel>Unit</InputLabel>
-                    <Select
-                      name="unit"
-                      defaultValue={editingProduct?.unit || ''}
-                      label="Unit"
-                    >
-                      {units?.map((unit) => (
-                        <MenuItem key={unit.id} value={unit.symbol}>
-                          {unit.name} ({unit.symbol})
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                  <TextField
+                    fullWidth
+                    required
+                    label="Unit"
+                    name="unit"
+                    defaultValue={editingProduct?.unit || ''}
+                  />
                 </Grid>
                 <Grid item xs={12}>
                   <FormControl fullWidth required>

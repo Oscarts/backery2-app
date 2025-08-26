@@ -325,7 +325,7 @@ export const rawMaterialController = {
             lte: targetDate,
             gte: new Date(),
           },
-          contaminated: false,
+          isContaminated: false,
         },
         include: {
           category: true,
@@ -354,7 +354,7 @@ export const rawMaterialController = {
           quantity: {
             lte: threshold,
           },
-          contaminated: false,
+          isContaminated: false,
         },
         include: {
           category: true,
@@ -399,7 +399,7 @@ export const rawMaterialController = {
 
       const rawMaterial = await prisma.rawMaterial.update({
         where: { id },
-        data: { contaminated: true },
+        data: { isContaminated: true },
         include: {
           category: true,
           supplier: true,

@@ -22,7 +22,7 @@ router.get('/', async (req, res, next) => {
 // POST /api/storage-locations
 router.post('/', async (req, res, next) => {
   try {
-    const { name, conditions, capacity } = req.body;
+    const { name, type, description, capacity } = req.body;
 
     if (!name) {
       return res.status(400).json({
@@ -32,7 +32,7 @@ router.post('/', async (req, res, next) => {
     }
 
     const storageLocation = await prisma.storageLocation.create({
-      data: { name, conditions, capacity },
+      data: { name, type, description, capacity },
     });
 
     res.status(201).json({

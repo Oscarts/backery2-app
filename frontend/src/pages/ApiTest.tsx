@@ -52,7 +52,18 @@ const ApiTestPage: React.FC = () => {
     { name: 'Get Expiring Products', status: 'idle' },
     { name: 'Get Low Stock Products', status: 'idle' },
     { name: 'Reserve Product Quantity', status: 'idle' },
-    { name: 'Release Product Reservation', status: 'idle' }
+    { name: 'Release Product Reservation', status: 'idle' },
+    { name: 'Dashboard Summary', status: 'idle' },
+    { name: 'Dashboard Alerts', status: 'idle' },
+    { name: 'Dashboard Trends', status: 'idle' },
+    { name: 'Dashboard Categories', status: 'idle' },
+    { name: 'Dashboard Value Analysis', status: 'idle' },
+    { name: 'Recipes API', status: 'idle' },
+    { name: 'Create Recipe', status: 'idle' },
+    { name: 'Recipe Cost Analysis', status: 'idle' },
+    { name: 'What Can I Make Analysis', status: 'idle' },
+    { name: 'Update Recipe', status: 'idle' },
+    { name: 'Delete Recipe', status: 'idle' }
   ]);
 
   const updateTest = (index: number, updates: Partial<TestResult>) => {
@@ -500,6 +511,258 @@ const ApiTestPage: React.FC = () => {
         message: `Reserve error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
       updateTest(19, { status: 'idle' });
+    }
+
+    // Test 21: Dashboard Summary
+    updateTest(20, { status: 'testing' });
+    try {
+      const summaryResponse = await fetch('/api/dashboard/summary');
+      const summaryResult = await summaryResponse.json();
+      updateTest(20, { 
+        status: 'success', 
+        message: `Dashboard summary loaded - Total items: ${summaryResult.data?.inventoryCounts?.total || 0}`,
+        data: summaryResult.data
+      });
+    } catch (error) {
+      updateTest(20, { 
+        status: 'error', 
+        message: `Summary error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+
+    // Test 22: Dashboard Alerts
+    updateTest(21, { status: 'testing' });
+    try {
+      const alertsResponse = await fetch('/api/dashboard/alerts');
+      const alertsResult = await alertsResponse.json();
+      updateTest(21, { 
+        status: 'success', 
+        message: `Found ${alertsResult.data?.length || 0} alerts`,
+        data: alertsResult.data
+      });
+    } catch (error) {
+      updateTest(21, { 
+        status: 'error', 
+        message: `Alerts error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+
+    // Test 23: Dashboard Trends
+    updateTest(22, { status: 'testing' });
+    try {
+      const trendsResponse = await fetch('/api/dashboard/trends?days=7');
+      const trendsResult = await trendsResponse.json();
+      updateTest(22, { 
+        status: 'success', 
+        message: `Trends loaded for 7 days`,
+        data: trendsResult.data
+      });
+    } catch (error) {
+      updateTest(22, { 
+        status: 'error', 
+        message: `Trends error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+
+    // Test 24: Dashboard Categories
+    updateTest(23, { status: 'testing' });
+    try {
+      const categoriesResponse = await fetch('/api/dashboard/categories');
+      const categoriesResult = await categoriesResponse.json();
+      updateTest(23, { 
+        status: 'success', 
+        message: `Categories breakdown loaded`,
+        data: categoriesResult.data
+      });
+    } catch (error) {
+      updateTest(23, { 
+        status: 'error', 
+        message: `Categories error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+
+    // Test 25: Dashboard Value Analysis
+    updateTest(24, { status: 'testing' });
+    try {
+      const valueResponse = await fetch('/api/dashboard/value');
+      const valueResult = await valueResponse.json();
+      updateTest(24, { 
+        status: 'success', 
+        message: `Value analysis loaded`,
+        data: valueResult.data
+      });
+    } catch (error) {
+      updateTest(24, { 
+        status: 'error', 
+        message: `Value error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+
+    // Test 26: Recipes API
+    updateTest(25, { status: 'testing' });
+    try {
+      const recipesResponse = await fetch('/api/recipes');
+      const recipesResult = await recipesResponse.json();
+      updateTest(25, { 
+        status: 'success', 
+        message: `Found ${recipesResult.data?.length || 0} recipes`,
+        data: recipesResult.data
+      });
+    } catch (error) {
+      updateTest(25, { 
+        status: 'error', 
+        message: `Recipes error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+
+    // Test 27: Create Recipe
+    updateTest(26, { status: 'testing' });
+    try {
+      const testRecipe = {
+        name: `Test Recipe ${Date.now()}`,
+        description: 'Test recipe for API validation',
+        categoryId: 'cmerf3q2o0007me2r1zko68g3', // Using existing dough category
+        yieldQuantity: 1,
+        yieldUnit: 'kg',
+        prepTime: 30,
+        cookTime: 20,
+        instructions: ['Mix ingredients', 'Bake until golden'],
+        ingredients: [
+          {
+            rawMaterialId: 'cmerf3q3m000yme2ryko95sed', // Bread flour
+            quantity: 0.5,
+            unit: 'kg',
+            notes: 'Test ingredient'
+          }
+        ]
+      };
+      
+      const createResponse = await fetch('/api/recipes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(testRecipe)
+      });
+      const createResult = await createResponse.json();
+      
+      if (createResult.success) {
+        updateTest(26, { 
+          status: 'success', 
+          message: `Recipe created: ${createResult.data.name}`,
+          data: createResult.data
+        });
+        
+        // Store recipe ID for subsequent tests
+        (window as any).testRecipeId = createResult.data.id;
+      } else {
+        throw new Error(createResult.error || 'Failed to create recipe');
+      }
+    } catch (error) {
+      updateTest(26, { 
+        status: 'error', 
+        message: `Create recipe error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+
+    // Test 28: Recipe Cost Analysis
+    updateTest(27, { status: 'testing' });
+    try {
+      const recipeId = (window as any).testRecipeId || 'cmesziwvd0002sjmy8jb5ij2r';
+      const costResponse = await fetch(`/api/recipes/${recipeId}/cost`);
+      const costResult = await costResponse.json();
+      updateTest(27, { 
+        status: 'success', 
+        message: `Cost analysis: $${costResult.data?.totalCost?.toFixed(2) || 0}`,
+        data: costResult.data
+      });
+    } catch (error) {
+      updateTest(27, { 
+        status: 'error', 
+        message: `Cost analysis error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+
+    // Test 29: What Can I Make Analysis
+    updateTest(28, { status: 'testing' });
+    try {
+      const whatCanMakeResponse = await fetch('/api/recipes/what-can-i-make');
+      const whatCanMakeResult = await whatCanMakeResponse.json();
+      updateTest(28, { 
+        status: 'success', 
+        message: `Can make ${whatCanMakeResult.data?.canMakeCount || 0} of ${whatCanMakeResult.data?.totalRecipes || 0} recipes`,
+        data: whatCanMakeResult.data
+      });
+    } catch (error) {
+      updateTest(28, { 
+        status: 'error', 
+        message: `What can I make error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+
+    // Test 30: Update Recipe
+    updateTest(29, { status: 'testing' });
+    try {
+      const recipeId = (window as any).testRecipeId;
+      if (!recipeId) {
+        throw new Error('No test recipe ID available');
+      }
+      
+      const updateData = {
+        name: `Updated Test Recipe ${Date.now()}`,
+        description: 'Updated test recipe description',
+        prepTime: 45
+      };
+      
+      const updateResponse = await fetch(`/api/recipes/${recipeId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData)
+      });
+      const updateResult = await updateResponse.json();
+      
+      if (updateResult.success) {
+        updateTest(29, { 
+          status: 'success', 
+          message: `Recipe updated: ${updateResult.data.name}`,
+          data: updateResult.data
+        });
+      } else {
+        throw new Error(updateResult.error || 'Failed to update recipe');
+      }
+    } catch (error) {
+      updateTest(29, { 
+        status: 'error', 
+        message: `Update recipe error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+
+    // Test 31: Delete Recipe
+    updateTest(30, { status: 'testing' });
+    try {
+      const recipeId = (window as any).testRecipeId;
+      if (!recipeId) {
+        throw new Error('No test recipe ID available');
+      }
+      
+      const deleteResponse = await fetch(`/api/recipes/${recipeId}`, {
+        method: 'DELETE'
+      });
+      const deleteResult = await deleteResponse.json();
+      
+      if (deleteResult.success) {
+        updateTest(30, { 
+          status: 'success', 
+          message: `Recipe deleted successfully`,
+          data: deleteResult
+        });
+        delete (window as any).testRecipeId;
+      } else {
+        throw new Error(deleteResult.error || 'Failed to delete recipe');
+      }
+    } catch (error) {
+      updateTest(30, { 
+        status: 'error', 
+        message: `Delete recipe error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
     }
   };
 

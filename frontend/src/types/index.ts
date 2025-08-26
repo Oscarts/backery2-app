@@ -87,7 +87,21 @@ export interface IntermediateProduct {
   // Relations (optional for populated data)
   category?: Category;
   storageLocation?: StorageLocation;
-  recipe?: Recipe;
+  recipe?: {
+    id: string;
+    name: string;
+    description?: string;
+    categoryId: string;
+    yieldQuantity: number;
+    yieldUnit: string;
+    prepTime?: number;
+    cookTime?: number;
+    instructions?: string[];
+    version: number;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+  };
 }
 
 export enum IntermediateProductStatus {
@@ -207,42 +221,6 @@ export interface UpdateFinishedProductData {
   storageLocationId?: string;
 }
 
-// Recipe types
-export interface Recipe {
-  id: string;
-  name: string;
-  description?: string;
-  categoryId: string;
-  yieldQuantity: number;
-  yieldUnit: string;
-  prepTime: number;
-  instructions: any;
-  createdById: string;
-  createdAt: string;
-  updatedAt: string;
-
-  // Relations
-  category?: Category;
-  createdBy?: User;
-  ingredients?: RecipeIngredient[];
-}
-
-export interface RecipeIngredient {
-  id: string;
-  recipeId: string;
-  ingredientType: IngredientType;
-  ingredientId: string;
-  quantity: number;
-  unit: string;
-  optional: boolean;
-}
-
-export enum IngredientType {
-  RAW_MATERIAL = 'RAW_MATERIAL',
-  INTERMEDIATE_PRODUCT = 'INTERMEDIATE_PRODUCT',
-  FINISHED_PRODUCT = 'FINISHED_PRODUCT'
-}
-
 // API Response types
 export interface ApiResponse<T> {
   success: boolean;
@@ -289,4 +267,104 @@ export interface RecentActivity {
   timestamp: string;
   userId?: string;
   userName?: string;
+}
+
+// Recipe types
+export interface Recipe {
+  id: string;
+  name: string;
+  description?: string;
+  categoryId: string;
+  category?: Category;
+  yieldQuantity: number;
+  yieldUnit: string;
+  prepTime?: number;
+  cookTime?: number;
+  instructions?: string[] | string | any; // JSON field can be array, string, or other format
+  version: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  ingredients?: RecipeIngredient[];
+  intermediateProducts?: IntermediateProduct[];
+}
+
+export interface RecipeIngredient {
+  id: string;
+  recipeId: string;
+  rawMaterialId?: string;
+  intermediateProductId?: string;
+  quantity: number;
+  unit: string;
+  notes?: string;
+  createdAt: string;
+  rawMaterial?: RawMaterial;
+  intermediateProduct?: IntermediateProduct;
+}
+
+export interface RecipeCostAnalysis {
+  recipeId: string;
+  recipeName: string;
+  yieldQuantity: number;
+  yieldUnit: string;
+  totalCost: number;
+  costPerUnit: number;
+  ingredientCosts: IngredientCost[];
+  canMakeRecipe: boolean;
+}
+
+export interface IngredientCost {
+  ingredientId: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  unitCost: number;
+  totalCost: number;
+  availableQuantity: number;
+  canMake: boolean;
+}
+
+export interface WhatCanIMakeAnalysis {
+  totalRecipes: number;
+  canMakeCount: number;
+  recipes: RecipeAnalysis[];
+}
+
+export interface RecipeAnalysis {
+  recipeId: string;
+  recipeName: string;
+  category: string;
+  yieldQuantity: number;
+  yieldUnit: string;
+  canMake: boolean;
+  maxBatches: number;
+  missingIngredients: MissingIngredient[];
+}
+
+export interface MissingIngredient {
+  name: string;
+  needed: number;
+  available: number;
+  shortage: number;
+}
+
+export interface CreateRecipeData {
+  name: string;
+  description?: string;
+  categoryId: string;
+  yieldQuantity: number;
+  yieldUnit: string;
+  prepTime?: number;
+  cookTime?: number;
+  instructions?: string[];
+  ingredients?: CreateRecipeIngredientData[];
+  isActive?: boolean;
+}
+
+export interface CreateRecipeIngredientData {
+  rawMaterialId?: string;
+  intermediateProductId?: string;
+  quantity: number;
+  unit: string;
+  notes?: string;
 }

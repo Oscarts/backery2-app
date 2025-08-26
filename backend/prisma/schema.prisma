@@ -75,7 +75,7 @@ model Unit {
 }
 
 model RawMaterial {
-  id                String          @id @default(cuid())
+  id                String             @id @default(cuid())
   name              String
   description       String?
   categoryId        String
@@ -88,12 +88,13 @@ model RawMaterial {
   unitPrice         Float
   reorderLevel      Float
   storageLocationId String
-  isContaminated    Boolean         @default(false)
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-  category          Category        @relation(fields: [categoryId], references: [id])
-  storageLocation   StorageLocation @relation(fields: [storageLocationId], references: [id])
-  supplier          Supplier        @relation(fields: [supplierId], references: [id])
+  isContaminated    Boolean            @default(false)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  category          Category           @relation(fields: [categoryId], references: [id])
+  storageLocation   StorageLocation    @relation(fields: [storageLocationId], references: [id])
+  supplier          Supplier           @relation(fields: [supplierId], references: [id])
+  recipeIngredients RecipeIngredient[]
 
   @@map("raw_materials")
 }
@@ -118,6 +119,7 @@ model IntermediateProduct {
   category          Category                  @relation(fields: [categoryId], references: [id])
   recipe            Recipe?                   @relation(fields: [recipeId], references: [id])
   storageLocation   StorageLocation           @relation(fields: [storageLocationId], references: [id])
+  recipeIngredients RecipeIngredient[]
 
   @@map("intermediate_products")
 }
@@ -155,13 +157,33 @@ model Recipe {
   yieldQuantity        Float
   yieldUnit            String
   prepTime             Int?
+  cookTime             Int?
   instructions         Json?
+  version              Int                   @default(1)
+  isActive             Boolean               @default(true)
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
   intermediateProducts IntermediateProduct[]
   category             Category              @relation(fields: [categoryId], references: [id])
+  ingredients          RecipeIngredient[]
 
   @@map("recipes")
+}
+
+model RecipeIngredient {
+  id                    String               @id @default(cuid())
+  recipeId              String
+  rawMaterialId         String?
+  intermediateProductId String?
+  quantity              Float
+  unit                  String
+  notes                 String?
+  createdAt             DateTime             @default(now())
+  recipe                Recipe               @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  rawMaterial           RawMaterial?         @relation(fields: [rawMaterialId], references: [id])
+  intermediateProduct   IntermediateProduct? @relation(fields: [intermediateProductId], references: [id])
+
+  @@map("recipe_ingredients")
 }
 
 enum UserRole {
