@@ -20,6 +20,7 @@ import categoryRoutes from './routes/categories';
 import supplierRoutes from './routes/suppliers';
 import storageLocationRoutes from './routes/storageLocations';
 import unitRoutes from './routes/units';
+import qualityStatusRoutes from './routes/qualityStatuses';
 
 // Import middleware
 import { errorHandler } from './middleware/errorHandler';
@@ -78,34 +79,39 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/storage-locations', storageLocationRoutes);
 app.use('/api/units', unitRoutes);
+app.use('/api/quality-statuses', qualityStatusRoutes);
 
 // Error handling middleware
 app.use(notFound);
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
-
-// Graceful shutdown
-const gracefulShutdown = async () => {
-  console.log('\nReceived shutdown signal. Starting graceful shutdown...');
-
-  try {
-    await prisma.$disconnect();
-    console.log('Database connection closed.');
-    process.exit(0);
-  } catch (error) {
-    console.error('Error during shutdown:', error);
-    process.exit(1);
-  }
-};
-
-process.on('SIGTERM', gracefulShutdown);
-process.on('SIGINT', gracefulShutdown);
+const PORT = process.env.PORT || 8000;
 
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
 });
+
+// Graceful shutdown
+const gracefulShutdown = async (signal: string) => {
+  console.log(`\nReceived ${signal}. Starting graceful shutdown...`);
+
+  server.close(async () => {
+    console.log('HTTP server closed.');
+    
+    try {
+      await prisma.$disconnect();
+      console.log('Database connection closed.');
+      process.exit(0);
+    } catch (error) {
+      console.error('Error during shutdown:', error);
+      process.exit(1);
+    }
+  });
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 export default app;

@@ -61,6 +61,22 @@ model StorageLocation {
   @@map("storage_locations")
 }
 
+model QualityStatus {
+  id                   String                @id @default(cuid())
+  name                 String                @unique
+  description          String?
+  color                String?               // For UI display
+  isActive             Boolean               @default(true)
+  sortOrder            Int                   @default(0)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  rawMaterials         RawMaterial[]
+  intermediateProducts IntermediateProduct[]
+  finishedProducts     FinishedProduct[]
+
+  @@map("quality_statuses")
+}
+
 model Unit {
   id          String   @id @default(cuid())
   name        String   @unique
@@ -88,12 +104,14 @@ model RawMaterial {
   unitPrice         Float
   reorderLevel      Float
   storageLocationId String
+  qualityStatusId   String?
   isContaminated    Boolean            @default(false)
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   category          Category           @relation(fields: [categoryId], references: [id])
   storageLocation   StorageLocation    @relation(fields: [storageLocationId], references: [id])
   supplier          Supplier           @relation(fields: [supplierId], references: [id])
+  qualityStatus     QualityStatus?     @relation(fields: [qualityStatusId], references: [id])
   recipeIngredients RecipeIngredient[]
 
   @@map("raw_materials")
@@ -112,13 +130,14 @@ model IntermediateProduct {
   storageLocationId String
   status            IntermediateProductStatus @default(IN_PRODUCTION)
   contaminated      Boolean                   @default(false)
-  qualityStatus     QualityStatus             @default(PENDING)
+  qualityStatusId   String?
   recipeId          String?
   createdAt         DateTime                  @default(now())
   updatedAt         DateTime                  @updatedAt
   category          Category                  @relation(fields: [categoryId], references: [id])
   recipe            Recipe?                   @relation(fields: [recipeId], references: [id])
   storageLocation   StorageLocation           @relation(fields: [storageLocationId], references: [id])
+  qualityStatus     QualityStatus?            @relation(fields: [qualityStatusId], references: [id])
   recipeIngredients RecipeIngredient[]
 
   @@map("intermediate_products")
@@ -141,10 +160,12 @@ model FinishedProduct {
   costToProduce     Float?
   packagingInfo     String?
   storageLocationId String?
+  qualityStatusId   String?
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
   category          Category         @relation(fields: [categoryId], references: [id])
   storageLocation   StorageLocation? @relation(fields: [storageLocationId], references: [id])
+  qualityStatus     QualityStatus?   @relation(fields: [qualityStatusId], references: [id])
 
   @@map("finished_products")
 }
@@ -198,13 +219,6 @@ enum CategoryType {
   INTERMEDIATE
   FINISHED_PRODUCT
   RECIPE
-}
-
-enum QualityStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  UNDER_REVIEW
 }
 
 enum IntermediateProductStatus {

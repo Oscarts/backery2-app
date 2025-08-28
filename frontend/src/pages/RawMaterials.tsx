@@ -38,7 +38,7 @@ import {
   Search as SearchIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { rawMaterialsApi, categoriesApi, storageLocationsApi, unitsApi, suppliersApi } from '../services/realApi';
+import { rawMaterialsApi, categoriesApi, storageLocationsApi, unitsApi, suppliersApi, qualityStatusApi } from '../services/realApi';
 import { RawMaterial, CategoryType, CreateRawMaterialData, UpdateRawMaterialData } from '../types';
 import { formatDate, formatQuantity, isExpired, isExpiringSoon, getDaysUntilExpiration } from '../utils/api';
 
@@ -64,11 +64,18 @@ const RawMaterials: React.FC = () => {
   const { data: storageLocationsResponse } = useQuery(['storageLocations'], storageLocationsApi.getAll);
   const { data: unitsResponse } = useQuery(['units'], unitsApi.getAll);
   const { data: suppliersResponse } = useQuery(['suppliers'], suppliersApi.getAll);
+  const { data: qualityStatusResponse } = useQuery(['qualityStatuses'], qualityStatusApi.getAll);
   
   const categories = categoriesResponse?.data?.filter(c => c.type === CategoryType.RAW_MATERIAL);
   const storageLocations = storageLocationsResponse?.data;
   const units = unitsResponse?.data;
   const suppliers = suppliersResponse?.data;
+  const qualityStatuses = (qualityStatusResponse?.data as any[]) || [];
+
+  // Get the default quality status (first item by sort order)
+  const getDefaultQualityStatusId = () => {
+    return qualityStatuses.length > 0 ? qualityStatuses[0].id : '';
+  };
 
   // Mutations
   const createMutation = useMutation(rawMaterialsApi.create, {
@@ -263,6 +270,7 @@ const RawMaterials: React.FC = () => {
                 <TableCell>Stock Level</TableCell>
                 <TableCell>Expiration</TableCell>
                 <TableCell>Status</TableCell>
+                <TableCell>Quality</TableCell>
                 <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -313,6 +321,20 @@ const RawMaterials: React.FC = () => {
                       {getContaminationChip(material.isContaminated)}
                     </TableCell>
                     <TableCell>
+                      {material.qualityStatus ? (
+                        <Chip
+                          label={material.qualityStatus.name}
+                          size="small"
+                          sx={{
+                            backgroundColor: material.qualityStatus.color || '#gray',
+                            color: 'white',
+                          }}
+                        />
+                      ) : (
+                        <Chip label="No status" variant="outlined" size="small" />
+                      )}
+                    </TableCell>
+                    <TableCell>
                       <Tooltip title="Edit">
                         <IconButton
                           size="small"
@@ -356,6 +378,8 @@ const RawMaterials: React.FC = () => {
         storageLocations={storageLocations || []}
         units={units || []}
         suppliers={suppliers || []}
+        qualityStatuses={qualityStatuses || []}
+        defaultQualityStatusId={getDefaultQualityStatusId()}
         onSubmit={(data) => {
           if (editingMaterial) {
             // For updates, include contaminated field if it exists
@@ -403,6 +427,8 @@ interface RawMaterialFormProps {
   storageLocations: any[];
   units: any[];
   suppliers: any[];
+  qualityStatuses: any[];
+  defaultQualityStatusId: string;
   onSubmit: (data: RawMaterialFormData) => void;
 }
 
@@ -414,6 +440,8 @@ const RawMaterialForm: React.FC<RawMaterialFormProps> = ({
   storageLocations,
   units,
   suppliers,
+  qualityStatuses,
+  defaultQualityStatusId,
   onSubmit,
 }) => {
   const [formData, setFormData] = useState<RawMaterialFormData>({
@@ -428,6 +456,7 @@ const RawMaterialForm: React.FC<RawMaterialFormProps> = ({
     costPerUnit: 0,
     reorderLevel: 0,
     storageLocationId: '',
+    qualityStatusId: '',
     contaminated: false,
   });
 
@@ -445,6 +474,7 @@ const RawMaterialForm: React.FC<RawMaterialFormProps> = ({
         costPerUnit: material.unitPrice,
         reorderLevel: material.reorderLevel,
         storageLocationId: material.storageLocationId,
+        qualityStatusId: material.qualityStatusId || '',
         contaminated: material.isContaminated,
       });
     } else {
@@ -460,10 +490,21 @@ const RawMaterialForm: React.FC<RawMaterialFormProps> = ({
         costPerUnit: 0,
         reorderLevel: 0,
         storageLocationId: '',
+        qualityStatusId: '',
         contaminated: false,
       });
     }
   }, [material, open]);
+
+  // Set default quality status when quality statuses are loaded and no material is being edited
+  React.useEffect(() => {
+    if (qualityStatuses.length > 0 && !material && formData.qualityStatusId === '') {
+      setFormData(prev => ({
+        ...prev,
+        qualityStatusId: defaultQualityStatusId
+      }));
+    }
+  }, [qualityStatuses, material, formData.qualityStatusId, defaultQualityStatusId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -549,6 +590,36 @@ const RawMaterialForm: React.FC<RawMaterialFormProps> = ({
                   {storageLocations.map((location) => (
                     <MenuItem key={location.id} value={location.id}>
                       {location.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Quality Status</InputLabel>
+                <Select
+                  value={formData.qualityStatusId || ''}
+                  label="Quality Status"
+                  onChange={handleChange('qualityStatusId')}
+                >
+                  <MenuItem value="">
+                    <em>None</em>
+                  </MenuItem>
+                  {qualityStatuses.map((status: any) => (
+                    <MenuItem key={status.id} value={status.id}>
+                      <Box display="flex" alignItems="center" gap={1}>
+                        <Box
+                          sx={{
+                            width: 12,
+                            height: 12,
+                            borderRadius: 1,
+                            backgroundColor: status.color || '#gray',
+                            border: '1px solid #ddd',
+                          }}
+                        />
+                        {status.name}
+                      </Box>
                     </MenuItem>
                   ))}
                 </Select>

@@ -80,7 +80,8 @@ export interface IntermediateProduct {
   unit: string;
   status: IntermediateProductStatus;
   contaminated: boolean;
-  qualityStatus: QualityStatus;
+  qualityStatus?: QualityStatus;
+  qualityStatusId?: string;
   createdAt: string;
   updatedAt: string;
 
@@ -126,6 +127,7 @@ export interface RawMaterial {
   unitPrice: number;
   reorderLevel: number;
   storageLocationId: string;
+  qualityStatusId?: string;
   isContaminated: boolean;
   createdAt: string;
   updatedAt: string;
@@ -134,6 +136,7 @@ export interface RawMaterial {
   category?: Category;
   supplier?: Supplier;
   storageLocation?: StorageLocation;
+  qualityStatus?: QualityStatus;
 }
 
 export interface CreateRawMaterialData {
@@ -148,13 +151,27 @@ export interface CreateRawMaterialData {
   costPerUnit: number; // Frontend uses costPerUnit, backend maps to unitPrice
   reorderLevel: number;
   storageLocationId: string;
+  qualityStatusId?: string;
 }
 
 export interface UpdateRawMaterialData extends Partial<CreateRawMaterialData> {
   contaminated?: boolean; // Frontend uses contaminated, backend maps to isContaminated
 }
 
-export enum QualityStatus {
+// Quality Status types
+export interface QualityStatus {
+  id: string;
+  name: string;
+  description?: string;
+  color?: string;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Legacy enum for backward compatibility (to be removed)
+export enum QualityStatusLegacy {
   PENDING = 'PENDING',
   APPROVED = 'APPROVED',
   REJECTED = 'REJECTED',
@@ -178,12 +195,14 @@ export interface FinishedProduct {
   costToProduce?: number;
   packagingInfo?: string;
   storageLocationId?: string;
+  qualityStatusId?: string;
   createdAt: string;
   updatedAt: string;
 
   // Relations
   category?: Category;
   storageLocation?: StorageLocation;
+  qualityStatus?: QualityStatus;
 }
 
 export interface CreateFinishedProductData {
@@ -201,6 +220,7 @@ export interface CreateFinishedProductData {
   costToProduce?: number;
   packagingInfo?: string;
   storageLocationId?: string;
+  qualityStatusId?: string;
 }
 
 export interface UpdateFinishedProductData {

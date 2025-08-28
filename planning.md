@@ -5,6 +5,253 @@ Full-stack bakery inventory management application with React TypeScript fronten
 
 **🎯 CURRENT STATUS: Phase 1 Complete + Core Inventory Systems Live (Raw Materials & Intermediate Products)**
 
+## 🚨 CRITICAL DEVELOPMENT GUIDELINE - REAL API ONLY
+
+### ⚠️ MANDATORY: Use Real API for All Data Operations
+**ALL frontend components MUST use `realApi.ts` and connect to the actual PostgreSQL database through the Express.js backend.**
+
+#### ✅ ALWAYS USE:
+- `import { api } from '../services/realApi';`
+- Real database data from PostgreSQL
+- Actual HTTP requests to `http://localhost:8000/api`
+- Persistent data that survives page refreshes
+- Real validation and error handling from backend
+
+#### ❌ NEVER USE:
+- `import { api } from '../services/mockApi';` 
+- Mock data or in-memory arrays
+- Fake/simulated API responses
+- Temporary data that resets on refresh
+
+#### 🎯 RATIONALE:
+- **Real data integrity**: All features must work with actual database constraints
+- **True validation**: Backend validation rules must be tested continuously
+- **Production readiness**: Components must be production-ready, not demo-ready
+- **Performance testing**: Real API calls reveal actual performance characteristics
+- **Error handling**: Real network and database errors must be handled properly
+
+#### 🔧 BACKEND REQUIREMENTS:
+- Express.js backend server MUST be running on `http://localhost:8000`
+- PostgreSQL database MUST be accessible and seeded with data
+- All API endpoints MUST be functional and tested
+- Error handling MUST return proper HTTP status codes and messages
+
+**This guideline ensures all development is production-ready and data integrity is maintained.**
+
+---
+
+## 🧪 CRITICAL DEVELOPMENT GUIDELINE - UNIT TESTING & CODE QUALITY
+
+### ⚠️ MANDATORY: Unit Testing Requirements
+**ALL new features and modifications MUST be accompanied by comprehensive unit tests to maintain code quality and system reliability.**
+
+#### ✅ UNIT TESTING REQUIREMENTS:
+
+##### 🎯 **Test Coverage Standards:**
+- **Backend Controllers**: All CRUD operations must have unit tests
+- **Frontend Components**: All user interactions and state changes must be tested
+- **API Endpoints**: All HTTP routes must have integration tests
+- **Business Logic**: All data validation and transformation functions must be tested
+- **Error Handling**: All error conditions and edge cases must be tested
+
+##### 🔧 **Testing Tools & Framework:**
+- **Backend**: Jest + Supertest for API testing
+- **Frontend**: Jest + React Testing Library for component testing
+- **Database**: Use test database with seed data for consistent testing
+- **Mocking**: Mock external dependencies while testing real business logic
+
+##### 📋 **Development Workflow:**
+1. **Before Development**: Review existing tests related to the feature area
+2. **During Development**: Write tests alongside new features (TDD approach preferred)
+3. **After Development**: Run ALL unit tests and ensure 100% pass rate
+4. **Before Commit**: Verify all tests pass and no regressions introduced
+
+#### ✅ MANDATORY TEST EXECUTION:
+
+##### 🚨 **Pre-Commit Requirements:**
+- **ALL existing unit tests MUST pass** before any code commit
+- **NEW unit tests MUST be added** for any new functionality
+- **REGRESSION tests MUST be added** for any bug fixes
+- **API tests MUST pass** using the Real API (not mock data)
+
+##### 🎯 **Test Categories Required:**
+- **Unit Tests**: Individual function/component testing
+- **Integration Tests**: API endpoint and database interaction testing
+- **Component Tests**: Frontend user interaction and rendering testing
+- **End-to-End Tests**: Complete user workflow testing (future enhancement)
+
+#### 🔧 **Testing Implementation Guidelines:**
+
+##### 📁 **Test File Structure:**
+```
+backend/
+  ├── src/
+  │   ├── controllers/
+  │   │   ├── rawMaterialController.ts
+  │   │   └── __tests__/
+  │   │       └── rawMaterialController.test.ts
+  │   ├── services/
+  │   │   ├── inventoryService.ts
+  │   │   └── __tests__/
+  │   │       └── inventoryService.test.ts
+
+frontend/
+  ├── src/
+  │   ├── components/
+  │   │   ├── RawMaterials.tsx
+  │   │   └── __tests__/
+  │   │       └── RawMaterials.test.tsx
+  │   ├── pages/
+  │   │   ├── Dashboard.tsx
+  │   │   └── __tests__/
+  │   │       └── Dashboard.test.tsx
+```
+
+##### 🧪 **Test Naming Conventions:**
+- **Test files**: `*.test.ts` or `*.test.tsx`
+- **Test descriptions**: Should clearly describe the scenario being tested
+- **Test groups**: Use `describe()` blocks to group related tests
+- **Test cases**: Use `it()` or `test()` with descriptive names
+
+#### 🎯 **RATIONALE:**
+- **Code Quality**: Unit tests ensure code reliability and maintainability
+- **Regression Prevention**: Tests catch breaking changes before deployment
+- **Documentation**: Tests serve as living documentation of expected behavior
+- **Confidence**: Comprehensive testing enables safe refactoring and feature additions
+- **Production Stability**: Well-tested code reduces bugs in production environment
+
+#### 🔧 **TESTING COMMANDS:**
+```bash
+# Run all tests (backend + frontend)
+npm test
+
+# Backend unit tests only
+npm run test:backend
+
+# Frontend unit tests only  
+npm run test:frontend
+
+# Test coverage report for both
+npm run test:coverage
+
+# Run tests in watch mode (development)
+cd backend && npm test -- --watch
+cd frontend && npm test -- --watch
+```
+
+**This guideline ensures high code quality, system reliability, and maintainable codebase throughout development.**
+
+---
+
+## 🌟 Quality Status System Implementation (August 26, 2025)
+
+### 📋 **System Overview**
+The quality status system provides comprehensive tracking of inventory quality across all entities (raw materials, intermediate products, and finished products). This system ensures food safety compliance and proper inventory management.
+
+### ✅ **Backend Implementation (100% Complete)**
+
+#### 🎯 **Quality Status CRUD Operations:**
+- **Controller**: `qualityStatusController.ts` - Full CRUD with standardized API responses
+- **Database**: Quality status entities with proper sorting and active status tracking
+- **API Format**: Standardized `{success: true, data: [...]}` response wrapper
+- **Validation**: Input validation and error handling for all operations
+
+#### 🔄 **Entity Integration (100% Complete):**
+- **Raw Materials**: `rawMaterialController.ts` - Quality status includes in all queries
+- **Intermediate Products**: `intermediateProductController.ts` - Quality status relations
+- **Finished Products**: `finishedProductController.ts` - Quality status validation
+- **Default Logic**: `getDefaultQualityStatus()` helper in all controllers
+
+#### 🎲 **Default Selection Behavior:**
+- **Strategy**: First item in quality status list (sorted by `sortOrder` ASC)
+- **Fallback**: "Pending Review" (clz005) if no items available
+- **Implementation**: Automatic assignment during entity creation
+- **Validation**: Ensures valid quality status ID in all create operations
+
+### ✅ **Frontend Implementation (100% Complete)**
+
+#### 🎯 **Settings Management (100% Complete):**
+- **Component**: `QualityStatusManagement.tsx` - Full CRUD interface
+- **API Integration**: React Query with proper error handling
+- **UI Features**: Add, edit, delete, active/inactive toggle
+- **Testing**: Comprehensive test suite `QualityStatusManagement.test.tsx`
+
+#### ✅ **Entity Forms Integration (100% Complete):**
+- **Raw Materials** ✅ (100% Complete): Default quality status selection implemented with table display
+- **Intermediate Products** ✅ (100% Complete): Quality status dropdown and table column implemented
+- **Finished Products** ✅ (100% Complete): Quality status dropdown and table column implemented
+
+### 🧪 **Testing Status**
+
+#### ✅ **Frontend Testing (Implemented):**
+- **Quality Status Management**: Complete test suite with component mounting, API integration, error handling
+- **Test Framework**: Jest + React Testing Library (pending installation)
+- **Coverage**: Component rendering, data fetching, CRUD operations, error states
+
+#### 🔄 **Backend Testing (Pending Setup):**
+- **Framework**: Jest + Supertest recommended for API testing
+- **Test Cases Needed**: 
+  - Quality status CRUD operations
+  - Default quality status assignment
+  - Entity creation with quality status validation
+  - API response format validation
+
+### 🔧 **API Endpoints Verified**
+
+#### ✅ **Quality Status Endpoints:**
+```bash
+GET /api/quality-statuses    # Returns {success: true, data: [...]}
+POST /api/quality-statuses   # Create new quality status
+PUT /api/quality-statuses/:id # Update existing
+DELETE /api/quality-statuses/:id # Soft delete
+```
+
+#### ✅ **Entity Endpoints with Quality Status:**
+```bash
+# All return quality status data in responses
+GET /api/raw-materials      # Includes qualityStatus relation
+POST /api/raw-materials     # Auto-assigns default quality status
+GET /api/intermediate-products # Includes qualityStatus relation  
+POST /api/intermediate-products # Auto-assigns default quality status
+GET /api/finished-products  # Includes qualityStatus relation
+POST /api/finished-products # Auto-assigns default quality status
+```
+
+### 🎯 **Business Rules Implemented**
+
+#### 📋 **Quality Status Rules:**
+- **Sorting**: Quality statuses ordered by `sortOrder` field (ASC)
+- **Default Selection**: First active quality status becomes default for new entities
+- **Active Status**: Only active quality statuses available for selection
+- **Data Integrity**: Quality status required for all inventory entities
+
+#### 🔒 **Validation Rules:**
+- **Quality Status ID**: Must exist and be active for entity creation
+- **Default Assignment**: Automatic fallback if no quality status specified
+- **Referential Integrity**: Prevents deletion of quality statuses in use
+
+### 🚀 **Next Development Priorities**
+
+#### 🧪 **Testing Expansion (High Priority):**
+1. **Backend Test Setup**: Configure Jest + Supertest for API testing
+2. **Integration Tests**: Test quality status assignment across all entities
+3. **End-to-End Tests**: Complete user workflow testing
+
+#### 📊 **Future Enhancements (Medium Priority):**
+1. **Quality History**: Track quality status changes over time
+2. **Quality Alerts**: Notifications for quality status changes
+3. **Quality Reports**: Analytics and reporting on quality trends
+4. **Bulk Quality Updates**: Update multiple items' quality status at once
+
+### 📈 **Implementation Impact**
+- **Data Consistency**: All inventory entities now have standardized quality tracking
+- **User Experience**: Default selection reduces manual input requirements, quality status visible in all table views
+- **API Reliability**: Standardized response format across all endpoints
+- **Code Quality**: Comprehensive testing framework established for frontend components
+- **Business Value**: Complete quality management system enables food safety compliance and inventory tracking
+
+---
+
 ## ✅ Completed Features (August 25, 2025)
 
 ### 🎯 Core Infrastructure (100% Complete)

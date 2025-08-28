@@ -38,7 +38,7 @@ import {
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { intermediateProductsApi, categoriesApi, storageLocationsApi } from '../services/realApi';
-import { IntermediateProduct, CategoryType, QualityStatus, IntermediateProductStatus } from '../types';
+import { IntermediateProduct, CategoryType, IntermediateProductStatus } from '../types';
 import { formatDate, formatQuantity, isExpired, isExpiringSoon, getDaysUntilExpiration } from '../utils/api';
 
 const IntermediateProducts: React.FC = () => {
@@ -200,7 +200,7 @@ const IntermediateProducts: React.FC = () => {
         quantity: parseFloat(formValues.quantity as string),
         unit: formValues.unit as string,
         contaminated: false,
-        qualityStatus: QualityStatus.PENDING,
+        qualityStatusId: undefined, // Use qualityStatusId instead of qualityStatus enum
         status: formValues.status as IntermediateProductStatus,
       };
 

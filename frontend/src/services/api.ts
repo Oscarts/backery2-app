@@ -5,6 +5,7 @@ import {
   Category,
   Supplier,
   StorageLocation,
+  QualityStatus,
   ApiResponse,
   PaginatedResponse
 } from '../types';
@@ -139,5 +140,28 @@ export const storageLocationsApi = {
 
   delete: async (id: string): Promise<ApiResponse<void>> => {
     return apiDelete<ApiResponse<void>>(`/storage-locations/${id}`);
+  }
+};
+
+// Quality Status API
+export const qualityStatusApi = {
+  getAll: async (): Promise<ApiResponse<QualityStatus[]>> => {
+    return apiGet<ApiResponse<QualityStatus[]>>('/quality-statuses');
+  },
+
+  getById: async (id: string): Promise<ApiResponse<QualityStatus>> => {
+    return apiGet<ApiResponse<QualityStatus>>(`/quality-statuses/${id}`);
+  },
+
+  create: async (data: Omit<QualityStatus, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<QualityStatus>> => {
+    return apiPost<ApiResponse<QualityStatus>>('/quality-statuses', data);
+  },
+
+  update: async (id: string, data: Partial<Omit<QualityStatus, 'id' | 'createdAt' | 'updatedAt'>>): Promise<ApiResponse<QualityStatus>> => {
+    return apiPut<ApiResponse<QualityStatus>>(`/quality-statuses/${id}`, data);
+  },
+
+  delete: async (id: string): Promise<ApiResponse<void>> => {
+    return apiDelete<ApiResponse<void>>(`/quality-statuses/${id}`);
   }
 };

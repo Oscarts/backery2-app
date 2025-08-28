@@ -2,6 +2,15 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../index';
 import Joi from 'joi';
 
+// Helper function to get the default quality status (first item by sortOrder)
+const getDefaultQualityStatus = async () => {
+  const defaultStatus = await prisma.qualityStatus.findFirst({
+    where: { isActive: true },
+    orderBy: { sortOrder: 'asc' },
+  });
+  return defaultStatus?.id || null;
+};
+
 // Validation schemas
 const createFinishedProductSchema = Joi.object({
   name: Joi.string().required().min(1).max(255),
@@ -18,12 +27,13 @@ const createFinishedProductSchema = Joi.object({
   costToProduce: Joi.number().optional().positive(),
   packagingInfo: Joi.string().optional().max(500),
   storageLocationId: Joi.string().optional(),
+  qualityStatusId: Joi.string().optional().allow('').allow(null),
 });
 
 const updateFinishedProductSchema = createFinishedProductSchema.fork([
   'name', 'description', 'sku', 'categoryId', 'batchNumber', 'productionDate',
   'expirationDate', 'shelfLife', 'quantity', 'unit', 'salePrice', 'costToProduce',
-  'packagingInfo', 'storageLocationId'
+  'packagingInfo', 'storageLocationId', 'qualityStatusId'
 ], (schema) => schema.optional()).keys({
   reservedQuantity: Joi.number().optional().min(0),
 });
@@ -81,6 +91,7 @@ export const finishedProductController = {
           include: {
             category: true,
             storageLocation: true,
+            qualityStatus: true,
           },
           orderBy: { createdAt: 'desc' },
           skip,
@@ -114,6 +125,7 @@ export const finishedProductController = {
         include: {
           category: true,
           storageLocation: true,
+          qualityStatus: true,
         },
       });
 
@@ -184,11 +196,14 @@ export const finishedProductController = {
       }
 
       // Prepare create data
+      const defaultQualityStatusId = value.qualityStatusId || await getDefaultQualityStatus();
+      
       const createData = {
         ...value,
         productionDate: new Date(value.productionDate),
         expirationDate: new Date(value.expirationDate),
         reservedQuantity: 0, // Default reserved quantity
+        qualityStatusId: defaultQualityStatusId, // Use provided or default quality status
       };
 
       const finishedProduct = await prisma.finishedProduct.create({
@@ -196,6 +211,7 @@ export const finishedProductController = {
         include: {
           category: true,
           storageLocation: true,
+          qualityStatus: true,
         },
       });
 
@@ -276,6 +292,7 @@ export const finishedProductController = {
         include: {
           category: true,
           storageLocation: true,
+          qualityStatus: true,
         },
       });
 

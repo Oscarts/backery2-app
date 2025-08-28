@@ -19,10 +19,11 @@ import {
 import {
   CheckCircle as SuccessIcon,
   Error as ErrorIcon,
-  Refresh as RefreshIcon
+  Refresh as RefreshIcon,
+  Warning as WarningIcon
 } from '@mui/icons-material';
 import { intermediateProductsApi, categoriesApi, storageLocationsApi, unitsApi, rawMaterialsApi, suppliersApi, finishedProductsApi } from '../services/realApi';
-import { IntermediateProductStatus, QualityStatus, CategoryType } from '../types';
+import { IntermediateProductStatus, CategoryType } from '../types';
 
 interface TestResult {
   name: string;
@@ -69,6 +70,19 @@ const ApiTestPage: React.FC = () => {
   const updateTest = (index: number, updates: Partial<TestResult>) => {
     setTests(prev => prev.map((test, i) => i === index ? { ...test, ...updates } : test));
   };
+
+  // Calculate test statistics
+  const getTestStats = () => {
+    const total = tests.length;
+    const passed = tests.filter(test => test.status === 'success').length;
+    const failed = tests.filter(test => test.status === 'error').length;
+    const running = tests.filter(test => test.status === 'testing').length;
+    const idle = tests.filter(test => test.status === 'idle').length;
+    
+    return { total, passed, failed, running, idle };
+  };
+
+  const stats = getTestStats();
 
   const runAllTests = async () => {
     // Test 1: Categories API
@@ -182,8 +196,7 @@ const ApiTestPage: React.FC = () => {
             quantity: 100,
             unit: unitsResult.data[0].symbol,
             status: IntermediateProductStatus.IN_PRODUCTION,
-            contaminated: false,
-            qualityStatus: QualityStatus.PENDING
+            contaminated: false
           };      
           
           const createResult = await intermediateProductsApi.create(createData);
@@ -797,6 +810,42 @@ const ApiTestPage: React.FC = () => {
       <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
         Test the database connectivity and CRUD operations for the bakery inventory system.
       </Typography>
+
+      {/* Test Status Indicator */}
+      <Paper sx={{ p: 2, mb: 3, backgroundColor: stats.failed > 0 ? '#ffebee' : stats.passed === stats.total && stats.total > 0 ? '#e8f5e8' : '#f5f5f5' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+          <Typography variant="h6" component="div" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {stats.failed > 0 ? (
+              <>
+                <ErrorIcon color="error" />
+                {stats.failed} Test{stats.failed !== 1 ? 's' : ''} Failing
+              </>
+            ) : stats.passed === stats.total && stats.total > 0 ? (
+              <>
+                <SuccessIcon color="success" />
+                All Tests Passing
+              </>
+            ) : stats.running > 0 ? (
+              <>
+                <CircularProgress size={20} sx={{ mr: 1 }} />
+                Tests Running
+              </>
+            ) : (
+              <>
+                <WarningIcon color="warning" />
+                Tests Not Run
+              </>
+            )}
+          </Typography>
+          
+          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+            <Chip label={`${stats.passed}/${stats.total} Passed`} color="success" variant={stats.passed > 0 ? "filled" : "outlined"} size="small" />
+            {stats.failed > 0 && <Chip label={`${stats.failed} Failed`} color="error" size="small" />}
+            {stats.running > 0 && <Chip label={`${stats.running} Running`} color="info" size="small" />}
+            {stats.idle > 0 && <Chip label={`${stats.idle} Pending`} color="default" variant="outlined" size="small" />}
+          </Box>
+        </Box>
+      </Paper>
 
       <Box sx={{ mb: 3 }}>
         <Button

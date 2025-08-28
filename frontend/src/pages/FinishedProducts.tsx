@@ -40,7 +40,7 @@ import {
   PlaylistRemove as ReleaseIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { finishedProductsApi, categoriesApi, storageLocationsApi, unitsApi } from '../services/realApi';
+import { finishedProductsApi, categoriesApi, storageLocationsApi, unitsApi, qualityStatusApi } from '../services/realApi';
 import { FinishedProduct, CategoryType, CreateFinishedProductData, UpdateFinishedProductData } from '../types';
 import { formatDate, formatQuantity, isExpired, isExpiringSoon, getDaysUntilExpiration } from '../utils/api';
 
@@ -70,10 +70,17 @@ const FinishedProducts: React.FC = () => {
   const { data: categoriesResponse } = useQuery(['categories'], () => categoriesApi.getAll());
   const { data: storageLocationsResponse } = useQuery(['storageLocations'], storageLocationsApi.getAll);
   const { data: unitsResponse } = useQuery(['units'], unitsApi.getAll);
+  const { data: qualityStatusResponse } = useQuery(['qualityStatuses'], qualityStatusApi.getAll);
   
   const categories = categoriesResponse?.data?.filter(c => c.type === CategoryType.FINISHED_PRODUCT);
   const storageLocations = storageLocationsResponse?.data;
   const units = unitsResponse?.data;
+  const qualityStatuses = (qualityStatusResponse?.data as any[]) || [];
+
+  // Get default quality status (first in list)
+  const getDefaultQualityStatusId = () => {
+    return qualityStatuses.length > 0 ? qualityStatuses[0].id : '';
+  };
 
   // Mutations
   const createMutation = useMutation(finishedProductsApi.create, {
@@ -334,6 +341,35 @@ const FinishedProducts: React.FC = () => {
                   </Select>
                 </FormControl>
               </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Quality Status</InputLabel>
+                  <Select
+                    value={formData.qualityStatusId || getDefaultQualityStatusId()}
+                    onChange={(e) => setFormData({ ...formData, qualityStatusId: e.target.value })}
+                  >
+                    <MenuItem value="">
+                      <em>None</em>
+                    </MenuItem>
+                    {qualityStatuses.map((status: any) => (
+                      <MenuItem key={status.id} value={status.id}>
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <Box
+                            sx={{
+                              width: 12,
+                              height: 12,
+                              borderRadius: 1,
+                              backgroundColor: status.color || '#gray',
+                              border: '1px solid #ddd',
+                            }}
+                          />
+                          {status.name}
+                        </Box>
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
               <Grid item xs={12}>
                 <TextField
                   fullWidth
@@ -506,6 +542,7 @@ const FinishedProducts: React.FC = () => {
                 <TableCell>Price</TableCell>
                 <TableCell>Expiration</TableCell>
                 <TableCell>Status</TableCell>
+                <TableCell>Quality</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -580,6 +617,20 @@ const FinishedProducts: React.FC = () => {
                           <Chip label="Reserved" color="info" size="small" />
                         )}
                       </Box>
+                    </TableCell>
+                    <TableCell>
+                      {product.qualityStatus ? (
+                        <Chip
+                          label={product.qualityStatus.name}
+                          size="small"
+                          sx={{
+                            backgroundColor: product.qualityStatus.color || '#gray',
+                            color: 'white',
+                          }}
+                        />
+                      ) : (
+                        <Chip label="No status" variant="outlined" size="small" />
+                      )}
                     </TableCell>
                     <TableCell align="right">
                       <Box display="flex" gap={1}>

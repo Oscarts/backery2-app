@@ -279,3 +279,50 @@ export const finishedProductsApi = {
     });
   },
 };
+
+// Quality Status API
+export const qualityStatusApi = {
+  getAll: async () => {
+    return apiCall('/quality-statuses');
+  },
+
+  getById: async (id: string) => {
+    return apiCall(`/quality-statuses/${id}`);
+  },
+
+  create: async (data: {
+    name: string;
+    description?: string;
+    color?: string;
+    sortOrder?: number;
+    isActive?: boolean;
+  }) => {
+    return apiCall('/quality-statuses', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  update: async (id: string, data: {
+    name?: string;
+    description?: string;
+    color?: string;
+    sortOrder?: number;
+    isActive?: boolean;
+  }) => {
+    return apiCall(`/quality-statuses/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  delete: async (id: string) => {
+    return apiCall(`/quality-statuses/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  getUsage: async (id: string) => {
+    return apiCall(`/quality-statuses/${id}/usage`);
+  },
+};

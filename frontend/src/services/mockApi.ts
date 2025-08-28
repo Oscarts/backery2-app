@@ -5,11 +5,169 @@ import {
   StorageLocation, 
   IntermediateProduct,
   IntermediateProductStatus,
+  FinishedProduct,
   QualityStatus,
+  Unit,
+  CreateRawMaterialData,
+  UpdateRawMaterialData,
+  CreateFinishedProductData,
+  UpdateFinishedProductData,
   ApiResponse, 
   PaginatedResponse, 
   CategoryType 
 } from '../types';
+
+// Mock Quality Status data
+const mockQualityStatuses: QualityStatus[] = [
+  {
+    id: 'approved',
+    name: 'Approved',
+    description: 'Product meets all quality standards',
+    color: '#4caf50',
+    isActive: true,
+    sortOrder: 1,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: 'pending',
+    name: 'Pending',
+    description: 'Awaiting quality inspection',
+    color: '#ff9800',
+    isActive: true,
+    sortOrder: 2,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: 'rejected',
+    name: 'Rejected',
+    description: 'Does not meet quality standards',
+    color: '#f44336',
+    isActive: true,
+    sortOrder: 3,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
+  }
+];
+
+// Mock Units data
+const mockUnits: Unit[] = [
+  {
+    id: '1',
+    name: 'Kilogram',
+    symbol: 'kg',
+    category: 'Weight',
+    description: 'Standard unit for weight measurement',
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: '2',
+    name: 'Gram',
+    symbol: 'g',
+    category: 'Weight',
+    description: 'Small unit for weight measurement',
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: '3',
+    name: 'Liter',
+    symbol: 'L',
+    category: 'Volume',
+    description: 'Standard unit for liquid measurement',
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: '4',
+    name: 'Milliliter',
+    symbol: 'ml',
+    category: 'Volume',
+    description: 'Small unit for liquid measurement',
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
+  },
+  {
+    id: '5',
+    name: 'Pieces',
+    symbol: 'pcs',
+    category: 'Count',
+    description: 'Count of individual items',
+    isActive: true,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
+  }
+];
+
+// Mock Finished Products data
+let mockFinishedProducts: FinishedProduct[] = [
+  {
+    id: '1',
+    name: 'Chocolate Croissant',
+    sku: 'CHC-001',
+    categoryId: '10', // Pastries
+    batchNumber: 'FP-2024-001',
+    productionDate: '2024-08-28',
+    expirationDate: '2024-08-30',
+    shelfLife: 2,
+    quantity: 24,
+    reservedQuantity: 0,
+    unit: 'pcs',
+    salePrice: 4.50,
+    costToProduce: 2.25,
+    packagingInfo: 'Individual paper wrapper',
+    storageLocationId: '2',
+    qualityStatusId: 'approved',
+    createdAt: '2024-08-28T00:00:00Z',
+    updatedAt: '2024-08-28T00:00:00Z'
+  },
+  {
+    id: '2',
+    name: 'Sourdough Bread',
+    sku: 'SDB-001',
+    categoryId: '9', // Breads
+    batchNumber: 'FP-2024-002',
+    productionDate: '2024-08-28',
+    expirationDate: '2024-08-31',
+    shelfLife: 3,
+    quantity: 12,
+    reservedQuantity: 3,
+    unit: 'loaves',
+    salePrice: 8.00,
+    costToProduce: 3.50,
+    packagingInfo: 'Bakery bag',
+    storageLocationId: '1',
+    qualityStatusId: 'approved',
+    createdAt: '2024-08-28T00:00:00Z',
+    updatedAt: '2024-08-28T00:00:00Z'
+  },
+  {
+    id: '3',
+    name: 'Chocolate Chip Cookies',
+    sku: 'CCC-001',
+    categoryId: '12', // Cookies
+    batchNumber: 'FP-2024-003',
+    productionDate: '2024-08-27',
+    expirationDate: '2024-09-03',
+    shelfLife: 7,
+    quantity: 36,
+    reservedQuantity: 6,
+    unit: 'pcs',
+    salePrice: 2.25,
+    costToProduce: 1.00,
+    packagingInfo: 'Clear container',
+    storageLocationId: '1',
+    qualityStatusId: 'pending',
+    createdAt: '2024-08-27T00:00:00Z',
+    updatedAt: '2024-08-27T00:00:00Z'
+  }
+];
 
 // Mock data
 let mockIntermediateProducts: IntermediateProduct[] = [
@@ -27,7 +185,7 @@ let mockIntermediateProducts: IntermediateProduct[] = [
     unit: 'kg',
     status: IntermediateProductStatus.COMPLETED,
     contaminated: false,
-    qualityStatus: QualityStatus.APPROVED,
+    qualityStatus: mockQualityStatuses[0], // Approved
     createdAt: '2024-08-20',
     updatedAt: '2024-08-20'
   },
@@ -45,7 +203,7 @@ let mockIntermediateProducts: IntermediateProduct[] = [
     unit: 'L',
     status: IntermediateProductStatus.IN_PRODUCTION,
     contaminated: false,
-    qualityStatus: QualityStatus.PENDING,
+    qualityStatus: mockQualityStatuses[1], // Pending
     createdAt: '2024-08-24',
     updatedAt: '2024-08-24'
   },
@@ -63,7 +221,7 @@ let mockIntermediateProducts: IntermediateProduct[] = [
     unit: 'kg',
     status: IntermediateProductStatus.COMPLETED,
     contaminated: false,
-    qualityStatus: QualityStatus.APPROVED,
+    qualityStatus: mockQualityStatuses[0], // Approved
     createdAt: '2024-08-23',
     updatedAt: '2024-08-23'
   }
@@ -352,11 +510,24 @@ export const rawMaterialsApi = {
     return { success: true, data: item };
   },
 
-  create: async (data: Omit<RawMaterial, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<RawMaterial>> => {
+  create: async (data: CreateRawMaterialData): Promise<ApiResponse<RawMaterial>> => {
     await delay(800);
     const newItem: RawMaterial = {
-      ...data,
       id: (mockRawMaterials.length + 1).toString(),
+      name: data.name,
+      description: '', // Default value
+      categoryId: data.categoryId,
+      supplierId: data.supplierId,
+      batchNumber: data.batchNumber,
+      purchaseDate: data.purchaseDate,
+      expirationDate: data.expirationDate,
+      quantity: data.quantity,
+      unit: data.unit,
+      unitPrice: data.costPerUnit, // Map costPerUnit to unitPrice
+      reorderLevel: data.reorderLevel,
+      storageLocationId: data.storageLocationId,
+      qualityStatusId: data.qualityStatusId,
+      isContaminated: false, // New materials are not contaminated
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -364,16 +535,33 @@ export const rawMaterialsApi = {
     return { success: true, data: newItem };
   },
 
-  update: async (id: string, data: Partial<Omit<RawMaterial, 'id' | 'createdAt'>>): Promise<ApiResponse<RawMaterial>> => {
+  update: async (id: string, data: UpdateRawMaterialData): Promise<ApiResponse<RawMaterial>> => {
     await delay(700);
     const index = mockRawMaterials.findIndex(rm => rm.id === id);
     if (index === -1) {
       throw new Error('Raw material not found');
     }
 
+    // Map frontend fields to backend fields
+    const updateFields: Partial<RawMaterial> = {};
+    
+    if (data.name !== undefined) updateFields.name = data.name;
+    if (data.categoryId !== undefined) updateFields.categoryId = data.categoryId;
+    if (data.supplierId !== undefined) updateFields.supplierId = data.supplierId;
+    if (data.batchNumber !== undefined) updateFields.batchNumber = data.batchNumber;
+    if (data.purchaseDate !== undefined) updateFields.purchaseDate = data.purchaseDate;
+    if (data.expirationDate !== undefined) updateFields.expirationDate = data.expirationDate;
+    if (data.quantity !== undefined) updateFields.quantity = data.quantity;
+    if (data.unit !== undefined) updateFields.unit = data.unit;
+    if (data.costPerUnit !== undefined) updateFields.unitPrice = data.costPerUnit; // Map costPerUnit to unitPrice
+    if (data.reorderLevel !== undefined) updateFields.reorderLevel = data.reorderLevel;
+    if (data.storageLocationId !== undefined) updateFields.storageLocationId = data.storageLocationId;
+    if (data.qualityStatusId !== undefined) updateFields.qualityStatusId = data.qualityStatusId;
+    if (data.contaminated !== undefined) updateFields.isContaminated = data.contaminated; // Map contaminated to isContaminated
+
     mockRawMaterials[index] = {
       ...mockRawMaterials[index],
-      ...data,
+      ...updateFields,
       updatedAt: new Date().toISOString(),
     };
 
@@ -609,5 +797,321 @@ export const storageLocationsApi = {
 
     mockStorageLocations.splice(index, 1);
     return { success: true, data: undefined };
+  },
+};
+
+// Quality Status API
+export const qualityStatusApi = {
+  getAll: async (): Promise<ApiResponse<QualityStatus[]>> => {
+    await delay(300);
+    return { success: true, data: mockQualityStatuses };
+  },
+
+  getById: async (id: string): Promise<ApiResponse<QualityStatus>> => {
+    await delay(200);
+    const item = mockQualityStatuses.find(qs => qs.id === id);
+    if (!item) {
+      throw new Error('Quality status not found');
+    }
+    return { success: true, data: item };
+  },
+
+  create: async (data: Omit<QualityStatus, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<QualityStatus>> => {
+    await delay(800);
+    
+    // Check for duplicate name
+    const existingStatus = mockQualityStatuses.find(qs => 
+      qs.name.toLowerCase() === data.name.toLowerCase()
+    );
+    
+    if (existingStatus) {
+      throw new Error('Quality status name already exists');
+    }
+    
+    const newItem: QualityStatus = {
+      ...data,
+      id: (mockQualityStatuses.length + 1).toString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    mockQualityStatuses.push(newItem);
+    return { success: true, data: newItem };
+  },
+
+  update: async (id: string, data: Partial<Omit<QualityStatus, 'id' | 'createdAt' | 'updatedAt'>>): Promise<ApiResponse<QualityStatus>> => {
+    await delay(700);
+    const index = mockQualityStatuses.findIndex(qs => qs.id === id);
+    if (index === -1) {
+      throw new Error('Quality status not found');
+    }
+
+    // Check for duplicate name (excluding current item)
+    if (data.name) {
+      const existingStatus = mockQualityStatuses.find(qs => 
+        qs.id !== id && qs.name.toLowerCase() === data.name!.toLowerCase()
+      );
+      
+      if (existingStatus) {
+        throw new Error('Quality status name already exists');
+      }
+    }
+
+    mockQualityStatuses[index] = {
+      ...mockQualityStatuses[index],
+      ...data,
+      updatedAt: new Date().toISOString(),
+    };
+
+    return { success: true, data: mockQualityStatuses[index] };
+  },
+
+  delete: async (id: string): Promise<ApiResponse<void>> => {
+    await delay(500);
+    const index = mockQualityStatuses.findIndex(qs => qs.id === id);
+    if (index === -1) {
+      throw new Error('Quality status not found');
+    }
+
+    mockQualityStatuses.splice(index, 1);
+    return { success: true, data: undefined };
+  },
+};
+
+// Units API
+export const unitsApi = {
+  getAll: async (): Promise<ApiResponse<Unit[]>> => {
+    await delay(300);
+    return { success: true, data: mockUnits };
+  },
+
+  getById: async (id: string): Promise<ApiResponse<Unit>> => {
+    await delay(200);
+    const item = mockUnits.find(unit => unit.id === id);
+    if (!item) {
+      throw new Error('Unit not found');
+    }
+    return { success: true, data: item };
+  },
+
+  create: async (data: Omit<Unit, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<Unit>> => {
+    await delay(800);
+    
+    // Check for duplicate name or symbol
+    const existingUnit = mockUnits.find(unit => 
+      unit.name.toLowerCase() === data.name.toLowerCase() ||
+      unit.symbol.toLowerCase() === data.symbol.toLowerCase()
+    );
+    
+    if (existingUnit) {
+      throw new Error('Unit name or symbol already exists');
+    }
+    
+    const newItem: Unit = {
+      ...data,
+      id: (mockUnits.length + 1).toString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    mockUnits.push(newItem);
+    return { success: true, data: newItem };
+  },
+
+  update: async (id: string, data: Partial<Omit<Unit, 'id' | 'createdAt' | 'updatedAt'>>): Promise<ApiResponse<Unit>> => {
+    await delay(700);
+    const index = mockUnits.findIndex(unit => unit.id === id);
+    if (index === -1) {
+      throw new Error('Unit not found');
+    }
+
+    // Check for duplicate name or symbol (excluding current item)
+    if (data.name || data.symbol) {
+      const existingUnit = mockUnits.find(unit => 
+        unit.id !== id && (
+          (data.name && unit.name.toLowerCase() === data.name.toLowerCase()) ||
+          (data.symbol && unit.symbol.toLowerCase() === data.symbol.toLowerCase())
+        )
+      );
+      
+      if (existingUnit) {
+        throw new Error('Unit name or symbol already exists');
+      }
+    }
+
+    mockUnits[index] = {
+      ...mockUnits[index],
+      ...data,
+      updatedAt: new Date().toISOString(),
+    };
+
+    return { success: true, data: mockUnits[index] };
+  },
+
+  delete: async (id: string): Promise<ApiResponse<void>> => {
+    await delay(500);
+    const index = mockUnits.findIndex(unit => unit.id === id);
+    if (index === -1) {
+      throw new Error('Unit not found');
+    }
+
+    mockUnits.splice(index, 1);
+    return { success: true, data: undefined };
+  },
+};
+
+// Finished Products API
+export const finishedProductsApi = {
+  getAll: async (): Promise<ApiResponse<FinishedProduct[]>> => {
+    await delay(300);
+    return { success: true, data: mockFinishedProducts };
+  },
+
+  getById: async (id: string): Promise<ApiResponse<FinishedProduct>> => {
+    await delay(200);
+    const item = mockFinishedProducts.find(fp => fp.id === id);
+    if (!item) {
+      throw new Error('Finished product not found');
+    }
+    return { success: true, data: item };
+  },
+
+  create: async (data: CreateFinishedProductData): Promise<ApiResponse<FinishedProduct>> => {
+    await delay(800);
+    
+    // Check for duplicate SKU
+    const existingProduct = mockFinishedProducts.find(fp => 
+      fp.sku.toLowerCase() === data.sku.toLowerCase()
+    );
+    
+    if (existingProduct) {
+      throw new Error('SKU already exists');
+    }
+    
+    const newItem: FinishedProduct = {
+      id: (mockFinishedProducts.length + 1).toString(),
+      name: data.name,
+      sku: data.sku,
+      categoryId: data.categoryId,
+      batchNumber: data.batchNumber,
+      productionDate: data.productionDate,
+      expirationDate: data.expirationDate,
+      shelfLife: data.shelfLife,
+      quantity: data.quantity,
+      reservedQuantity: 0,
+      unit: data.unit,
+      salePrice: data.salePrice,
+      costToProduce: data.costToProduce,
+      packagingInfo: data.packagingInfo,
+      storageLocationId: data.storageLocationId,
+      qualityStatusId: 'pending', // Default to pending
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    mockFinishedProducts.push(newItem);
+    return { success: true, data: newItem };
+  },
+
+  update: async (id: string, data: UpdateFinishedProductData): Promise<ApiResponse<FinishedProduct>> => {
+    await delay(700);
+    const index = mockFinishedProducts.findIndex(fp => fp.id === id);
+    if (index === -1) {
+      throw new Error('Finished product not found');
+    }
+
+    // Check for duplicate SKU (excluding current item)
+    if (data.sku) {
+      const existingProduct = mockFinishedProducts.find(fp => 
+        fp.id !== id && fp.sku.toLowerCase() === data.sku!.toLowerCase()
+      );
+      
+      if (existingProduct) {
+        throw new Error('SKU already exists');
+      }
+    }
+
+    mockFinishedProducts[index] = {
+      ...mockFinishedProducts[index],
+      ...data,
+      updatedAt: new Date().toISOString(),
+    };
+
+    return { success: true, data: mockFinishedProducts[index] };
+  },
+
+  delete: async (id: string): Promise<ApiResponse<void>> => {
+    await delay(500);
+    const index = mockFinishedProducts.findIndex(fp => fp.id === id);
+    if (index === -1) {
+      throw new Error('Finished product not found');
+    }
+
+    mockFinishedProducts.splice(index, 1);
+    return { success: true, data: undefined };
+  },
+
+  reserveQuantity: async (id: string, quantity: number): Promise<ApiResponse<FinishedProduct>> => {
+    await delay(400);
+    const index = mockFinishedProducts.findIndex(fp => fp.id === id);
+    if (index === -1) {
+      throw new Error('Finished product not found');
+    }
+
+    const product = mockFinishedProducts[index];
+    const availableQuantity = product.quantity - product.reservedQuantity;
+    
+    if (quantity > availableQuantity) {
+      throw new Error('Insufficient quantity available for reservation');
+    }
+
+    mockFinishedProducts[index] = {
+      ...product,
+      reservedQuantity: product.reservedQuantity + quantity,
+      updatedAt: new Date().toISOString(),
+    };
+
+    return { success: true, data: mockFinishedProducts[index] };
+  },
+
+  releaseReservation: async (id: string, quantity: number): Promise<ApiResponse<FinishedProduct>> => {
+    await delay(400);
+    const index = mockFinishedProducts.findIndex(fp => fp.id === id);
+    if (index === -1) {
+      throw new Error('Finished product not found');
+    }
+
+    const product = mockFinishedProducts[index];
+    
+    if (quantity > product.reservedQuantity) {
+      throw new Error('Cannot release more than reserved quantity');
+    }
+
+    mockFinishedProducts[index] = {
+      ...product,
+      reservedQuantity: product.reservedQuantity - quantity,
+      updatedAt: new Date().toISOString(),
+    };
+
+    return { success: true, data: mockFinishedProducts[index] };
+  },
+
+  getExpiring: async (days: number): Promise<ApiResponse<FinishedProduct[]>> => {
+    await delay(300);
+    const now = new Date();
+    const futureDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+    
+    const expiring = mockFinishedProducts.filter(fp => {
+      const expDate = new Date(fp.expirationDate);
+      return expDate <= futureDate;
+    });
+    
+    return { success: true, data: expiring };
+  },
+
+  getLowStock: async (threshold: number): Promise<ApiResponse<FinishedProduct[]>> => {
+    await delay(300);
+    const lowStock = mockFinishedProducts.filter(fp => 
+      (fp.quantity - fp.reservedQuantity) <= threshold
+    );
+    
+    return { success: true, data: lowStock };
   },
 };

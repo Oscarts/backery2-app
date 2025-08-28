@@ -34,8 +34,8 @@ import {
   Search as SearchIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { intermediateProductsApi, categoriesApi, storageLocationsApi, unitsApi } from '../services/realApi';
-import { IntermediateProduct, CategoryType, QualityStatus, IntermediateProductStatus } from '../types';
+import { intermediateProductsApi, categoriesApi, storageLocationsApi, unitsApi, qualityStatusApi } from '../services/realApi';
+import { IntermediateProduct, CategoryType, IntermediateProductStatus } from '../types';
 import { formatDate, formatQuantity, isExpired, isExpiringSoon, getDaysUntilExpiration } from '../utils/api';
 
 const IntermediateProducts: React.FC = () => {
@@ -79,10 +79,17 @@ const IntermediateProducts: React.FC = () => {
   const { data: categoriesResponse } = useQuery(['categories'], () => categoriesApi.getAll());
   const { data: storageLocationsResponse } = useQuery(['storageLocations'], storageLocationsApi.getAll);
   const { data: unitsResponse } = useQuery(['units'], unitsApi.getAll);
+  const { data: qualityStatusResponse } = useQuery(['qualityStatuses'], qualityStatusApi.getAll);
   
   const categories = categoriesResponse?.data?.filter(c => c.type === CategoryType.INTERMEDIATE);
   const storageLocations = storageLocationsResponse?.data;
   const units = unitsResponse?.data;
+  const qualityStatuses = (qualityStatusResponse?.data as any[]) || [];
+
+  // Get default quality status (first in list)
+  const getDefaultQualityStatusId = () => {
+    return qualityStatuses.length > 0 ? qualityStatuses[0].id : '';
+  };
 
   // Mutations
   const createMutation = useMutation(intermediateProductsApi.create, {
@@ -169,7 +176,7 @@ const IntermediateProducts: React.FC = () => {
 
       // Preserve existing values for fields not in the form
       updatedData.contaminated = editingProduct.contaminated;
-      updatedData.qualityStatus = editingProduct.qualityStatus;
+      // Note: qualityStatus is now managed separately via qualityStatusId
       
       updateMutation.mutate({ id: editingProduct.id, data: updatedData });
     } else {
@@ -186,7 +193,6 @@ const IntermediateProducts: React.FC = () => {
         quantity: parseFloat(formValues.quantity as string),
         unit: formValues.unit as string,
         contaminated: false,
-        qualityStatus: QualityStatus.PENDING,
         status: formValues.status as IntermediateProductStatus,
       };
 
@@ -275,6 +281,7 @@ const IntermediateProducts: React.FC = () => {
                 <TableCell>Expiration Date</TableCell>
                 <TableCell>Quantity</TableCell>
                 <TableCell>Storage Location</TableCell>
+                <TableCell>Quality</TableCell>
                 <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
@@ -310,6 +317,20 @@ const IntermediateProducts: React.FC = () => {
                       {product.storageLocation?.name || 'N/A'}
                       {getContaminationChip(product.contaminated)}
                     </Box>
+                  </TableCell>
+                  <TableCell>
+                    {product.qualityStatus ? (
+                      <Chip
+                        label={product.qualityStatus.name}
+                        size="small"
+                        sx={{
+                          backgroundColor: product.qualityStatus.color || '#gray',
+                          color: 'white',
+                        }}
+                      />
+                    ) : (
+                      <Chip label="No status" variant="outlined" size="small" />
+                    )}
                   </TableCell>
                   <TableCell>
                     <IconButton
@@ -468,6 +489,36 @@ const IntermediateProducts: React.FC = () => {
                       {units?.map((unit) => (
                         <MenuItem key={unit.id} value={unit.symbol}>
                           {unit.name} ({unit.symbol})
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>Quality Status</InputLabel>
+                    <Select
+                      name="qualityStatusId"
+                      defaultValue={editingProduct?.qualityStatusId || getDefaultQualityStatusId()}
+                      label="Quality Status"
+                    >
+                      <MenuItem value="">
+                        <em>None</em>
+                      </MenuItem>
+                      {qualityStatuses.map((status: any) => (
+                        <MenuItem key={status.id} value={status.id}>
+                          <Box display="flex" alignItems="center" gap={1}>
+                            <Box
+                              sx={{
+                                width: 12,
+                                height: 12,
+                                borderRadius: 1,
+                                backgroundColor: status.color || '#gray',
+                                border: '1px solid #ddd',
+                              }}
+                            />
+                            {status.name}
+                          </Box>
                         </MenuItem>
                       ))}
                     </Select>

@@ -2,6 +2,15 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../index';
 import Joi from 'joi';
 
+// Helper function to get the default quality status (first item by sortOrder)
+const getDefaultQualityStatus = async () => {
+  const defaultStatus = await prisma.qualityStatus.findFirst({
+    where: { isActive: true },
+    orderBy: { sortOrder: 'asc' },
+  });
+  return defaultStatus?.id || null;
+};
+
 // Validation schemas
 const createRawMaterialSchema = Joi.object({
   name: Joi.string().required().min(1).max(255),
@@ -15,6 +24,7 @@ const createRawMaterialSchema = Joi.object({
   costPerUnit: Joi.number().required().positive(),
   reorderLevel: Joi.number().required().min(0),
   storageLocationId: Joi.string().required(),
+  qualityStatusId: Joi.string().optional().allow('').allow(null),
 });
 
 const updateRawMaterialSchema = createRawMaterialSchema.fork([
@@ -69,6 +79,7 @@ export const rawMaterialController = {
             category: true,
             supplier: true,
             storageLocation: true,
+            qualityStatus: true,
           },
           orderBy: { createdAt: 'desc' },
           skip,
@@ -178,11 +189,14 @@ export const rawMaterialController = {
       }
 
       // Prepare create data with field mapping
+      const defaultQualityStatusId = value.qualityStatusId || await getDefaultQualityStatus();
+      
       const createData = {
         ...value,
         purchaseDate: new Date(value.purchaseDate),
         expirationDate: new Date(value.expirationDate),
         unitPrice: value.costPerUnit, // Map costPerUnit to unitPrice
+        qualityStatusId: defaultQualityStatusId, // Use provided or default quality status
       };
       delete createData.costPerUnit; // Remove the frontend field
 
@@ -192,6 +206,7 @@ export const rawMaterialController = {
           category: true,
           supplier: true,
           storageLocation: true,
+          qualityStatus: true,
         },
       });
 
@@ -270,6 +285,7 @@ export const rawMaterialController = {
           category: true,
           supplier: true,
           storageLocation: true,
+          qualityStatus: true,
         },
       });
 

@@ -3,6 +3,15 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+// Helper function to get the default quality status (first item by sortOrder)
+const getDefaultQualityStatus = async () => {
+  const defaultStatus = await prisma.qualityStatus.findFirst({
+    where: { isActive: true },
+    orderBy: { sortOrder: 'asc' },
+  });
+  return defaultStatus?.id || null;
+};
+
 export const intermediateProductController = {
   // Get all intermediate products
   getAll: async (req: Request, res: Response) => {
@@ -11,7 +20,8 @@ export const intermediateProductController = {
         include: {
           category: true,
           storageLocation: true,
-          recipe: true
+          recipe: true,
+          qualityStatus: true
         },
         orderBy: {
           createdAt: 'desc'
@@ -33,7 +43,8 @@ export const intermediateProductController = {
         include: {
           category: true,
           storageLocation: true,
-          recipe: true
+          recipe: true,
+          qualityStatus: true
         }
       });
       if (!product) {
@@ -74,6 +85,8 @@ export const intermediateProductController = {
         });
       }
 
+      const defaultQualityStatusId = qualityStatus || await getDefaultQualityStatus();
+
       const product = await prisma.intermediateProduct.create({
         data: {
           name,
@@ -88,12 +101,13 @@ export const intermediateProductController = {
           unit,
           status: status || 'IN_PRODUCTION',
           contaminated: contaminated ?? false,
-          qualityStatus: qualityStatus || 'PENDING'
+          qualityStatusId: defaultQualityStatusId
         },
         include: {
           category: true,
           storageLocation: true,
-          recipe: true
+          recipe: true,
+          qualityStatus: true
         }
       });
 
@@ -141,7 +155,7 @@ export const intermediateProductController = {
       if (unit !== undefined) updateData.unit = unit;
       if (status !== undefined) updateData.status = status;
       if (contaminated !== undefined) updateData.contaminated = contaminated;
-      if (qualityStatus !== undefined) updateData.qualityStatus = qualityStatus;
+      if (qualityStatus !== undefined) updateData.qualityStatusId = qualityStatus;
 
       const product = await prisma.intermediateProduct.update({
         where: { id },
@@ -149,7 +163,8 @@ export const intermediateProductController = {
         include: {
           category: true,
           storageLocation: true,
-          recipe: true
+          recipe: true,
+          qualityStatus: true
         }
       });
 

@@ -37,9 +37,10 @@ import {
     Settings as SettingsIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { categoriesApi, suppliersApi, storageLocationsApi } from '../services/mockApi';
+import { categoriesApi, suppliersApi, storageLocationsApi } from '../services/realApi';
 import { Category, CategoryType, Supplier, StorageLocation } from '../types';
 import UnitsManagement from '../components/Settings/UnitsManagement';
+import QualityStatusManagement from '../components/Settings/QualityStatusManagement';
 
 interface TabPanelProps {
     children?: React.ReactNode;
@@ -742,6 +743,7 @@ const Settings: React.FC = () => {
                     <Tab label="Suppliers" />
                     <Tab label="Storage Locations" />
                     <Tab label="Units" />
+                    <Tab label="Quality Status" />
                 </Tabs>
             </Paper>
 
@@ -771,6 +773,10 @@ const Settings: React.FC = () => {
 
             <TabPanel value={tabValue} index={6}>
                 <UnitsManagement />
+            </TabPanel>
+
+            <TabPanel value={tabValue} index={7}>
+                <QualityStatusManagement />
             </TabPanel>
 
             {/* Add/Edit Category Dialog */}
