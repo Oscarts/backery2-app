@@ -730,8 +730,10 @@ As of August 29, 2025, the Bakery Inventory Management System has achieved sever
 
 - **Code Quality**: Regular removal of unused code, backup files, and outdated implementations
 - **Testing First**: All features have corresponding tests to ensure stability during refactoring
+- **Robust API Testing**: Dynamic data-driven tests that adapt to database changes rather than using hardcoded values
 - **Documentation Updates**: Planning documents updated with each significant change
 - **Git Workflow**: Descriptive commit messages for traceability of changes
+- **Error Handling**: Comprehensive error handling throughout the application for better debugging and user experience
 
 ### 🔜 Next Major Release Goals
 
@@ -741,4 +743,4 @@ The project is on track for its next major release with a focus on production pl
 
 ### 📅 Last Updated
 
-**August 29, 2025** - Recipe CRUD fixed, unit auto-selection implemented, code cleanup completed
+**August 29, 2025** - Recipe CRUD fixed, unit auto-selection implemented, code cleanup completed, API tests improved, mockApi.ts removed, documentation updated
