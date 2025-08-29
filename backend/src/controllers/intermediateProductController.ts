@@ -77,11 +77,11 @@ export const intermediateProductController = {
       } = req.body;
 
       // Validate required fields
-      if (!name || !description || !categoryId || !storageLocationId || !batchNumber || 
-          !productionDate || !expirationDate || !quantity || !unit) {
-        return res.status(400).json({ 
-          success: false, 
-          error: 'Missing required fields' 
+      if (!name || !description || !categoryId || !storageLocationId || !batchNumber ||
+        !productionDate || !expirationDate || !quantity || !unit) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required fields'
         });
       }
 
@@ -139,7 +139,8 @@ export const intermediateProductController = {
         unit,
         status,
         contaminated,
-        qualityStatus
+        qualityStatus,
+        qualityStatusId
       } = req.body;
 
       const updateData: any = {};
@@ -154,8 +155,16 @@ export const intermediateProductController = {
       if (quantity !== undefined) updateData.quantity = parseFloat(quantity);
       if (unit !== undefined) updateData.unit = unit;
       if (status !== undefined) updateData.status = status;
-      if (contaminated !== undefined) updateData.contaminated = contaminated;
-      if (qualityStatus !== undefined) updateData.qualityStatusId = qualityStatus;
+      if (contaminated !== undefined) updateData.contaminated = contaminated === true || contaminated === 'on';
+      
+      // Handle both qualityStatus and qualityStatusId for backward compatibility
+      if (qualityStatusId !== undefined) updateData.qualityStatusId = qualityStatusId;
+      else if (qualityStatus !== undefined) updateData.qualityStatusId = qualityStatus;
+      
+      // Handle empty qualityStatusId - convert empty string to null for the database
+      if (updateData.qualityStatusId === '') {
+        updateData.qualityStatusId = null;
+      }
 
       const product = await prisma.intermediateProduct.update({
         where: { id },
