@@ -565,7 +565,6 @@ const FinishedProducts: React.FC = () => {
                 <TableCell>Batch</TableCell>
                 <TableCell>Category</TableCell>
                 <TableCell>Stock</TableCell>
-                <TableCell>Reserved</TableCell>
                 <TableCell>Price</TableCell>
                 <TableCell>Expiration</TableCell>
                 <TableCell>Status</TableCell>
@@ -608,17 +607,7 @@ const FinishedProducts: React.FC = () => {
                         )}
                       </Box>
                     </TableCell>
-                    <TableCell>
-                      {product.reservedQuantity > 0 ? (
-                        <Chip
-                          label={`${formatQuantity(product.reservedQuantity, product.unit)}`}
-                          color="info"
-                          size="small"
-                        />
-                      ) : (
-                        '-'
-                      )}
-                    </TableCell>
+
                     <TableCell>${product.salePrice.toFixed(2)}</TableCell>
                     <TableCell>
                       <Box>
@@ -643,9 +632,6 @@ const FinishedProducts: React.FC = () => {
                           color={isLowStock ? 'warning' : 'success'}
                           size="small"
                         />
-                        {product.reservedQuantity > 0 && (
-                          <Chip label="Reserved" color="info" size="small" />
-                        )}
                       </Box>
                     </TableCell>
                     <TableCell>
@@ -664,15 +650,22 @@ const FinishedProducts: React.FC = () => {
                     </TableCell>
                     <TableCell align="right">
                       <Box display="flex" gap={1}>
-                        <Tooltip title="Reserve Quantity">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleReserve(product)}
-                            disabled={availableQuantity <= 0}
-                          >
-                            <ReserveIcon />
-                          </IconButton>
-                        </Tooltip>
+                        <Box display="flex" flexDirection="column" alignItems="center">
+                          <Tooltip title="Reserve Quantity">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleReserve(product)}
+                              disabled={availableQuantity <= 0}
+                            >
+                              <ReserveIcon />
+                            </IconButton>
+                          </Tooltip>
+                          {product.reservedQuantity > 0 && (
+                            <Typography variant="caption" color="info.main" sx={{ fontWeight: 'bold' }}>
+                              {formatQuantity(product.reservedQuantity, product.unit)}
+                            </Typography>
+                          )}
+                        </Box>
                         <IconButton
                           size="small"
                           onClick={() => handleOpenForm(product)}
