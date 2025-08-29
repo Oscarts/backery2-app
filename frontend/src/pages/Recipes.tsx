@@ -41,7 +41,8 @@ import {
   Delete as DeleteIcon,
   Search as SearchIcon,
   Restaurant as RecipeIcon,
-  Calculate as CalculateIcon
+  Calculate as CalculateIcon,
+  Close as CloseIcon
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -92,6 +93,8 @@ const Recipes: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
   const [selectedRecipeForCost, setSelectedRecipeForCost] = useState<string | null>(null);
+  const [selectedRecipeForIngredients, setSelectedRecipeForIngredients] = useState<string | null>(null);
+  const [ingredientsDialogOpen, setIngredientsDialogOpen] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState<CreateRecipeData>({
@@ -152,6 +155,13 @@ const Recipes: React.FC = () => {
     queryKey: ['recipe-cost', selectedRecipeForCost],
     queryFn: () => recipesApi.getCost(selectedRecipeForCost!),
     enabled: !!selectedRecipeForCost
+  });
+  
+  // Query for selected recipe details
+  const { data: selectedRecipeDetailsResponse } = useQuery({
+    queryKey: ['recipe-details', selectedRecipeForIngredients],
+    queryFn: () => recipesApi.getById(selectedRecipeForIngredients!),
+    enabled: !!selectedRecipeForIngredients
   });
 
   // Mutations
@@ -244,6 +254,7 @@ const Recipes: React.FC = () => {
   } as WhatCanIMakeAnalysis;
 
   const recipeCost = recipeCostResponse?.data || null;
+  const selectedRecipeDetails = selectedRecipeDetailsResponse?.data || null;
 
   // Debug log to track recipes data
   React.useEffect(() => {
@@ -605,7 +616,20 @@ const Recipes: React.FC = () => {
 
             {whatCanIMake.recipes.map((recipe) => (
               <Grid item xs={12} md={6} lg={4} key={recipe.recipeId}>
-                <Card>
+                <Card 
+                  sx={{ 
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: 4
+                    }
+                  }}
+                  onClick={() => {
+                    setSelectedRecipeForIngredients(recipe.recipeId);
+                    setIngredientsDialogOpen(true);
+                  }}
+                >
                   <CardContent>
                     <Typography variant="h6" gutterBottom>
                       {recipe.recipeName}
@@ -613,7 +637,7 @@ const Recipes: React.FC = () => {
                     <Typography variant="body2" color="textSecondary" gutterBottom>
                       {recipe.category} • {recipe.yieldQuantity} {recipe.yieldUnit}
                     </Typography>
-
+                    
                     {recipe.canMake ? (
                       <Box>
                         <Chip
@@ -1064,6 +1088,137 @@ const Recipes: React.FC = () => {
                 : editingRecipe ? 'Update' : 'Create'}
             </Button>
           </Box>
+        </DialogActions>
+      </Dialog>
+
+      {/* Recipe Ingredients Dialog */}
+      <Dialog
+        open={ingredientsDialogOpen}
+        onClose={() => {
+          setIngredientsDialogOpen(false);
+          setSelectedRecipeForIngredients(null);
+        }}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          Recipe Ingredients
+          <IconButton
+            aria-label="close"
+            onClick={() => {
+              setIngredientsDialogOpen(false);
+              setSelectedRecipeForIngredients(null);
+            }}
+            sx={{ position: 'absolute', right: 8, top: 8 }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          {selectedRecipeDetails ? (
+            <Box>
+              <Typography variant="h6" gutterBottom>
+                {selectedRecipeDetails.name}
+              </Typography>
+              <Typography variant="body2" color="textSecondary" gutterBottom>
+                {selectedRecipeDetails.category?.name || 'Unknown Category'} • {selectedRecipeDetails.yieldQuantity} {selectedRecipeDetails.yieldUnit}
+              </Typography>
+              {selectedRecipeDetails.description && (
+                <Typography variant="body1" paragraph>
+                  {selectedRecipeDetails.description}
+                </Typography>
+              )}
+
+              <Typography variant="subtitle1" sx={{ mt: 2, fontWeight: 'bold' }}>
+                Ingredients Needed:
+              </Typography>
+              <TableContainer component={Paper} variant="outlined" sx={{ mt: 1 }}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Ingredient</TableCell>
+                      <TableCell>Type</TableCell>
+                      <TableCell>Quantity</TableCell>
+                      <TableCell>Available</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Notes</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {selectedRecipeDetails.ingredients?.map((ingredient) => {
+                      const isRawMaterial = !!ingredient.rawMaterialId;
+                      const ingredientItem = isRawMaterial 
+                        ? ingredient.rawMaterial
+                        : ingredient.intermediateProduct;
+                      
+                      const availableQuantity = ingredientItem?.quantity || 0;
+                      const hasEnough = availableQuantity >= ingredient.quantity;
+                      
+                      return (
+                        <TableRow key={ingredient.id}>
+                          <TableCell>
+                            {getIngredientName(ingredient)}
+                          </TableCell>
+                          <TableCell>
+                            {isRawMaterial ? 'Raw Material' : 'Intermediate Product'}
+                          </TableCell>
+                          <TableCell>
+                            {ingredient.quantity} {ingredient.unit}
+                          </TableCell>
+                          <TableCell>
+                            {availableQuantity} {ingredient.unit}
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              size="small"
+                              label={hasEnough ? 'Available' : 'Insufficient'}
+                              color={hasEnough ? 'success' : 'error'}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            {ingredient.notes || '-'}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              
+              {selectedRecipeDetails.instructions && Array.isArray(selectedRecipeDetails.instructions) && selectedRecipeDetails.instructions.length > 0 && (
+                <>
+                  <Typography variant="subtitle1" sx={{ mt: 3, fontWeight: 'bold' }}>
+                    Instructions:
+                  </Typography>
+                  <List>
+                    {selectedRecipeDetails.instructions.map((instruction, idx) => (
+                      <ListItem key={idx}>
+                        <ListItemText primary={`${idx + 1}. ${instruction}`} />
+                      </ListItem>
+                    ))}
+                  </List>
+                </>
+              )}
+              
+              <Typography variant="subtitle1" sx={{ mt: 2, color: 'text.secondary' }}>
+                Time Required: {selectedRecipeDetails.prepTime || 0} min prep + {selectedRecipeDetails.cookTime || 0} min cooking
+              </Typography>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <Typography>Loading recipe details...</Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => {
+              setIngredientsDialogOpen(false);
+              setSelectedRecipeForIngredients(null);
+            }}
+          >
+            Close
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>
