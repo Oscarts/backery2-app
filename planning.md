@@ -906,6 +906,11 @@ Now that we have a complete Dashboard & Analytics system providing real-time bus
   - ✅ `IntermediateProducts_broken.tsx`: Removed broken implementation
   - ✅ `RawMaterialsNew.tsx`: Removed outdated version from August 26, 2025
   - ✅ `mockApi.ts`: Removed mock API service as real API is fully implemented
+
+- **Fixed API Tests**:
+  - ✅ Create Recipe test: Now uses dynamically fetched category and raw material IDs
+  - ✅ Recipe Cost Analysis test: More robust handling of recipe selection and error cases
+  - ✅ What Can I Make Analysis test: Better error handling and response structure adaptability
   
 - **Verification Process**:
   - ✅ Checked for imports/references before removal
