@@ -64,7 +64,7 @@ describe('QualityStatusManagement', () => {
 
   test('renders quality status management title', async () => {
     const mockedApi = qualityStatusApi.getAll as jest.MockedFunction<typeof qualityStatusApi.getAll>;
-    mockedApi.mockResolvedValue({ data: mockQualityStatuses });
+    mockedApi.mockResolvedValue({ success: true, data: mockQualityStatuses });
 
     render(<QualityStatusManagement />, { wrapper: createWrapper() });
 
@@ -83,7 +83,7 @@ describe('QualityStatusManagement', () => {
 
   test('displays quality statuses when loaded', async () => {
     const mockedApi = qualityStatusApi.getAll as jest.MockedFunction<typeof qualityStatusApi.getAll>;
-    mockedApi.mockResolvedValue({ data: mockQualityStatuses });
+    mockedApi.mockResolvedValue({ success: true, data: mockQualityStatuses });
 
     render(<QualityStatusManagement />, { wrapper: createWrapper() });
 
@@ -100,7 +100,7 @@ describe('QualityStatusManagement', () => {
 
   test('displays empty state when no quality statuses exist', async () => {
     const mockedApi = qualityStatusApi.getAll as jest.MockedFunction<typeof qualityStatusApi.getAll>;
-    mockedApi.mockResolvedValue({ data: [] });
+    mockedApi.mockResolvedValue({ success: true, data: [] });
 
     render(<QualityStatusManagement />, { wrapper: createWrapper() });
 
@@ -123,7 +123,7 @@ describe('QualityStatusManagement', () => {
 
   test('shows correct count of quality statuses', async () => {
     const mockedApi = qualityStatusApi.getAll as jest.MockedFunction<typeof qualityStatusApi.getAll>;
-    mockedApi.mockResolvedValue({ data: mockQualityStatuses });
+    mockedApi.mockResolvedValue({ success: true, data: mockQualityStatuses });
 
     render(<QualityStatusManagement />, { wrapper: createWrapper() });
 
@@ -135,7 +135,7 @@ describe('QualityStatusManagement', () => {
   test('component mounts and unmounts correctly', () => {
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
     const mockedApi = qualityStatusApi.getAll as jest.MockedFunction<typeof qualityStatusApi.getAll>;
-    mockedApi.mockResolvedValue({ data: mockQualityStatuses });
+    mockedApi.mockResolvedValue({ success: true, data: mockQualityStatuses });
 
     const { unmount } = render(<QualityStatusManagement />, { wrapper: createWrapper() });
 
