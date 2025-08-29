@@ -1,10 +1,10 @@
-# Bakery Inventory Management System - Development Planning
+# Bake**🎯 CURRENT STATUS: Phase 1 Complete + Core Inventory Systems Live (Raw Materials & Intermediate Products)**y Inventory Management System - Development Planning
 
 ## 📋 Project Overview
 
 Full-stack bakery inventory management application with React TypeScript frontend, Node.js Express backend, and PostgreSQL database with Prisma ORM.
 
-**🎯 CURRENT STATUS: Phase 1 Complete + Core Inventory Systems Live (Raw Materials & Intermediate Products)**
+### 🎯 CURRENT STATUS: Phase 1 Complete + Core Inventory Systems Live (Raw Materials & Intermediate Products)
 
 ## 🚨 CRITICAL DEVELOPMENT GUIDELINE - REAL API ONLY
 
@@ -69,6 +69,16 @@ Full-stack bakery inventory management application with React TypeScript fronten
 - **Database**: Use test database with seed data for consistent testing
 - **Mocking**: Mock external dependencies while testing real business logic
 
+##### 🏗️ **Frontend Testing Infrastructure (FOLLOW THIS STRUCTURE):**
+
+- **Configuration**: Use `jest.config.cjs` for Jest configuration (CommonJS format due to ESM compatibility)
+- **Test Setup**: All global test setup in `src/setupTests.ts` (mocks for ResizeObserver, matchMedia, etc.)
+- **Test Location**: Place component tests in `__tests__` folder next to the component
+- **Naming Convention**: Use `ComponentName.test.tsx` naming format
+- **API Mocking**: When mocking API responses, always include `success: true/false` property
+- **Data Structure**: Use proper TypeScript types for mock data to catch issues early
+- **Commands**: Use `npm test`, `npm run test:watch`, or `npm run test:coverage` to run tests
+
 ##### 📋 **Development Workflow:**
 
 1. **Before Development**: Review existing tests related to the feature area
@@ -96,7 +106,7 @@ Full-stack bakery inventory management application with React TypeScript fronten
 
 ##### 📁 **Test File Structure:**
 
-```
+```plaintext
 backend/
   ├── src/
   │   ├── controllers/
@@ -108,6 +118,7 @@ backend/
   │   │   └── __tests__/
   │   │       └── inventoryService.test.ts
 
+```sh
 frontend/
   ├── src/
   │   ├── components/
@@ -119,6 +130,8 @@ frontend/
   │   │   └── __tests__/
   │   │       └── Dashboard.test.tsx
 ```
+
+```markdown
 
 ##### 🧪 **Test Naming Conventions:**
 
@@ -478,7 +491,7 @@ POST /api/finished-products # Auto-assigns default quality status
 - [x] **Real ingredient relationships** - Proper foreign key relationships in database
 - [x] **Cost calculations** - Real-time pricing based on current ingredient costs
 
-### 🎯 Testing Infrastructure (100% Complete)
+### 🧪 Testing Infrastructure (100% Complete)
 
 ### 🎯 **COMPLETED: Enhanced Dashboard & Analytics System** ✅
 
@@ -807,15 +820,19 @@ Now that we have a complete Dashboard & Analytics system providing real-time bus
 - units (weight/volume/count with categories)
 - intermediate_products (complete with all relationships)
 
+
+```plaintext
 -- Tables ready but UI pending:
 - raw_materials (schema complete, API ready)
 - finished_products (schema complete)
 - recipes (schema complete)
 ```
 
+```markdown
+
 ### API Endpoints (Current Status)
 
-```text
+```plaintext
 ✅ IMPLEMENTED:
 /api/intermediate-products (full CRUD)
 /api/categories (full CRUD)
