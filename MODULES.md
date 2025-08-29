@@ -19,15 +19,18 @@ This document provides a comprehensive overview of the main modules in the baker
 ## 🧩 Core Modules
 
 ### 1. 👤 User Management Module
+
 **Purpose:** Authentication and authorization system
 
 **Features:**
+
 - User registration and login
 - Role-based access control (ADMIN, MANAGER, STAFF, VIEWER)
 - Session management
 - Password hashing and security
 
 **Database Model:**
+
 ```typescript
 User {
   id: String (Primary Key)
@@ -42,15 +45,18 @@ User {
 ```
 
 ### 2. 🏷️ Category Management Module
+
 **Purpose:** Hierarchical classification system for all inventory items
 
 **Features:**
+
 - Category creation and management
 - Type-specific categories (RAW_MATERIAL, INTERMEDIATE, FINISHED_PRODUCT, RECIPE)
 - Hierarchical organization
 - Category-based reporting
 
 **Database Model:**
+
 ```typescript
 Category {
   id: String (Primary Key)
@@ -62,21 +68,25 @@ Category {
 ```
 
 **Category Types:**
+
 - `RAW_MATERIAL` - For ingredients and base materials
 - `INTERMEDIATE` - For work-in-progress products
 - `FINISHED_PRODUCT` - For sellable final products
 - `RECIPE` - For production instructions
 
 ### 3. 🏢 Supplier Management Module
+
 **Purpose:** External vendor and supplier relationship management
 
 **Features:**
+
 - Supplier information tracking
 - Contact management
 - Active/inactive status
 - Purchase history linking
 
 **Database Model:**
+
 ```typescript
 Supplier {
   id: String (Primary Key)
@@ -90,15 +100,18 @@ Supplier {
 ```
 
 ### 4. 📦 Storage Location Module
+
 **Purpose:** Physical inventory location management
 
 **Features:**
+
 - Warehouse and storage area tracking
 - Capacity management
 - Location-based inventory reports
 - Multi-location support
 
 **Database Model:**
+
 ```typescript
 StorageLocation {
   id: String (Primary Key)
@@ -111,15 +124,18 @@ StorageLocation {
 ```
 
 ### 5. 📏 Units Management Module
+
 **Purpose:** Standardized measurement system
 
 **Features:**
+
 - Weight, volume, and count units
 - Unit conversion capabilities
 - Active/inactive unit management
 - Category-based unit organization
 
 **Database Model:**
+
 ```typescript
 Unit {
   id: String (Primary Key)
@@ -134,6 +150,7 @@ Unit {
 ```
 
 **Unit Categories:**
+
 - **Weight:** kg, g, lb, oz
 - **Volume:** L, mL, gal, cup
 - **Count:** pcs, dozen, case
@@ -143,9 +160,11 @@ Unit {
 ## 🍞 Product Management Modules
 
 ### 6. 🥬 Raw Materials Module
+
 **Purpose:** Base ingredients and materials inventory management
 
 **Key Features:**
+
 - Purchase tracking and supplier linking
 - Expiration date monitoring
 - Contamination status tracking
@@ -153,6 +172,7 @@ Unit {
 - Batch number tracking
 
 **Business Logic:**
+
 - **Input to production process**
 - Cannot be sold directly to customers
 - Requires supplier sourcing
@@ -160,6 +180,7 @@ Unit {
 - Has purchase prices, not sale prices
 
 **Database Model:**
+
 ```typescript
 RawMaterial {
   id: String (Primary Key)
@@ -182,14 +203,17 @@ RawMaterial {
 ```
 
 **Real-world Examples:**
+
 - Flour, sugar, eggs, butter
 - Yeast, baking powder, salt
 - Packaging materials, labels
 
 ### 7. 🔄 Intermediate Products Module
+
 **Purpose:** Work-in-progress items during production
 
 **Key Features:**
+
 - Production status tracking
 - Quality control workflow
 - Recipe linking
@@ -197,6 +221,7 @@ RawMaterial {
 - Contamination monitoring
 
 **Business Logic:**
+
 - **Semi-finished goods** in production pipeline
 - Cannot be sold to customers
 - Require further processing
@@ -204,6 +229,7 @@ RawMaterial {
 - Track production workflow status
 
 **Database Model:**
+
 ```typescript
 IntermediateProduct {
   id: String (Primary Key)
@@ -226,27 +252,28 @@ IntermediateProduct {
 ```
 
 **Status Values:**
+
 - `IN_PRODUCTION` - Currently being made
 - `COMPLETED` - Ready for next step
 - `ON_HOLD` - Paused production
 - `DISCARDED` - Failed quality check
 
-**Quality Status:**
-- `PENDING` - Awaiting quality check
-- `APPROVED` - Passed quality control
-- `REJECTED` - Failed quality control
-- `UNDER_REVIEW` - Being evaluated
+**Quality Status:** 
+See the dedicated Quality Status Module (#11) for more details.
 
 **Real-world Examples:**
+
 - Mixed bread dough (before baking)
 - Cake layers (before assembly)
 - Cookie dough (before cutting/baking)
 - Pastry shells (before filling)
 
 ### 8. ✅ Finished Products Module
+
 **Purpose:** Completed, sellable products ready for customers
 
 **Key Features:**
+
 - SKU management for retail
 - Sales price tracking
 - Reserved quantity for orders
@@ -255,6 +282,7 @@ IntermediateProduct {
 - Packaging information
 
 **Business Logic:**
+
 - **Final products** ready for sale
 - Have customer sale prices
 - Can be reserved for orders
@@ -262,6 +290,7 @@ IntermediateProduct {
 - Revenue-generating inventory
 
 **Database Model:**
+
 ```typescript
 FinishedProduct {
   id: String (Primary Key)
@@ -286,15 +315,18 @@ FinishedProduct {
 ```
 
 **Real-world Examples:**
+
 - Finished loaves of bread
 - Decorated cakes ready for pickup
 - Packaged cookies for display
 - Croissants ready for sale
 
 ### 9. 📋 Recipe Module ✅ PRODUCTION READY
+
 **Purpose:** Complete recipe management with ingredient tracking, cost analysis, and production planning
 
 **Features:**
+
 - **Complete CRUD operations** - Create, read, update, delete recipes
 - **Multi-ingredient support** - Both raw materials and intermediate products
 - **Ingredient management** - Quantity, units, and notes for each ingredient
@@ -309,6 +341,7 @@ FinishedProduct {
 - **Advanced search** - Recipe filtering and search capabilities
 
 **Database Models:**
+
 ```typescript
 Recipe {
   id: String (Primary Key)
@@ -344,6 +377,7 @@ RecipeIngredient {
 ```
 
 **API Endpoints:**
+
 - `GET /api/recipes` - List all recipes with filtering
 - `POST /api/recipes` - Create new recipe with ingredients
 - `GET /api/recipes/:id` - Get recipe with full ingredient details
@@ -353,6 +387,7 @@ RecipeIngredient {
 - `GET /api/recipes/what-can-i-make` - Analyze possible recipes from inventory
 
 **Key Features Implemented:**
+
 - ✅ Comprehensive ingredient selection system
 - ✅ Real-time cost calculations based on current prices
 - ✅ Inventory-based recipe feasibility analysis
@@ -378,7 +413,8 @@ graph LR
     style E fill:#ccffcc
 ```
 
-### Production Workflow:
+### Production Workflow
+
 1. **Raw Materials** are purchased from suppliers
 2. **Recipes** define how to combine raw materials
 3. **Intermediate Products** are created during production
@@ -405,9 +441,79 @@ graph LR
 
 ---
 
+## 🧪 Quality Management Modules
+
+### 10. 🚨 Contamination Management Module
+
+**Purpose:** Track and manage product safety and contamination across all inventory items
+
+**Features:**
+- Contamination status tracking for all product types
+- Cross-entity contamination reporting
+- Contamination status API endpoints
+- Visual indicators for contaminated items
+
+**Database Integration:**
+- `isContaminated` Boolean field in Raw Materials
+- `contaminated` Boolean field in Intermediate Products
+- `isContaminated` Boolean field in Finished Products
+
+**API Endpoints:**
+- `GET /api/contamination/status` - Get counts of contaminated items
+- Update endpoints for each product type to toggle contamination status
+
+### 11. 🏅 Quality Status Module ✅ PRODUCTION READY
+
+**Purpose:** Comprehensive quality control and status tracking system across all inventory entities
+
+**Features:**
+- **Customizable Quality Statuses**: Create, edit, and manage quality status definitions
+- **Visual Status Indicators**: Color-coded quality status display
+- **Quality Management**: Track quality across all product types
+- **Sorting & Organization**: Organize quality statuses by priority
+- **Active/Inactive Toggle**: Enable/disable quality statuses without deletion
+
+**Database Model:**
+
+```typescript
+QualityStatus {
+  id: String (Primary Key)
+  name: String (Unique)
+  description: String
+  color: String (Hex color code)
+  isActive: Boolean
+  sortOrder: Int
+  createdAt: DateTime
+  updatedAt: DateTime
+}
+```
+
+**Entity Integration:**
+- Raw Materials: `qualityStatusId` foreign key
+- Intermediate Products: `qualityStatusId` foreign key
+- Finished Products: `qualityStatusId` foreign key
+
+**Implementation Details:**
+- Default status assignment for new products
+- Empty string handling for optional quality status values
+- Consistent UI for quality status selection across all forms
+- Color-coded status display in product tables
+
+**API Endpoints:**
+```
+GET /api/quality-statuses      # List all quality statuses
+POST /api/quality-statuses     # Create new quality status
+PUT /api/quality-statuses/:id  # Update quality status
+DELETE /api/quality-statuses/:id # Soft delete quality status
+GET /api/quality-statuses/usage # Check usage across entities
+```
+
+---
+
 ## 🛠️ Technical Implementation
 
-### Frontend Structure:
+### Frontend Structure
+
 ```
 src/
 ├── components/
@@ -426,7 +532,8 @@ src/
     └── mockApi.ts      # Mock data for testing
 ```
 
-### Backend Structure:
+### Backend Structure
+
 ```
 src/
 ├── controllers/        # Route handlers for each module
@@ -436,7 +543,8 @@ src/
 └── types/             # TypeScript type definitions
 ```
 
-### Database Relationships:
+### Database Relationships
+
 - All product types link to **Categories** for classification
 - Raw materials link to **Suppliers** for sourcing
 - All products link to **Storage Locations** for tracking
@@ -458,8 +566,11 @@ src/
 | Intermediate Products | ✅ Complete | Full CRUD with professional UI |
 | Finished Products | 🟡 Partial | Backend ready, UI pending |
 | Recipes | 🟡 Partial | Backend ready, UI pending |
+| Contamination Management | ✅ Complete | Cross-entity tracking with API |
+| Quality Status | ✅ Complete | Full CRUD with consistent integration |
 
 **Legend:**
+
 - ✅ Complete: Fully implemented with UI
 - 🟡 Partial: Backend ready, UI in development
 - 🔴 Pending: Not yet implemented
