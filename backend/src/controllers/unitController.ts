@@ -24,11 +24,11 @@ export const getUnitById = async (req: Request, res: Response) => {
     const unit = await prisma.unit.findUnique({
       where: { id }
     });
-    
+
     if (!unit) {
       return res.status(404).json({ success: false, error: 'Unit not found' });
     }
-    
+
     res.json({ success: true, data: unit });
   } catch (error) {
     console.error('Error fetching unit:', error);
@@ -40,7 +40,7 @@ export const getUnitById = async (req: Request, res: Response) => {
 export const createUnit = async (req: Request, res: Response) => {
   try {
     const { name, symbol, category, description } = req.body;
-    
+
     const unit = await prisma.unit.create({
       data: {
         name,
@@ -49,7 +49,7 @@ export const createUnit = async (req: Request, res: Response) => {
         description
       }
     });
-    
+
     res.status(201).json({ success: true, data: unit });
   } catch (error) {
     console.error('Error creating unit:', error);
@@ -66,7 +66,7 @@ export const updateUnit = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { name, symbol, category, description, isActive } = req.body;
-    
+
     const unit = await prisma.unit.update({
       where: { id },
       data: {
@@ -77,7 +77,7 @@ export const updateUnit = async (req: Request, res: Response) => {
         isActive
       }
     });
-    
+
     res.json({ success: true, data: unit });
   } catch (error) {
     console.error('Error updating unit:', error);
@@ -95,12 +95,12 @@ export const updateUnit = async (req: Request, res: Response) => {
 export const deleteUnit = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    
+
     const unit = await prisma.unit.update({
       where: { id },
       data: { isActive: false }
     });
-    
+
     res.json({ success: true, data: unit });
   } catch (error) {
     console.error('Error deleting unit:', error);

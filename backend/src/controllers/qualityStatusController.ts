@@ -55,12 +55,12 @@ export const createQualityStatus = async (req: Request, res: Response) => {
     res.status(201).json(newQualityStatus);
   } catch (error: any) {
     console.error('Error creating quality status:', error);
-    
+
     // Handle Prisma unique constraint error
     if (error.code === 'P2002' && error.meta?.target?.includes('name')) {
       return res.status(400).json({ error: 'Quality status name already exists' });
     }
-    
+
     res.status(500).json({ error: 'Failed to create quality status' });
   }
 };
@@ -85,15 +85,15 @@ export const updateQualityStatus = async (req: Request, res: Response) => {
     res.json(updatedQualityStatus);
   } catch (error: any) {
     console.error('Error updating quality status:', error);
-    
+
     if (error.code === 'P2025') {
       return res.status(404).json({ error: 'Quality status not found' });
     }
-    
+
     if (error.code === 'P2002' && error.meta?.target?.includes('name')) {
       return res.status(400).json({ error: 'Quality status name already exists' });
     }
-    
+
     res.status(500).json({ error: 'Failed to update quality status' });
   }
 };
@@ -118,7 +118,7 @@ export const deleteQualityStatus = async (req: Request, res: Response) => {
         where: { id },
         data: { isActive: false },
       });
-      
+
       res.json({
         message: 'Quality status deactivated (it is in use by existing products)',
         qualityStatus: updatedQualityStatus,
@@ -128,16 +128,16 @@ export const deleteQualityStatus = async (req: Request, res: Response) => {
       await prisma.qualityStatus.delete({
         where: { id },
       });
-      
+
       res.json({ message: 'Quality status deleted successfully' });
     }
   } catch (error) {
     console.error('Error deleting quality status:', error);
-    
+
     if (error instanceof Error && error.message.includes('Record to delete does not exist')) {
       return res.status(404).json({ error: 'Quality status not found' });
     }
-    
+
     res.status(500).json({ error: 'Failed to delete quality status' });
   }
 };

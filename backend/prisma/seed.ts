@@ -17,7 +17,7 @@ async function main() {
     prisma.category.create({
       data: { name: 'Dairy', type: 'RAW_MATERIAL', description: 'Milk, butter, cream' }
     }),
-    
+
     // Intermediate Product Categories
     prisma.category.create({
       data: { name: 'Dough', type: 'INTERMEDIATE', description: 'Pre-made doughs and bases' }
@@ -28,7 +28,7 @@ async function main() {
     prisma.category.create({
       data: { name: 'Glazes', type: 'INTERMEDIATE', description: 'Icings and glazes' }
     }),
-    
+
     // Finished Product Categories
     prisma.category.create({
       data: { name: 'Breads', type: 'FINISHED_PRODUCT', description: 'All types of bread' }
@@ -123,7 +123,7 @@ async function main() {
     prisma.unit.create({
       data: { name: 'Ounce', symbol: 'oz', category: 'weight', description: 'Small imperial unit of mass' }
     }),
-    
+
     // Volume units
     prisma.unit.create({
       data: { name: 'Liter', symbol: 'L', category: 'volume', description: 'Standard unit of volume' }
@@ -140,7 +140,7 @@ async function main() {
     prisma.unit.create({
       data: { name: 'Teaspoon', symbol: 'tsp', category: 'volume', description: 'Smallest cooking measurement' }
     }),
-    
+
     // Count units
     prisma.unit.create({
       data: { name: 'Piece', symbol: 'pcs', category: 'count', description: 'Individual items' }
@@ -193,6 +193,11 @@ async function main() {
 
   console.log(`✅ Created ${recipes.length} recipes`);
 
+  // Get default quality status
+  const defaultQualityStatus = await prisma.qualityStatus.findFirst({
+    where: { name: 'Good' },
+  }) || await prisma.qualityStatus.findFirst();
+
   // Create some raw materials
   const rawMaterials = await Promise.all([
     prisma.rawMaterial.create({
@@ -208,7 +213,9 @@ async function main() {
         unit: 'kg',
         unitPrice: 2.50,
         reorderLevel: 10,
-        storageLocationId: storageLocations[0].id
+        storageLocationId: storageLocations[0].id,
+        qualityStatusId: defaultQualityStatus?.id,
+        isContaminated: false
       }
     }),
     prisma.rawMaterial.create({
@@ -224,7 +231,9 @@ async function main() {
         unit: 'kg',
         unitPrice: 1.80,
         reorderLevel: 5,
-        storageLocationId: storageLocations[0].id
+        storageLocationId: storageLocations[0].id,
+        qualityStatusId: defaultQualityStatus?.id,
+        isContaminated: false
       }
     }),
     prisma.rawMaterial.create({
@@ -240,7 +249,9 @@ async function main() {
         unit: 'L',
         unitPrice: 5.50,
         reorderLevel: 2,
-        storageLocationId: storageLocations[1].id
+        storageLocationId: storageLocations[1].id,
+        qualityStatusId: defaultQualityStatus?.id,
+        isContaminated: false
       }
     })
   ]);
@@ -261,7 +272,9 @@ async function main() {
         expirationDate: new Date('2024-08-22'),
         quantity: 25.5,
         unit: 'kg',
-        status: 'COMPLETED'
+        status: 'COMPLETED',
+        contaminated: false,
+        qualityStatusId: defaultQualityStatus?.id
       }
     }),
     prisma.intermediateProduct.create({
@@ -276,7 +289,9 @@ async function main() {
         expirationDate: new Date('2024-08-26'),
         quantity: 10,
         unit: 'L',
-        status: 'IN_PRODUCTION'
+        status: 'IN_PRODUCTION',
+        contaminated: false,
+        qualityStatusId: defaultQualityStatus?.id
       }
     }),
     prisma.intermediateProduct.create({
@@ -290,12 +305,74 @@ async function main() {
         expirationDate: new Date('2024-08-30'),
         quantity: 15,
         unit: 'kg',
-        status: 'COMPLETED'
+        status: 'COMPLETED',
+        contaminated: false,
+        qualityStatusId: defaultQualityStatus?.id
       }
     })
   ]);
 
   console.log(`✅ Created ${intermediateProducts.length} intermediate products`);
+
+  // Create finished products
+  const finishedProducts = await Promise.all([
+    prisma.finishedProduct.create({
+      data: {
+        name: 'Artisan Sourdough Bread',
+        description: 'Traditional sourdough bread with crispy crust',
+        categoryId: categories[6].id, // Breads category
+        sku: 'BRD-SD-001',
+        batchNumber: 'BSB001',
+        productionDate: new Date('2024-08-24'),
+        expirationDate: new Date('2024-08-30'),
+        shelfLife: 6,
+        quantity: 30,
+        unit: 'pcs',
+        salePrice: 6.99,
+        costToProduce: 2.50,
+        storageLocationId: storageLocations[0].id,
+        qualityStatusId: defaultQualityStatus?.id
+      }
+    }),
+    prisma.finishedProduct.create({
+      data: {
+        name: 'Chocolate Croissant',
+        description: 'Butter croissant with chocolate filling',
+        categoryId: categories[7].id, // Pastries category
+        sku: 'PST-CC-001',
+        batchNumber: 'CC001',
+        productionDate: new Date('2024-08-25'),
+        expirationDate: new Date('2024-08-27'),
+        shelfLife: 2,
+        quantity: 50,
+        unit: 'pcs',
+        salePrice: 3.99,
+        costToProduce: 1.20,
+        storageLocationId: storageLocations[0].id,
+        qualityStatusId: defaultQualityStatus?.id
+      }
+    }),
+    prisma.finishedProduct.create({
+      data: {
+        name: 'Classic Baguette',
+        description: 'Traditional French baguette',
+        categoryId: categories[6].id, // Breads category
+        sku: 'BRD-BG-001',
+        batchNumber: 'BG001',
+        productionDate: new Date('2024-08-25'),
+        expirationDate: new Date('2024-08-26'),
+        shelfLife: 1,
+        quantity: 40,
+        unit: 'pcs',
+        salePrice: 4.50,
+        costToProduce: 1.50,
+        storageLocationId: storageLocations[0].id,
+        qualityStatusId: defaultQualityStatus?.id
+      }
+    })
+  ]);
+
+  console.log(`✅ Created ${finishedProducts.length} finished products`);
 
   console.log('🎉 Seed completed successfully!');
 }

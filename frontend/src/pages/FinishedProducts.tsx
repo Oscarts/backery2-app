@@ -29,6 +29,8 @@ import {
   Tooltip,
   Card,
   CardContent,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -71,7 +73,7 @@ const FinishedProducts: React.FC = () => {
   const { data: storageLocationsResponse } = useQuery(['storageLocations'], storageLocationsApi.getAll);
   const { data: unitsResponse } = useQuery(['units'], unitsApi.getAll);
   const { data: qualityStatusResponse } = useQuery(['qualityStatuses'], qualityStatusApi.getAll);
-  
+
   const categories = categoriesResponse?.data?.filter(c => c.type === CategoryType.FINISHED_PRODUCT);
   const storageLocations = storageLocationsResponse?.data;
   const units = unitsResponse?.data;
@@ -80,6 +82,14 @@ const FinishedProducts: React.FC = () => {
   // Get default quality status (first in list)
   const getDefaultQualityStatusId = () => {
     return qualityStatuses.length > 0 ? qualityStatuses[0].id : '';
+  };
+
+  // Helper function to display contamination status (only if contaminated)
+  const getContaminationChip = (isContaminated: boolean) => {
+    if (isContaminated) {
+      return <Chip label="CONTAMINATED" color="error" size="small" sx={{ ml: 1 }} />;
+    }
+    return null; // Don't show anything if clean
   };
 
   // Mutations
@@ -95,7 +105,7 @@ const FinishedProducts: React.FC = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateFinishedProductData }) => 
+    mutationFn: ({ id, data }: { id: string; data: UpdateFinishedProductData }) =>
       finishedProductsApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries(['finishedProducts']);
@@ -185,11 +195,13 @@ const FinishedProducts: React.FC = () => {
       costToProduce: editingProduct?.costToProduce || undefined,
       packagingInfo: editingProduct?.packagingInfo || '',
       storageLocationId: editingProduct?.storageLocationId || '',
+      isContaminated: editingProduct?.isContaminated || false, // Default is not contaminated
+      qualityStatusId: editingProduct?.qualityStatusId || getDefaultQualityStatusId(),
     });
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
-      
+
       if (editingProduct) {
         updateMutation.mutate({ id: editingProduct.id, data: formData });
       } else {
@@ -345,8 +357,10 @@ const FinishedProducts: React.FC = () => {
                 <FormControl fullWidth>
                   <InputLabel>Quality Status</InputLabel>
                   <Select
+                    name="qualityStatusId"
                     value={formData.qualityStatusId || getDefaultQualityStatusId()}
                     onChange={(e) => setFormData({ ...formData, qualityStatusId: e.target.value })}
+                    label="Quality Status"
                   >
                     <MenuItem value="">
                       <em>None</em>
@@ -380,6 +394,19 @@ const FinishedProducts: React.FC = () => {
                   onChange={(e) => setFormData({ ...formData, packagingInfo: e.target.value })}
                 />
               </Grid>
+              <Grid item xs={12}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      name="isContaminated"
+                      checked={!!formData.isContaminated}
+                      onChange={(e) => setFormData({ ...formData, isContaminated: e.target.checked })}
+                      color="error"
+                    />
+                  }
+                  label="Mark as contaminated"
+                />
+              </Grid>
             </Grid>
           </DialogContent>
           <DialogActions>
@@ -395,20 +422,20 @@ const FinishedProducts: React.FC = () => {
 
   // Filter products
   const filteredProducts = products?.data?.filter((product) => {
-    const matchesSearch = !searchTerm || 
+    const matchesSearch = !searchTerm ||
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.batchNumber.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesCategory = !categoryFilter || product.categoryId === categoryFilter;
-    
+
     let matchesExpiration = true;
     if (expirationFilter === 'expired') {
       matchesExpiration = isExpired(product.expirationDate);
     } else if (expirationFilter === 'expiring_soon') {
       matchesExpiration = isExpiringSoon(product.expirationDate);
     }
-    
+
     return matchesSearch && matchesCategory && matchesExpiration;
   }) || [];
 
@@ -557,7 +584,10 @@ const FinishedProducts: React.FC = () => {
                   <TableRow key={product.id}>
                     <TableCell>
                       <Box>
-                        <Typography variant="subtitle2">{product.name}</Typography>
+                        <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center' }}>
+                          {product.name}
+                          {getContaminationChip(product.isContaminated)}
+                        </Typography>
                         <Typography variant="caption" color="text.secondary">
                           {product.category?.name}
                         </Typography>
@@ -598,10 +628,10 @@ const FinishedProducts: React.FC = () => {
                         {isExpiredProduct ? (
                           <Chip label="Expired" color="error" size="small" />
                         ) : isExpiringSoonProduct ? (
-                          <Chip 
-                            label={`${getDaysUntilExpiration(product.expirationDate)} days`} 
-                            color="warning" 
-                            size="small" 
+                          <Chip
+                            label={`${getDaysUntilExpiration(product.expirationDate)} days`}
+                            color="warning"
+                            size="small"
                           />
                         ) : null}
                       </Box>

@@ -138,7 +138,7 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     fetchDashboardData();
-    
+
     // Auto-refresh every 30 seconds
     const interval = setInterval(fetchDashboardData, 30000);
     return () => clearInterval(interval);
@@ -262,13 +262,13 @@ const Dashboard: React.FC = () => {
                   <Typography variant="body2" color="text.secondary" gutterBottom>
                     Cost: {formatCurrency(summary.totalInventoryValue.costValue)}
                   </Typography>
-                  
+
                   {/* Value Breakdown by Product Type */}
                   <Box mt={2}>
                     <Typography variant="caption" color="text.secondary" gutterBottom display="block">
                       Cost Breakdown:
                     </Typography>
-                    
+
                     {/* Raw Materials */}
                     <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
                       <Typography variant="caption" color="text.secondary">
@@ -306,8 +306,8 @@ const Dashboard: React.FC = () => {
                     ) : (
                       <ArrowDownIcon color="error" fontSize="small" />
                     )}
-                    <Typography 
-                      variant="body2" 
+                    <Typography
+                      variant="body2"
                       color={summary.totalInventoryValue.profitMargin >= 0 ? 'success.main' : 'error.main'}
                     >
                       {summary.totalInventoryValue.profitMargin.toFixed(1)}% margin
@@ -332,7 +332,7 @@ const Dashboard: React.FC = () => {
                     <Typography variant="caption" color="text.secondary" gutterBottom display="block">
                       Breakdown:
                     </Typography>
-                    
+
                     {/* Raw Materials */}
                     <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
                       <Typography variant="caption" color="text.secondary">
@@ -396,13 +396,13 @@ const Dashboard: React.FC = () => {
                   <Typography variant="h4" color="warning.main" gutterBottom>
                     {summary.alertBreakdown.totalAlerts}
                   </Typography>
-                  
+
                   {/* Alert Breakdown by Type */}
                   <Box mt={2}>
                     <Typography variant="caption" color="text.secondary" gutterBottom display="block">
                       Alert Breakdown:
                     </Typography>
-                    
+
                     {/* Raw Materials */}
                     <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
                       <Typography variant="caption" color="text.secondary">
@@ -410,34 +410,34 @@ const Dashboard: React.FC = () => {
                       </Typography>
                       <Box display="flex" gap={0.5} flexWrap="wrap">
                         {summary.alertBreakdown.rawMaterials.expiring > 0 && (
-                          <Chip 
-                            label={`${summary.alertBreakdown.rawMaterials.expiring} Expired`} 
-                            size="small" 
-                            color="error" 
+                          <Chip
+                            label={`${summary.alertBreakdown.rawMaterials.expiring} Expired`}
+                            size="small"
+                            color="error"
                             sx={{ fontSize: '0.65rem', height: '18px' }}
                           />
                         )}
                         {summary.alertBreakdown.rawMaterials.lowStock > 0 && (
-                          <Chip 
-                            label={`${summary.alertBreakdown.rawMaterials.lowStock} Low Stock`} 
-                            size="small" 
-                            color="warning" 
+                          <Chip
+                            label={`${summary.alertBreakdown.rawMaterials.lowStock} Low Stock`}
+                            size="small"
+                            color="warning"
                             sx={{ fontSize: '0.65rem', height: '18px' }}
                           />
                         )}
                         {summary.alertBreakdown.rawMaterials.contaminated > 0 && (
-                          <Chip 
-                            label={`${summary.alertBreakdown.rawMaterials.contaminated} Contaminated`} 
-                            size="small" 
-                            color="error" 
+                          <Chip
+                            label={`${summary.alertBreakdown.rawMaterials.contaminated} Contaminated`}
+                            size="small"
+                            color="error"
                             sx={{ fontSize: '0.65rem', height: '18px' }}
                           />
                         )}
                         {summary.alertBreakdown.rawMaterials.total === 0 && (
-                          <Chip 
-                            label="All Good" 
-                            size="small" 
-                            color="success" 
+                          <Chip
+                            label="All Good"
+                            size="small"
+                            color="success"
                             sx={{ fontSize: '0.65rem', height: '18px' }}
                           />
                         )}
@@ -451,26 +451,26 @@ const Dashboard: React.FC = () => {
                       </Typography>
                       <Box display="flex" gap={0.5} flexWrap="wrap">
                         {summary.alertBreakdown.intermediateProducts.expiring > 0 && (
-                          <Chip 
-                            label={`${summary.alertBreakdown.intermediateProducts.expiring} Expired`} 
-                            size="small" 
-                            color="error" 
+                          <Chip
+                            label={`${summary.alertBreakdown.intermediateProducts.expiring} Expired`}
+                            size="small"
+                            color="error"
                             sx={{ fontSize: '0.65rem', height: '18px' }}
                           />
                         )}
                         {summary.alertBreakdown.intermediateProducts.contaminated > 0 && (
-                          <Chip 
-                            label={`${summary.alertBreakdown.intermediateProducts.contaminated} Contaminated`} 
-                            size="small" 
-                            color="error" 
+                          <Chip
+                            label={`${summary.alertBreakdown.intermediateProducts.contaminated} Contaminated`}
+                            size="small"
+                            color="error"
                             sx={{ fontSize: '0.65rem', height: '18px' }}
                           />
                         )}
                         {summary.alertBreakdown.intermediateProducts.total === 0 && (
-                          <Chip 
-                            label="All Good" 
-                            size="small" 
-                            color="success" 
+                          <Chip
+                            label="All Good"
+                            size="small"
+                            color="success"
                             sx={{ fontSize: '0.65rem', height: '18px' }}
                           />
                         )}
@@ -484,34 +484,34 @@ const Dashboard: React.FC = () => {
                       </Typography>
                       <Box display="flex" gap={0.5} flexWrap="wrap">
                         {summary.alertBreakdown.finishedProducts.expiring > 0 && (
-                          <Chip 
-                            label={`${summary.alertBreakdown.finishedProducts.expiring} Expired`} 
-                            size="small" 
-                            color="error" 
+                          <Chip
+                            label={`${summary.alertBreakdown.finishedProducts.expiring} Expired`}
+                            size="small"
+                            color="error"
                             sx={{ fontSize: '0.65rem', height: '18px' }}
                           />
                         )}
                         {summary.alertBreakdown.finishedProducts.lowStock > 0 && (
-                          <Chip 
-                            label={`${summary.alertBreakdown.finishedProducts.lowStock} Low Stock`} 
-                            size="small" 
-                            color="warning" 
+                          <Chip
+                            label={`${summary.alertBreakdown.finishedProducts.lowStock} Low Stock`}
+                            size="small"
+                            color="warning"
                             sx={{ fontSize: '0.65rem', height: '18px' }}
                           />
                         )}
                         {summary.alertBreakdown.finishedProducts.reserved > 0 && (
-                          <Chip 
-                            label={`${summary.alertBreakdown.finishedProducts.reserved} Reserved`} 
-                            size="small" 
-                            color="info" 
+                          <Chip
+                            label={`${summary.alertBreakdown.finishedProducts.reserved} Reserved`}
+                            size="small"
+                            color="info"
                             sx={{ fontSize: '0.65rem', height: '18px' }}
                           />
                         )}
                         {summary.alertBreakdown.finishedProducts.total === 0 && (
-                          <Chip 
-                            label="All Good" 
-                            size="small" 
-                            color="success" 
+                          <Chip
+                            label="All Good"
+                            size="small"
+                            color="success"
                             sx={{ fontSize: '0.65rem', height: '18px' }}
                           />
                         )}
@@ -533,32 +533,32 @@ const Dashboard: React.FC = () => {
                     Quick Actions
                   </Typography>
                   <Box display="flex" flexDirection="column" gap={1}>
-                    <Button 
-                      variant="outlined" 
+                    <Button
+                      variant="outlined"
                       startIcon={<InventoryIcon />}
                       onClick={() => navigate('/raw-materials')}
                       fullWidth
                     >
                       Manage Raw Materials
                     </Button>
-                    <Button 
-                      variant="outlined" 
+                    <Button
+                      variant="outlined"
                       startIcon={<ProductIcon />}
                       onClick={() => navigate('/finished-products')}
                       fullWidth
                     >
                       Manage Products
                     </Button>
-                    <Button 
-                      variant="outlined" 
+                    <Button
+                      variant="outlined"
                       startIcon={<RecipeIcon />}
                       onClick={() => navigate('/recipes')}
                       fullWidth
                     >
                       Manage Recipes
                     </Button>
-                    <Button 
-                      variant="outlined" 
+                    <Button
+                      variant="outlined"
                       startIcon={<AssessmentIcon />}
                       onClick={() => navigate('/reports')}
                       fullWidth
@@ -595,15 +595,15 @@ const Dashboard: React.FC = () => {
                                   <Typography variant="body2" noWrap sx={{ flexGrow: 1 }}>
                                     {alert.name}
                                   </Typography>
-                                  <Chip 
-                                    label={formatProductType(alert.type)} 
-                                    size="small" 
+                                  <Chip
+                                    label={formatProductType(alert.type)}
+                                    size="small"
                                     color="default"
                                     sx={{ fontSize: '0.65rem', height: '20px' }}
                                   />
-                                  <Chip 
-                                    label={formatAlertType(alert.alertType)} 
-                                    size="small" 
+                                  <Chip
+                                    label={formatAlertType(alert.alertType)}
+                                    size="small"
                                     color={getAlertColor(alert.severity) as any}
                                     sx={{ fontSize: '0.65rem', height: '20px' }}
                                   />
@@ -614,7 +614,7 @@ const Dashboard: React.FC = () => {
                                   {alert.category}
                                   {alert.location && <> • {alert.location}</>}
                                   {alert.daysUntilExpiration !== undefined && (
-                                    <> • {alert.daysUntilExpiration > 0 
+                                    <> • {alert.daysUntilExpiration > 0
                                       ? `${alert.daysUntilExpiration} days remaining`
                                       : `${Math.abs(alert.daysUntilExpiration)} days overdue`
                                     }</>
@@ -652,7 +652,7 @@ const Dashboard: React.FC = () => {
                 </CardContent>
               </Card>
             </Grid>
-            
+
             <Grid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
@@ -669,7 +669,7 @@ const Dashboard: React.FC = () => {
                 </CardContent>
               </Card>
             </Grid>
-            
+
             <Grid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>
@@ -686,7 +686,7 @@ const Dashboard: React.FC = () => {
                 </CardContent>
               </Card>
             </Grid>
-            
+
             <Grid item xs={12} sm={6} md={3}>
               <Card>
                 <CardContent>

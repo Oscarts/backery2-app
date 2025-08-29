@@ -64,8 +64,8 @@ const QualityStatusManagement: React.FC = () => {
     retryDelay: 1000,
   });
 
-  const qualityStatuses: QualityStatus[] = Array.isArray(qualityStatusesResponse?.data) 
-    ? qualityStatusesResponse.data 
+  const qualityStatuses: QualityStatus[] = Array.isArray(qualityStatusesResponse?.data)
+    ? qualityStatusesResponse.data
     : [];
 
   // Debug logging
@@ -94,7 +94,7 @@ const QualityStatusManagement: React.FC = () => {
 
   // Update quality status mutation
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<QualityStatus> }) => 
+    mutationFn: ({ id, data }: { id: string; data: Partial<QualityStatus> }) =>
       qualityStatusApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['qualityStatuses'] });
@@ -193,8 +193,8 @@ const QualityStatusManagement: React.FC = () => {
         <Alert severity="error" sx={{ mb: 2 }}>
           Error loading quality statuses: {(queryError as any)?.message || 'Unknown error'}
         </Alert>
-        <Button 
-          variant="outlined" 
+        <Button
+          variant="outlined"
           onClick={() => window.location.reload()}
         >
           Retry

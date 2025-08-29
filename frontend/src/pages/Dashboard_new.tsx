@@ -104,7 +104,7 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     fetchDashboardData();
-    
+
     // Auto-refresh every 30 seconds
     const interval = setInterval(fetchDashboardData, 30000);
     return () => clearInterval(interval);
@@ -214,8 +214,8 @@ const Dashboard: React.FC = () => {
                     ) : (
                       <ArrowDownIcon color="error" fontSize="small" />
                     )}
-                    <Typography 
-                      variant="body2" 
+                    <Typography
+                      variant="body2"
                       color={summary.totalInventoryValue.profitMargin >= 0 ? 'success.main' : 'error.main'}
                     >
                       {summary.totalInventoryValue.profitMargin.toFixed(1)}% margin
@@ -237,8 +237,8 @@ const Dashboard: React.FC = () => {
                     {summary.inventoryCounts.total}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Raw: {summary.inventoryCounts.rawMaterials} | 
-                    Intermediate: {summary.inventoryCounts.intermediateProducts} | 
+                    Raw: {summary.inventoryCounts.rawMaterials} |
+                    Intermediate: {summary.inventoryCounts.intermediateProducts} |
                     Finished: {summary.inventoryCounts.finishedProducts}
                   </Typography>
                 </CardContent>
@@ -257,8 +257,8 @@ const Dashboard: React.FC = () => {
                     {summary.stockStatus.expiring + summary.stockStatus.lowStock + summary.stockStatus.contaminated}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Expiring: {summary.stockStatus.expiring} | 
-                    Low Stock: {summary.stockStatus.lowStock} | 
+                    Expiring: {summary.stockStatus.expiring} |
+                    Low Stock: {summary.stockStatus.lowStock} |
                     Contaminated: {summary.stockStatus.contaminated}
                   </Typography>
                 </CardContent>
@@ -276,24 +276,24 @@ const Dashboard: React.FC = () => {
                     Quick Actions
                   </Typography>
                   <Box display="flex" flexDirection="column" gap={1}>
-                    <Button 
-                      variant="outlined" 
+                    <Button
+                      variant="outlined"
                       startIcon={<InventoryIcon />}
                       onClick={() => navigate('/raw-materials')}
                       fullWidth
                     >
                       Manage Raw Materials
                     </Button>
-                    <Button 
-                      variant="outlined" 
+                    <Button
+                      variant="outlined"
                       startIcon={<ProductIcon />}
                       onClick={() => navigate('/finished-products')}
                       fullWidth
                     >
                       Manage Products
                     </Button>
-                    <Button 
-                      variant="outlined" 
+                    <Button
+                      variant="outlined"
                       startIcon={<AssessmentIcon />}
                       onClick={() => navigate('/reports')}
                       fullWidth
@@ -330,19 +330,19 @@ const Dashboard: React.FC = () => {
                                   <Typography variant="body2" noWrap>
                                     {alert.name}
                                   </Typography>
-                                  <Chip 
-                                    label={alert.alertType.replace('_', ' ')} 
-                                    size="small" 
+                                  <Chip
+                                    label={alert.alertType.replace('_', ' ')}
+                                    size="small"
                                     color={getAlertColor(alert.severity) as any}
                                   />
                                 </Box>
                               }
                               secondary={
                                 <Typography variant="caption" color="text.secondary">
-                                  {alert.category} • {alert.location} • 
+                                  {alert.category} • {alert.location} •
                                   {alert.quantity} {alert.unit}
                                   {alert.daysUntilExpiration !== undefined && (
-                                    <> • {alert.daysUntilExpiration > 0 
+                                    <> • {alert.daysUntilExpiration > 0
                                       ? `Expires in ${alert.daysUntilExpiration} days`
                                       : `Expired ${Math.abs(alert.daysUntilExpiration)} days ago`
                                     }</>

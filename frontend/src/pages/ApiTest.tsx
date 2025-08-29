@@ -78,7 +78,7 @@ const ApiTestPage: React.FC = () => {
     const failed = tests.filter(test => test.status === 'error').length;
     const running = tests.filter(test => test.status === 'testing').length;
     const idle = tests.filter(test => test.status === 'idle').length;
-    
+
     return { total, passed, failed, running, idle };
   };
 
@@ -89,14 +89,14 @@ const ApiTestPage: React.FC = () => {
     updateTest(0, { status: 'testing' });
     try {
       const categoriesResult = await categoriesApi.getAll();
-      updateTest(0, { 
-        status: 'success', 
+      updateTest(0, {
+        status: 'success',
         message: `Found ${categoriesResult.data?.length || 0} categories`,
         data: categoriesResult.data
       });
     } catch (error) {
-      updateTest(0, { 
-        status: 'error', 
+      updateTest(0, {
+        status: 'error',
         message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
@@ -105,14 +105,14 @@ const ApiTestPage: React.FC = () => {
     updateTest(1, { status: 'testing' });
     try {
       const locationsResult = await storageLocationsApi.getAll();
-      updateTest(1, { 
-        status: 'success', 
+      updateTest(1, {
+        status: 'success',
         message: `Found ${locationsResult.data?.length || 0} storage locations`,
         data: locationsResult.data
       });
     } catch (error) {
-      updateTest(1, { 
-        status: 'error', 
+      updateTest(1, {
+        status: 'error',
         message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
@@ -121,14 +121,14 @@ const ApiTestPage: React.FC = () => {
     updateTest(2, { status: 'testing' });
     try {
       const unitsResult = await unitsApi.getAll();
-      updateTest(2, { 
-        status: 'success', 
+      updateTest(2, {
+        status: 'success',
         message: `Found ${unitsResult.data?.length || 0} units`,
         data: unitsResult.data
       });
     } catch (error) {
-      updateTest(2, { 
-        status: 'error', 
+      updateTest(2, {
+        status: 'error',
         message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
@@ -137,14 +137,14 @@ const ApiTestPage: React.FC = () => {
     updateTest(3, { status: 'testing' });
     try {
       const suppliersResult = await suppliersApi.getAll();
-      updateTest(3, { 
-        status: 'success', 
+      updateTest(3, {
+        status: 'success',
         message: `Found ${suppliersResult.data?.length || 0} suppliers`,
         data: suppliersResult.data
       });
     } catch (error) {
-      updateTest(3, { 
-        status: 'error', 
+      updateTest(3, {
+        status: 'error',
         message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
@@ -153,14 +153,14 @@ const ApiTestPage: React.FC = () => {
     updateTest(4, { status: 'testing' });
     try {
       const productsResult = await intermediateProductsApi.getAll();
-      updateTest(4, { 
-        status: 'success', 
+      updateTest(4, {
+        status: 'success',
         message: `Found ${productsResult.data?.length || 0} intermediate products`,
         data: productsResult.data
       });
     } catch (error) {
-      updateTest(4, { 
-        status: 'error', 
+      updateTest(4, {
+        status: 'error',
         message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
@@ -168,40 +168,40 @@ const ApiTestPage: React.FC = () => {
     // Test 6: Create Intermediate Product
     updateTest(5, { status: 'testing' });
     try {
-          // Ensure we have fresh data for the create test
-          const [categoriesResult, locationsResult, unitsResult] = await Promise.all([
-            categoriesApi.getAll(),
-            storageLocationsApi.getAll(),
-            unitsApi.getAll()
-          ]);
+      // Ensure we have fresh data for the create test
+      const [categoriesResult, locationsResult, unitsResult] = await Promise.all([
+        categoriesApi.getAll(),
+        storageLocationsApi.getAll(),
+        unitsApi.getAll()
+      ]);
 
-          if (!categoriesResult.data?.[0]?.id) {
-            throw new Error('No categories available for testing');
-          }
-          if (!locationsResult.data?.[0]?.id) {
-            throw new Error('No storage locations available for testing');
-          }
-          if (!unitsResult.data?.[0]?.symbol) {
-            throw new Error('No units available for testing');
-          }
+      if (!categoriesResult.data?.[0]?.id) {
+        throw new Error('No categories available for testing');
+      }
+      if (!locationsResult.data?.[0]?.id) {
+        throw new Error('No storage locations available for testing');
+      }
+      if (!unitsResult.data?.[0]?.symbol) {
+        throw new Error('No units available for testing');
+      }
 
-          const createData = {
-            name: 'Test Intermediate Product',
-            description: 'A test intermediate product for API testing',
-            categoryId: categoriesResult.data[0].id,
-            storageLocationId: locationsResult.data[0].id,
-            batchNumber: `BATCH${Date.now()}`,
-            productionDate: new Date().toISOString().split('T')[0] + 'T00:00:00.000Z',
-            expirationDate: '2025-12-31T00:00:00.000Z',
-            quantity: 100,
-            unit: unitsResult.data[0].symbol,
-            status: IntermediateProductStatus.IN_PRODUCTION,
-            contaminated: false
-          };      
-          
-          const createResult = await intermediateProductsApi.create(createData);
-      updateTest(5, { 
-        status: 'success', 
+      const createData = {
+        name: 'Test Intermediate Product',
+        description: 'A test intermediate product for API testing',
+        categoryId: categoriesResult.data[0].id,
+        storageLocationId: locationsResult.data[0].id,
+        batchNumber: `BATCH${Date.now()}`,
+        productionDate: new Date().toISOString().split('T')[0] + 'T00:00:00.000Z',
+        expirationDate: '2025-12-31T00:00:00.000Z',
+        quantity: 100,
+        unit: unitsResult.data[0].symbol,
+        status: IntermediateProductStatus.IN_PRODUCTION,
+        contaminated: false
+      };
+
+      const createResult = await intermediateProductsApi.create(createData);
+      updateTest(5, {
+        status: 'success',
         message: `Created product with ID: ${createResult.data?.id}`,
         data: createResult.data
       });
@@ -214,8 +214,8 @@ const ApiTestPage: React.FC = () => {
             quantity: 15,
             status: IntermediateProductStatus.COMPLETED
           });
-          updateTest(6, { 
-            status: 'success', 
+          updateTest(6, {
+            status: 'success',
             message: `Updated product quantity to ${updateResult.data?.quantity}`,
             data: updateResult.data
           });
@@ -224,26 +224,26 @@ const ApiTestPage: React.FC = () => {
           updateTest(7, { status: 'testing' });
           try {
             await intermediateProductsApi.delete(createResult.data.id);
-            updateTest(7, { 
-              status: 'success', 
+            updateTest(7, {
+              status: 'success',
               message: 'Product deleted successfully'
             });
           } catch (error) {
-            updateTest(7, { 
-              status: 'error', 
+            updateTest(7, {
+              status: 'error',
               message: `Delete error: ${error instanceof Error ? error.message : 'Unknown error'}`
             });
           }
         } catch (error) {
-          updateTest(6, { 
-            status: 'error', 
+          updateTest(6, {
+            status: 'error',
             message: `Update error: ${error instanceof Error ? error.message : 'Unknown error'}`
           });
         }
       }
     } catch (error) {
-      updateTest(5, { 
-        status: 'error', 
+      updateTest(5, {
+        status: 'error',
         message: `Create error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
@@ -252,14 +252,14 @@ const ApiTestPage: React.FC = () => {
     updateTest(8, { status: 'testing' });
     try {
       const rawMaterialsResult = await rawMaterialsApi.getAll();
-      updateTest(8, { 
-        status: 'success', 
+      updateTest(8, {
+        status: 'success',
         message: `Found ${rawMaterialsResult.data?.length || 0} raw materials`,
         data: rawMaterialsResult.data
       });
     } catch (error) {
-      updateTest(8, { 
-        status: 'error', 
+      updateTest(8, {
+        status: 'error',
         message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
@@ -305,8 +305,8 @@ const ApiTestPage: React.FC = () => {
       };
 
       const createRawResult = await rawMaterialsApi.create(createRawMaterialData);
-      updateTest(9, { 
-        status: 'success', 
+      updateTest(9, {
+        status: 'success',
         message: `Created raw material with ID: ${createRawResult.data?.id}`,
         data: createRawResult.data
       });
@@ -320,8 +320,8 @@ const ApiTestPage: React.FC = () => {
             costPerUnit: 3.00,
             contaminated: false
           });
-          updateTest(10, { 
-            status: 'success', 
+          updateTest(10, {
+            status: 'success',
             message: `Updated raw material quantity to ${updateRawResult.data?.quantity}`,
             data: updateRawResult.data
           });
@@ -330,26 +330,26 @@ const ApiTestPage: React.FC = () => {
           updateTest(11, { status: 'testing' });
           try {
             await rawMaterialsApi.delete(createRawResult.data.id);
-            updateTest(11, { 
-              status: 'success', 
+            updateTest(11, {
+              status: 'success',
               message: 'Raw material deleted successfully'
             });
           } catch (error) {
-            updateTest(11, { 
-              status: 'error', 
+            updateTest(11, {
+              status: 'error',
               message: `Delete error: ${error instanceof Error ? error.message : 'Unknown error'}`
             });
           }
         } catch (error) {
-          updateTest(10, { 
-            status: 'error', 
+          updateTest(10, {
+            status: 'error',
             message: `Update error: ${error instanceof Error ? error.message : 'Unknown error'}`
           });
         }
       }
     } catch (error) {
-      updateTest(9, { 
-        status: 'error', 
+      updateTest(9, {
+        status: 'error',
         message: `Create error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
@@ -358,14 +358,14 @@ const ApiTestPage: React.FC = () => {
     updateTest(12, { status: 'testing' });
     try {
       const finishedProductsResult = await finishedProductsApi.getAll();
-      updateTest(12, { 
-        status: 'success', 
+      updateTest(12, {
+        status: 'success',
         message: `Found ${finishedProductsResult.data?.length || 0} finished products`,
         data: finishedProductsResult.data
       });
     } catch (error) {
-      updateTest(12, { 
-        status: 'error', 
+      updateTest(12, {
+        status: 'error',
         message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
@@ -375,10 +375,10 @@ const ApiTestPage: React.FC = () => {
     try {
       const categoriesResult = await categoriesApi.getAll();
       const finishedProductCategories = categoriesResult.data?.filter(c => c.type === 'FINISHED_PRODUCT');
-      
+
       if (!finishedProductCategories || finishedProductCategories.length === 0) {
-        updateTest(13, { 
-          status: 'error', 
+        updateTest(13, {
+          status: 'error',
           message: 'No finished product categories found for testing'
         });
         return;
@@ -400,8 +400,8 @@ const ApiTestPage: React.FC = () => {
       };
 
       const createFinishedResult = await finishedProductsApi.create(createFinishedData);
-      updateTest(13, { 
-        status: 'success', 
+      updateTest(13, {
+        status: 'success',
         message: `Created finished product: ${createFinishedResult.data?.name}`,
         data: createFinishedResult.data
       });
@@ -416,8 +416,8 @@ const ApiTestPage: React.FC = () => {
           };
 
           const updateFinishedResult = await finishedProductsApi.update(createFinishedResult.data.id, updateFinishedData);
-          updateTest(14, { 
-            status: 'success', 
+          updateTest(14, {
+            status: 'success',
             message: `Updated finished product quantity to ${updateFinishedResult.data?.quantity}`,
             data: updateFinishedResult.data
           });
@@ -426,26 +426,26 @@ const ApiTestPage: React.FC = () => {
           updateTest(15, { status: 'testing' });
           try {
             await finishedProductsApi.delete(createFinishedResult.data.id);
-            updateTest(15, { 
-              status: 'success', 
+            updateTest(15, {
+              status: 'success',
               message: 'Finished product deleted successfully'
             });
           } catch (error) {
-            updateTest(15, { 
-              status: 'error', 
+            updateTest(15, {
+              status: 'error',
               message: `Delete error: ${error instanceof Error ? error.message : 'Unknown error'}`
             });
           }
         } catch (error) {
-          updateTest(14, { 
-            status: 'error', 
+          updateTest(14, {
+            status: 'error',
             message: `Update error: ${error instanceof Error ? error.message : 'Unknown error'}`
           });
         }
       }
     } catch (error) {
-      updateTest(13, { 
-        status: 'error', 
+      updateTest(13, {
+        status: 'error',
         message: `Create error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
@@ -454,14 +454,14 @@ const ApiTestPage: React.FC = () => {
     updateTest(16, { status: 'testing' });
     try {
       const expiringResult = await finishedProductsApi.getExpiring(7);
-      updateTest(16, { 
-        status: 'success', 
+      updateTest(16, {
+        status: 'success',
         message: `Found ${expiringResult.data?.length || 0} products expiring in 7 days`,
         data: expiringResult.data
       });
     } catch (error) {
-      updateTest(16, { 
-        status: 'error', 
+      updateTest(16, {
+        status: 'error',
         message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
@@ -470,14 +470,14 @@ const ApiTestPage: React.FC = () => {
     updateTest(17, { status: 'testing' });
     try {
       const lowStockResult = await finishedProductsApi.getLowStock(10);
-      updateTest(17, { 
-        status: 'success', 
+      updateTest(17, {
+        status: 'success',
         message: `Found ${lowStockResult.data?.length || 0} low stock products`,
         data: lowStockResult.data
       });
     } catch (error) {
-      updateTest(17, { 
-        status: 'error', 
+      updateTest(17, {
+        status: 'error',
         message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
@@ -487,11 +487,11 @@ const ApiTestPage: React.FC = () => {
     try {
       const allProducts = await finishedProductsApi.getAll();
       const availableProduct = allProducts.data?.find(p => p.quantity > p.reservedQuantity);
-      
+
       if (availableProduct) {
         const reserveResult = await finishedProductsApi.reserveQuantity(availableProduct.id, 5);
-        updateTest(18, { 
-          status: 'success', 
+        updateTest(18, {
+          status: 'success',
           message: `Reserved 5 units of ${availableProduct.name}`,
           data: reserveResult.data
         });
@@ -500,27 +500,27 @@ const ApiTestPage: React.FC = () => {
         updateTest(19, { status: 'testing' });
         try {
           const releaseResult = await finishedProductsApi.releaseReservation(availableProduct.id, 5);
-          updateTest(19, { 
-            status: 'success', 
+          updateTest(19, {
+            status: 'success',
             message: `Released 5 units reservation for ${availableProduct.name}`,
             data: releaseResult.data
           });
         } catch (error) {
-          updateTest(19, { 
-            status: 'error', 
+          updateTest(19, {
+            status: 'error',
             message: `Release error: ${error instanceof Error ? error.message : 'Unknown error'}`
           });
         }
       } else {
-        updateTest(18, { 
-          status: 'error', 
+        updateTest(18, {
+          status: 'error',
           message: 'No available products found for reservation testing'
         });
         updateTest(19, { status: 'idle' });
       }
     } catch (error) {
-      updateTest(18, { 
-        status: 'error', 
+      updateTest(18, {
+        status: 'error',
         message: `Reserve error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
       updateTest(19, { status: 'idle' });
@@ -531,14 +531,14 @@ const ApiTestPage: React.FC = () => {
     try {
       const summaryResponse = await fetch('/api/dashboard/summary');
       const summaryResult = await summaryResponse.json();
-      updateTest(20, { 
-        status: 'success', 
+      updateTest(20, {
+        status: 'success',
         message: `Dashboard summary loaded - Total items: ${summaryResult.data?.inventoryCounts?.total || 0}`,
         data: summaryResult.data
       });
     } catch (error) {
-      updateTest(20, { 
-        status: 'error', 
+      updateTest(20, {
+        status: 'error',
         message: `Summary error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
@@ -548,14 +548,14 @@ const ApiTestPage: React.FC = () => {
     try {
       const alertsResponse = await fetch('/api/dashboard/alerts');
       const alertsResult = await alertsResponse.json();
-      updateTest(21, { 
-        status: 'success', 
+      updateTest(21, {
+        status: 'success',
         message: `Found ${alertsResult.data?.length || 0} alerts`,
         data: alertsResult.data
       });
     } catch (error) {
-      updateTest(21, { 
-        status: 'error', 
+      updateTest(21, {
+        status: 'error',
         message: `Alerts error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
@@ -565,14 +565,14 @@ const ApiTestPage: React.FC = () => {
     try {
       const trendsResponse = await fetch('/api/dashboard/trends?days=7');
       const trendsResult = await trendsResponse.json();
-      updateTest(22, { 
-        status: 'success', 
+      updateTest(22, {
+        status: 'success',
         message: `Trends loaded for 7 days`,
         data: trendsResult.data
       });
     } catch (error) {
-      updateTest(22, { 
-        status: 'error', 
+      updateTest(22, {
+        status: 'error',
         message: `Trends error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
@@ -582,14 +582,14 @@ const ApiTestPage: React.FC = () => {
     try {
       const categoriesResponse = await fetch('/api/dashboard/categories');
       const categoriesResult = await categoriesResponse.json();
-      updateTest(23, { 
-        status: 'success', 
+      updateTest(23, {
+        status: 'success',
         message: `Categories breakdown loaded`,
         data: categoriesResult.data
       });
     } catch (error) {
-      updateTest(23, { 
-        status: 'error', 
+      updateTest(23, {
+        status: 'error',
         message: `Categories error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
@@ -599,14 +599,14 @@ const ApiTestPage: React.FC = () => {
     try {
       const valueResponse = await fetch('/api/dashboard/value');
       const valueResult = await valueResponse.json();
-      updateTest(24, { 
-        status: 'success', 
+      updateTest(24, {
+        status: 'success',
         message: `Value analysis loaded`,
         data: valueResult.data
       });
     } catch (error) {
-      updateTest(24, { 
-        status: 'error', 
+      updateTest(24, {
+        status: 'error',
         message: `Value error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
@@ -616,14 +616,14 @@ const ApiTestPage: React.FC = () => {
     try {
       const recipesResponse = await fetch('/api/recipes');
       const recipesResult = await recipesResponse.json();
-      updateTest(25, { 
-        status: 'success', 
+      updateTest(25, {
+        status: 'success',
         message: `Found ${recipesResult.data?.length || 0} recipes`,
         data: recipesResult.data
       });
     } catch (error) {
-      updateTest(25, { 
-        status: 'error', 
+      updateTest(25, {
+        status: 'error',
         message: `Recipes error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
@@ -649,29 +649,29 @@ const ApiTestPage: React.FC = () => {
           }
         ]
       };
-      
+
       const createResponse = await fetch('/api/recipes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(testRecipe)
       });
       const createResult = await createResponse.json();
-      
+
       if (createResult.success) {
-        updateTest(26, { 
-          status: 'success', 
+        updateTest(26, {
+          status: 'success',
           message: `Recipe created: ${createResult.data.name}`,
           data: createResult.data
         });
-        
+
         // Store recipe ID for subsequent tests
         (window as any).testRecipeId = createResult.data.id;
       } else {
         throw new Error(createResult.error || 'Failed to create recipe');
       }
     } catch (error) {
-      updateTest(26, { 
-        status: 'error', 
+      updateTest(26, {
+        status: 'error',
         message: `Create recipe error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
@@ -682,14 +682,14 @@ const ApiTestPage: React.FC = () => {
       const recipeId = (window as any).testRecipeId || 'cmesziwvd0002sjmy8jb5ij2r';
       const costResponse = await fetch(`/api/recipes/${recipeId}/cost`);
       const costResult = await costResponse.json();
-      updateTest(27, { 
-        status: 'success', 
+      updateTest(27, {
+        status: 'success',
         message: `Cost analysis: $${costResult.data?.totalCost?.toFixed(2) || 0}`,
         data: costResult.data
       });
     } catch (error) {
-      updateTest(27, { 
-        status: 'error', 
+      updateTest(27, {
+        status: 'error',
         message: `Cost analysis error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
@@ -699,14 +699,14 @@ const ApiTestPage: React.FC = () => {
     try {
       const whatCanMakeResponse = await fetch('/api/recipes/what-can-i-make');
       const whatCanMakeResult = await whatCanMakeResponse.json();
-      updateTest(28, { 
-        status: 'success', 
+      updateTest(28, {
+        status: 'success',
         message: `Can make ${whatCanMakeResult.data?.canMakeCount || 0} of ${whatCanMakeResult.data?.totalRecipes || 0} recipes`,
         data: whatCanMakeResult.data
       });
     } catch (error) {
-      updateTest(28, { 
-        status: 'error', 
+      updateTest(28, {
+        status: 'error',
         message: `What can I make error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
@@ -718,23 +718,23 @@ const ApiTestPage: React.FC = () => {
       if (!recipeId) {
         throw new Error('No test recipe ID available');
       }
-      
+
       const updateData = {
         name: `Updated Test Recipe ${Date.now()}`,
         description: 'Updated test recipe description',
         prepTime: 45
       };
-      
+
       const updateResponse = await fetch(`/api/recipes/${recipeId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData)
       });
       const updateResult = await updateResponse.json();
-      
+
       if (updateResult.success) {
-        updateTest(29, { 
-          status: 'success', 
+        updateTest(29, {
+          status: 'success',
           message: `Recipe updated: ${updateResult.data.name}`,
           data: updateResult.data
         });
@@ -742,8 +742,8 @@ const ApiTestPage: React.FC = () => {
         throw new Error(updateResult.error || 'Failed to update recipe');
       }
     } catch (error) {
-      updateTest(29, { 
-        status: 'error', 
+      updateTest(29, {
+        status: 'error',
         message: `Update recipe error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
@@ -755,15 +755,15 @@ const ApiTestPage: React.FC = () => {
       if (!recipeId) {
         throw new Error('No test recipe ID available');
       }
-      
+
       const deleteResponse = await fetch(`/api/recipes/${recipeId}`, {
         method: 'DELETE'
       });
       const deleteResult = await deleteResponse.json();
-      
+
       if (deleteResult.success) {
-        updateTest(30, { 
-          status: 'success', 
+        updateTest(30, {
+          status: 'success',
           message: `Recipe deleted successfully`,
           data: deleteResult
         });
@@ -772,8 +772,8 @@ const ApiTestPage: React.FC = () => {
         throw new Error(deleteResult.error || 'Failed to delete recipe');
       }
     } catch (error) {
-      updateTest(30, { 
-        status: 'error', 
+      updateTest(30, {
+        status: 'error',
         message: `Delete recipe error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
@@ -806,7 +806,7 @@ const ApiTestPage: React.FC = () => {
       <Typography variant="h4" component="h1" gutterBottom>
         API Testing Dashboard
       </Typography>
-      
+
       <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
         Test the database connectivity and CRUD operations for the bakery inventory system.
       </Typography>
@@ -837,7 +837,7 @@ const ApiTestPage: React.FC = () => {
               </>
             )}
           </Typography>
-          
+
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
             <Chip label={`${stats.passed}/${stats.total} Passed`} color="success" variant={stats.passed > 0 ? "filled" : "outlined"} size="small" />
             {stats.failed > 0 && <Chip label={`${stats.failed} Failed`} color="error" size="small" />}
@@ -881,10 +881,10 @@ const ApiTestPage: React.FC = () => {
                     size="small"
                   />
                 </Box>
-                
+
                 {test.message && (
-                  <Alert 
-                    severity={test.status === 'error' ? 'error' : 'info'} 
+                  <Alert
+                    severity={test.status === 'error' ? 'error' : 'info'}
                     sx={{ mb: 2 }}
                   >
                     {test.message}

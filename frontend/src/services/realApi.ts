@@ -1,17 +1,17 @@
 // Real API service for backend communication
-import { 
-  IntermediateProduct, 
-  Category, 
-  StorageLocation, 
-  Unit, 
-  RawMaterial, 
-  CreateRawMaterialData, 
-  UpdateRawMaterialData, 
+import {
+  IntermediateProduct,
+  Category,
+  StorageLocation,
+  Unit,
+  RawMaterial,
+  CreateRawMaterialData,
+  UpdateRawMaterialData,
   FinishedProduct,
   CreateFinishedProductData,
   UpdateFinishedProductData,
   Supplier,
-  ApiResponse 
+  ApiResponse
 } from '../types';
 
 const API_BASE_URL = 'http://localhost:8000/api';
@@ -325,4 +325,45 @@ export const qualityStatusApi = {
   getUsage: async (id: string) => {
     return apiCall(`/quality-statuses/${id}/usage`);
   },
+};
+
+// Recipe API
+import { Recipe, CreateRecipeData, RecipeCostAnalysis, WhatCanIMakeAnalysis } from '../types';
+
+export const recipesApi = {
+  getAll: async (): Promise<ApiResponse<Recipe[]>> => {
+    return apiCall<Recipe[]>('/recipes');
+  },
+
+  getById: async (id: string): Promise<ApiResponse<Recipe>> => {
+    return apiCall<Recipe>(`/recipes/${id}`);
+  },
+
+  create: async (data: CreateRecipeData): Promise<ApiResponse<Recipe>> => {
+    return apiCall<Recipe>('/recipes', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  update: async (id: string, data: Partial<CreateRecipeData>): Promise<ApiResponse<Recipe>> => {
+    return apiCall<Recipe>(`/recipes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  delete: async (id: string): Promise<ApiResponse<void>> => {
+    return apiCall<void>(`/recipes/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  getCost: async (id: string): Promise<ApiResponse<RecipeCostAnalysis>> => {
+    return apiCall<RecipeCostAnalysis>(`/recipes/${id}/cost`);
+  },
+
+  getWhatCanIMake: async (): Promise<ApiResponse<WhatCanIMakeAnalysis>> => {
+    return apiCall<WhatCanIMakeAnalysis>('/recipes/what-can-i-make');
+  }
 };

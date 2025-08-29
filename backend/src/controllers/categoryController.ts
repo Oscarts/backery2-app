@@ -40,9 +40,9 @@ export const categoryController = {
       const { name, type, description } = req.body;
 
       if (!name || !type) {
-        return res.status(400).json({ 
-          success: false, 
-          error: 'Name and type are required' 
+        return res.status(400).json({
+          success: false,
+          error: 'Name and type are required'
         });
       }
 

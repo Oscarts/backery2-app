@@ -453,6 +453,9 @@ POST /api/finished-products # Auto-assigns default quality status
 - [x] **Cost analysis tab** - Detailed ingredient cost breakdown with profitability analysis
 - [x] **"What Can I Make?" analyzer** - Inventory-based recipe recommendations
 - [x] **Recipe editing** - Fixed data parsing issues and improved form data handling
+- [x] **Auto ingredient unit** - Units now automatically set based on raw material/intermediate product units
+- [x] **Enhanced error handling** - Improved backend validation and frontend error display
+- [x] **Recipe creation fixes** - Fixed issues with recipe creation and form submission
 - [x] **Material-UI enhancements** - Fixed label overlap issues in dropdown selectors
 - [x] **Active/inactive toggle** - Recipe status management with visual indicators
 - [x] **Responsive design** - Mobile-friendly forms and tables

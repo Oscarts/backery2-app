@@ -303,7 +303,7 @@ IntermediateProduct {
 - `ON_HOLD` - Paused production
 - `DISCARDED` - Failed quality check
 
-**Quality Status:** 
+**Quality Status:**
 See the dedicated Quality Status Module (#11) for more details.
 
 **Real-world Examples:**
@@ -372,9 +372,10 @@ FinishedProduct {
 
 **Features:**
 
-- **Complete CRUD operations** - Create, read, update, delete recipes
+- **Complete CRUD operations** - Create, read, update, delete recipes with enhanced error handling
 - **Multi-ingredient support** - Both raw materials and intermediate products
 - **Ingredient management** - Quantity, units, and notes for each ingredient
+- **Auto-unit system** - Units automatically set from source materials
 - **Instructions system** - Step-by-step procedures with JSON storage
 - **Recipe categorization** - Organized by recipe categories
 - **Yield calculations** - Quantity and unit specification
@@ -493,17 +494,20 @@ graph LR
 **Purpose:** Track and manage product safety and contamination across all inventory items
 
 **Features:**
+
 - Contamination status tracking for all product types
 - Cross-entity contamination reporting
 - Contamination status API endpoints
 - Visual indicators for contaminated items
 
 **Database Integration:**
+
 - `isContaminated` Boolean field in Raw Materials
 - `contaminated` Boolean field in Intermediate Products
 - `isContaminated` Boolean field in Finished Products
 
 **API Endpoints:**
+
 - `GET /api/contamination/status` - Get counts of contaminated items
 - Update endpoints for each product type to toggle contamination status
 
@@ -512,6 +516,7 @@ graph LR
 **Purpose:** Comprehensive quality control and status tracking system across all inventory entities
 
 **Features:**
+
 - **Customizable Quality Statuses**: Create, edit, and manage quality status definitions
 - **Visual Status Indicators**: Color-coded quality status display
 - **Quality Management**: Track quality across all product types
@@ -534,17 +539,20 @@ QualityStatus {
 ```
 
 **Entity Integration:**
+
 - Raw Materials: `qualityStatusId` foreign key
 - Intermediate Products: `qualityStatusId` foreign key
 - Finished Products: `qualityStatusId` foreign key
 
 **Implementation Details:**
+
 - Default status assignment for new products
 - Empty string handling for optional quality status values
 - Consistent UI for quality status selection across all forms
 - Color-coded status display in product tables
 
 **API Endpoints:**
+
 ```
 GET /api/quality-statuses      # List all quality statuses
 POST /api/quality-statuses     # Create new quality status
@@ -723,4 +731,4 @@ The project is on track for its next major release with a focus on production pl
 
 ---
 
-*Last updated: August 29, 2025*
+*Last updated: August 29, 2025 - Recipe CRUD fixed, unit auto-selection implemented*

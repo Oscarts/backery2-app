@@ -226,9 +226,9 @@ export const dashboardController = {
             reserved: reservedProducts,
             total: expiringFinishedProducts + lowStockFinishedProducts + (reservedProducts > 0 ? 1 : 0), // Count reserved as info alert
           },
-          totalAlerts: expiringRawMaterials + expiringIntermediateProducts + expiringFinishedProducts + 
-                       lowStockRawMaterials + lowStockFinishedProducts + 
-                       contaminatedRawMaterials + contaminatedIntermediateProducts,
+          totalAlerts: expiringRawMaterials + expiringIntermediateProducts + expiringFinishedProducts +
+            lowStockRawMaterials + lowStockFinishedProducts +
+            contaminatedRawMaterials + contaminatedIntermediateProducts,
         },
         recentActivity: {
           itemsCreatedToday,
@@ -272,7 +272,7 @@ export const dashboardController = {
 
       rawMaterials.forEach(rm => {
         const daysUntilExpiration = Math.ceil((new Date(rm.expirationDate).getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        
+
         if (rm.isContaminated) {
           alerts.push({
             id: rm.id,
@@ -347,7 +347,7 @@ export const dashboardController = {
 
       intermediateProducts.forEach(ip => {
         const daysUntilExpiration = Math.ceil((new Date(ip.expirationDate).getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        
+
         if (ip.contaminated) {
           alerts.push({
             id: ip.id,
@@ -408,7 +408,7 @@ export const dashboardController = {
 
       finishedProducts.forEach(fp => {
         const daysUntilExpiration = Math.ceil((new Date(fp.expirationDate).getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        
+
         if (daysUntilExpiration < 0) {
           alerts.push({
             id: fp.id,
@@ -675,7 +675,7 @@ export const dashboardController = {
         },
       };
 
-      totals.finishedProducts.profitMargin = totals.finishedProducts.totalSaleValue > 0 
+      totals.finishedProducts.profitMargin = totals.finishedProducts.totalSaleValue > 0
         ? ((totals.finishedProducts.totalSaleValue - totals.finishedProducts.totalCostValue) / totals.finishedProducts.totalSaleValue) * 100
         : 0;
 

@@ -107,7 +107,7 @@ export interface IntermediateProduct {
 
 export enum IntermediateProductStatus {
   IN_PRODUCTION = 'IN_PRODUCTION',
-  COMPLETED = 'COMPLETED', 
+  COMPLETED = 'COMPLETED',
   ON_HOLD = 'ON_HOLD',
   DISCARDED = 'DISCARDED'
 }
@@ -196,6 +196,7 @@ export interface FinishedProduct {
   packagingInfo?: string;
   storageLocationId?: string;
   qualityStatusId?: string;
+  isContaminated: boolean;
   createdAt: string;
   updatedAt: string;
 
@@ -221,6 +222,7 @@ export interface CreateFinishedProductData {
   packagingInfo?: string;
   storageLocationId?: string;
   qualityStatusId?: string;
+  isContaminated?: boolean;
 }
 
 export interface UpdateFinishedProductData {
@@ -239,6 +241,8 @@ export interface UpdateFinishedProductData {
   costToProduce?: number;
   packagingInfo?: string;
   storageLocationId?: string;
+  qualityStatusId?: string;
+  isContaminated?: boolean;
 }
 
 // API Response types

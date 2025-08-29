@@ -381,6 +381,7 @@ CORS_ORIGIN="http://localhost:3002"
 ### Currently Implemented
 
 #### **Intermediate Products**
+
 - `GET /api/intermediate-products` - Get all intermediate products
 - `POST /api/intermediate-products` - Create new intermediate product
 - `GET /api/intermediate-products/:id` - Get specific intermediate product
@@ -388,18 +389,21 @@ CORS_ORIGIN="http://localhost:3002"
 - `DELETE /api/intermediate-products/:id` - Delete intermediate product
 
 #### **Categories**
+
 - `GET /api/categories` - Get all categories
 - `POST /api/categories` - Create new category
 - `PUT /api/categories/:id` - Update category
 - `DELETE /api/categories/:id` - Delete category
 
 #### **Storage Locations**
+
 - `GET /api/storage-locations` - Get all storage locations
 - `POST /api/storage-locations` - Create new storage location
 - `PUT /api/storage-locations/:id` - Update storage location
 - `DELETE /api/storage-locations/:id` - Delete storage location
 
 #### **Units**
+
 - `GET /api/units` - Get all units
 - `POST /api/units` - Create new unit
 - `PUT /api/units/:id` - Update unit
@@ -408,17 +412,21 @@ CORS_ORIGIN="http://localhost:3002"
 ### Planned Endpoints
 
 #### **Raw Materials**
+
 - `GET/POST /api/raw-materials` - Raw materials CRUD
 
 #### **Finished Products**
+
 - `GET/POST /api/finished-products` - Finished products CRUD
 
 #### **Recipes & Production**
+
 - `GET/POST /api/recipes` - Recipe management
 - `POST /api/production/what-can-i-make` - Production analysis
 - `POST /api/production/order-fulfillment` - Order planning
 
 #### **Analytics**
+
 - `GET /api/dashboard/summary` - Dashboard data
 - `GET /api/reports/expiration` - Expiration reports
 - `GET /api/reports/inventory-valuation` - Inventory value

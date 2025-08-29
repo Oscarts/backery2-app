@@ -62,7 +62,7 @@ const UnitsManagement: React.FC = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Unit> }) => 
+    mutationFn: ({ id, data }: { id: string; data: Partial<Unit> }) =>
       unitsApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries(['units']);
@@ -108,12 +108,12 @@ const UnitsManagement: React.FC = () => {
     if (editingUnit) {
       // Update existing unit
       const updatedData: Partial<Unit> = {};
-      
+
       if (formValues.name !== editingUnit.name) updatedData.name = formValues.name as string;
       if (formValues.symbol !== editingUnit.symbol) updatedData.symbol = formValues.symbol as string;
       if (formValues.category !== editingUnit.category) updatedData.category = formValues.category as string;
       if (formValues.description !== editingUnit.description) updatedData.description = formValues.description as string;
-      
+
       updateMutation.mutate({ id: editingUnit.id, data: updatedData });
     } else {
       // Create new unit
@@ -175,16 +175,16 @@ const UnitsManagement: React.FC = () => {
                   <Chip label={unit.symbol} size="small" />
                 </TableCell>
                 <TableCell>
-                  <Chip 
-                    label={unit.category} 
+                  <Chip
+                    label={unit.category}
                     color={getCategoryColor(unit.category) as any}
                     size="small"
                   />
                 </TableCell>
                 <TableCell>{unit.description || 'N/A'}</TableCell>
                 <TableCell>
-                  <Chip 
-                    label={unit.isActive ? 'Active' : 'Inactive'} 
+                  <Chip
+                    label={unit.isActive ? 'Active' : 'Inactive'}
                     color={unit.isActive ? 'success' : 'default'}
                     size="small"
                   />
@@ -217,8 +217,8 @@ const UnitsManagement: React.FC = () => {
       </TableContainer>
 
       {/* Form Dialog */}
-      <Dialog 
-        open={openForm} 
+      <Dialog
+        open={openForm}
         onClose={handleCloseForm}
         maxWidth="sm"
         fullWidth

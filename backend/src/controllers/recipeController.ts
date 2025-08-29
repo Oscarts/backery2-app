@@ -95,6 +95,8 @@ export const getRecipeById = async (req: Request, res: Response) => {
 // Create new recipe
 export const createRecipe = async (req: Request, res: Response) => {
   try {
+    console.log('Creating recipe with data:', JSON.stringify(req.body, null, 2));
+
     const {
       name,
       description,
@@ -104,8 +106,24 @@ export const createRecipe = async (req: Request, res: Response) => {
       prepTime,
       cookTime,
       instructions,
-      ingredients
+      ingredients,
+      isActive
     } = req.body;
+
+    // Validate required fields
+    if (!name) {
+      return res.status(400).json({
+        success: false,
+        error: 'Recipe name is required'
+      });
+    }
+
+    if (!categoryId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Category ID is required'
+      });
+    }
 
     // Create recipe with ingredients in a transaction
     const recipe = await prisma.$transaction(async (tx) => {
@@ -113,13 +131,15 @@ export const createRecipe = async (req: Request, res: Response) => {
       const newRecipe = await tx.recipe.create({
         data: {
           name,
-          description,
+          description: description || '',
           categoryId,
-          yieldQuantity,
-          yieldUnit,
-          prepTime,
-          cookTime,
-          instructions
+          yieldQuantity: Number(yieldQuantity) || 1,
+          yieldUnit: yieldUnit || '',
+          prepTime: prepTime ? Number(prepTime) : null,
+          cookTime: cookTime ? Number(cookTime) : null,
+          instructions: instructions || [],
+          isActive: isActive !== undefined ? isActive : true,
+          version: 1 // Default version
         }
       });
 
@@ -165,11 +185,28 @@ export const createRecipe = async (req: Request, res: Response) => {
       success: true,
       data: recipe
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating recipe:', error);
+
+    // Check for specific database errors
+    if (error.code === 'P2003') {
+      return res.status(400).json({
+        success: false,
+        error: `Foreign key constraint failed - Invalid ${error.meta?.field_name || 'ID'}`
+      });
+    }
+
+    if (error.code === 'P2002') {
+      return res.status(400).json({
+        success: false,
+        error: `A recipe with this name already exists`
+      });
+    }
+
+    // Return a more specific error message if available
     res.status(500).json({
       success: false,
-      error: 'Failed to create recipe'
+      error: `Failed to create recipe: ${error.message || 'Unknown error'}`
     });
   }
 };

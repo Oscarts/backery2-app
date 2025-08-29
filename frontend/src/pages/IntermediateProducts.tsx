@@ -26,6 +26,8 @@ import {
   Grid,
   Alert,
   Snackbar,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -57,9 +59,9 @@ const IntermediateProducts: React.FC = () => {
   // Helper functions for status chips (matching RawMaterials format)
   const getContaminationChip = (contaminated: boolean) => {
     if (contaminated) {
-      return <Chip label="CONTAMINATED" color="error" size="small" />;
+      return <Chip label="CONTAMINATED" color="error" size="small" sx={{ ml: 1 }} />;
     }
-    return <Chip label="Clean" color="success" size="small" />;
+    return null; // Don't show anything if clean
   };
 
   const getExpirationChip = (expirationDate: string) => {
@@ -80,7 +82,7 @@ const IntermediateProducts: React.FC = () => {
   const { data: storageLocationsResponse } = useQuery(['storageLocations'], storageLocationsApi.getAll);
   const { data: unitsResponse } = useQuery(['units'], unitsApi.getAll);
   const { data: qualityStatusResponse } = useQuery(['qualityStatuses'], qualityStatusApi.getAll);
-  
+
   const categories = categoriesResponse?.data?.filter(c => c.type === CategoryType.INTERMEDIATE);
   const storageLocations = storageLocationsResponse?.data;
   const units = unitsResponse?.data;
@@ -104,7 +106,7 @@ const IntermediateProducts: React.FC = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<IntermediateProduct> }) => 
+    mutationFn: ({ id, data }: { id: string; data: Partial<IntermediateProduct> }) =>
       intermediateProductsApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries(['intermediateProducts']);
@@ -162,7 +164,7 @@ const IntermediateProducts: React.FC = () => {
     if (editingProduct) {
       // For updates, only include changed fields
       const updatedData: Partial<IntermediateProduct> = {};
-      
+
       if (formValues.name !== editingProduct.name) updatedData.name = formValues.name as string;
       if (formValues.description !== editingProduct.description) updatedData.description = formValues.description as string;
       if (formValues.categoryId !== editingProduct.categoryId) updatedData.categoryId = formValues.categoryId as string;
@@ -173,11 +175,16 @@ const IntermediateProducts: React.FC = () => {
       if (parseFloat(formValues.quantity) !== editingProduct.quantity) updatedData.quantity = parseFloat(formValues.quantity);
       if (formValues.unit !== editingProduct.unit) updatedData.unit = formValues.unit as string;
       if (formValues.status !== editingProduct.status) updatedData.status = formValues.status as IntermediateProductStatus;
+      if (formValues.qualityStatusId !== editingProduct.qualityStatusId) updatedData.qualityStatusId = formValues.qualityStatusId as string;
 
-      // Preserve existing values for fields not in the form
-      updatedData.contaminated = editingProduct.contaminated;
+      // Handle contamination status (checkbox)
+      // Checkbox value is a boolean when controlled, or 'on' when uncontrolled
+      updatedData.contaminated = typeof formValues.contaminated === 'boolean'
+        ? formValues.contaminated
+        : formValues.contaminated === 'on';
+
       // Note: qualityStatus is now managed separately via qualityStatusId
-      
+
       updateMutation.mutate({ id: editingProduct.id, data: updatedData });
     } else {
       // For new products, include all required fields
@@ -288,7 +295,12 @@ const IntermediateProducts: React.FC = () => {
             <TableBody>
               {displayedProducts.map((product) => (
                 <TableRow key={product.id}>
-                  <TableCell>{product.name}</TableCell>
+                  <TableCell>
+                    <Box display="flex" alignItems="center">
+                      {product.name}
+                      {getContaminationChip(product.contaminated)}
+                    </Box>
+                  </TableCell>
                   <TableCell>{product.category?.name || 'N/A'}</TableCell>
                   <TableCell>{product.batchNumber}</TableCell>
                   <TableCell>
@@ -296,9 +308,9 @@ const IntermediateProducts: React.FC = () => {
                       label={product.status.replace('_', ' ')}
                       color={
                         product.status === IntermediateProductStatus.COMPLETED ? 'success' :
-                        product.status === IntermediateProductStatus.IN_PRODUCTION ? 'primary' :
-                        product.status === IntermediateProductStatus.ON_HOLD ? 'warning' :
-                        'error'
+                          product.status === IntermediateProductStatus.IN_PRODUCTION ? 'primary' :
+                            product.status === IntermediateProductStatus.ON_HOLD ? 'warning' :
+                              'error'
                       }
                     />
                   </TableCell>
@@ -313,10 +325,7 @@ const IntermediateProducts: React.FC = () => {
                   </TableCell>
                   <TableCell>{formatQuantity(product.quantity, product.unit)}</TableCell>
                   <TableCell>
-                    <Box display="flex" flexDirection="column" gap={0.5}>
-                      {product.storageLocation?.name || 'N/A'}
-                      {getContaminationChip(product.contaminated)}
-                    </Box>
+                    {product.storageLocation?.name || 'N/A'}
                   </TableCell>
                   <TableCell>
                     {product.qualityStatus ? (
@@ -373,8 +382,8 @@ const IntermediateProducts: React.FC = () => {
       </Box>
 
       {/* Form Dialog */}
-      <Dialog 
-        open={openForm} 
+      <Dialog
+        open={openForm}
         onClose={handleCloseForm}
         maxWidth="md"
         fullWidth
@@ -523,6 +532,18 @@ const IntermediateProducts: React.FC = () => {
                       ))}
                     </Select>
                   </FormControl>
+                </Grid>
+                <Grid item xs={12}>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        name="contaminated"
+                        defaultChecked={editingProduct?.contaminated || false}
+                        color="error"
+                      />
+                    }
+                    label="Mark as contaminated"
+                  />
                 </Grid>
                 <Grid item xs={12}>
                   <FormControl fullWidth required>

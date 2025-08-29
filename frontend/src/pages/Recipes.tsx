@@ -44,46 +44,24 @@ import {
   Calculate as CalculateIcon
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
-  Recipe, 
-  Category, 
-  RawMaterial, 
-  IntermediateProduct, 
+import {
+  Recipe,
+  Category,
+  RawMaterial,
+  IntermediateProduct,
   CreateRecipeData,
   RecipeCostAnalysis,
   WhatCanIMakeAnalysis,
   Unit
 } from '../types';
-
-// Generic API helper
-const api = {
-  get: async (url: string) => {
-    const response = await fetch(`http://localhost:8000/api${url}`);
-    return response.json();
-  },
-  post: async (url: string, data: any) => {
-    const response = await fetch(`http://localhost:8000/api${url}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    return response.json();
-  },
-  put: async (url: string, data: any) => {
-    const response = await fetch(`http://localhost:8000/api${url}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    return response.json();
-  },
-  delete: async (url: string) => {
-    const response = await fetch(`http://localhost:8000/api${url}`, {
-      method: 'DELETE'
-    });
-    return response.json();
-  }
-};
+import {
+  recipesApi,
+  categoriesApi,
+  rawMaterialsApi,
+  intermediateProductsApi,
+  unitsApi
+} from '../services/realApi';
+import { formatDate, formatQuantity, formatCurrency } from '../utils/api';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -114,7 +92,7 @@ const Recipes: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
   const [selectedRecipeForCost, setSelectedRecipeForCost] = useState<string | null>(null);
-  
+
   // Form state
   const [formData, setFormData] = useState<CreateRecipeData>({
     name: '',
@@ -138,79 +116,139 @@ const Recipes: React.FC = () => {
   const [instructionText, setInstructionText] = useState('');
 
   // Fetch data
-  const { data: recipesResponse, isLoading: recipesLoading } = useQuery({
+  const { data: recipesResponse, isLoading: recipesLoading, refetch: refetchRecipes } = useQuery({
     queryKey: ['recipes'],
-    queryFn: () => api.get('/recipes')
+    queryFn: () => recipesApi.getAll(),
+    staleTime: 0 // Force refetch on each render
   });
 
   const { data: categoriesResponse } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => api.get('/categories')
+    queryFn: () => categoriesApi.getAll()
   });
 
   const { data: rawMaterialsResponse } = useQuery({
     queryKey: ['raw-materials'],
-    queryFn: () => api.get('/raw-materials')
+    queryFn: () => rawMaterialsApi.getAll()
   });
 
   const { data: intermediateProductsResponse } = useQuery({
     queryKey: ['intermediate-products'],
-    queryFn: () => api.get('/intermediate-products')
+    queryFn: () => intermediateProductsApi.getAll()
   });
 
   const { data: unitsResponse } = useQuery({
     queryKey: ['units'],
-    queryFn: () => api.get('/units')
+    queryFn: () => unitsApi.getAll()
   });
 
   const { data: whatCanIMakeResponse } = useQuery({
     queryKey: ['what-can-i-make'],
-    queryFn: () => api.get('/recipes/what-can-i-make'),
+    queryFn: () => recipesApi.getWhatCanIMake(),
     enabled: currentTab === 1
   });
 
   const { data: recipeCostResponse } = useQuery({
     queryKey: ['recipe-cost', selectedRecipeForCost],
-    queryFn: () => api.get(`/recipes/${selectedRecipeForCost}/cost`),
+    queryFn: () => recipesApi.getCost(selectedRecipeForCost!),
     enabled: !!selectedRecipeForCost
   });
 
   // Mutations
   const createRecipeMutation = useMutation({
-    mutationFn: (data: CreateRecipeData) => api.post('/recipes', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['recipes'] });
-      queryClient.invalidateQueries({ queryKey: ['what-can-i-make'] });
+    mutationFn: (data: CreateRecipeData) => recipesApi.create(data),
+    onSuccess: async (response) => {
+      // Check if the response indicates success
+      if (!response || !response.success) {
+        console.error('Recipe creation failed:', response);
+        alert(response.error || 'Failed to create recipe');
+        return;
+      }
+
+      // First invalidate queries
+      await queryClient.invalidateQueries({ queryKey: ['recipes'] });
+      await queryClient.invalidateQueries({ queryKey: ['what-can-i-make'] });
+
+      // Then force refetch to ensure we have the latest data
+      await refetchRecipes();
+
+      // Finally close the dialog
       handleCloseDialog();
+    },
+    onError: (error: any) => {
+      console.error('Error creating recipe:', error);
+      alert(`Recipe creation failed: ${error.message || 'Unknown error'}`);
     }
   });
 
   const updateRecipeMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<CreateRecipeData> }) =>
-      api.put(`/recipes/${id}`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['recipes'] });
-      queryClient.invalidateQueries({ queryKey: ['what-can-i-make'] });
+      recipesApi.update(id, data),
+    onSuccess: async (response) => {
+      if (!response || !response.success) {
+        console.error('Recipe update failed:', response);
+        alert(response.error || 'Failed to update recipe');
+        return;
+      }
+
+      // First invalidate queries
+      await queryClient.invalidateQueries({ queryKey: ['recipes'] });
+      await queryClient.invalidateQueries({ queryKey: ['what-can-i-make'] });
+
+      // Then force refetch to ensure we have the latest data
+      await refetchRecipes();
+
+      // Finally close the dialog
       handleCloseDialog();
+    },
+    onError: (error: any) => {
+      console.error('Error updating recipe:', error);
+      alert(`Recipe update failed: ${error.message || 'Unknown error'}`);
     }
   });
 
   const deleteRecipeMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/recipes/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['recipes'] });
-      queryClient.invalidateQueries({ queryKey: ['what-can-i-make'] });
+    mutationFn: (id: string) => recipesApi.delete(id),
+    onSuccess: async (response) => {
+      if (!response || !response.success) {
+        console.error('Recipe deletion failed:', response);
+        alert(response.error || 'Failed to delete recipe');
+        return;
+      }
+
+      // First invalidate queries
+      await queryClient.invalidateQueries({ queryKey: ['recipes'] });
+      await queryClient.invalidateQueries({ queryKey: ['what-can-i-make'] });
+
+      // Then force refetch to ensure we have the latest data
+      await refetchRecipes();
+    },
+    onError: (error: any) => {
+      console.error('Error deleting recipe:', error);
+      alert(`Recipe deletion failed: ${error.message || 'Unknown error'}`);
     }
   });
 
-  // Data processing - API returns {success: true, data: [...]} structure
+  // Data processing from API responses
   const recipes: Recipe[] = recipesResponse?.data || [];
   const categories: Category[] = categoriesResponse?.data || [];
   const rawMaterials: RawMaterial[] = rawMaterialsResponse?.data || [];
   const intermediateProducts: IntermediateProduct[] = intermediateProductsResponse?.data || [];
   const units: Unit[] = unitsResponse?.data || [];
-  const whatCanIMake: WhatCanIMakeAnalysis = whatCanIMakeResponse?.data || null;
-  const recipeCost: RecipeCostAnalysis = recipeCostResponse?.data?.data || null;
+
+  // Handle special case responses
+  const whatCanIMake = whatCanIMakeResponse?.data || {
+    totalRecipes: 0,
+    canMakeCount: 0,
+    recipes: []
+  } as WhatCanIMakeAnalysis;
+
+  const recipeCost = recipeCostResponse?.data || null;
+
+  // Debug log to track recipes data
+  React.useEffect(() => {
+    console.log('Current recipes:', recipes);
+  }, [recipes]);
 
   // Filter categories for recipes (RECIPE type)
   const recipeCategories = categories.filter(cat => cat.type === 'RECIPE');
@@ -218,7 +256,7 @@ const Recipes: React.FC = () => {
   // Filter recipes based on search and category
   const filteredRecipes = recipes.filter(recipe => {
     const matchesSearch = recipe.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (recipe.description?.toLowerCase().includes(searchTerm.toLowerCase()));
+      (recipe.description?.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesCategory = !selectedCategory || recipe.categoryId === selectedCategory;
     return matchesSearch && matchesCategory;
   });
@@ -226,7 +264,7 @@ const Recipes: React.FC = () => {
   const handleOpenDialog = (recipe?: Recipe) => {
     if (recipe) {
       setEditingRecipe(recipe);
-      
+
       // Handle instructions - they might come as string, array, or null from JSON field
       let instructions: string[] = [];
       if (recipe.instructions) {
@@ -241,7 +279,7 @@ const Recipes: React.FC = () => {
           }
         }
       }
-      
+
       setFormData({
         name: recipe.name,
         description: recipe.description || '',
@@ -292,10 +330,42 @@ const Recipes: React.FC = () => {
   };
 
   const handleSubmit = () => {
+    // Validate required fields
+    if (!formData.name) {
+      alert('Recipe name is required');
+      return;
+    }
+
+    if (!formData.categoryId) {
+      alert('Category is required');
+      return;
+    }
+
+    if (!formData.yieldQuantity || formData.yieldQuantity <= 0) {
+      alert('Valid yield quantity is required');
+      return;
+    }
+
+    if (!formData.yieldUnit) {
+      alert('Yield unit is required');
+      return;
+    }
+
+    // Ensure instructions is always an array
+    const dataToSubmit = {
+      ...formData,
+      instructions: Array.isArray(formData.instructions) ? formData.instructions : [],
+      // Make sure ingredients is always an array
+      ingredients: Array.isArray(formData.ingredients) ? formData.ingredients : []
+    };
+
+    // Log what we're about to send
+    console.log('Submitting recipe data:', dataToSubmit);
+
     if (editingRecipe) {
-      updateRecipeMutation.mutate({ id: editingRecipe.id, data: formData });
+      updateRecipeMutation.mutate({ id: editingRecipe.id, data: dataToSubmit });
     } else {
-      createRecipeMutation.mutate(formData);
+      createRecipeMutation.mutate(dataToSubmit);
     }
   };
 
@@ -323,19 +393,20 @@ const Recipes: React.FC = () => {
   };
 
   const addIngredient = () => {
-    if (ingredientForm.itemId && ingredientForm.quantity > 0 && ingredientForm.unit) {
+    // Now we only check for itemId and quantity since unit is automatically set
+    if (ingredientForm.itemId && ingredientForm.quantity > 0) {
       const newIngredient = {
         [ingredientForm.type === 'raw' ? 'rawMaterialId' : 'intermediateProductId']: ingredientForm.itemId,
         quantity: ingredientForm.quantity,
-        unit: ingredientForm.unit,
+        unit: ingredientForm.unit, // Unit is now automatically set when an item is selected
         notes: ingredientForm.notes
       };
-      
+
       setFormData(prev => ({
         ...prev,
         ingredients: [...(prev.ingredients || []), newIngredient]
       }));
-      
+
       setIngredientForm({
         type: 'raw',
         itemId: '',
@@ -531,7 +602,7 @@ const Recipes: React.FC = () => {
                 You can make {whatCanIMake.canMakeCount} out of {whatCanIMake.totalRecipes} recipes
               </Alert>
             </Grid>
-            
+
             {whatCanIMake.recipes.map((recipe) => (
               <Grid item xs={12} md={6} lg={4} key={recipe.recipeId}>
                 <Card>
@@ -542,7 +613,7 @@ const Recipes: React.FC = () => {
                     <Typography variant="body2" color="textSecondary" gutterBottom>
                       {recipe.category} • {recipe.yieldQuantity} {recipe.yieldUnit}
                     </Typography>
-                    
+
                     {recipe.canMake ? (
                       <Box>
                         <Chip
@@ -602,15 +673,15 @@ const Recipes: React.FC = () => {
               </Select>
             </FormControl>
           </Grid>
-          
-          {recipeCost && (
+
+          {recipeCost && recipeCost.recipeName && (
             <Grid item xs={12}>
               <Card>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
                     Cost Analysis: {recipeCost.recipeName}
                   </Typography>
-                  
+
                   <Grid container spacing={2} sx={{ mb: 3 }}>
                     <Grid item xs={6} md={3}>
                       <Typography variant="body2" color="textSecondary">
@@ -833,7 +904,7 @@ const Recipes: React.FC = () => {
             {/* Ingredients Section */}
             <Grid item xs={12}>
               <Typography variant="h6" gutterBottom>Ingredients</Typography>
-              
+
               {/* Current Ingredients List */}
               <Box sx={{ mb: 3 }}>
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>
@@ -880,10 +951,10 @@ const Recipes: React.FC = () => {
                       <Select
                         value={ingredientForm.type}
                         label="Type"
-                        onChange={(e) => setIngredientForm(prev => ({ 
-                          ...prev, 
+                        onChange={(e) => setIngredientForm(prev => ({
+                          ...prev,
                           type: e.target.value,
-                          itemId: '' 
+                          itemId: ''
                         }))}
                       >
                         <MenuItem value="raw">Raw Material</MenuItem>
@@ -897,23 +968,49 @@ const Recipes: React.FC = () => {
                       <Select
                         value={ingredientForm.itemId}
                         label="Item"
-                        onChange={(e) => setIngredientForm(prev => ({ ...prev, itemId: e.target.value }))}
+                        onChange={(e) => {
+                          const itemId = e.target.value;
+                          let unit = '';
+
+                          // If an item is selected, automatically set the unit based on the item type
+                          if (itemId) {
+                            if (ingredientForm.type === 'raw') {
+                              // Find the selected raw material
+                              const selectedRawMaterial = rawMaterials.find(item => item.id === itemId);
+                              if (selectedRawMaterial) {
+                                unit = selectedRawMaterial.unit;
+                              }
+                            } else {
+                              // Find the selected intermediate product
+                              const selectedIntermediateProduct = intermediateProducts.find(item => item.id === itemId);
+                              if (selectedIntermediateProduct) {
+                                unit = selectedIntermediateProduct.unit;
+                              }
+                            }
+                          }
+
+                          setIngredientForm(prev => ({
+                            ...prev,
+                            itemId: itemId,
+                            unit: unit // Automatically set the unit
+                          }));
+                        }}
                         displayEmpty
                       >
                         <MenuItem value="">
                           <em>Select an item</em>
                         </MenuItem>
-                        {ingredientForm.type === 'raw' 
+                        {ingredientForm.type === 'raw'
                           ? rawMaterials.map((item) => (
-                              <MenuItem key={item.id} value={item.id}>
-                                {item.name}
-                              </MenuItem>
-                            ))
+                            <MenuItem key={item.id} value={item.id}>
+                              {item.name} ({item.unit})
+                            </MenuItem>
+                          ))
                           : intermediateProducts.map((item) => (
-                              <MenuItem key={item.id} value={item.id}>
-                                {item.name}
-                              </MenuItem>
-                            ))
+                            <MenuItem key={item.id} value={item.id}>
+                              {item.name} ({item.unit})
+                            </MenuItem>
+                          ))
                         }
                       </Select>
                     </FormControl>
@@ -928,24 +1025,16 @@ const Recipes: React.FC = () => {
                     />
                   </Grid>
                   <Grid item xs={2}>
-                    <FormControl fullWidth>
-                      <InputLabel shrink={!ingredientForm.unit ? true : undefined}>Unit</InputLabel>
-                      <Select
-                        value={ingredientForm.unit}
-                        label="Unit"
-                        onChange={(e) => setIngredientForm(prev => ({ ...prev, unit: e.target.value }))}
-                        displayEmpty
-                      >
-                        <MenuItem value="">
-                          <em>Select a unit</em>
-                        </MenuItem>
-                        {units.map((unit) => (
-                          <MenuItem key={unit.id} value={unit.symbol}>
-                            {unit.name} ({unit.symbol})
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                    <TextField
+                      fullWidth
+                      label="Unit"
+                      value={ingredientForm.unit}
+                      InputProps={{
+                        readOnly: !!ingredientForm.itemId, // Make read-only when an item is selected
+                      }}
+                      disabled={!!ingredientForm.itemId} // Disable when an item is selected
+                      helperText={ingredientForm.itemId ? "Unit is determined by selected item" : ""}
+                    />
                   </Grid>
                   <Grid item xs={2}>
                     <Button onClick={addIngredient} variant="outlined" fullWidth>
@@ -957,15 +1046,24 @@ const Recipes: React.FC = () => {
             </Grid>
           </Grid>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            disabled={createRecipeMutation.isPending || updateRecipeMutation.isPending}
-          >
-            {editingRecipe ? 'Update' : 'Create'}
-          </Button>
+        <DialogActions sx={{ flexDirection: 'column', alignItems: 'stretch' }}>
+          {(createRecipeMutation.isError || updateRecipeMutation.isError) && (
+            <Typography color="error" variant="body2" sx={{ mb: 1 }}>
+              Error: {(createRecipeMutation.error as Error)?.message || (updateRecipeMutation.error as Error)?.message || 'Failed to save recipe'}
+            </Typography>
+          )}
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', width: '100%' }}>
+            <Button onClick={handleCloseDialog} sx={{ mr: 1 }}>Cancel</Button>
+            <Button
+              onClick={handleSubmit}
+              variant="contained"
+              disabled={createRecipeMutation.isPending || updateRecipeMutation.isPending}
+            >
+              {createRecipeMutation.isPending || updateRecipeMutation.isPending
+                ? 'Processing...'
+                : editingRecipe ? 'Update' : 'Create'}
+            </Button>
+          </Box>
         </DialogActions>
       </Dialog>
     </Box>

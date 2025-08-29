@@ -25,15 +25,16 @@ const createFinishedProductSchema = Joi.object({
   unit: Joi.string().required().min(1).max(50),
   salePrice: Joi.number().required().positive(),
   costToProduce: Joi.number().optional().positive(),
-  packagingInfo: Joi.string().optional().max(500),
+  packagingInfo: Joi.string().optional().allow('').max(500),
   storageLocationId: Joi.string().optional(),
   qualityStatusId: Joi.string().optional().allow('').allow(null),
+  isContaminated: Joi.boolean().optional().default(false),
 });
 
 const updateFinishedProductSchema = createFinishedProductSchema.fork([
   'name', 'description', 'sku', 'categoryId', 'batchNumber', 'productionDate',
   'expirationDate', 'shelfLife', 'quantity', 'unit', 'salePrice', 'costToProduce',
-  'packagingInfo', 'storageLocationId', 'qualityStatusId'
+  'packagingInfo', 'storageLocationId', 'qualityStatusId', 'isContaminated'
 ], (schema) => schema.optional()).keys({
   reservedQuantity: Joi.number().optional().min(0),
 });
@@ -170,8 +171,8 @@ export const finishedProductController = {
       }
 
       // Verify related entities exist
-      const category = await prisma.category.findUnique({ 
-        where: { id: value.categoryId } 
+      const category = await prisma.category.findUnique({
+        where: { id: value.categoryId }
       });
 
       if (!category) {
@@ -183,8 +184,8 @@ export const finishedProductController = {
 
       let storageLocation = null;
       if (value.storageLocationId) {
-        storageLocation = await prisma.storageLocation.findUnique({ 
-          where: { id: value.storageLocationId } 
+        storageLocation = await prisma.storageLocation.findUnique({
+          where: { id: value.storageLocationId }
         });
 
         if (!storageLocation) {
@@ -197,7 +198,7 @@ export const finishedProductController = {
 
       // Prepare create data
       const defaultQualityStatusId = value.qualityStatusId || await getDefaultQualityStatus();
-      
+
       const createData = {
         ...value,
         productionDate: new Date(value.productionDate),
@@ -283,6 +284,18 @@ export const finishedProductController = {
 
       // Prepare update data
       const updateData: any = { ...value };
+      // Make sure isContaminated is properly handled
+      if (value.isContaminated !== undefined) {
+        updateData.isContaminated = value.isContaminated === true || value.isContaminated === 'on';
+      }
+      // Handle empty qualityStatusId - convert empty string to null for the database
+      if (updateData.qualityStatusId === '') {
+        updateData.qualityStatusId = null;
+      }
+      // Handle empty packagingInfo - convert empty string to null for the database
+      if (updateData.packagingInfo === '') {
+        updateData.packagingInfo = null;
+      }
       if (value.productionDate) updateData.productionDate = new Date(value.productionDate);
       if (value.expirationDate) updateData.expirationDate = new Date(value.expirationDate);
 
@@ -425,7 +438,7 @@ export const finishedProductController = {
       }
 
       const availableQuantity = existingProduct.quantity - existingProduct.reservedQuantity;
-      
+
       if (value.quantity > availableQuantity) {
         return res.status(400).json({
           success: false,
@@ -435,8 +448,8 @@ export const finishedProductController = {
 
       const finishedProduct = await prisma.finishedProduct.update({
         where: { id },
-        data: { 
-          reservedQuantity: existingProduct.reservedQuantity + value.quantity 
+        data: {
+          reservedQuantity: existingProduct.reservedQuantity + value.quantity
         },
         include: {
           category: true,
@@ -490,8 +503,8 @@ export const finishedProductController = {
 
       const finishedProduct = await prisma.finishedProduct.update({
         where: { id },
-        data: { 
-          reservedQuantity: existingProduct.reservedQuantity - value.quantity 
+        data: {
+          reservedQuantity: existingProduct.reservedQuantity - value.quantity
         },
         include: {
           category: true,

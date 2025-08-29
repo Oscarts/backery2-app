@@ -40,9 +40,9 @@ export const storageLocationController = {
       const { name, type, description, capacity } = req.body;
 
       if (!name) {
-        return res.status(400).json({ 
-          success: false, 
-          error: 'Name is required' 
+        return res.status(400).json({
+          success: false,
+          error: 'Name is required'
         });
       }
 

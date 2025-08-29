@@ -1,8 +1,8 @@
-import { 
-  RawMaterial, 
-  Category, 
-  Supplier, 
-  StorageLocation, 
+import {
+  RawMaterial,
+  Category,
+  Supplier,
+  StorageLocation,
   IntermediateProduct,
   IntermediateProductStatus,
   FinishedProduct,
@@ -12,9 +12,9 @@ import {
   UpdateRawMaterialData,
   CreateFinishedProductData,
   UpdateFinishedProductData,
-  ApiResponse, 
-  PaginatedResponse, 
-  CategoryType 
+  ApiResponse,
+  PaginatedResponse,
+  CategoryType
 } from '../types';
 
 // Mock Quality Status data
@@ -544,7 +544,7 @@ export const rawMaterialsApi = {
 
     // Map frontend fields to backend fields
     const updateFields: Partial<RawMaterial> = {};
-    
+
     if (data.name !== undefined) updateFields.name = data.name;
     if (data.categoryId !== undefined) updateFields.categoryId = data.categoryId;
     if (data.supplierId !== undefined) updateFields.supplierId = data.supplierId;
@@ -818,16 +818,16 @@ export const qualityStatusApi = {
 
   create: async (data: Omit<QualityStatus, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<QualityStatus>> => {
     await delay(800);
-    
+
     // Check for duplicate name
-    const existingStatus = mockQualityStatuses.find(qs => 
+    const existingStatus = mockQualityStatuses.find(qs =>
       qs.name.toLowerCase() === data.name.toLowerCase()
     );
-    
+
     if (existingStatus) {
       throw new Error('Quality status name already exists');
     }
-    
+
     const newItem: QualityStatus = {
       ...data,
       id: (mockQualityStatuses.length + 1).toString(),
@@ -847,10 +847,10 @@ export const qualityStatusApi = {
 
     // Check for duplicate name (excluding current item)
     if (data.name) {
-      const existingStatus = mockQualityStatuses.find(qs => 
+      const existingStatus = mockQualityStatuses.find(qs =>
         qs.id !== id && qs.name.toLowerCase() === data.name!.toLowerCase()
       );
-      
+
       if (existingStatus) {
         throw new Error('Quality status name already exists');
       }
@@ -895,17 +895,17 @@ export const unitsApi = {
 
   create: async (data: Omit<Unit, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<Unit>> => {
     await delay(800);
-    
+
     // Check for duplicate name or symbol
-    const existingUnit = mockUnits.find(unit => 
+    const existingUnit = mockUnits.find(unit =>
       unit.name.toLowerCase() === data.name.toLowerCase() ||
       unit.symbol.toLowerCase() === data.symbol.toLowerCase()
     );
-    
+
     if (existingUnit) {
       throw new Error('Unit name or symbol already exists');
     }
-    
+
     const newItem: Unit = {
       ...data,
       id: (mockUnits.length + 1).toString(),
@@ -925,13 +925,13 @@ export const unitsApi = {
 
     // Check for duplicate name or symbol (excluding current item)
     if (data.name || data.symbol) {
-      const existingUnit = mockUnits.find(unit => 
+      const existingUnit = mockUnits.find(unit =>
         unit.id !== id && (
           (data.name && unit.name.toLowerCase() === data.name.toLowerCase()) ||
           (data.symbol && unit.symbol.toLowerCase() === data.symbol.toLowerCase())
         )
       );
-      
+
       if (existingUnit) {
         throw new Error('Unit name or symbol already exists');
       }
@@ -976,16 +976,16 @@ export const finishedProductsApi = {
 
   create: async (data: CreateFinishedProductData): Promise<ApiResponse<FinishedProduct>> => {
     await delay(800);
-    
+
     // Check for duplicate SKU
-    const existingProduct = mockFinishedProducts.find(fp => 
+    const existingProduct = mockFinishedProducts.find(fp =>
       fp.sku.toLowerCase() === data.sku.toLowerCase()
     );
-    
+
     if (existingProduct) {
       throw new Error('SKU already exists');
     }
-    
+
     const newItem: FinishedProduct = {
       id: (mockFinishedProducts.length + 1).toString(),
       name: data.name,
@@ -1019,10 +1019,10 @@ export const finishedProductsApi = {
 
     // Check for duplicate SKU (excluding current item)
     if (data.sku) {
-      const existingProduct = mockFinishedProducts.find(fp => 
+      const existingProduct = mockFinishedProducts.find(fp =>
         fp.id !== id && fp.sku.toLowerCase() === data.sku!.toLowerCase()
       );
-      
+
       if (existingProduct) {
         throw new Error('SKU already exists');
       }
@@ -1057,7 +1057,7 @@ export const finishedProductsApi = {
 
     const product = mockFinishedProducts[index];
     const availableQuantity = product.quantity - product.reservedQuantity;
-    
+
     if (quantity > availableQuantity) {
       throw new Error('Insufficient quantity available for reservation');
     }
@@ -1079,7 +1079,7 @@ export const finishedProductsApi = {
     }
 
     const product = mockFinishedProducts[index];
-    
+
     if (quantity > product.reservedQuantity) {
       throw new Error('Cannot release more than reserved quantity');
     }
@@ -1097,21 +1097,21 @@ export const finishedProductsApi = {
     await delay(300);
     const now = new Date();
     const futureDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
-    
+
     const expiring = mockFinishedProducts.filter(fp => {
       const expDate = new Date(fp.expirationDate);
       return expDate <= futureDate;
     });
-    
+
     return { success: true, data: expiring };
   },
 
   getLowStock: async (threshold: number): Promise<ApiResponse<FinishedProduct[]>> => {
     await delay(300);
-    const lowStock = mockFinishedProducts.filter(fp => 
+    const lowStock = mockFinishedProducts.filter(fp =>
       (fp.quantity - fp.reservedQuantity) <= threshold
     );
-    
+
     return { success: true, data: lowStock };
   },
 };

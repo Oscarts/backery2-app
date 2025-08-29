@@ -276,7 +276,7 @@ erDiagram
 
 ### Key Constraints
 
-- **Unique Constraints**: 
+- **Unique Constraints**:
   - User.email
   - Unit.name, Unit.symbol
   - IntermediateProduct.batchNumber
@@ -298,6 +298,7 @@ erDiagram
 ## Implementation Status
 
 ### ✅ Fully Implemented
+
 - User (authentication framework)
 - Category (all CRUD operations)
 - Supplier (settings management)
@@ -306,9 +307,11 @@ erDiagram
 - IntermediateProduct (complete CRUD with real-time UI)
 
 ### 🚧 Backend Ready, UI Pending
+
 - RawMaterial (controllers implemented)
 
 ### 📋 Schema Ready, Implementation Pending
+
 - FinishedProduct
 - Recipe
 

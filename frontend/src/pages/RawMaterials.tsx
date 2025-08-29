@@ -65,7 +65,7 @@ const RawMaterials: React.FC = () => {
   const { data: unitsResponse } = useQuery(['units'], unitsApi.getAll);
   const { data: suppliersResponse } = useQuery(['suppliers'], suppliersApi.getAll);
   const { data: qualityStatusResponse } = useQuery(['qualityStatuses'], qualityStatusApi.getAll);
-  
+
   const categories = categoriesResponse?.data?.filter(c => c.type === CategoryType.RAW_MATERIAL);
   const storageLocations = storageLocationsResponse?.data;
   const units = unitsResponse?.data;
@@ -90,7 +90,7 @@ const RawMaterials: React.FC = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateRawMaterialData }) => 
+    mutationFn: ({ id, data }: { id: string; data: UpdateRawMaterialData }) =>
       rawMaterialsApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries(['rawMaterials']);
@@ -114,13 +114,13 @@ const RawMaterials: React.FC = () => {
 
   // Filter materials
   const filteredMaterials = materials?.data?.filter((material) => {
-    const matchesSearch = !searchTerm || 
+    const matchesSearch = !searchTerm ||
       material.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       material.batchNumber.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesCategory = !categoryFilter || material.categoryId === categoryFilter;
-    
-    const matchesExpiration = !expirationFilter || 
+
+    const matchesExpiration = !expirationFilter ||
       (expirationFilter === 'expired' && isExpired(material.expirationDate)) ||
       (expirationFilter === 'expiring' && isExpiringSoon(material.expirationDate)) ||
       (expirationFilter === 'contaminated' && material.isContaminated);
@@ -160,9 +160,9 @@ const RawMaterials: React.FC = () => {
 
   const getContaminationChip = (isContaminated: boolean) => {
     if (isContaminated) {
-      return <Chip label="CONTAMINATED" color="error" size="small" />;
+      return <Chip label="CONTAMINATED" color="error" size="small" sx={{ ml: 1 }} />;
     }
-    return <Chip label="Clean" color="success" size="small" />;
+    return null; // Don't show anything if clean
   };
 
   const getExpirationChip = (expirationDate: string) => {
@@ -269,7 +269,6 @@ const RawMaterials: React.FC = () => {
                 <TableCell>Unit Price</TableCell>
                 <TableCell>Stock Level</TableCell>
                 <TableCell>Expiration</TableCell>
-                <TableCell>Status</TableCell>
                 <TableCell>Quality</TableCell>
                 <TableCell>Actions</TableCell>
               </TableRow>
@@ -283,6 +282,7 @@ const RawMaterials: React.FC = () => {
                       <Box>
                         <Typography variant="subtitle2" fontWeight="bold">
                           {material.name}
+                          {getContaminationChip(material.isContaminated)}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
                           Batch: {material.batchNumber}
@@ -316,9 +316,6 @@ const RawMaterials: React.FC = () => {
                         </Typography>
                         {getExpirationChip(material.expirationDate)}
                       </Box>
-                    </TableCell>
-                    <TableCell>
-                      {getContaminationChip(material.isContaminated)}
                     </TableCell>
                     <TableCell>
                       {material.qualityStatus ? (
@@ -457,7 +454,7 @@ const RawMaterialForm: React.FC<RawMaterialFormProps> = ({
     reorderLevel: 0,
     storageLocationId: '',
     qualityStatusId: '',
-    contaminated: false,
+    contaminated: false, // Default is not contaminated
   });
 
   React.useEffect(() => {
@@ -491,7 +488,7 @@ const RawMaterialForm: React.FC<RawMaterialFormProps> = ({
         reorderLevel: 0,
         storageLocationId: '',
         qualityStatusId: '',
-        contaminated: false,
+        contaminated: false, // Default is not contaminated
       });
     }
   }, [material, open]);

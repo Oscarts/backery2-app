@@ -29,7 +29,8 @@ const createRawMaterialSchema = Joi.object({
 
 const updateRawMaterialSchema = createRawMaterialSchema.fork([
   'name', 'categoryId', 'supplierId', 'batchNumber', 'purchaseDate',
-  'expirationDate', 'quantity', 'unit', 'costPerUnit', 'reorderLevel', 'storageLocationId'
+  'expirationDate', 'quantity', 'unit', 'costPerUnit', 'reorderLevel', 'storageLocationId',
+  'qualityStatusId'
 ], (schema) => schema.optional()).keys({
   contaminated: Joi.boolean().optional(),
 });
@@ -61,7 +62,7 @@ export const rawMaterialController = {
 
       if (categoryId) where.categoryId = categoryId;
       if (supplierId) where.supplierId = supplierId;
-      if (contaminated !== undefined) where.contaminated = contaminated;
+      if (contaminated !== undefined) where.isContaminated = contaminated;
 
       if (expiringSoon) {
         const sevenDaysFromNow = new Date();
@@ -190,7 +191,7 @@ export const rawMaterialController = {
 
       // Prepare create data with field mapping
       const defaultQualityStatusId = value.qualityStatusId || await getDefaultQualityStatus();
-      
+
       const createData = {
         ...value,
         purchaseDate: new Date(value.purchaseDate),
@@ -267,15 +268,20 @@ export const rawMaterialController = {
       const updateData: any = { ...value };
       if (value.purchaseDate) updateData.purchaseDate = new Date(value.purchaseDate);
       if (value.expirationDate) updateData.expirationDate = new Date(value.expirationDate);
-      
+
       // Map frontend field names to database field names
       if (value.costPerUnit !== undefined) {
         updateData.unitPrice = value.costPerUnit;
         delete updateData.costPerUnit;
       }
       if (value.contaminated !== undefined) {
-        updateData.isContaminated = value.contaminated;
+        updateData.isContaminated = value.contaminated === true || value.contaminated === 'on';
         delete updateData.contaminated;
+      }
+
+      // Handle empty qualityStatusId - convert empty string to null for the database
+      if (updateData.qualityStatusId === '') {
+        updateData.qualityStatusId = null;
       }
 
       const rawMaterial = await prisma.rawMaterial.update({

@@ -74,7 +74,7 @@ describe('QualityStatusManagement', () => {
 
   test('displays loading state initially', () => {
     const mockedApi = qualityStatusApi.getAll as jest.MockedFunction<typeof qualityStatusApi.getAll>;
-    mockedApi.mockImplementation(() => new Promise(() => {})); // Never resolves
+    mockedApi.mockImplementation(() => new Promise(() => { })); // Never resolves
 
     render(<QualityStatusManagement />, { wrapper: createWrapper() });
 
@@ -133,7 +133,7 @@ describe('QualityStatusManagement', () => {
   });
 
   test('component mounts and unmounts correctly', () => {
-    const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => { });
     const mockedApi = qualityStatusApi.getAll as jest.MockedFunction<typeof qualityStatusApi.getAll>;
     mockedApi.mockResolvedValue({ data: mockQualityStatuses });
 

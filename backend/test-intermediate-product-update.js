@@ -43,19 +43,19 @@ async function testIntermediateProductUpdate() {
         const qualityStatusRes = await api.get('/quality-statuses');
         const qualityStatuses = qualityStatusRes.data.data;
         const qualityStatusNames = qualityStatuses.map(status => status.name);
-        
+
         console.log(`Available quality statuses: ${qualityStatusNames.join(', ')}`);
 
         // Step 3: Update with first quality status
         console.log(`\nUpdating intermediate product with quality status: ${qualityStatuses[0].name}`);
-        
+
         const updateQualityRes1 = await api.put(`/intermediate-products/${productId}`, {
             qualityStatusId: qualityStatuses[0].id
         });
 
         const updatedProduct1 = updateQualityRes1.data.data;
         console.log(`Quality status updated to: ${updatedProduct1.qualityStatus?.name} (${updatedProduct1.qualityStatusId})`);
-        
+
         console.assert(
             updatedProduct1.qualityStatusId === qualityStatuses[0].id,
             '❌ Quality status update failed'
@@ -64,14 +64,14 @@ async function testIntermediateProductUpdate() {
 
         // Step 4: Update with second quality status
         console.log(`\nUpdating intermediate product with quality status: ${qualityStatuses[1].name}`);
-        
+
         const updateQualityRes2 = await api.put(`/intermediate-products/${productId}`, {
             qualityStatusId: qualityStatuses[1].id
         });
 
         const updatedProduct2 = updateQualityRes2.data.data;
         console.log(`Quality status updated to: ${updatedProduct2.qualityStatus?.name} (${updatedProduct2.qualityStatusId})`);
-        
+
         console.assert(
             updatedProduct2.qualityStatusId === qualityStatuses[1].id,
             '❌ Quality status update failed'
@@ -80,14 +80,14 @@ async function testIntermediateProductUpdate() {
 
         // Step 5: Update with empty quality status
         console.log('\nUpdating intermediate product with empty quality status');
-        
+
         const updateQualityRes3 = await api.put(`/intermediate-products/${productId}`, {
             qualityStatusId: ''
         });
 
         const updatedProduct3 = updateQualityRes3.data.data;
         console.log(`Quality status updated to: ${updatedProduct3.qualityStatus?.name || 'None'} (${updatedProduct3.qualityStatusId || 'null'})`);
-        
+
         console.assert(
             updatedProduct3.qualityStatusId === null || updatedProduct3.qualityStatusId === undefined,
             '❌ Empty quality status update failed'
