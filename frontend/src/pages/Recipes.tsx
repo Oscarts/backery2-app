@@ -615,14 +615,18 @@ const Recipes: React.FC = () => {
             </Grid>
 
             {whatCanIMake.recipes.map((recipe) => (
-              <Grid item xs={12} md={6} lg={4} key={recipe.recipeId}>
+              <Grid item xs={12} sm={6} md={4} lg={3} key={recipe.recipeId}>
                 <Card
                   sx={{
                     cursor: 'pointer',
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
                     transition: 'transform 0.2s, box-shadow 0.2s',
                     '&:hover': {
                       transform: 'translateY(-4px)',
-                      boxShadow: 4
+                      boxShadow: 4,
+                      bgcolor: 'background.default'
                     }
                   }}
                   onClick={() => {
@@ -630,23 +634,34 @@ const Recipes: React.FC = () => {
                     setIngredientsDialogOpen(true);
                   }}
                 >
-                  <CardContent>
+                  <CardContent sx={{ 
+                    display: 'flex', 
+                    flexDirection: 'column',
+                    flexGrow: 1,
+                    height: '100%',
+                    pb: 1 // Reduce padding at bottom for status indicator
+                  }}>
+                    {/* Recipe name */}
                     <Typography variant="h6" gutterBottom>
                       {recipe.recipeName}
                     </Typography>
                     
-                    <Grid container spacing={1} sx={{ mb: 2 }}>
+                    {/* Essential information in a compact layout */}
+                    <Grid container spacing={2} sx={{ mb: 2 }}>
+                      {/* Left column: Category */}
                       <Grid item xs={6}>
                         <Typography variant="caption" color="textSecondary" display="block">
                           Category
                         </Typography>
-                        <Typography variant="body2">
+                        <Typography variant="body2" noWrap>
                           {recipe.category}
                         </Typography>
                       </Grid>
+                      
+                      {/* Right column: Yield */}
                       <Grid item xs={6}>
                         <Typography variant="caption" color="textSecondary" display="block">
-                          Yield per Batch
+                          Yield
                         </Typography>
                         <Typography variant="body2">
                           {recipe.yieldQuantity} {recipe.yieldUnit}
@@ -655,40 +670,48 @@ const Recipes: React.FC = () => {
                     </Grid>
 
                     {recipe.canMake ? (
-                      <Box>
-                        <Chip
-                          label="Can Make"
-                          color="success"
-                          size="small"
-                          sx={{ mb: 1 }}
-                        />
-                        <Typography variant="body2">
-                          Max batches: {recipe.maxBatches}
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="caption" color="textSecondary" display="block">
+                          Production Capacity
                         </Typography>
-                        <Typography variant="caption" color="textSecondary">
-                          Total potential yield: {recipe.maxBatches * recipe.yieldQuantity} {recipe.yieldUnit}
+                        <Typography variant="body2">
+                          <strong>{recipe.maxBatches}</strong> batches ({recipe.maxBatches * recipe.yieldQuantity} {recipe.yieldUnit} total)
                         </Typography>
                       </Box>
                     ) : (
-                      <Box>
-                        <Chip
-                          label="Missing Ingredients"
-                          color="error"
-                          size="small"
-                          sx={{ mb: 1 }}
-                        />
-                        <List dense>
-                          {recipe.missingIngredients.map((missing, index) => (
-                            <ListItem key={index}>
-                              <ListItemText
-                                primary={missing.name}
-                                secondary={`Need ${missing.needed}, have ${missing.available} (shortage: ${missing.shortage})`}
-                              />
-                            </ListItem>
-                          ))}
-                        </List>
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="caption" color="textSecondary" display="block">
+                          Missing Ingredients
+                        </Typography>
+                        {recipe.missingIngredients.length > 0 ? (
+                          <Box sx={{ maxHeight: '120px', overflow: 'auto' }}>
+                            {recipe.missingIngredients.map((missing, index) => (
+                              <Box key={index} sx={{ mb: 1 }}>
+                                <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                                  {missing.name}
+                                </Typography>
+                                <Typography variant="caption" color="error.main">
+                                  Need {missing.needed}, have {missing.available}
+                                </Typography>
+                              </Box>
+                            ))}
+                          </Box>
+                        ) : (
+                          <Typography variant="body2">None</Typography>
+                        )}
                       </Box>
                     )}
+                    
+                    {/* Clear status indicator */}
+                    <Box sx={{ mt: 'auto', display: 'flex', justifyContent: 'center', pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+                      <Chip
+                        label={recipe.canMake ? "Ready to Make" : "Cannot Make"}
+                        color={recipe.canMake ? "success" : "error"}
+                        size="small"
+                        variant="outlined"
+                        sx={{ width: '100%', justifyContent: 'center' }}
+                      />
+                    </Box>
                   </CardContent>
                 </Card>
               </Grid>
