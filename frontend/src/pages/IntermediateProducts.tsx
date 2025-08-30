@@ -208,180 +208,175 @@ const IntermediateProducts: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="xl">
-      <Box sx={{ mt: 4, mb: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
+    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" component="h1">
           Intermediate Products
         </Typography>
-
-        {/* Filters and Actions */}
-        <Paper sx={{ p: 2, mb: 2 }}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                variant="outlined"
-                label="Search"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: <SearchIcon sx={{ mr: 1 }} />,
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <FormControl fullWidth>
-                <InputLabel>Filter by Category</InputLabel>
-                <Select
-                  value={categoryFilter}
-                  label="Filter by Category"
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                >
-                  <MenuItem value="">All Categories</MenuItem>
-                  {categories?.map((category) => (
-                    <MenuItem key={category.id} value={category.id}>
-                      {category.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <FormControl fullWidth>
-                <InputLabel>Filter by Status</InputLabel>
-                <Select
-                  value={statusFilter}
-                  label="Filter by Status"
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <MenuItem value="">All Statuses</MenuItem>
-                  <MenuItem value={IntermediateProductStatus.IN_PRODUCTION}>In Production</MenuItem>
-                  <MenuItem value={IntermediateProductStatus.COMPLETED}>Completed</MenuItem>
-                  <MenuItem value={IntermediateProductStatus.ON_HOLD}>On Hold</MenuItem>
-                  <MenuItem value={IntermediateProductStatus.DISCARDED}>Discarded</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={2}>
-              <Button
-                fullWidth
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setOpenForm(true)}
-              >
-                Add Product
-              </Button>
-            </Grid>
-          </Grid>
-        </Paper>
-
-        {/* Products Table */}
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Category</TableCell>
-                <TableCell>Batch Number</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Production Date</TableCell>
-                <TableCell>Expiration Date</TableCell>
-                <TableCell>Quantity</TableCell>
-                <TableCell>Storage Location</TableCell>
-                <TableCell>Quality</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {displayedProducts.map((product) => (
-                <TableRow key={product.id}>
-                  <TableCell>
-                    <Box display="flex" alignItems="center">
-                      {product.name}
-                      {getContaminationChip(product.contaminated)}
-                    </Box>
-                  </TableCell>
-                  <TableCell>{product.category?.name || 'N/A'}</TableCell>
-                  <TableCell>{product.batchNumber}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={product.status.replace('_', ' ')}
-                      color={
-                        product.status === IntermediateProductStatus.COMPLETED ? 'success' :
-                          product.status === IntermediateProductStatus.IN_PRODUCTION ? 'primary' :
-                            product.status === IntermediateProductStatus.ON_HOLD ? 'warning' :
-                              'error'
-                      }
-                    />
-                  </TableCell>
-                  <TableCell>{formatDate(product.productionDate)}</TableCell>
-                  <TableCell>
-                    <Box>
-                      <Typography variant="body2">
-                        {formatDate(product.expirationDate)}
-                      </Typography>
-                      {getExpirationChip(product.expirationDate)}
-                    </Box>
-                  </TableCell>
-                  <TableCell>{formatQuantity(product.quantity, product.unit)}</TableCell>
-                  <TableCell>
-                    {product.storageLocation?.name || 'N/A'}
-                  </TableCell>
-                  <TableCell>
-                    {product.qualityStatus ? (
-                      <Chip
-                        label={product.qualityStatus.name}
-                        size="small"
-                        sx={{
-                          backgroundColor: product.qualityStatus.color || '#gray',
-                          color: 'white',
-                        }}
-                      />
-                    ) : (
-                      <Chip label="No status" variant="outlined" size="small" />
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <IconButton
-                      size="small"
-                      onClick={() => {
-                        setEditingProduct(product);
-                        setOpenForm(true);
-                      }}
-                    >
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => {
-                        if (window.confirm('Are you sure you want to delete this product?')) {
-                          deleteMutation.mutate(product.id);
-                        }
-                      }}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <TablePagination
-            rowsPerPageOptions={[5, 10, 25]}
-            component="div"
-            count={filteredProducts.length}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={(_, newPage) => setPage(newPage)}
-            onRowsPerPageChange={(e) => {
-              setRowsPerPage(parseInt(e.target.value, 10));
-              setPage(0);
-            }}
-          />
-        </TableContainer>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => setOpenForm(true)}
+        >
+          Add Product
+        </Button>
       </Box>
 
-      {/* Form Dialog */}
+      {/* Filters */}
+      <Paper sx={{ p: 2, mb: 2 }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} sm={4}>
+            <TextField
+              fullWidth
+              variant="outlined"
+              label="Search"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ mr: 1 }} />,
+              }}
+            />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <FormControl fullWidth>
+              <InputLabel>Filter by Category</InputLabel>
+              <Select
+                value={categoryFilter}
+                label="Filter by Category"
+                onChange={(e) => setCategoryFilter(e.target.value)}
+              >
+                <MenuItem value="">All Categories</MenuItem>
+                {categories?.map((category) => (
+                  <MenuItem key={category.id} value={category.id}>
+                    {category.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <FormControl fullWidth>
+              <InputLabel>Filter by Status</InputLabel>
+              <Select
+                value={statusFilter}
+                label="Filter by Status"
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <MenuItem value="">All Statuses</MenuItem>
+                <MenuItem value={IntermediateProductStatus.IN_PRODUCTION}>In Production</MenuItem>
+                <MenuItem value={IntermediateProductStatus.COMPLETED}>Completed</MenuItem>
+                <MenuItem value={IntermediateProductStatus.ON_HOLD}>On Hold</MenuItem>
+                <MenuItem value={IntermediateProductStatus.DISCARDED}>Discarded</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+        </Grid>
+      </Paper>
+
+      {/* Products Table */}
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Name</TableCell>
+              <TableCell>Category</TableCell>
+              <TableCell>Batch Number</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Production Date</TableCell>
+              <TableCell>Expiration Date</TableCell>
+              <TableCell>Quantity</TableCell>
+              <TableCell>Storage Location</TableCell>
+              <TableCell>Quality</TableCell>
+              <TableCell>Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {displayedProducts.map((product) => (
+              <TableRow key={product.id}>
+                <TableCell>
+                  <Box display="flex" alignItems="center">
+                    {product.name}
+                    {getContaminationChip(product.contaminated)}
+                  </Box>
+                </TableCell>
+                <TableCell>{product.category?.name || 'N/A'}</TableCell>
+                <TableCell>{product.batchNumber}</TableCell>
+                <TableCell>
+                  <Chip
+                    label={product.status.replace('_', ' ')}
+                    color={
+                      product.status === IntermediateProductStatus.COMPLETED ? 'success' :
+                        product.status === IntermediateProductStatus.IN_PRODUCTION ? 'primary' :
+                          product.status === IntermediateProductStatus.ON_HOLD ? 'warning' :
+                            'error'
+                    }
+                  />
+                </TableCell>
+                <TableCell>{formatDate(product.productionDate)}</TableCell>
+                <TableCell>
+                  <Box>
+                    <Typography variant="body2">
+                      {formatDate(product.expirationDate)}
+                    </Typography>
+                    {getExpirationChip(product.expirationDate)}
+                  </Box>
+                </TableCell>
+                <TableCell>{formatQuantity(product.quantity, product.unit)}</TableCell>
+                <TableCell>
+                  {product.storageLocation?.name || 'N/A'}
+                </TableCell>
+                <TableCell>
+                  {product.qualityStatus ? (
+                    <Chip
+                      label={product.qualityStatus.name}
+                      size="small"
+                      sx={{
+                        backgroundColor: product.qualityStatus.color || '#gray',
+                        color: 'white',
+                      }}
+                    />
+                  ) : (
+                    <Chip label="No status" variant="outlined" size="small" />
+                  )}
+                </TableCell>
+                <TableCell>
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      setEditingProduct(product);
+                      setOpenForm(true);
+                    }}
+                  >
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      if (window.confirm('Are you sure you want to delete this product?')) {
+                        deleteMutation.mutate(product.id);
+                      }
+                    }}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25]}
+          component="div"
+          count={filteredProducts.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={(_, newPage) => setPage(newPage)}
+          onRowsPerPageChange={(e) => {
+            setRowsPerPage(parseInt(e.target.value, 10));
+            setPage(0);
+          }}
+        />
+      </TableContainer>      {/* Form Dialog */}
       <Dialog
         open={openForm}
         onClose={handleCloseForm}

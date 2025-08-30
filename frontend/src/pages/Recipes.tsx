@@ -40,7 +40,7 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Search as SearchIcon,
-  Restaurant as RecipeIcon,
+  MenuBook as MenuBookIcon,
   Calculate as CalculateIcon,
   Close as CloseIcon
 } from '@mui/icons-material';
@@ -463,10 +463,19 @@ const Recipes: React.FC = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <RecipeIcon color="primary" />
-        Recipe Management
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <MenuBookIcon color="primary" />
+          Recipe Management
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => handleOpenDialog()}
+        >
+          Add Recipe
+        </Button>
+      </Box>
 
       <Tabs value={currentTab} onChange={(_, newValue) => setCurrentTab(newValue)} sx={{ mb: 3 }}>
         <Tab label="Recipes" />
@@ -492,7 +501,7 @@ const Recipes: React.FC = () => {
               }}
             />
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={8}>
             <FormControl fullWidth>
               <InputLabel>Category</InputLabel>
               <Select
@@ -508,16 +517,6 @@ const Recipes: React.FC = () => {
                 ))}
               </Select>
             </FormControl>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => handleOpenDialog()}
-              fullWidth
-            >
-              Add Recipe
-            </Button>
           </Grid>
         </Grid>
 

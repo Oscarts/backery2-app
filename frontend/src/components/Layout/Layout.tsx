@@ -15,6 +15,8 @@ import {
   Typography,
   useTheme,
   useMediaQuery,
+  Divider,
+  Tooltip,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -27,10 +29,15 @@ import {
   Warning as WarningIcon,
   Assessment as AssessmentIcon,
   Settings as SettingsIcon,
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon,
+  Science as ScienceIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
+// Define drawer widths for open and closed states
 const drawerWidth = 280;
+const drawerCollapsedWidth = 73; // Enough width to show just icons
 
 const menuItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
@@ -42,13 +49,14 @@ const menuItems = [
   { text: 'Contamination', icon: <WarningIcon />, path: '/contamination' },
   { text: 'Reports', icon: <AssessmentIcon />, path: '/reports' },
   { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
-  { text: 'API Test', icon: <AssessmentIcon />, path: '/api-test' },
+  { text: 'API Test', icon: <ScienceIcon />, path: '/api-test' }, // Updated to use ScienceIcon for API Test
 ];
 
 const Layout: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(true); // State to control sidebar expansion
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -56,28 +64,44 @@ const Layout: React.FC = () => {
     setMobileOpen(!mobileOpen);
   };
 
+  const handleDrawerCollapse = () => {
+    setDrawerOpen(!drawerOpen);
+  };
+
   const drawer = (
     <div>
-      <Toolbar>
-        <Typography variant="h6" noWrap component="div">
-          🥖 Bakery Inventory
-        </Typography>
+      <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', px: 1 }}>
+        {drawerOpen ? (
+          <Typography variant="h6" noWrap component="div">
+            🥖 Bakery Inventory
+          </Typography>
+        ) : null}
+        <IconButton onClick={handleDrawerCollapse}>
+          {theme.direction === 'ltr' ? (
+            drawerOpen ? <ChevronLeftIcon /> : <ChevronRightIcon />
+          ) : (
+            drawerOpen ? <ChevronRightIcon /> : <ChevronLeftIcon />
+          )}
+        </IconButton>
       </Toolbar>
+      <Divider />
       <List>
         {menuItems.map((item) => (
           <ListItem key={item.text} disablePadding>
-            <ListItemButton
-              selected={location.pathname === item.path}
-              onClick={() => {
-                navigate(item.path);
-                if (isMobile) {
-                  setMobileOpen(false);
-                }
-              }}
-            >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItemButton>
+            <Tooltip title={drawerOpen ? '' : item.text} placement="right">
+              <ListItemButton
+                selected={location.pathname === item.path}
+                onClick={() => {
+                  navigate(item.path);
+                  if (isMobile) {
+                    setMobileOpen(false);
+                  }
+                }}
+              >
+                <ListItemIcon>{item.icon}</ListItemIcon>
+                {drawerOpen && <ListItemText primary={item.text} />}
+              </ListItemButton>
+            </Tooltip>
           </ListItem>
         ))}
       </List>
@@ -90,8 +114,12 @@ const Layout: React.FC = () => {
       <AppBar
         position="fixed"
         sx={{
-          width: { md: `calc(100% - ${drawerWidth}px)` },
-          ml: { md: `${drawerWidth}px` },
+          width: { md: `calc(100% - ${drawerOpen ? drawerWidth : drawerCollapsedWidth}px)` },
+          ml: { md: `${drawerOpen ? drawerWidth : drawerCollapsedWidth}px` },
+          transition: theme.transitions.create(['margin', 'width'], {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.enteringScreen,
+          }),
         }}
       >
         <Toolbar>
@@ -111,7 +139,14 @@ const Layout: React.FC = () => {
       </AppBar>
       <Box
         component="nav"
-        sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
+        sx={{ 
+          width: { md: drawerOpen ? drawerWidth : drawerCollapsedWidth }, 
+          flexShrink: { md: 0 },
+          transition: theme.transitions.create('width', {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.enteringScreen,
+          }),
+        }}
       >
         <Drawer
           variant="temporary"
@@ -131,7 +166,14 @@ const Layout: React.FC = () => {
           variant="permanent"
           sx={{
             display: { xs: 'none', md: 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+            '& .MuiDrawer-paper': { 
+              boxSizing: 'border-box', 
+              width: drawerOpen ? drawerWidth : drawerCollapsedWidth,
+              transition: theme.transitions.create('width', {
+                easing: theme.transitions.easing.sharp,
+                duration: theme.transitions.duration.enteringScreen,
+              }),
+            },
           }}
           open
         >
@@ -143,7 +185,14 @@ const Layout: React.FC = () => {
         sx={{
           flexGrow: 1,
           p: 3,
-          width: { md: `calc(100% - ${drawerWidth}px)` },
+          width: { 
+            xs: '100%',
+            md: `calc(100% - ${drawerOpen ? drawerWidth : drawerCollapsedWidth}px)` 
+          },
+          transition: theme.transitions.create(['margin', 'width'], {
+            easing: theme.transitions.easing.easeOut,
+            duration: theme.transitions.duration.enteringScreen,
+          }),
         }}
       >
         <Toolbar />

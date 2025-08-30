@@ -29,8 +29,16 @@ import {
   Tooltip,
   Card,
   CardContent,
+  CardActions,
+  CardHeader,
   FormControlLabel,
   Checkbox,
+  useTheme,
+  useMediaQuery,
+  InputAdornment,
+  Divider,
+  Stack,
+  Drawer,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -39,21 +47,57 @@ import {
   Warning as WarningIcon,
   Search as SearchIcon,
   LocalShipping as ReserveIcon,
-  PlaylistRemove as ReleaseIcon,
+  GridView as GridViewIcon,
+  ViewList as ListViewIcon,
+  Close as CloseIcon,
+  FilterList as FilterIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { finishedProductsApi, categoriesApi, storageLocationsApi, unitsApi, qualityStatusApi } from '../services/realApi';
 import { FinishedProduct, CategoryType, CreateFinishedProductData, UpdateFinishedProductData } from '../types';
-import { formatDate, formatQuantity, isExpired, isExpiringSoon, getDaysUntilExpiration } from '../utils/api';
+import { formatDate, formatQuantity, isExpired, isExpiringSoon, getDaysUntilExpiration, formatCurrency } from '../utils/api';
+
+// Status display helper functions
+const getContaminationBadge = (isContaminated: boolean) => {
+  if (isContaminated) {
+    return <Chip label="CONTAMINATED" size="small" variant="outlined" color="error" sx={{ borderWidth: 1 }} />;
+  }
+  return null;
+};
+
+const getExpirationBadge = (expirationDate: string) => {
+  if (isExpired(expirationDate)) {
+    return <Chip label="EXPIRED" size="small" variant="outlined" color="error" sx={{ borderWidth: 1 }} />;
+  }
+  if (isExpiringSoon(expirationDate)) {
+    const days = getDaysUntilExpiration(expirationDate);
+    return <Chip label={`${days} days`} size="small" variant="outlined" color="warning" sx={{ borderWidth: 1 }} />;
+  }
+  return null;
+};
 
 const FinishedProducts: React.FC = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
+  // View state
+  const [viewMode, setViewMode] = useState<'list' | 'card'>(isMobile ? 'card' : 'list');
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  
+  // Pagination state
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(isMobile ? 5 : 10);
+  
+  // Form state
   const [openForm, setOpenForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<FinishedProduct | null>(null);
+  
+  // Filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [expirationFilter, setExpirationFilter] = useState('');
+  
+  // Reserve dialog state
   const [reserveDialog, setReserveDialog] = useState<{ open: boolean; product: FinishedProduct | null }>({
     open: false,
     product: null,
@@ -442,65 +486,122 @@ const FinishedProducts: React.FC = () => {
   const paginatedProducts = filteredProducts.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h3" component="h1">
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 1, sm: 2, md: 3 } }}>
+      {/* Header with responsive design */}
+      <Box 
+        display="flex" 
+        flexDirection={{ xs: 'column', sm: 'row' }} 
+        justifyContent="space-between" 
+        alignItems={{ xs: 'flex-start', sm: 'center' }} 
+        mb={3}
+        gap={2}
+      >
+        <Typography variant="h4" component="h1" sx={{ fontSize: { xs: '1.8rem', md: '2.2rem' } }}>
           Finished Products
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenForm()}
-        >
-          Add Product
-        </Button>
+        
+        <Box display="flex" gap={1} width={{ xs: '100%', sm: 'auto' }}>
+          {/* View Toggle Buttons */}
+          <Box 
+            sx={{ 
+              display: { xs: 'flex', md: 'flex' }, 
+              border: 1, 
+              borderColor: 'divider', 
+              borderRadius: 1,
+              mr: 1
+            }}
+          >
+            <Tooltip title="List View">
+              <IconButton 
+                color={viewMode === 'list' ? 'primary' : 'default'} 
+                onClick={() => setViewMode('list')}
+                sx={{ borderRadius: '4px 0 0 4px' }}
+              >
+                <ListViewIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Card View">
+              <IconButton 
+                color={viewMode === 'card' ? 'primary' : 'default'} 
+                onClick={() => setViewMode('card')}
+                sx={{ borderRadius: '0 4px 4px 0' }}
+              >
+                <GridViewIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
+          
+          {/* Add Product Button - Full text on larger screens, icon-only on xs */}
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => handleOpenForm()}
+            sx={{ 
+              flexGrow: { xs: 1, sm: 0 },
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {!isMobile ? 'Add Product' : 'Add'}
+          </Button>
+          
+          {/* Filter Toggle Button for Mobile */}
+          {isMobile && (
+            <Button 
+              variant="outlined" 
+              startIcon={<FilterIcon />} 
+              onClick={() => setFiltersOpen(!filtersOpen)}
+            >
+              Filters
+            </Button>
+          )}
+        </Box>
       </Box>
 
-      {/* Summary Cards */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
+      {/* Summary Cards with responsive grid */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={6} md={3}>
+          <Card elevation={1} sx={{ borderRadius: 2 }}>
+            <CardContent sx={{ py: { xs: 1.5 }, px: { xs: 2 } }}>
+              <Typography color="textSecondary" variant="body2" gutterBottom>
                 Total Products
               </Typography>
-              <Typography variant="h4">
+              <Typography variant="h5" sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }}>
                 {filteredProducts.length}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
+        <Grid item xs={6} md={3}>
+          <Card elevation={1} sx={{ borderRadius: 2 }}>
+            <CardContent sx={{ py: { xs: 1.5 }, px: { xs: 2 } }}>
+              <Typography color="textSecondary" variant="body2" gutterBottom>
                 Expiring Soon
               </Typography>
-              <Typography variant="h4" color="warning.main">
+              <Typography variant="h5" sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }} color="warning.main">
                 {filteredProducts.filter(p => isExpiringSoon(p.expirationDate)).length}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
+        <Grid item xs={6} md={3}>
+          <Card elevation={1} sx={{ borderRadius: 2 }}>
+            <CardContent sx={{ py: { xs: 1.5 }, px: { xs: 2 } }}>
+              <Typography color="textSecondary" variant="body2" gutterBottom>
                 Low Stock
               </Typography>
-              <Typography variant="h4" color="error.main">
+              <Typography variant="h5" sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }} color="error.main">
                 {filteredProducts.filter(p => p.quantity <= 10).length}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
+        <Grid item xs={6} md={3}>
+          <Card elevation={1} sx={{ borderRadius: 2 }}>
+            <CardContent sx={{ py: { xs: 1.5 }, px: { xs: 2 } }}>
+              <Typography color="textSecondary" variant="body2" gutterBottom>
                 Reserved Items
               </Typography>
-              <Typography variant="h4" color="info.main">
+              <Typography variant="h5" sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }} color="info.main">
                 {filteredProducts.filter(p => p.reservedQuantity > 0).length}
               </Typography>
             </CardContent>
@@ -508,71 +609,156 @@ const FinishedProducts: React.FC = () => {
         </Grid>
       </Grid>
 
-      {/* Filters */}
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={4}>
-            <TextField
-              fullWidth
-              placeholder="Search products..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              InputProps={{
-                startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-              }}
-            />
+      {/* Filters - Regular view on larger screens, drawer on mobile */}
+      {!isMobile ? (
+        <Paper sx={{ p: 2, mb: 3 }}>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+                size={isMobile ? "small" : "medium"}
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <FormControl fullWidth size={isMobile ? "small" : "medium"}>
+                <InputLabel>Category</InputLabel>
+                <Select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  label="Category"
+                >
+                  <MenuItem value="">All Categories</MenuItem>
+                  {categories?.map((category) => (
+                    <MenuItem key={category.id} value={category.id}>
+                      {category.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <FormControl fullWidth size={isMobile ? "small" : "medium"}>
+                <InputLabel>Expiration</InputLabel>
+                <Select
+                  value={expirationFilter}
+                  onChange={(e) => setExpirationFilter(e.target.value)}
+                  label="Expiration"
+                >
+                  <MenuItem value="">All Products</MenuItem>
+                  <MenuItem value="expiring_soon">Expiring Soon</MenuItem>
+                  <MenuItem value="expired">Expired</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
           </Grid>
-          <Grid item xs={12} md={3}>
-            <FormControl fullWidth>
-              <InputLabel>Category</InputLabel>
-              <Select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
+        </Paper>
+      ) : (
+        <Drawer
+          anchor="bottom"
+          open={filtersOpen}
+          onClose={() => setFiltersOpen(false)}
+          PaperProps={{
+            sx: { 
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              pt: 1
+            }
+          }}
+        >
+          <Box sx={{ p: 2, pb: 4 }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="h6">Filters</Typography>
+              <IconButton onClick={() => setFiltersOpen(false)}>
+                <CloseIcon />
+              </IconButton>
+            </Box>
+            
+            <Stack spacing={2}>
+              <TextField
+                fullWidth
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+                size="small"
+              />
+              
+              <FormControl fullWidth size="small">
+                <InputLabel>Category</InputLabel>
+                <Select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  label="Category"
+                >
+                  <MenuItem value="">All Categories</MenuItem>
+                  {categories?.map((category) => (
+                    <MenuItem key={category.id} value={category.id}>
+                      {category.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              
+              <FormControl fullWidth size="small">
+                <InputLabel>Expiration</InputLabel>
+                <Select
+                  value={expirationFilter}
+                  onChange={(e) => setExpirationFilter(e.target.value)}
+                  label="Expiration"
+                >
+                  <MenuItem value="">All Products</MenuItem>
+                  <MenuItem value="expiring_soon">Expiring Soon</MenuItem>
+                  <MenuItem value="expired">Expired</MenuItem>
+                </Select>
+              </FormControl>
+              
+              <Button 
+                variant="contained" 
+                onClick={() => setFiltersOpen(false)}
+                fullWidth
               >
-                <MenuItem value="">All Categories</MenuItem>
-                {categories?.map((category) => (
-                  <MenuItem key={category.id} value={category.id}>
-                    {category.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <FormControl fullWidth>
-              <InputLabel>Expiration</InputLabel>
-              <Select
-                value={expirationFilter}
-                onChange={(e) => setExpirationFilter(e.target.value)}
-              >
-                <MenuItem value="">All Products</MenuItem>
-                <MenuItem value="expiring_soon">Expiring Soon</MenuItem>
-                <MenuItem value="expired">Expired</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-        </Grid>
-      </Paper>
+                Apply Filters
+              </Button>
+            </Stack>
+          </Box>
+        </Drawer>
+      )}
 
-      {/* Products Table */}
-      <Paper>
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Product</TableCell>
-                <TableCell>SKU</TableCell>
-                <TableCell>Batch</TableCell>
-                <TableCell>Category</TableCell>
-                <TableCell>Stock</TableCell>
-                <TableCell>Price</TableCell>
-                <TableCell>Expiration</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Quality</TableCell>
-                <TableCell align="right">Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
+      {/* List/Table View */}
+      {viewMode === 'list' && (
+        <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
+          <TableContainer>
+            <Table size={isMobile ? "small" : "medium"}>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Product</TableCell>
+                  {!isMobile && <TableCell>SKU</TableCell>}
+                  {!isMobile && <TableCell>Batch</TableCell>}
+                  {/* Removed Category column as it's now shown under product name */}
+                  <TableCell>Stock/Status</TableCell>
+                  {!isMobile && <TableCell>Price</TableCell>}
+                  <TableCell>Expiration</TableCell>
+                  {!isMobile && <TableCell>Quality</TableCell>}
+                  <TableCell align="right">Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
               {paginatedProducts.map((product) => {
                 const availableQuantity = product.quantity - product.reservedQuantity;
                 const isLowStock = product.quantity <= 10;
@@ -696,6 +882,186 @@ const FinishedProducts: React.FC = () => {
           onRowsPerPageChange={(e) => setRowsPerPage(parseInt(e.target.value, 10))}
         />
       </Paper>
+      )}
+
+      {/* Card View for Mobile */}
+      {viewMode === 'card' && (
+        <Box sx={{ mt: 2 }}>
+          <Grid container spacing={2}>
+            {paginatedProducts.map((product) => {
+              const availableQuantity = product.quantity - product.reservedQuantity;
+              const isLowStock = product.quantity <= 10;
+              
+              return (
+                <Grid item xs={12} sm={6} md={4} key={product.id}>
+                  <Card 
+                    elevation={2}
+                    sx={{ 
+                      height: '100%', 
+                      display: 'flex', 
+                      flexDirection: 'column',
+                      borderLeft: product.isContaminated ? '4px solid #d32f2f' : 'none',
+                      position: 'relative',
+                      borderRadius: 2
+                    }}
+                  >
+                    <CardHeader
+                      title={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography variant="h6" noWrap>
+                            {product.name}
+                          </Typography>
+                          {getContaminationBadge(product.isContaminated)}
+                        </Box>
+                      }
+                      subheader={
+                        <Box sx={{ mt: 0.5 }}>
+                          <Typography variant="caption" color="text.secondary" display="block">
+                            SKU: {product.sku}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" display="block">
+                            Batch: {product.batchNumber}
+                          </Typography>
+                        </Box>
+                      }
+                      action={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          {getExpirationBadge(product.expirationDate)}
+                          {product.qualityStatus && (
+                            <Chip
+                              label={product.qualityStatus.name}
+                              size="small"
+                              variant="outlined"
+                              sx={{
+                                borderColor: product.qualityStatus.color || '#757575',
+                                color: product.qualityStatus.color || '#757575',
+                              }}
+                            />
+                          )}
+                        </Box>
+                      }
+                      sx={{ pb: 1 }}
+                    />
+                    
+                    <Divider />
+                    
+                    <CardContent sx={{ pt: 2, pb: 1, flexGrow: 1 }}>
+                      <Grid container spacing={2}>
+                        <Grid item xs={6}>
+                          <Typography variant="subtitle2" color="text.secondary">
+                            Available
+                          </Typography>
+                          <Typography 
+                            variant="body1" 
+                            sx={{ 
+                              fontWeight: isLowStock ? 'bold' : 'medium',
+                              color: isLowStock ? 'error.main' : 'text.primary', 
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 0.5
+                            }}
+                          >
+                            {formatQuantity(availableQuantity, product.unit)}
+                            {isLowStock && (
+                              <Tooltip title="Low stock">
+                                <WarningIcon color="error" fontSize="small" sx={{ fontSize: '1rem' }} />
+                              </Tooltip>
+                            )}
+                          </Typography>
+                        </Grid>
+                        
+                        <Grid item xs={6}>
+                          <Typography variant="subtitle2" color="text.secondary">
+                            Price
+                          </Typography>
+                          <Typography variant="body1">
+                            {formatCurrency(product.salePrice)}
+                          </Typography>
+                        </Grid>
+                        
+                        <Grid item xs={6}>
+                          <Typography variant="subtitle2" color="text.secondary">
+                            Expires
+                          </Typography>
+                          <Typography variant="body2">
+                            {formatDate(product.expirationDate)}
+                          </Typography>
+                        </Grid>
+                        
+                        <Grid item xs={6}>
+                          <Typography variant="subtitle2" color="text.secondary">
+                            Category
+                          </Typography>
+                          <Typography variant="body2" noWrap>
+                            {product.category?.name || 'N/A'}
+                          </Typography>
+                        </Grid>
+                      </Grid>
+                    </CardContent>
+                    
+                    <CardActions sx={{ px: 2, py: 1, justifyContent: 'flex-end', bgcolor: 'background.default' }}>
+                      <IconButton 
+                        size="small" 
+                        color="primary" 
+                        onClick={() => handleReserve(product)}
+                        aria-label="Reserve quantity"
+                      >
+                        <Tooltip title="Reserve quantity">
+                          <ReserveIcon fontSize="small" />
+                        </Tooltip>
+                      </IconButton>
+                      <IconButton 
+                        size="small" 
+                        color="primary" 
+                        onClick={() => handleOpenForm(product)}
+                        aria-label="Edit product"
+                      >
+                        <Tooltip title="Edit product">
+                          <EditIcon fontSize="small" />
+                        </Tooltip>
+                      </IconButton>
+                      <IconButton 
+                        size="small" 
+                        color="error" 
+                        onClick={() => handleDelete(product.id)}
+                        aria-label="Delete product"
+                      >
+                        <Tooltip title="Delete product">
+                          <DeleteIcon fontSize="small" />
+                        </Tooltip>
+                      </IconButton>
+                    </CardActions>
+                  </Card>
+                </Grid>
+              );
+            })}
+          </Grid>
+          
+          {/* Card view pagination */}
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+            <TablePagination
+              component="div"
+              count={filteredProducts.length}
+              page={page}
+              onPageChange={(_, newPage) => setPage(newPage)}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={(e) => {
+                setRowsPerPage(parseInt(e.target.value, 10));
+                setPage(0);
+              }}
+              labelRowsPerPage={isMobile ? "Items:" : "Items per page:"}
+              sx={{
+                '.MuiTablePagination-selectLabel': {
+                  margin: 0,
+                },
+                '.MuiTablePagination-displayedRows': {
+                  margin: 0,
+                }
+              }}
+            />
+          </Box>
+        </Box>
+      )}
 
       {/* Reserve Quantity Dialog */}
       <Dialog

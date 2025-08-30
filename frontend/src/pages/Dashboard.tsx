@@ -24,15 +24,16 @@ import {
   Warning as WarningIcon,
   Assessment as AssessmentIcon,
   AttachMoney as MoneyIcon,
-  ShoppingCart as ProductIcon,
   Error as ErrorIcon,
   Schedule as ScheduleIcon,
   Refresh as RefreshIcon,
   ArrowUpward as ArrowUpIcon,
   ArrowDownward as ArrowDownIcon,
-  Restaurant as RecipeIcon,
   Edit as EditIcon,
   CheckCircle as CheckCircleIcon,
+  Science as ScienceIcon,
+  LocalDining as LocalDiningIcon,
+  MenuBook as MenuBookIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
@@ -372,7 +373,7 @@ const Dashboard: React.FC = () => {
               <Card>
                 <CardContent>
                   <Box display="flex" alignItems="center" mb={2}>
-                    <RecipeIcon color="info" sx={{ mr: 1 }} />
+                    <MenuBookIcon color="info" sx={{ mr: 1 }} />
                     <Typography variant="h6">Active Recipes</Typography>
                   </Box>
                   <Typography variant="h4" color="info.main" gutterBottom>
@@ -543,7 +544,7 @@ const Dashboard: React.FC = () => {
                     </Button>
                     <Button
                       variant="outlined"
-                      startIcon={<ProductIcon />}
+                      startIcon={<LocalDiningIcon />}
                       onClick={() => navigate('/finished-products')}
                       fullWidth
                     >
@@ -551,7 +552,7 @@ const Dashboard: React.FC = () => {
                     </Button>
                     <Button
                       variant="outlined"
-                      startIcon={<RecipeIcon />}
+                      startIcon={<MenuBookIcon />}
                       onClick={() => navigate('/recipes')}
                       fullWidth
                     >
@@ -564,6 +565,14 @@ const Dashboard: React.FC = () => {
                       fullWidth
                     >
                       View Reports
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<ScienceIcon />}
+                      onClick={() => navigate('/api-test')}
+                      fullWidth
+                    >
+                      API Testing
                     </Button>
                   </Box>
                 </CardContent>

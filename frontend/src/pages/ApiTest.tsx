@@ -634,18 +634,18 @@ const ApiTestPage: React.FC = () => {
       // First get categories and raw materials to use valid IDs
       const categoriesResult = await categoriesApi.getAll();
       const rawMaterialsResult = await rawMaterialsApi.getAll();
-      
+
       // Find a category for recipes (or use the first one if no specific type found)
-      const recipeCategory = categoriesResult.data?.find(c => c.type === CategoryType.RECIPE) || 
-                             categoriesResult.data?.[0];
-      
+      const recipeCategory = categoriesResult.data?.find(c => c.type === CategoryType.RECIPE) ||
+        categoriesResult.data?.[0];
+
       // Get first raw material
       const rawMaterial = rawMaterialsResult.data?.[0];
-      
+
       if (!recipeCategory || !rawMaterial) {
         throw new Error('Missing required categories or raw materials for test');
       }
-      
+
       const testRecipe = {
         name: `Test Recipe ${Date.now()}`,
         description: 'Test recipe for API validation',
@@ -696,29 +696,29 @@ const ApiTestPage: React.FC = () => {
     try {
       // Get test recipe ID or fetch an existing recipe
       let recipeId = (window as any).testRecipeId;
-      
+
       // If no test recipe was created, get one from the API
       if (!recipeId) {
         const recipesResponse = await fetch('/api/recipes');
         const recipesResult = await recipesResponse.json();
-        
+
         if (recipesResult.success && recipesResult.data && recipesResult.data.length > 0) {
           recipeId = recipesResult.data[0].id;
         } else {
           throw new Error('No recipes available for cost analysis test');
         }
       }
-      
+
       const costResponse = await fetch(`/api/recipes/${recipeId}/cost`);
       if (!costResponse.ok) {
         throw new Error(`API error: ${costResponse.status} ${costResponse.statusText}`);
       }
-      
+
       const costResult = await costResponse.json();
-      
+
       updateTest(27, {
         status: costResult.success ? 'success' : 'error',
-        message: costResult.success 
+        message: costResult.success
           ? `Cost analysis: $${costResult.data?.totalCost?.toFixed(2) || '0.00'}`
           : `Error: ${costResult.error || 'Unknown error'}`,
         data: costResult.data
@@ -734,22 +734,22 @@ const ApiTestPage: React.FC = () => {
     updateTest(28, { status: 'testing' });
     try {
       const whatCanMakeResponse = await fetch('/api/recipes/what-can-i-make');
-      
+
       if (!whatCanMakeResponse.ok) {
         throw new Error(`API error: ${whatCanMakeResponse.status} ${whatCanMakeResponse.statusText}`);
       }
-      
+
       const whatCanMakeResult = await whatCanMakeResponse.json();
-      
+
       // Check for different possible response structures
-      const canMakeCount = whatCanMakeResult.data?.canMakeCount || 
-                          whatCanMakeResult.data?.recipes?.canMake?.length || 0;
-      const totalRecipes = whatCanMakeResult.data?.totalRecipes || 
-                          whatCanMakeResult.data?.recipes?.total || 0;
-      
+      const canMakeCount = whatCanMakeResult.data?.canMakeCount ||
+        whatCanMakeResult.data?.recipes?.canMake?.length || 0;
+      const totalRecipes = whatCanMakeResult.data?.totalRecipes ||
+        whatCanMakeResult.data?.recipes?.total || 0;
+
       updateTest(28, {
         status: whatCanMakeResult.success ? 'success' : 'error',
-        message: whatCanMakeResult.success 
+        message: whatCanMakeResult.success
           ? `Can make ${canMakeCount} of ${totalRecipes} recipes`
           : `Error: ${whatCanMakeResult.error || 'Unknown error'}`,
         data: whatCanMakeResult.data
