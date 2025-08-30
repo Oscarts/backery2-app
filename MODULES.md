@@ -575,6 +575,8 @@ src/
 │   ├── Auth/           # User authentication
 │   ├── Layout/         # App layout and navigation
 │   └── Settings/       # Units and configuration
+├── docs/
+│   └── UI-UX-Guidelines.md     # UI/UX design patterns and standards
 ├── pages/
 │   ├── RawMaterials.tsx        # Raw materials management
 │   ├── IntermediateProducts.tsx # WIP products
@@ -814,14 +816,70 @@ Backend testing uses Node.js test scripts to validate API functionality and data
 
   ```plaintext
   backend/
-  ├── test-*.js       # API test scripts
-  └── run-all-tests.js  # Test runner script
+  ├── test-*.js              # API test scripts
+  ├── test-*-enhanced.js     # Enhanced API test scripts with better error handling
+  ├── run-all-tests.js       # Test runner script
+  ├── api-test-fixes.md      # Documentation for API test fixes
+  └── api-test-troubleshooting.md  # Troubleshooting guide for API tests
   ```
 
-- **Test Execution**:
-  - `node run-all-tests.js` - Run all backend tests
+- **Test Execution (IMPORTANT)**:
+  - First, start the backend server in a dedicated terminal:
+  
+    ```bash
+    cd backend && npm run dev
+    ```
+    
+  - Then, in a separate terminal, run tests:
+  
+    ```bash
+    cd backend && node run-all-tests.js
+    ```
+    
+    or run individual tests:
+    
+    ```bash
+    cd backend && node test-quality-status-enhanced.js
+    ```
 
-### 🔜 Next Major Release Goals
+- **Common Test Issues**:
+  - Most test failures occur because the backend server is not running
+  - Always check server health before running tests
+  - Use enhanced test scripts that handle errors gracefully
+  - See `api-test-troubleshooting.md` for detailed solutions
+
+### � Development Guidelines
+
+#### Test-Driven Development
+
+- **MANDATORY**: Always add unit tests for new features in the page API tests
+- **MANDATORY**: Follow the enhanced test pattern with server health checks
+- **MANDATORY**: Run tests before committing changes
+- **MANDATORY**: Ensure new developments do not break existing tests
+- **CRITICAL**: Each feature must have tests for happy path and error conditions
+
+#### Documentation Workflow
+
+- **MANDATORY**: After every development, update the planning.md document
+- **MANDATORY**: Clearly mark what is done and what remains to be implemented
+- **MANDATORY**: Use the following format in planning.md:
+  
+  ```markdown
+  - [x] Completed feature with date
+  - [ ] Feature still to be implemented
+  ```
+
+- **MANDATORY**: Document all API endpoints, parameters, and responses
+- **MANDATORY**: Update CHANGELOG.md with all significant changes
+
+#### Code Structure
+
+- **MANDATORY**: Follow the existing module structure
+- **MANDATORY**: Maintain separation of concerns (controllers, services, routes)
+- **MANDATORY**: Use consistent naming conventions
+- **MANDATORY**: Follow TypeScript best practices with proper typing
+
+### �🔜 Next Major Release Goals
 
 The project is on track for its next major release with a focus on production planning, advanced reporting, and enhanced mobile responsiveness. The quality status and contamination tracking systems implemented in August 2025 represent significant advancements in food safety compliance capabilities, making the system increasingly valuable for professional bakery operations.
 

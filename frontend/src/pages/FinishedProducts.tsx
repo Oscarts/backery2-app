@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Typography,
@@ -22,7 +22,6 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
   Grid,
   Alert,
   Snackbar,
@@ -42,11 +41,9 @@ import {
 } from '@mui/material';
 import {
   Add as AddIcon,
-  Edit as EditIcon,
   Delete as DeleteIcon,
   Warning as WarningIcon,
   Search as SearchIcon,
-  LocalShipping as ReserveIcon,
   GridView as GridViewIcon,
   ViewList as ListViewIcon,
   Close as CloseIcon,
@@ -67,11 +64,11 @@ const getContaminationBadge = (isContaminated: boolean) => {
 
 const getExpirationBadge = (expirationDate: string) => {
   if (isExpired(expirationDate)) {
-    return <Chip label="EXPIRED" size="small" variant="outlined" color="error" sx={{ borderWidth: 1 }} />;
+    return <Chip label="EXPIRED" size="small" sx={{ backgroundColor: theme => theme.palette.error.main, color: 'white', fontWeight: 'medium' }} />;
   }
   if (isExpiringSoon(expirationDate)) {
     const days = getDaysUntilExpiration(expirationDate);
-    return <Chip label={`${days} days`} size="small" variant="outlined" color="warning" sx={{ borderWidth: 1 }} />;
+    return <Typography variant="caption" color="warning.main" fontWeight="medium" sx={{ display: 'block' }}>{days} days remaining</Typography>;
   }
   return null;
 };
@@ -83,6 +80,13 @@ const FinishedProducts: React.FC = () => {
   // View state
   const [viewMode, setViewMode] = useState<'list' | 'card'>(isMobile ? 'card' : 'list');
   const [filtersOpen, setFiltersOpen] = useState(false);
+  
+  // Update viewMode when screen size changes
+  useEffect(() => {
+    if (isMobile) {
+      setViewMode('card');
+    }
+  }, [isMobile]);
   
   // Pagination state
   const [page, setPage] = useState(0);
@@ -97,12 +101,7 @@ const FinishedProducts: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [expirationFilter, setExpirationFilter] = useState('');
   
-  // Reserve dialog state
-  const [reserveDialog, setReserveDialog] = useState<{ open: boolean; product: FinishedProduct | null }>({
-    open: false,
-    product: null,
-  });
-  const [reserveQuantity, setReserveQuantity] = useState('');
+
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -171,19 +170,7 @@ const FinishedProducts: React.FC = () => {
     },
   });
 
-  const reserveMutation = useMutation({
-    mutationFn: ({ id, quantity }: { id: string; quantity: number }) =>
-      finishedProductsApi.reserveQuantity(id, quantity),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['finishedProducts']);
-      setReserveDialog({ open: false, product: null });
-      setReserveQuantity('');
-      showSnackbar('Quantity reserved successfully', 'success');
-    },
-    onError: () => {
-      showSnackbar('Error reserving quantity', 'error');
-    },
-  });
+
 
   // Helper functions
   const showSnackbar = (message: string, severity: 'success' | 'error') => {
@@ -210,18 +197,7 @@ const FinishedProducts: React.FC = () => {
     }
   };
 
-  const handleReserve = (product: FinishedProduct) => {
-    setReserveDialog({ open: true, product });
-  };
 
-  const handleReserveSubmit = () => {
-    if (reserveDialog.product && reserveQuantity) {
-      const quantity = parseFloat(reserveQuantity);
-      if (quantity > 0) {
-        reserveMutation.mutate({ id: reserveDialog.product.id, quantity });
-      }
-    }
-  };
 
   // Form component
   const ProductForm: React.FC = () => {
@@ -256,8 +232,18 @@ const FinishedProducts: React.FC = () => {
     return (
       <Dialog open={openForm} onClose={handleCloseForm} maxWidth="md" fullWidth>
         <form onSubmit={handleSubmit}>
-          <DialogTitle>
-            {editingProduct ? 'Edit Finished Product' : 'Create Finished Product'}
+          <DialogTitle sx={{ pb: 1 }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              <Typography variant="h6">
+                {editingProduct ? 'Edit Finished Product' : 'Create Finished Product'}
+              </Typography>
+              <Box>
+                <Button onClick={handleCloseForm} sx={{ mr: 1 }}>Cancel</Button>
+                <Button type="submit" variant="contained">
+                  {editingProduct ? 'Update' : 'Create'}
+                </Button>
+              </Box>
+            </Box>
           </DialogTitle>
           <DialogContent>
             <Grid container spacing={2} sx={{ mt: 1 }}>
@@ -453,12 +439,6 @@ const FinishedProducts: React.FC = () => {
               </Grid>
             </Grid>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseForm}>Cancel</Button>
-            <Button type="submit" variant="contained">
-              {editingProduct ? 'Update' : 'Create'}
-            </Button>
-          </DialogActions>
         </form>
       </Dialog>
     );
@@ -515,7 +495,10 @@ const FinishedProducts: React.FC = () => {
               <IconButton 
                 color={viewMode === 'list' ? 'primary' : 'default'} 
                 onClick={() => setViewMode('list')}
-                sx={{ borderRadius: '4px 0 0 4px' }}
+                sx={{ 
+                  borderRadius: '4px 0 0 4px',
+                  bgcolor: viewMode === 'list' ? 'action.selected' : 'transparent'
+                }}
               >
                 <ListViewIcon />
               </IconButton>
@@ -524,7 +507,10 @@ const FinishedProducts: React.FC = () => {
               <IconButton 
                 color={viewMode === 'card' ? 'primary' : 'default'} 
                 onClick={() => setViewMode('card')}
-                sx={{ borderRadius: '0 4px 4px 0' }}
+                sx={{ 
+                  borderRadius: '0 4px 4px 0',
+                  bgcolor: viewMode === 'card' ? 'action.selected' : 'transparent'
+                }}
               >
                 <GridViewIcon />
               </IconButton>
@@ -744,29 +730,41 @@ const FinishedProducts: React.FC = () => {
       {viewMode === 'list' && (
         <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
           <TableContainer>
-            <Table size={isMobile ? "small" : "medium"}>
+            <Table 
+              size="small"
+              sx={{ 
+                '& .MuiTableCell-root': { 
+                  px: 2, 
+                  py: 1.5,
+                  whiteSpace: 'nowrap'
+                }
+              }}>
               <TableHead>
                 <TableRow>
-                  <TableCell>Product</TableCell>
-                  {!isMobile && <TableCell>SKU</TableCell>}
-                  {!isMobile && <TableCell>Batch</TableCell>}
-                  {/* Removed Category column as it's now shown under product name */}
-                  <TableCell>Stock/Status</TableCell>
-                  {!isMobile && <TableCell>Price</TableCell>}
-                  <TableCell>Expiration</TableCell>
-                  {!isMobile && <TableCell>Quality</TableCell>}
-                  <TableCell align="right">Actions</TableCell>
+                  <TableCell width="20%">Product</TableCell>
+                  {!isMobile && <TableCell width="10%">SKU/Batch</TableCell>}
+                  <TableCell width="10%" align="center">Quantity</TableCell>
+                  {!isMobile && <TableCell width="10%" align="center">Production</TableCell>}
+                  {!isMobile && <TableCell width="10%" align="center">Storage</TableCell>}
+                  {!isMobile && <TableCell width="10%" align="right">Price</TableCell>}
+                  <TableCell width="10%" align="center">Expiration</TableCell>
+                  {!isMobile && <TableCell width="10%" align="center">Quality</TableCell>}
+                  <TableCell width="10%" align="right">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
               {paginatedProducts.map((product) => {
-                const availableQuantity = product.quantity - product.reservedQuantity;
                 const isLowStock = product.quantity <= 10;
-                const isExpiringSoonProduct = isExpiringSoon(product.expirationDate);
-                const isExpiredProduct = isExpired(product.expirationDate);
 
                 return (
-                  <TableRow key={product.id}>
+                  <TableRow 
+                    key={product.id} 
+                    onClick={() => handleOpenForm(product)}
+                    sx={{ 
+                      cursor: 'pointer',
+                      '&:hover': { bgcolor: 'action.hover' }
+                    }}
+                  >
                     <TableCell>
                       <Box>
                         <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center' }}>
@@ -778,94 +776,83 @@ const FinishedProducts: React.FC = () => {
                         </Typography>
                       </Box>
                     </TableCell>
-                    <TableCell>{product.sku}</TableCell>
-                    <TableCell>{product.batchNumber}</TableCell>
-                    <TableCell>{product.category?.name}</TableCell>
                     <TableCell>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Typography>
-                          {formatQuantity(product.quantity, product.unit)}
-                        </Typography>
-                        {isLowStock && (
-                          <Tooltip title="Low stock">
-                            <WarningIcon color="warning" fontSize="small" />
-                          </Tooltip>
+                      <Box>
+                        <Typography variant="body2">{product.sku}</Typography>
+                        <Typography variant="caption" color="text.secondary">{product.batchNumber}</Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell align="center">
+                      <Box display="flex" alignItems="center" justifyContent="center" gap={1}>
+                        {product.quantity === 0 ? (
+                          <Typography sx={{ color: 'error.main', fontWeight: 'bold' }}>
+                            Out of Stock
+                          </Typography>
+                        ) : (
+                          <Typography
+                            sx={{
+                              fontWeight: isLowStock ? 'bold' : 'regular',
+                              color: isLowStock ? 'warning.main' : 'text.primary',
+                              borderBottom: isLowStock ? '1px solid' : 'none',
+                              borderColor: 'warning.main'
+                            }}
+                          >
+                            {formatQuantity(product.quantity, product.unit)}
+                          </Typography>
                         )}
                       </Box>
                     </TableCell>
 
-                    <TableCell>${product.salePrice.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <Box>
+                    <TableCell align="center">
+                      <Typography variant="body2">
+                        {formatDate(product.productionDate)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="center">
+                      <Typography variant="body2">
+                        {product.storageLocation?.name || 'N/A'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="right">${product.salePrice.toFixed(2)}</TableCell>
+                    <TableCell align="center">
+                      <Box display="flex" flexDirection="column" alignItems="center" gap={0.5}>
                         <Typography variant="body2">
                           {formatDate(product.expirationDate)}
                         </Typography>
-                        {isExpiredProduct ? (
-                          <Chip label="Expired" color="error" size="small" />
-                        ) : isExpiringSoonProduct ? (
+                        {getExpirationBadge(product.expirationDate)}
+                      </Box>
+                    </TableCell>
+
+                    <TableCell align="center">
+                      <Box display="flex" justifyContent="center">
+                        {product.qualityStatus ? (
                           <Chip
-                            label={`${getDaysUntilExpiration(product.expirationDate)} days`}
-                            color="warning"
+                            label={product.qualityStatus.name}
                             size="small"
+                            variant="outlined"
+                            sx={{
+                              borderColor: product.qualityStatus.color || '#gray',
+                              color: product.qualityStatus.color || '#gray',
+                              borderWidth: 1.5,
+                              fontWeight: 'medium'
+                            }}
                           />
-                        ) : null}
+                        ) : (
+                          <Chip label="No status" variant="outlined" size="small" />
+                        )}
                       </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Box display="flex" flexDirection="column" gap={0.5}>
-                        <Chip
-                          label={isLowStock ? 'Low Stock' : 'In Stock'}
-                          color={isLowStock ? 'warning' : 'success'}
-                          size="small"
-                        />
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      {product.qualityStatus ? (
-                        <Chip
-                          label={product.qualityStatus.name}
-                          size="small"
-                          sx={{
-                            backgroundColor: product.qualityStatus.color || '#gray',
-                            color: 'white',
-                          }}
-                        />
-                      ) : (
-                        <Chip label="No status" variant="outlined" size="small" />
-                      )}
                     </TableCell>
                     <TableCell align="right">
-                      <Box display="flex" gap={1}>
-                        <Box display="flex" flexDirection="column" alignItems="center">
-                          <Tooltip title="Reserve Quantity">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleReserve(product)}
-                              disabled={availableQuantity <= 0}
-                            >
-                              <ReserveIcon />
-                            </IconButton>
-                          </Tooltip>
-                          {product.reservedQuantity > 0 && (
-                            <Typography variant="caption" color="info.main" sx={{ fontWeight: 'bold' }}>
-                              {formatQuantity(product.reservedQuantity, product.unit)}
-                            </Typography>
-                          )}
-                        </Box>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleOpenForm(product)}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleDelete(product.id)}
-                          color="error"
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </Box>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(product.id);
+                        }}
+                        color="error"
+                      >
+                        <DeleteIcon />
+                      </IconButton>
                     </TableCell>
                   </TableRow>
                 );
@@ -880,6 +867,8 @@ const FinishedProducts: React.FC = () => {
           onPageChange={(_, newPage) => setPage(newPage)}
           rowsPerPage={rowsPerPage}
           onRowsPerPageChange={(e) => setRowsPerPage(parseInt(e.target.value, 10))}
+          labelRowsPerPage={isMobile ? "Items:" : "Items per page:"}
+          sx={{ px: 2 }}
         />
       </Paper>
       )}
@@ -889,14 +878,16 @@ const FinishedProducts: React.FC = () => {
         <Box sx={{ mt: 2 }}>
           <Grid container spacing={2}>
             {paginatedProducts.map((product) => {
-              const availableQuantity = product.quantity - product.reservedQuantity;
               const isLowStock = product.quantity <= 10;
               
               return (
                 <Grid item xs={12} sm={6} md={4} key={product.id}>
                   <Card 
                     elevation={2}
+                    onClick={() => handleOpenForm(product)}
                     sx={{ 
+                      cursor: 'pointer',
+                      '&:hover': { boxShadow: 6 },
                       height: '100%', 
                       display: 'flex', 
                       flexDirection: 'column',
@@ -924,22 +915,7 @@ const FinishedProducts: React.FC = () => {
                           </Typography>
                         </Box>
                       }
-                      action={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          {getExpirationBadge(product.expirationDate)}
-                          {product.qualityStatus && (
-                            <Chip
-                              label={product.qualityStatus.name}
-                              size="small"
-                              variant="outlined"
-                              sx={{
-                                borderColor: product.qualityStatus.color || '#757575',
-                                color: product.qualityStatus.color || '#757575',
-                              }}
-                            />
-                          )}
-                        </Box>
-                      }
+                      action={null}
                       sx={{ pb: 1 }}
                     />
                     
@@ -961,7 +937,7 @@ const FinishedProducts: React.FC = () => {
                               gap: 0.5
                             }}
                           >
-                            {formatQuantity(availableQuantity, product.unit)}
+                            {formatQuantity(product.quantity, product.unit)}
                             {isLowStock && (
                               <Tooltip title="Low stock">
                                 <WarningIcon color="error" fontSize="small" sx={{ fontSize: '1rem' }} />
@@ -996,40 +972,56 @@ const FinishedProducts: React.FC = () => {
                             {product.category?.name || 'N/A'}
                           </Typography>
                         </Grid>
+                        <Grid item xs={6}>
+                          <Typography variant="subtitle2" color="text.secondary">
+                            Storage
+                          </Typography>
+                          <Typography variant="body2" noWrap>
+                            {product.storageLocation?.name || 'N/A'}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Typography variant="subtitle2" color="text.secondary">
+                            Production
+                          </Typography>
+                          <Typography variant="body2" noWrap>
+                            {formatDate(product.productionDate)}
+                          </Typography>
+                        </Grid>
                       </Grid>
                     </CardContent>
                     
-                    <CardActions sx={{ px: 2, py: 1, justifyContent: 'flex-end', bgcolor: 'background.default' }}>
-                      <IconButton 
-                        size="small" 
-                        color="primary" 
-                        onClick={() => handleReserve(product)}
-                        aria-label="Reserve quantity"
-                      >
-                        <Tooltip title="Reserve quantity">
-                          <ReserveIcon fontSize="small" />
-                        </Tooltip>
-                      </IconButton>
-                      <IconButton 
-                        size="small" 
-                        color="primary" 
-                        onClick={() => handleOpenForm(product)}
-                        aria-label="Edit product"
-                      >
-                        <Tooltip title="Edit product">
-                          <EditIcon fontSize="small" />
-                        </Tooltip>
-                      </IconButton>
-                      <IconButton 
-                        size="small" 
-                        color="error" 
-                        onClick={() => handleDelete(product.id)}
-                        aria-label="Delete product"
-                      >
-                        <Tooltip title="Delete product">
-                          <DeleteIcon fontSize="small" />
-                        </Tooltip>
-                      </IconButton>
+                    <CardActions sx={{ px: 2, py: 1, justifyContent: 'space-between', bgcolor: 'background.default' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        {getExpirationBadge(product.expirationDate)}
+                        {product.qualityStatus && (
+                          <Chip
+                            label={product.qualityStatus.name}
+                            size="small"
+                            variant="outlined"
+                            sx={{
+                              borderColor: product.qualityStatus.color || '#gray',
+                              color: product.qualityStatus.color || '#gray',
+                              borderWidth: 1.5,
+                              fontWeight: 'medium'
+                            }}
+                          />
+                        )}
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+
+
+                        <IconButton 
+                          size="small" 
+                          color="error" 
+                          onClick={() => handleDelete(product.id)}
+                          aria-label="Delete product"
+                        >
+                          <Tooltip title="Delete product">
+                            <DeleteIcon fontSize="small" />
+                          </Tooltip>
+                        </IconButton>
+                      </Box>
                     </CardActions>
                   </Card>
                 </Grid>
@@ -1063,48 +1055,7 @@ const FinishedProducts: React.FC = () => {
         </Box>
       )}
 
-      {/* Reserve Quantity Dialog */}
-      <Dialog
-        open={reserveDialog.open}
-        onClose={() => setReserveDialog({ open: false, product: null })}
-      >
-        <DialogTitle>Reserve Quantity</DialogTitle>
-        <DialogContent>
-          {reserveDialog.product && (
-            <Box>
-              <Typography gutterBottom>
-                Product: {reserveDialog.product.name}
-              </Typography>
-              <Typography gutterBottom>
-                Available: {formatQuantity(
-                  reserveDialog.product.quantity - reserveDialog.product.reservedQuantity,
-                  reserveDialog.product.unit
-                )}
-              </Typography>
-              <TextField
-                fullWidth
-                label="Quantity to Reserve"
-                type="number"
-                value={reserveQuantity}
-                onChange={(e) => setReserveQuantity(e.target.value)}
-                sx={{ mt: 2 }}
-                inputProps={{
-                  max: reserveDialog.product.quantity - reserveDialog.product.reservedQuantity,
-                  min: 0,
-                }}
-              />
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setReserveDialog({ open: false, product: null })}>
-            Cancel
-          </Button>
-          <Button onClick={handleReserveSubmit} variant="contained">
-            Reserve
-          </Button>
-        </DialogActions>
-      </Dialog>
+
 
       <ProductForm />
 
