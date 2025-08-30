@@ -370,21 +370,41 @@ export const getRecipeCost = async (req: Request, res: Response) => {
     let totalCost = 0;
     const ingredientCosts = [];
 
+    // Import the unit conversion utilities
+    const { convertUnits, areUnitsCompatible } = await import('../utils/unitConversion');
+    
     for (const ingredient of recipe.ingredients) {
       let unitCost = 0;
       let ingredientName = '';
       let availableQuantity = 0;
+      let sourceUnit = '';
 
       if (ingredient.rawMaterial) {
         unitCost = ingredient.rawMaterial.unitPrice;
         ingredientName = ingredient.rawMaterial.name;
         availableQuantity = ingredient.rawMaterial.quantity;
+        sourceUnit = ingredient.rawMaterial.unit;
       } else if (ingredient.intermediateProduct) {
-        // For intermediate products, we'd need to calculate cost from their recipe
-        // For now, we'll use a placeholder
-        unitCost = 0;
+        // For intermediate products, we use their costToProduce field from the database
+        // This is calculated and updated during intermediate product creation/update
+        unitCost = ingredient.intermediateProduct.costToProduce || 0;
         ingredientName = ingredient.intermediateProduct.name;
         availableQuantity = ingredient.intermediateProduct.quantity;
+        sourceUnit = ingredient.intermediateProduct.unit;
+      }
+
+      // Check if units need conversion
+      let convertedQuantity = availableQuantity;
+      if (sourceUnit !== ingredient.unit && sourceUnit && ingredient.unit) {
+        if (areUnitsCompatible(sourceUnit, ingredient.unit)) {
+          const converted = convertUnits(availableQuantity, sourceUnit, ingredient.unit);
+          if (converted !== null) {
+            convertedQuantity = converted;
+            
+            // We also need to adjust the unit cost to match the new unit
+            unitCost = unitCost * (convertUnits(1, ingredient.unit, sourceUnit) || 1);
+          }
+        }
       }
 
       const ingredientTotalCost = unitCost * ingredient.quantity;
@@ -397,8 +417,8 @@ export const getRecipeCost = async (req: Request, res: Response) => {
         unit: ingredient.unit,
         unitCost,
         totalCost: ingredientTotalCost,
-        availableQuantity,
-        canMake: availableQuantity >= ingredient.quantity
+        availableQuantity: convertedQuantity,
+        canMake: convertedQuantity >= ingredient.quantity
       });
     }
 
@@ -452,25 +472,48 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
       for (const ingredient of recipe.ingredients) {
         let availableQuantity = 0;
         let ingredientName = '';
+        let ingredientUnit = '';
+        let sourceUnit = '';
 
         if (ingredient.rawMaterial) {
           availableQuantity = ingredient.rawMaterial.quantity;
           ingredientName = ingredient.rawMaterial.name;
+          sourceUnit = ingredient.rawMaterial.unit;
         } else if (ingredient.intermediateProduct) {
           availableQuantity = ingredient.intermediateProduct.quantity;
           ingredientName = ingredient.intermediateProduct.name;
+          sourceUnit = ingredient.intermediateProduct.unit;
+        }
+        
+        ingredientUnit = ingredient.unit;
+        
+        // Import the unit conversion utilities
+        const { convertUnits, areUnitsCompatible } = await import('../utils/unitConversion');
+        
+        // Check if units need conversion
+        let convertedQuantity = availableQuantity;
+        if (sourceUnit !== ingredientUnit && sourceUnit && ingredientUnit) {
+          if (areUnitsCompatible(sourceUnit, ingredientUnit)) {
+            const converted = convertUnits(availableQuantity, sourceUnit, ingredientUnit);
+            if (converted !== null) {
+              convertedQuantity = converted;
+            }
+          }
         }
 
-        if (availableQuantity < ingredient.quantity) {
+        if (convertedQuantity < ingredient.quantity) {
           canMake = false;
           missingIngredients.push({
             name: ingredientName,
-            needed: ingredient.quantity,
-            available: availableQuantity,
-            shortage: ingredient.quantity - availableQuantity
+            needed: `${ingredient.quantity} ${ingredientUnit}`,
+            available: `${availableQuantity} ${sourceUnit}`,
+            shortage: `${ingredient.quantity - convertedQuantity} ${ingredientUnit}`
           });
         } else {
-          const possibleBatches = Math.floor(availableQuantity / ingredient.quantity);
+          // Calculate how many complete batches can be made with this ingredient
+          const possibleBatches = Math.floor(convertedQuantity / ingredient.quantity);
+          
+          // Update the max number of batches that can be made based on the most limiting ingredient
           maxQuantityCanMake = Math.min(maxQuantityCanMake, possibleBatches);
         }
       }
