@@ -658,10 +658,10 @@ const Recipes: React.FC = () => {
                         </Typography>
                       </Grid>
                       
-                      {/* Right column: Yield */}
+                      {/* Right column: Yield per batch */}
                       <Grid item xs={6}>
                         <Typography variant="caption" color="textSecondary" display="block">
-                          Yield
+                          Yield per Batch
                         </Typography>
                         <Typography variant="body2">
                           {recipe.yieldQuantity} {recipe.yieldUnit}
