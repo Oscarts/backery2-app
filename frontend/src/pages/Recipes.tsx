@@ -156,7 +156,7 @@ const Recipes: React.FC = () => {
     queryFn: () => recipesApi.getCost(selectedRecipeForCost!),
     enabled: !!selectedRecipeForCost
   });
-  
+
   // Query for selected recipe details
   const { data: selectedRecipeDetailsResponse } = useQuery({
     queryKey: ['recipe-details', selectedRecipeForIngredients],
@@ -616,8 +616,8 @@ const Recipes: React.FC = () => {
 
             {whatCanIMake.recipes.map((recipe) => (
               <Grid item xs={12} md={6} lg={4} key={recipe.recipeId}>
-                <Card 
-                  sx={{ 
+                <Card
+                  sx={{
                     cursor: 'pointer',
                     transition: 'transform 0.2s, box-shadow 0.2s',
                     '&:hover': {
@@ -634,10 +634,26 @@ const Recipes: React.FC = () => {
                     <Typography variant="h6" gutterBottom>
                       {recipe.recipeName}
                     </Typography>
-                    <Typography variant="body2" color="textSecondary" gutterBottom>
-                      {recipe.category} • {recipe.yieldQuantity} {recipe.yieldUnit}
-                    </Typography>
                     
+                    <Grid container spacing={1} sx={{ mb: 2 }}>
+                      <Grid item xs={6}>
+                        <Typography variant="caption" color="textSecondary" display="block">
+                          Category
+                        </Typography>
+                        <Typography variant="body2">
+                          {recipe.category}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="caption" color="textSecondary" display="block">
+                          Yield per Batch
+                        </Typography>
+                        <Typography variant="body2">
+                          {recipe.yieldQuantity} {recipe.yieldUnit}
+                        </Typography>
+                      </Grid>
+                    </Grid>
+
                     {recipe.canMake ? (
                       <Box>
                         <Chip
@@ -648,6 +664,9 @@ const Recipes: React.FC = () => {
                         />
                         <Typography variant="body2">
                           Max batches: {recipe.maxBatches}
+                        </Typography>
+                        <Typography variant="caption" color="textSecondary">
+                          Total potential yield: {recipe.maxBatches * recipe.yieldQuantity} {recipe.yieldUnit}
                         </Typography>
                       </Box>
                     ) : (
@@ -1147,13 +1166,13 @@ const Recipes: React.FC = () => {
                   <TableBody>
                     {selectedRecipeDetails.ingredients?.map((ingredient) => {
                       const isRawMaterial = !!ingredient.rawMaterialId;
-                      const ingredientItem = isRawMaterial 
+                      const ingredientItem = isRawMaterial
                         ? ingredient.rawMaterial
                         : ingredient.intermediateProduct;
-                      
+
                       const availableQuantity = ingredientItem?.quantity || 0;
                       const hasEnough = availableQuantity >= ingredient.quantity;
-                      
+
                       return (
                         <TableRow key={ingredient.id}>
                           <TableCell>
@@ -1184,7 +1203,7 @@ const Recipes: React.FC = () => {
                   </TableBody>
                 </Table>
               </TableContainer>
-              
+
               {selectedRecipeDetails.instructions && Array.isArray(selectedRecipeDetails.instructions) && selectedRecipeDetails.instructions.length > 0 && (
                 <>
                   <Typography variant="subtitle1" sx={{ mt: 3, fontWeight: 'bold' }}>
@@ -1199,7 +1218,7 @@ const Recipes: React.FC = () => {
                   </List>
                 </>
               )}
-              
+
               <Typography variant="subtitle1" sx={{ mt: 2, color: 'text.secondary' }}>
                 Time Required: {selectedRecipeDetails.prepTime || 0} min prep + {selectedRecipeDetails.cookTime || 0} min cooking
               </Typography>
@@ -1211,7 +1230,7 @@ const Recipes: React.FC = () => {
           )}
         </DialogContent>
         <DialogActions>
-          <Button 
+          <Button
             onClick={() => {
               setIngredientsDialogOpen(false);
               setSelectedRecipeForIngredients(null);
