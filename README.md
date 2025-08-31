@@ -12,6 +12,7 @@ A comprehensive inventory management web application specifically designed for b
 4. **[API Reference](./docs/api-reference.md)** - Backend endpoints and data models
 5. **[UI Guidelines](./docs/ui-guidelines.md)** - Frontend patterns and design standards
 6. **[Development Progress](./docs/development-progress.md)** - Completed features and tracking
+   - OpenAPI: `./docs/openapi.yaml` (machine-readable spec)
 
 ## 🚀 Quick Start
 
@@ -126,7 +127,7 @@ Check that everything is working:
 
 ## 📁 Project Structure
 
-```
+```text
 backery2-app/
 ├── docs/                    # 📚 Complete documentation
 ├── frontend/               # React TypeScript application
@@ -329,9 +330,9 @@ npm run test                    # Run component tests
 - Production efficiency analytics
 - Custom report generation
 
-## Technology Stack
+## Technology Stack (Detailed)
 
-### Frontend
+### Frontend (Detailed)
 
 - **React 18** with TypeScript
 - **Material-UI (MUI)** for responsive design
@@ -340,7 +341,7 @@ npm run test                    # Run component tests
 - **Zustand** for state management
 - **Vite** for build tooling
 
-### Backend
+### Backend (Detailed)
 
 - **Node.js** with **Express.js**
 - **TypeScript** for type safety
@@ -356,7 +357,7 @@ npm run test                    # Run component tests
 - Optimized indexes for performance
 - ACID compliance for data integrity
 
-## Project Structure
+## Project Structure (Detailed)
 
 ```text
 bakery-inventory/
@@ -387,9 +388,9 @@ bakery-inventory/
 └── package.json            # Root workspace config
 ```
 
-## Getting Started
+## Getting Started (Detailed)
 
-### Prerequisites
+### Prerequisites (Detailed)
 
 - Node.js 18+ and npm
 - PostgreSQL database (Docker Compose included)

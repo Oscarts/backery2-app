@@ -5,6 +5,8 @@
 **Development:** `http://localhost:8000/api`
 **Production:** TBD
 
+> Machine-readable spec: see `docs/openapi.yaml` for a canonical, up-to-date contract.
+
 ## 🔧 Authentication
 
 Currently using basic API without authentication. JWT authentication planned for future releases.

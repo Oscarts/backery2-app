@@ -1,0 +1,161 @@
+openapi: 3.0.3
+info:
+  title: Bakery Inventory API
+  version: 0.1.0
+  description: Core endpoints for the bakery inventory system.
+servers:
+  - url: http://localhost:8000/api
+paths:
+  /health:
+    get:
+      summary: API health check
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: OK
+                  timestamp:
+                    type: string
+                    format: date-time
+  /raw-materials:
+    get:
+      summary: List raw materials
+      parameters:
+        - in: query
+          name: categoryId
+          schema:
+            type: string
+        - in: query
+          name: supplierId
+          schema:
+            type: string
+        - in: query
+          name: contaminated
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List of raw materials
+    post:
+      summary: Create raw material
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RawMaterialCreate'
+      responses:
+        '201':
+          description: Created
+  /raw-materials/{id}:
+    put:
+      summary: Update raw material
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RawMaterialUpdate'
+      responses:
+        '200':
+          description: Updated
+    delete:
+      summary: Delete raw material
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Deleted
+components:
+  schemas:
+    RawMaterial:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        sku:
+          type: string
+        categoryId:
+          type: string
+        supplierId:
+          type: string
+        unitId:
+          type: string
+        currentStock:
+          type: number
+          format: float
+        minimumStock:
+          type: number
+          format: float
+        maximumStock:
+          type: number
+          format: float
+        costPerUnit:
+          type: number
+          format: float
+        qualityStatus:
+          type: string
+        expirationDate:
+          type: string
+          format: date-time
+        storageLocationId:
+          type: string
+        isContaminated:
+          type: boolean
+        contaminationReason:
+          type: string
+        batchNumber:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    RawMaterialCreate:
+      allOf:
+        - $ref: '#/components/schemas/RawMaterial'
+      required:
+        - name
+        - sku
+        - categoryId
+        - unitId
+        - currentStock
+        - costPerUnit
+    RawMaterialUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        currentStock:
+          type: number
+          format: float
+        minimumStock:
+          type: number
+          format: float
+        maximumStock:
+          type: number
+          format: float
+        costPerUnit:
+          type: number
+          format: float

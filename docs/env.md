@@ -2,15 +2,15 @@
 
 ## Required Environment Variables
 
-Create a `.env` file in `backend/` with:
+Create a `.env` file in `backend/` with (see also `backend/.env.example`):
 
 ```dotenv
 # Server
-PORT=8000
-CORS_ORIGIN=http://localhost:3002
+PORT=8000            # Backend API port
+CORS_ORIGIN=http://localhost:3002  # Frontend dev server
 
-# Database
-DATABASE_URL=postgresql://USER:PASSWORD@localhost:5432/bakery
+# Database (matches docker-compose)
+DATABASE_URL=postgresql://username:password@localhost:5432/bakery_inventory
 
 # Node
 NODE_ENV=development

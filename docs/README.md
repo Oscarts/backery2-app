@@ -24,6 +24,7 @@ This documentation provides everything you need to understand, develop, and main
 	- [Environment & Configuration](./env.md)
 	- [Contributing Guide](./CONTRIBUTING.md)
 	- [Test Strategy](./testing/test-strategy.md)
+	- OpenAPI spec: `./openapi.yaml`
 
 ### Development Workflow
 
