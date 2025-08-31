@@ -11,6 +11,7 @@ I've identified that the failing tests are primarily due to the backend server n
 ## Solutions
 
 1. **Start Backend Server Before Testing**:
+
    ```bash
    cd /Users/oscar/backery2-app/backend
    npm run dev

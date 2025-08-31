@@ -25,32 +25,32 @@ export function convertUnits(value: number, fromUnit: string, toUnit: string): n
   // Normalize units to lowercase
   const normalizedFromUnit = fromUnit.toLowerCase();
   const normalizedToUnit = toUnit.toLowerCase();
-  
+
   // If units are the same, no conversion needed
   if (normalizedFromUnit === normalizedToUnit) {
     return value;
   }
-  
+
   // Check if both units are weight units
   const isFromWeight = Object.keys(weightConversions).includes(normalizedFromUnit as WeightUnit);
   const isToWeight = Object.keys(weightConversions).includes(normalizedToUnit as WeightUnit);
-  
+
   if (isFromWeight && isToWeight) {
     const fromFactor = weightConversions[normalizedFromUnit as WeightUnit];
     const toFactor = weightConversions[normalizedToUnit as WeightUnit];
     return value * (fromFactor / toFactor);
   }
-  
+
   // Check if both units are volume units
   const isFromVolume = Object.keys(volumeConversions).includes(normalizedFromUnit as VolumeUnit);
   const isToVolume = Object.keys(volumeConversions).includes(normalizedToUnit as VolumeUnit);
-  
+
   if (isFromVolume && isToVolume) {
     const fromFactor = volumeConversions[normalizedFromUnit as VolumeUnit];
     const toFactor = volumeConversions[normalizedToUnit as VolumeUnit];
     return value * (fromFactor / toFactor);
   }
-  
+
   // If we reach here, units are not compatible or not supported
   return null;
 }
@@ -60,21 +60,21 @@ export function areUnitsCompatible(unit1: string, unit2: string): boolean {
   // Normalize units to lowercase
   const normalizedUnit1 = unit1.toLowerCase();
   const normalizedUnit2 = unit2.toLowerCase();
-  
+
   // If units are the same, they are compatible
   if (normalizedUnit1 === normalizedUnit2) {
     return true;
   }
-  
+
   // Check if both are weight units
   const isUnit1Weight = Object.keys(weightConversions).includes(normalizedUnit1 as WeightUnit);
   const isUnit2Weight = Object.keys(weightConversions).includes(normalizedUnit2 as WeightUnit);
   const bothAreWeightUnits = isUnit1Weight && isUnit2Weight;
-  
+
   // Check if both are volume units
   const isUnit1Volume = Object.keys(volumeConversions).includes(normalizedUnit1 as VolumeUnit);
   const isUnit2Volume = Object.keys(volumeConversions).includes(normalizedUnit2 as VolumeUnit);
   const bothAreVolumeUnits = isUnit1Volume && isUnit2Volume;
-  
+
   return bothAreWeightUnits || bothAreVolumeUnits;
 }

@@ -10,18 +10,17 @@ echo "📝 Adding all changes..."
 git add .
 
 echo "💾 Committing changes..."
-git commit -m "UI/UX improvements, API test fixes, and enhanced documentation
+git commit -m "UI/UX improvements, documentation restructure, and enhanced development standards
 
 - Enhanced Finished Products table with Production Date and Storage Location columns
 - Combined SKU and Batch into a single column for better space utilization
 - Moved form buttons to top for better accessibility
-- Created archive directory for unused files
-- Added enhanced API testing scripts with server health checks
-- Added comprehensive API testing documentation
-- Updated MODULES.md with improved testing instructions
-- Updated CHANGELOG.md with detailed version history
-- Added development progress tracking system to planning.md
-- Implemented mandatory unit testing requirements documentation"
+- Created comprehensive docs folder with 6 essential documents
+- Reorganized all documentation into clear, purpose-driven structure
+- Added mandatory development guidelines with testing requirements
+- Implemented structured development progress tracking
+- Moved legacy documentation to archive for reference
+- Updated project README with new documentation structure"
 
 echo "🚀 Changes committed successfully!"
 echo "📤 You can now push changes with: git push origin main"

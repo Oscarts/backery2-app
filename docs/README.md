@@ -15,6 +15,15 @@ This documentation provides everything you need to understand, develop, and main
 3. **[Technical Architecture](./technical-architecture.md)** - System structure and technology stack
 4. **[API Reference](./api-reference.md)** - Backend endpoints and data models
 5. **[UI Guidelines](./ui-guidelines.md)** - Frontend patterns and design standards
+6. Optional references:
+	- [Changelog](./CHANGELOG.md)
+	- [Publish checklist](./publish.md)
+	- [API Testing docs](./testing/api-test-troubleshooting.md)
+	- [API Test fixes](./testing/api-test-fixes.md)
+	- [AI Agent Playbook](./ai-agent-playbook.md)
+	- [Environment & Configuration](./env.md)
+	- [Contributing Guide](./CONTRIBUTING.md)
+	- [Test Strategy](./testing/test-strategy.md)
 
 ### Development Workflow
 
@@ -34,6 +43,9 @@ This documentation provides everything you need to understand, develop, and main
 | **api-reference.md** | Backend API endpoints, data models, and usage examples | When adding/modifying APIs |
 | **ui-guidelines.md** | Frontend patterns, component standards, and design guidelines | When creating new UI patterns |
 | **development-progress.md** | Feature completion tracking and development history | After every feature completion |
+| **CHANGELOG.md** | Versioned summary of notable changes | On every release-worthy change |
+| **publish.md** | Steps to deploy/publish | Before each release |
+| **testing/** | Test playbooks and troubleshooting | When tests change |
 
 ## 🎯 Key Principles
 

@@ -633,8 +633,8 @@ const Recipes: React.FC = () => {
                     setIngredientsDialogOpen(true);
                   }}
                 >
-                  <CardContent sx={{ 
-                    display: 'flex', 
+                  <CardContent sx={{
+                    display: 'flex',
                     flexDirection: 'column',
                     flexGrow: 1,
                     height: '100%',
@@ -644,7 +644,7 @@ const Recipes: React.FC = () => {
                     <Typography variant="h6" gutterBottom>
                       {recipe.recipeName}
                     </Typography>
-                    
+
                     {/* Essential information in a compact layout */}
                     <Grid container spacing={2} sx={{ mb: 2 }}>
                       {/* Left column: Category */}
@@ -656,7 +656,7 @@ const Recipes: React.FC = () => {
                           {recipe.category}
                         </Typography>
                       </Grid>
-                      
+
                       {/* Right column: Yield per batch */}
                       <Grid item xs={6}>
                         <Typography variant="caption" color="textSecondary" display="block">
@@ -700,7 +700,7 @@ const Recipes: React.FC = () => {
                         )}
                       </Box>
                     )}
-                    
+
                     {/* Clear status indicator */}
                     <Box sx={{ mt: 'auto', display: 'flex', justifyContent: 'center', pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
                       <Chip

@@ -139,8 +139,8 @@ const Layout: React.FC = () => {
       </AppBar>
       <Box
         component="nav"
-        sx={{ 
-          width: { md: drawerOpen ? drawerWidth : drawerCollapsedWidth }, 
+        sx={{
+          width: { md: drawerOpen ? drawerWidth : drawerCollapsedWidth },
           flexShrink: { md: 0 },
           transition: theme.transitions.create('width', {
             easing: theme.transitions.easing.sharp,
@@ -166,8 +166,8 @@ const Layout: React.FC = () => {
           variant="permanent"
           sx={{
             display: { xs: 'none', md: 'block' },
-            '& .MuiDrawer-paper': { 
-              boxSizing: 'border-box', 
+            '& .MuiDrawer-paper': {
+              boxSizing: 'border-box',
               width: drawerOpen ? drawerWidth : drawerCollapsedWidth,
               transition: theme.transitions.create('width', {
                 easing: theme.transitions.easing.sharp,
@@ -185,9 +185,9 @@ const Layout: React.FC = () => {
         sx={{
           flexGrow: 1,
           p: 3,
-          width: { 
+          width: {
             xs: '100%',
-            md: `calc(100% - ${drawerOpen ? drawerWidth : drawerCollapsedWidth}px)` 
+            md: `calc(100% - ${drawerOpen ? drawerWidth : drawerCollapsedWidth}px)`
           },
           transition: theme.transitions.create(['margin', 'width'], {
             easing: theme.transitions.easing.easeOut,

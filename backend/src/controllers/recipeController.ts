@@ -372,7 +372,7 @@ export const getRecipeCost = async (req: Request, res: Response) => {
 
     // Import the unit conversion utilities
     const { convertUnits, areUnitsCompatible } = await import('../utils/unitConversion');
-    
+
     for (const ingredient of recipe.ingredients) {
       let unitCost = 0;
       let ingredientName = '';
@@ -400,7 +400,7 @@ export const getRecipeCost = async (req: Request, res: Response) => {
           const converted = convertUnits(availableQuantity, sourceUnit, ingredient.unit);
           if (converted !== null) {
             convertedQuantity = converted;
-            
+
             // We also need to adjust the unit cost to match the new unit
             unitCost = unitCost * (convertUnits(1, ingredient.unit, sourceUnit) || 1);
           }
@@ -484,12 +484,12 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
           ingredientName = ingredient.intermediateProduct.name;
           sourceUnit = ingredient.intermediateProduct.unit;
         }
-        
+
         ingredientUnit = ingredient.unit;
-        
+
         // Import the unit conversion utilities
         const { convertUnits, areUnitsCompatible } = await import('../utils/unitConversion');
-        
+
         // Check if units need conversion
         let convertedQuantity = availableQuantity;
         if (sourceUnit !== ingredientUnit && sourceUnit && ingredientUnit) {
@@ -512,7 +512,7 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
         } else {
           // Calculate how many complete batches can be made with this ingredient
           const possibleBatches = Math.floor(convertedQuantity / ingredient.quantity);
-          
+
           // Update the max number of batches that can be made based on the most limiting ingredient
           maxQuantityCanMake = Math.min(maxQuantityCanMake, possibleBatches);
         }

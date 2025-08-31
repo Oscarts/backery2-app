@@ -2,32 +2,190 @@
 
 A comprehensive inventory management web application specifically designed for bakery and chocolate businesses. This full-stack system tracks raw materials, intermediate products, and finished goods with real-time database persistence, comprehensive CRUD operations, and a professional Material-UI interface.
 
-## 🎯 Current Project Status (August 29, 2025)
+## 📚 Documentation
 
-**✅ PRODUCTION READY FEATURES:**
+**BEFORE CODING:** Read the documentation in this order:
 
-- ✅ **Raw Materials Management System** - Complete CRUD operations with supplier integration, contamination tracking, reorder levels, and batch traceability
-- ✅ **Intermediate Products Management** - Complete CRUD system with quality status, production workflow, and batch tracking
-- ✅ **Finished Products Management** - Complete CRUD system with mobile-responsive UI, SKU management, pricing, reservations, inventory tracking, and card/list view modes
-- ✅ **Recipe Management System** - Complete CRUD operations with ingredient selection, instructions management, cost analysis, and "What Can I Make?" functionality
-- ✅ **Quality Status System** - Comprehensive quality tracking across all product types with customizable statuses and visual indicators
-- ✅ **Enhanced Dashboard & Analytics** - Real-time overview with professional 4-card metrics layout, descriptive alert labels, inventory value tracking, recipe indicators, and comprehensive business intelligence
-- ✅ **Units Management System** - Comprehensive units administration with weight/volume/count categories and auto-selection for recipe ingredients
-- ✅ **Settings Management** - Complete administration for categories, suppliers, storage locations, and units
-- ✅ **API Infrastructure** - Full Express.js REST API with TypeScript, Prisma ORM, and PostgreSQL
-- ✅ **Professional UI** - Material-UI interface with responsive design, homogenized components, and real-time updates
-- ✅ **Testing Infrastructure** - Comprehensive API testing dashboard with 25+ tests covering all systems including dashboard analytics
-- ✅ **Development Environment** - Complete setup with hot reload, TypeScript compilation, and database seeding
+1. **[Project Overview](./docs/project-overview.md)** - What we're building and current status
+2. **[Development Guidelines](./docs/development-guidelines.md)** - CRITICAL coding standards and testing requirements
+3. **[Technical Architecture](./docs/technical-architecture.md)** - System structure and database schema
+4. **[API Reference](./docs/api-reference.md)** - Backend endpoints and data models
+5. **[UI Guidelines](./docs/ui-guidelines.md)** - Frontend patterns and design standards
+6. **[Development Progress](./docs/development-progress.md)** - Completed features and tracking
 
-**🎯 TODAY'S ACHIEVEMENTS (August 30, 2025):**
+## 🚀 Quick Start
 
-- ✅ **FinishedProducts UI Enhancement** - Added Production Date and Storage Location columns, combined SKU/Batch for better space utilization
-- 🎨 **UI/UX Improvements** - Moved form buttons to the top for better accessibility, eliminating the need to scroll to save changes
-- 🧹 **Code Organization** - Created archive directory for unused files while maintaining essential testing components
-- 📝 **Documentation** - Created CHANGELOG.md with detailed version history and improvements
-- ✅ **Testing Verification** - Verified API tests functionality and maintained diagnostic pages
-- 🚀 **Preparation for Publishing** - Systematically validated all components for production release
-- 📊 **Icon Standardization** - Updated dashboard and recipe icons for consistency (MenuBookIcon, ScienceIcon, LocalDiningIcon)
+### Prerequisites
+
+- Node.js 18+ and npm
+- PostgreSQL database
+- Git
+
+### Installation
+
+1. **Clone the repository:**
+
+   ```bash
+   git clone <repository-url>
+   cd backery2-app
+   ```
+
+2. **Install dependencies:**
+
+   ```bash
+   npm install
+   ```
+
+3. **Set up the database:**
+
+   ```bash
+   cd backend
+   npx prisma db push
+   npx prisma db seed
+   ```
+
+4. **Start development servers:**
+
+   ```bash
+   npm run dev
+   ```
+
+   This starts:
+   - Frontend: <http://localhost:3002>
+   - Backend: <http://localhost:8000>
+
+### Verify Installation
+
+Check that everything is working:
+
+- Frontend loads at <http://localhost:3002>
+- Backend health check: <http://localhost:8000/health>
+- Run API tests: `cd backend && node test-quality-api.js`
+
+## 🎯 Current Status
+
+**Production Ready Core Systems** - All major inventory management features completed with comprehensive testing and professional UI.
+
+### ✅ Completed Features
+
+- Complete inventory management (Raw Materials, Intermediate Products, Finished Products)
+- Recipe management with cost analysis and "What Can I Make?" functionality
+- Quality tracking and contamination management
+- Professional dashboard with real-time analytics
+- Settings management for all configuration
+- Comprehensive API testing infrastructure
+- Mobile-responsive Material-UI interface
+
+### 🎯 Recent Achievements (August 2025)
+
+- Enhanced Finished Products table with Production Date and Storage Location columns
+- Improved form accessibility by moving action buttons to the top
+- Implemented comprehensive development tracking system
+- Created streamlined documentation structure
+- Organized code and archived unused files
+
+## 🛡️ Development Standards
+
+### Critical Guidelines
+
+- **Real API Only:** Always use `realApi.ts`, never `mockApi.ts`
+- **Testing Required:** Every feature must have unit tests
+- **Documentation:** Update docs with every feature
+- **Progress Tracking:** Document completed work
+
+### Quality Gates
+
+- ✅ All tests pass (backend and frontend)
+- ✅ No TypeScript errors
+- ✅ Responsive design verified
+- ✅ Real API integration confirmed
+- ✅ Documentation updated
+
+## 🔧 Technology Stack
+
+### Frontend
+
+- React 18 with TypeScript
+- Material-UI for professional design
+- Vite for development and building
+- React Router for navigation
+
+### Backend
+
+- Node.js with Express and TypeScript
+- Prisma ORM with PostgreSQL
+- RESTful API architecture
+- Comprehensive error handling
+
+### Development Tools
+
+- TypeScript for type safety
+- ESLint for code quality
+- Custom test scripts for API testing
+- Hot reload for development
+
+## 📁 Project Structure
+
+```
+backery2-app/
+├── docs/                    # 📚 Complete documentation
+├── frontend/               # React TypeScript application
+├── backend/               # Express.js API server
+├── archive/              # Archived files and old docs
+├── package.json          # Project dependencies and scripts
+└── README.md            # This file
+```
+
+## 🧪 Testing
+
+### API Testing
+
+```bash
+cd backend
+node test-quality-api.js        # Test quality endpoints
+node test-contamination-api.js  # Test contamination features
+node run-all-tests.js          # Run all API tests
+```
+
+### Frontend Testing
+
+```bash
+cd frontend
+npm run test                    # Run component tests
+```
+
+## 🚀 Deployment
+
+### Development
+
+- Frontend and backend run locally with hot reload
+- PostgreSQL database for persistent data
+- Environment-based configuration
+
+### Production (Planned)
+
+- Static frontend deployment (Vercel/Netlify)
+- Backend hosting (Railway/Heroku)
+- Managed PostgreSQL database
+
+## � Contributing
+
+1. **Read Documentation First:** Understanding the system is crucial
+2. **Follow Guidelines:** Adhere to development standards
+3. **Write Tests:** Every feature requires testing
+4. **Update Docs:** Keep documentation current
+5. **Track Progress:** Document completed work
+
+## � Support
+
+- **Documentation Issues:** Update the relevant docs section
+- **Technical Questions:** Check API Reference and Technical Architecture
+- **Development Help:** Review Development Guidelines and completed features
+
+---
+
+**This system provides a complete, production-ready inventory management solution for bakery businesses with professional UI, comprehensive testing, and detailed documentation.**
+
 - 🔧 **Testing Infrastructure** - Added Jest configuration and setup for comprehensive frontend testing
 
 **🚧 NEXT DEVELOPMENT PRIORITIES:**

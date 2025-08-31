@@ -76,31 +76,31 @@ const getExpirationBadge = (expirationDate: string) => {
 const FinishedProducts: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  
+
   // View state
   const [viewMode, setViewMode] = useState<'list' | 'card'>(isMobile ? 'card' : 'list');
   const [filtersOpen, setFiltersOpen] = useState(false);
-  
+
   // Update viewMode when screen size changes
   useEffect(() => {
     if (isMobile) {
       setViewMode('card');
     }
   }, [isMobile]);
-  
+
   // Pagination state
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(isMobile ? 5 : 10);
-  
+
   // Form state
   const [openForm, setOpenForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<FinishedProduct | null>(null);
-  
+
   // Filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [expirationFilter, setExpirationFilter] = useState('');
-  
+
 
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
@@ -468,34 +468,34 @@ const FinishedProducts: React.FC = () => {
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 1, sm: 2, md: 3 } }}>
       {/* Header with responsive design */}
-      <Box 
-        display="flex" 
-        flexDirection={{ xs: 'column', sm: 'row' }} 
-        justifyContent="space-between" 
-        alignItems={{ xs: 'flex-start', sm: 'center' }} 
+      <Box
+        display="flex"
+        flexDirection={{ xs: 'column', sm: 'row' }}
+        justifyContent="space-between"
+        alignItems={{ xs: 'flex-start', sm: 'center' }}
         mb={3}
         gap={2}
       >
         <Typography variant="h4" component="h1" sx={{ fontSize: { xs: '1.8rem', md: '2.2rem' } }}>
           Finished Products
         </Typography>
-        
+
         <Box display="flex" gap={1} width={{ xs: '100%', sm: 'auto' }}>
           {/* View Toggle Buttons */}
-          <Box 
-            sx={{ 
-              display: { xs: 'flex', md: 'flex' }, 
-              border: 1, 
-              borderColor: 'divider', 
+          <Box
+            sx={{
+              display: { xs: 'flex', md: 'flex' },
+              border: 1,
+              borderColor: 'divider',
               borderRadius: 1,
               mr: 1
             }}
           >
             <Tooltip title="List View">
-              <IconButton 
-                color={viewMode === 'list' ? 'primary' : 'default'} 
+              <IconButton
+                color={viewMode === 'list' ? 'primary' : 'default'}
                 onClick={() => setViewMode('list')}
-                sx={{ 
+                sx={{
                   borderRadius: '4px 0 0 4px',
                   bgcolor: viewMode === 'list' ? 'action.selected' : 'transparent'
                 }}
@@ -504,10 +504,10 @@ const FinishedProducts: React.FC = () => {
               </IconButton>
             </Tooltip>
             <Tooltip title="Card View">
-              <IconButton 
-                color={viewMode === 'card' ? 'primary' : 'default'} 
+              <IconButton
+                color={viewMode === 'card' ? 'primary' : 'default'}
                 onClick={() => setViewMode('card')}
-                sx={{ 
+                sx={{
                   borderRadius: '0 4px 4px 0',
                   bgcolor: viewMode === 'card' ? 'action.selected' : 'transparent'
                 }}
@@ -516,25 +516,25 @@ const FinishedProducts: React.FC = () => {
               </IconButton>
             </Tooltip>
           </Box>
-          
+
           {/* Add Product Button - Full text on larger screens, icon-only on xs */}
           <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => handleOpenForm()}
-            sx={{ 
+            sx={{
               flexGrow: { xs: 1, sm: 0 },
               whiteSpace: 'nowrap'
             }}
           >
             {!isMobile ? 'Add Product' : 'Add'}
           </Button>
-          
+
           {/* Filter Toggle Button for Mobile */}
           {isMobile && (
-            <Button 
-              variant="outlined" 
-              startIcon={<FilterIcon />} 
+            <Button
+              variant="outlined"
+              startIcon={<FilterIcon />}
               onClick={() => setFiltersOpen(!filtersOpen)}
             >
               Filters
@@ -654,7 +654,7 @@ const FinishedProducts: React.FC = () => {
           open={filtersOpen}
           onClose={() => setFiltersOpen(false)}
           PaperProps={{
-            sx: { 
+            sx: {
               borderTopLeftRadius: 16,
               borderTopRightRadius: 16,
               pt: 1
@@ -668,7 +668,7 @@ const FinishedProducts: React.FC = () => {
                 <CloseIcon />
               </IconButton>
             </Box>
-            
+
             <Stack spacing={2}>
               <TextField
                 fullWidth
@@ -684,7 +684,7 @@ const FinishedProducts: React.FC = () => {
                 }}
                 size="small"
               />
-              
+
               <FormControl fullWidth size="small">
                 <InputLabel>Category</InputLabel>
                 <Select
@@ -700,7 +700,7 @@ const FinishedProducts: React.FC = () => {
                   ))}
                 </Select>
               </FormControl>
-              
+
               <FormControl fullWidth size="small">
                 <InputLabel>Expiration</InputLabel>
                 <Select
@@ -713,9 +713,9 @@ const FinishedProducts: React.FC = () => {
                   <MenuItem value="expired">Expired</MenuItem>
                 </Select>
               </FormControl>
-              
-              <Button 
-                variant="contained" 
+
+              <Button
+                variant="contained"
                 onClick={() => setFiltersOpen(false)}
                 fullWidth
               >
@@ -730,11 +730,11 @@ const FinishedProducts: React.FC = () => {
       {viewMode === 'list' && (
         <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
           <TableContainer>
-            <Table 
+            <Table
               size="small"
-              sx={{ 
-                '& .MuiTableCell-root': { 
-                  px: 2, 
+              sx={{
+                '& .MuiTableCell-root': {
+                  px: 2,
                   py: 1.5,
                   whiteSpace: 'nowrap'
                 }
@@ -753,124 +753,124 @@ const FinishedProducts: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-              {paginatedProducts.map((product) => {
-                const isLowStock = product.quantity <= 10;
+                {paginatedProducts.map((product) => {
+                  const isLowStock = product.quantity <= 10;
 
-                return (
-                  <TableRow 
-                    key={product.id} 
-                    onClick={() => handleOpenForm(product)}
-                    sx={{ 
-                      cursor: 'pointer',
-                      '&:hover': { bgcolor: 'action.hover' }
-                    }}
-                  >
-                    <TableCell>
-                      <Box>
-                        <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center' }}>
-                          {product.name}
-                          {getContaminationChip(product.isContaminated)}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {product.category?.name}
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Box>
-                        <Typography variant="body2">{product.sku}</Typography>
-                        <Typography variant="caption" color="text.secondary">{product.batchNumber}</Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell align="center">
-                      <Box display="flex" alignItems="center" justifyContent="center" gap={1}>
-                        {product.quantity === 0 ? (
-                          <Typography sx={{ color: 'error.main', fontWeight: 'bold' }}>
-                            Out of Stock
+                  return (
+                    <TableRow
+                      key={product.id}
+                      onClick={() => handleOpenForm(product)}
+                      sx={{
+                        cursor: 'pointer',
+                        '&:hover': { bgcolor: 'action.hover' }
+                      }}
+                    >
+                      <TableCell>
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center' }}>
+                            {product.name}
+                            {getContaminationChip(product.isContaminated)}
                           </Typography>
-                        ) : (
-                          <Typography
-                            sx={{
-                              fontWeight: isLowStock ? 'bold' : 'regular',
-                              color: isLowStock ? 'warning.main' : 'text.primary',
-                              borderBottom: isLowStock ? '1px solid' : 'none',
-                              borderColor: 'warning.main'
-                            }}
-                          >
-                            {formatQuantity(product.quantity, product.unit)}
+                          <Typography variant="caption" color="text.secondary">
+                            {product.category?.name}
                           </Typography>
-                        )}
-                      </Box>
-                    </TableCell>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Box>
+                          <Typography variant="body2">{product.sku}</Typography>
+                          <Typography variant="caption" color="text.secondary">{product.batchNumber}</Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell align="center">
+                        <Box display="flex" alignItems="center" justifyContent="center" gap={1}>
+                          {product.quantity === 0 ? (
+                            <Typography sx={{ color: 'error.main', fontWeight: 'bold' }}>
+                              Out of Stock
+                            </Typography>
+                          ) : (
+                            <Typography
+                              sx={{
+                                fontWeight: isLowStock ? 'bold' : 'regular',
+                                color: isLowStock ? 'warning.main' : 'text.primary',
+                                borderBottom: isLowStock ? '1px solid' : 'none',
+                                borderColor: 'warning.main'
+                              }}
+                            >
+                              {formatQuantity(product.quantity, product.unit)}
+                            </Typography>
+                          )}
+                        </Box>
+                      </TableCell>
 
-                    <TableCell align="center">
-                      <Typography variant="body2">
-                        {formatDate(product.productionDate)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      <Typography variant="body2">
-                        {product.storageLocation?.name || 'N/A'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell align="right">${product.salePrice.toFixed(2)}</TableCell>
-                    <TableCell align="center">
-                      <Box display="flex" flexDirection="column" alignItems="center" gap={0.5}>
+                      <TableCell align="center">
                         <Typography variant="body2">
-                          {formatDate(product.expirationDate)}
+                          {formatDate(product.productionDate)}
                         </Typography>
-                        {getExpirationBadge(product.expirationDate)}
-                      </Box>
-                    </TableCell>
+                      </TableCell>
+                      <TableCell align="center">
+                        <Typography variant="body2">
+                          {product.storageLocation?.name || 'N/A'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right">${product.salePrice.toFixed(2)}</TableCell>
+                      <TableCell align="center">
+                        <Box display="flex" flexDirection="column" alignItems="center" gap={0.5}>
+                          <Typography variant="body2">
+                            {formatDate(product.expirationDate)}
+                          </Typography>
+                          {getExpirationBadge(product.expirationDate)}
+                        </Box>
+                      </TableCell>
 
-                    <TableCell align="center">
-                      <Box display="flex" justifyContent="center">
-                        {product.qualityStatus ? (
-                          <Chip
-                            label={product.qualityStatus.name}
-                            size="small"
-                            variant="outlined"
-                            sx={{
-                              borderColor: product.qualityStatus.color || '#gray',
-                              color: product.qualityStatus.color || '#gray',
-                              borderWidth: 1.5,
-                              fontWeight: 'medium'
-                            }}
-                          />
-                        ) : (
-                          <Chip label="No status" variant="outlined" size="small" />
-                        )}
-                      </Box>
-                    </TableCell>
-                    <TableCell align="right">
-                      <IconButton
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(product.id);
-                        }}
-                        color="error"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        <TablePagination
-          component="div"
-          count={filteredProducts.length}
-          page={page}
-          onPageChange={(_, newPage) => setPage(newPage)}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={(e) => setRowsPerPage(parseInt(e.target.value, 10))}
-          labelRowsPerPage={isMobile ? "Items:" : "Items per page:"}
-          sx={{ px: 2 }}
-        />
-      </Paper>
+                      <TableCell align="center">
+                        <Box display="flex" justifyContent="center">
+                          {product.qualityStatus ? (
+                            <Chip
+                              label={product.qualityStatus.name}
+                              size="small"
+                              variant="outlined"
+                              sx={{
+                                borderColor: product.qualityStatus.color || '#gray',
+                                color: product.qualityStatus.color || '#gray',
+                                borderWidth: 1.5,
+                                fontWeight: 'medium'
+                              }}
+                            />
+                          ) : (
+                            <Chip label="No status" variant="outlined" size="small" />
+                          )}
+                        </Box>
+                      </TableCell>
+                      <TableCell align="right">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(product.id);
+                          }}
+                          color="error"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <TablePagination
+            component="div"
+            count={filteredProducts.length}
+            page={page}
+            onPageChange={(_, newPage) => setPage(newPage)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(e) => setRowsPerPage(parseInt(e.target.value, 10))}
+            labelRowsPerPage={isMobile ? "Items:" : "Items per page:"}
+            sx={{ px: 2 }}
+          />
+        </Paper>
       )}
 
       {/* Card View for Mobile */}
@@ -879,17 +879,17 @@ const FinishedProducts: React.FC = () => {
           <Grid container spacing={2}>
             {paginatedProducts.map((product) => {
               const isLowStock = product.quantity <= 10;
-              
+
               return (
                 <Grid item xs={12} sm={6} md={4} key={product.id}>
-                  <Card 
+                  <Card
                     elevation={2}
                     onClick={() => handleOpenForm(product)}
-                    sx={{ 
+                    sx={{
                       cursor: 'pointer',
                       '&:hover': { boxShadow: 6 },
-                      height: '100%', 
-                      display: 'flex', 
+                      height: '100%',
+                      display: 'flex',
                       flexDirection: 'column',
                       borderLeft: product.isContaminated ? '4px solid #d32f2f' : 'none',
                       position: 'relative',
@@ -918,20 +918,20 @@ const FinishedProducts: React.FC = () => {
                       action={null}
                       sx={{ pb: 1 }}
                     />
-                    
+
                     <Divider />
-                    
+
                     <CardContent sx={{ pt: 2, pb: 1, flexGrow: 1 }}>
                       <Grid container spacing={2}>
                         <Grid item xs={6}>
                           <Typography variant="subtitle2" color="text.secondary">
                             Available
                           </Typography>
-                          <Typography 
-                            variant="body1" 
-                            sx={{ 
+                          <Typography
+                            variant="body1"
+                            sx={{
                               fontWeight: isLowStock ? 'bold' : 'medium',
-                              color: isLowStock ? 'error.main' : 'text.primary', 
+                              color: isLowStock ? 'error.main' : 'text.primary',
                               display: 'flex',
                               alignItems: 'center',
                               gap: 0.5
@@ -945,7 +945,7 @@ const FinishedProducts: React.FC = () => {
                             )}
                           </Typography>
                         </Grid>
-                        
+
                         <Grid item xs={6}>
                           <Typography variant="subtitle2" color="text.secondary">
                             Price
@@ -954,7 +954,7 @@ const FinishedProducts: React.FC = () => {
                             {formatCurrency(product.salePrice)}
                           </Typography>
                         </Grid>
-                        
+
                         <Grid item xs={6}>
                           <Typography variant="subtitle2" color="text.secondary">
                             Expires
@@ -963,7 +963,7 @@ const FinishedProducts: React.FC = () => {
                             {formatDate(product.expirationDate)}
                           </Typography>
                         </Grid>
-                        
+
                         <Grid item xs={6}>
                           <Typography variant="subtitle2" color="text.secondary">
                             Category
@@ -990,7 +990,7 @@ const FinishedProducts: React.FC = () => {
                         </Grid>
                       </Grid>
                     </CardContent>
-                    
+
                     <CardActions sx={{ px: 2, py: 1, justifyContent: 'space-between', bgcolor: 'background.default' }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         {getExpirationBadge(product.expirationDate)}
@@ -1011,9 +1011,9 @@ const FinishedProducts: React.FC = () => {
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
 
 
-                        <IconButton 
-                          size="small" 
-                          color="error" 
+                        <IconButton
+                          size="small"
+                          color="error"
                           onClick={() => handleDelete(product.id)}
                           aria-label="Delete product"
                         >
@@ -1028,7 +1028,7 @@ const FinishedProducts: React.FC = () => {
               );
             })}
           </Grid>
-          
+
           {/* Card view pagination */}
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
             <TablePagination
