@@ -187,6 +187,40 @@ Update an existing finished product.
 
 Delete a finished product.
 
+### PUT /finished-products/:id/reserve
+
+Reserve quantity of a finished product.
+
+Body:
+
+```json
+{ "quantity": 3, "reason": "Order #12345", "referenceId": "ord_12345" }
+```
+
+Responses:
+
+- 200: Updated product with `reserved` and `available`
+- 400: Invalid quantity
+- 404: Product not found
+- 409: Insufficient available quantity
+
+### PUT /finished-products/:id/release
+
+Release previously reserved quantity.
+
+Body:
+
+```json
+{ "quantity": 2, "reason": "Order canceled", "referenceId": "ord_12345" }
+```
+
+Responses:
+
+- 200: Updated product
+- 400: Invalid quantity
+- 404: Product not found
+- 409: Insufficient reserved quantity
+
 ## 📖 Recipes API
 
 ### GET /recipes
