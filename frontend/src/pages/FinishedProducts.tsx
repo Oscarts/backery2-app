@@ -38,6 +38,7 @@ import {
   Divider,
   Stack,
   Drawer,
+  Avatar,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -48,6 +49,9 @@ import {
   ViewList as ListViewIcon,
   Close as CloseIcon,
   FilterList as FilterIcon,
+  Inventory as InventoryIcon,
+  Schedule as ScheduleIcon,
+  TrendingDown as TrendingDownIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { finishedProductsApi, categoriesApi, storageLocationsApi, unitsApi, qualityStatusApi } from '../services/realApi';
@@ -569,75 +573,77 @@ const FinishedProducts: React.FC = () => {
         </Box>
       </Box>
 
-      {/* Summary Cards with responsive grid */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
+      {/* Modern KPI cards with icons and click-to-filter */}
+      <Grid container spacing={2} sx={{ mb: 2 }}>
         <Grid item xs={12} sm={4} md={4}>
           <Card
-            elevation={1}
             onClick={() => setIndicatorFilter('all')}
+            elevation={indicatorFilter === 'all' ? 3 : 1}
             sx={{
               borderRadius: 2,
               cursor: 'pointer',
-              border:  indicatorFilter === 'all' ? 2 : 1,
+              p: 1,
+              border: indicatorFilter === 'all' ? 2 : 1,
               borderColor: indicatorFilter === 'all' ? 'primary.main' : 'divider',
-              bgcolor: indicatorFilter === 'all' ? 'action.selected' : 'background.paper',
             }}
           >
-            <CardContent sx={{ py: { xs: 1.5 }, px: { xs: 2 } }}>
-              <Typography color="textSecondary" variant="body2" gutterBottom>
-                Total Products
-              </Typography>
-              <Typography variant="h5" sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }}>
-                {totalCount}
-              </Typography>
+            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1.5 }}>
+              <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.contrastText', width: 36, height: 36 }}>
+                <InventoryIcon fontSize="small" />
+              </Avatar>
+              <Box flexGrow={1}>
+                <Typography variant="caption" color="text.secondary">Total Products</Typography>
+                <Typography variant="h5">{totalCount}</Typography>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={4} md={4}>
           <Card
-            elevation={1}
             onClick={() => setIndicatorFilter(indicatorFilter === 'expiring_soon' ? 'all' : 'expiring_soon')}
+            elevation={indicatorFilter === 'expiring_soon' ? 3 : 1}
             sx={{
               borderRadius: 2,
               cursor: 'pointer',
-              border:  indicatorFilter === 'expiring_soon' ? 2 : 1,
-              borderColor: indicatorFilter === 'expiring_soon' ? 'primary.main' : 'divider',
-              bgcolor: indicatorFilter === 'expiring_soon' ? 'action.selected' : 'background.paper',
+              p: 1,
+              border: indicatorFilter === 'expiring_soon' ? 2 : 1,
+              borderColor: indicatorFilter === 'expiring_soon' ? 'warning.main' : 'divider',
             }}
           >
-            <CardContent sx={{ py: { xs: 1.5 }, px: { xs: 2 } }}>
-              <Typography color="textSecondary" variant="body2" gutterBottom>
-                Expiring Soon
-              </Typography>
-              <Typography variant="h5" sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }} color="warning.main">
-                {expiringSoonCount}
-              </Typography>
+            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1.5 }}>
+              <Avatar sx={{ bgcolor: 'warning.light', color: 'warning.contrastText', width: 36, height: 36 }}>
+                <ScheduleIcon fontSize="small" />
+              </Avatar>
+              <Box flexGrow={1}>
+                <Typography variant="caption" color="text.secondary">Expiring Soon</Typography>
+                <Typography variant="h5" color="warning.main">{expiringSoonCount}</Typography>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={4} md={4}>
           <Card
-            elevation={1}
             onClick={() => setIndicatorFilter(indicatorFilter === 'low_stock' ? 'all' : 'low_stock')}
+            elevation={indicatorFilter === 'low_stock' ? 3 : 1}
             sx={{
               borderRadius: 2,
               cursor: 'pointer',
-              border:  indicatorFilter === 'low_stock' ? 2 : 1,
-              borderColor: indicatorFilter === 'low_stock' ? 'primary.main' : 'divider',
-              bgcolor: indicatorFilter === 'low_stock' ? 'action.selected' : 'background.paper',
+              p: 1,
+              border: indicatorFilter === 'low_stock' ? 2 : 1,
+              borderColor: indicatorFilter === 'low_stock' ? 'error.main' : 'divider',
             }}
           >
-            <CardContent sx={{ py: { xs: 1.5 }, px: { xs: 2 } }}>
-              <Typography color="textSecondary" variant="body2" gutterBottom>
-                Low Stock
-              </Typography>
-              <Typography variant="h5" sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }} color="error.main">
-                {lowStockCount}
-              </Typography>
+            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1.5 }}>
+              <Avatar sx={{ bgcolor: 'error.light', color: 'error.contrastText', width: 36, height: 36 }}>
+                <TrendingDownIcon fontSize="small" />
+              </Avatar>
+              <Box flexGrow={1}>
+                <Typography variant="caption" color="text.secondary">Low Stock</Typography>
+                <Typography variant="h5" color="error.main">{lowStockCount}</Typography>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
-  {/* Reserved Items card removed as per requirement */}
       </Grid>
 
       {/* Filters - Regular view on larger screens, drawer on mobile */}
