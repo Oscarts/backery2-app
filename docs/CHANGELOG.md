@@ -27,7 +27,8 @@
 
 - Added Production Status display to Finished Products:
   - Table view: new Status column (desktop)
-  - Card view: Status chip in details grid (mobile/desktop)
+  - Card view: Moved status indicator to the card footer next to other alerts
+- Status display changed to a subtle colored dot with tooltip (less aggressive)
 - Status values and colors mirror Intermediate Products:
   - IN_PRODUCTION (primary), COMPLETED (success), ON_HOLD (warning), DISCARDED (error)
 - Types updated with a shared `ProductionStatus` alias for consistency

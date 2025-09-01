@@ -113,20 +113,29 @@ xl: 1536px   /* Extra large (wide desktop) */
 
 #### Production Status Chips
 
-Use consistent wording and colors across Intermediate and Finished Products:
+Prefer a subtle colored dot with tooltip to reduce visual noise. Use consistent colors and descriptions:
 
 ```jsx
-<Chip
-  label={status.replace('_', ' ')}
-  size="small"
-  color={
-    status === 'COMPLETED' ? 'success' :
-    status === 'IN_PRODUCTION' ? 'primary' :
-    status === 'ON_HOLD' ? 'warning' :
-    'error'
-  }
-/>
+const meta = getProductionStatusMeta(status);
+return meta ? (
+  <Tooltip title={meta.description} arrow>
+    <Box sx={(theme) => ({
+      width: 10,
+      height: 10,
+      borderRadius: '50%',
+      bgcolor: meta.getColor(theme),
+      display: 'inline-block',
+    })} />
+  </Tooltip>
+) : null;
 ```
+
+Descriptions:
+
+- IN_PRODUCTION: Currently in production (primary color)
+- COMPLETED: Production completed (success)
+- ON_HOLD: Production paused (warning)
+- DISCARDED: Discarded and not for use (error)
 
 ### Data Tables
 

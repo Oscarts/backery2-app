@@ -66,6 +66,29 @@ const getContaminationBadge = (isContaminated: boolean) => {
   return null;
 };
 
+// Production status meta (color + labels) for subtle dot display
+const getProductionStatusMeta = (status?: typeof IntermediateProductStatus[keyof typeof IntermediateProductStatus]) => {
+  if (!status) return null;
+  const label = status.replace('_', ' ');
+  const descriptionMap: Record<string, string> = {
+    IN_PRODUCTION: 'Currently in production',
+    COMPLETED: 'Production completed',
+    ON_HOLD: 'Production paused',
+    DISCARDED: 'Discarded and not for use'
+  };
+  const colorMap: Record<string, (theme: any) => string> = {
+    IN_PRODUCTION: (theme) => theme.palette.primary.main,
+    COMPLETED: (theme) => theme.palette.success.main,
+    ON_HOLD: (theme) => theme.palette.warning.main,
+    DISCARDED: (theme) => theme.palette.error.main,
+  };
+  return {
+    label,
+    description: descriptionMap[status] || label,
+    getColor: colorMap[status] || ((theme: any) => theme.palette.text.secondary)
+  };
+};
+
 const getExpirationBadge = (expirationDate: string) => {
   if (isExpired(expirationDate)) {
     return <Chip label="EXPIRED" size="small" sx={{ backgroundColor: theme => theme.palette.error.main, color: 'white', fontWeight: 'medium' }} />;
@@ -854,20 +877,27 @@ const FinishedProducts: React.FC = () => {
 
                       {!isMobile && (
                         <TableCell align="center">
-                          {product.status ? (
-                            <Chip
-                              label={product.status.replace('_', ' ')}
-                              size="small"
-                              color={
-                                product.status === IntermediateProductStatus.COMPLETED ? 'success' :
-                                product.status === IntermediateProductStatus.IN_PRODUCTION ? 'primary' :
-                                product.status === IntermediateProductStatus.ON_HOLD ? 'warning' :
-                                'error'
-                              }
-                            />
-                          ) : (
-                            <Chip label="—" variant="outlined" size="small" />
-                          )}
+                          {(() => {
+                            const meta = getProductionStatusMeta(product.status as any);
+                            return meta ? (
+                              <Tooltip title={meta.description} arrow>
+                                <Box
+                                  component="span"
+                                  sx={(theme) => ({
+                                    display: 'inline-block',
+                                    width: 10,
+                                    height: 10,
+                                    borderRadius: '50%',
+                                    bgcolor: meta.getColor(theme),
+                                    boxShadow: 0.5,
+                                  })}
+                                  aria-label={`${meta.label} status`}
+                                />
+                              </Tooltip>
+                            ) : (
+                              <Typography variant="body2" color="text.disabled">—</Typography>
+                            );
+                          })()}
                         </TableCell>
                       )}
 
@@ -1037,26 +1067,7 @@ const FinishedProducts: React.FC = () => {
                           </Typography>
                         </Grid>
 
-                        <Grid item xs={6}>
-                          <Typography variant="subtitle2" color="text.secondary">
-                            Status
-                          </Typography>
-                          {product.status ? (
-                            <Chip
-                              label={product.status.replace('_', ' ')}
-                              size="small"
-                              color={
-                                product.status === IntermediateProductStatus.COMPLETED ? 'success' :
-                                product.status === IntermediateProductStatus.IN_PRODUCTION ? 'primary' :
-                                product.status === IntermediateProductStatus.ON_HOLD ? 'warning' :
-                                'error'
-                              }
-                              sx={{ fontWeight: 'medium' }}
-                            />
-                          ) : (
-                            <Typography variant="body2" color="text.secondary">—</Typography>
-                          )}
-                        </Grid>
+                        
                       </Grid>
                     </CardContent>
 
@@ -1076,6 +1087,25 @@ const FinishedProducts: React.FC = () => {
                             }}
                           />
                         )}
+                        {(() => {
+                          const meta = getProductionStatusMeta(product.status as any);
+                          return meta ? (
+                            <Tooltip title={meta.description} arrow>
+                              <Box
+                                component="span"
+                                sx={(theme) => ({
+                                  display: 'inline-block',
+                                  width: 10,
+                                  height: 10,
+                                  borderRadius: '50%',
+                                  bgcolor: meta.getColor(theme),
+                                  ml: 0.5,
+                                })}
+                                aria-label={`${meta.label} status`}
+                              />
+                            </Tooltip>
+                          ) : null;
+                        })()}
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
 
