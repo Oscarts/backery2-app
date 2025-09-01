@@ -15,6 +15,14 @@
 - Added a single "Search By" selector (All Attributes, Product, SKU, Batch) + search box
 - Updated filtering logic accordingly
 
+### Finished Products Indicators
+
+- Adjusted top indicators layout to fill available width at xs/sm/md
+- Made indicators clickable to act as quick filters (toggle behavior):
+  - Total Products → clears indicator filter
+  - Expiring Soon → filters to expiring soon
+  - Low Stock → filters to low stock
+
 ### Feature Removal: Reservations (Finished Products)
 
 - Removed the "Reserved Items" indicator from Finished Products page

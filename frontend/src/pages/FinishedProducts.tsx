@@ -99,6 +99,7 @@ const FinishedProducts: React.FC = () => {
   // Filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [searchAttribute, setSearchAttribute] = useState<'all' | 'product' | 'sku' | 'batch'>('all');
+  const [indicatorFilter, setIndicatorFilter] = useState<'all' | 'expiring_soon' | 'low_stock'>('all');
 
 
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
@@ -443,8 +444,8 @@ const FinishedProducts: React.FC = () => {
     );
   };
 
-  // Filter products
-  const filteredProducts = products?.data?.filter((product) => {
+  // Base filter by search attribute/term
+  const baseFiltered = products?.data?.filter((product) => {
     const term = searchTerm.trim().toLowerCase();
     let matchesSearch = true;
     if (term) {
@@ -469,6 +470,24 @@ const FinishedProducts: React.FC = () => {
 
     return matchesSearch;
   }) || [];
+
+  // Indicator counts based on base filter (not the indicator filter)
+  const totalCount = baseFiltered.length;
+  const expiringSoonCount = baseFiltered.filter(p => isExpiringSoon(p.expirationDate)).length;
+  const lowStockCount = baseFiltered.filter(p => p.quantity <= 10).length;
+
+  // Apply indicator filter
+  const filteredProducts = baseFiltered.filter((product) => {
+    switch (indicatorFilter) {
+      case 'expiring_soon':
+        return isExpiringSoon(product.expirationDate);
+      case 'low_stock':
+        return product.quantity <= 10;
+      case 'all':
+      default:
+        return true;
+    }
+  });
 
   const paginatedProducts = filteredProducts.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
@@ -552,38 +571,68 @@ const FinishedProducts: React.FC = () => {
 
       {/* Summary Cards with responsive grid */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={6} md={3}>
-          <Card elevation={1} sx={{ borderRadius: 2 }}>
+        <Grid item xs={12} sm={4} md={4}>
+          <Card
+            elevation={1}
+            onClick={() => setIndicatorFilter('all')}
+            sx={{
+              borderRadius: 2,
+              cursor: 'pointer',
+              border:  indicatorFilter === 'all' ? 2 : 1,
+              borderColor: indicatorFilter === 'all' ? 'primary.main' : 'divider',
+              bgcolor: indicatorFilter === 'all' ? 'action.selected' : 'background.paper',
+            }}
+          >
             <CardContent sx={{ py: { xs: 1.5 }, px: { xs: 2 } }}>
               <Typography color="textSecondary" variant="body2" gutterBottom>
                 Total Products
               </Typography>
               <Typography variant="h5" sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }}>
-                {filteredProducts.length}
+                {totalCount}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={6} md={3}>
-          <Card elevation={1} sx={{ borderRadius: 2 }}>
+        <Grid item xs={12} sm={4} md={4}>
+          <Card
+            elevation={1}
+            onClick={() => setIndicatorFilter(indicatorFilter === 'expiring_soon' ? 'all' : 'expiring_soon')}
+            sx={{
+              borderRadius: 2,
+              cursor: 'pointer',
+              border:  indicatorFilter === 'expiring_soon' ? 2 : 1,
+              borderColor: indicatorFilter === 'expiring_soon' ? 'primary.main' : 'divider',
+              bgcolor: indicatorFilter === 'expiring_soon' ? 'action.selected' : 'background.paper',
+            }}
+          >
             <CardContent sx={{ py: { xs: 1.5 }, px: { xs: 2 } }}>
               <Typography color="textSecondary" variant="body2" gutterBottom>
                 Expiring Soon
               </Typography>
               <Typography variant="h5" sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }} color="warning.main">
-                {filteredProducts.filter(p => isExpiringSoon(p.expirationDate)).length}
+                {expiringSoonCount}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={6} md={3}>
-          <Card elevation={1} sx={{ borderRadius: 2 }}>
+        <Grid item xs={12} sm={4} md={4}>
+          <Card
+            elevation={1}
+            onClick={() => setIndicatorFilter(indicatorFilter === 'low_stock' ? 'all' : 'low_stock')}
+            sx={{
+              borderRadius: 2,
+              cursor: 'pointer',
+              border:  indicatorFilter === 'low_stock' ? 2 : 1,
+              borderColor: indicatorFilter === 'low_stock' ? 'primary.main' : 'divider',
+              bgcolor: indicatorFilter === 'low_stock' ? 'action.selected' : 'background.paper',
+            }}
+          >
             <CardContent sx={{ py: { xs: 1.5 }, px: { xs: 2 } }}>
               <Typography color="textSecondary" variant="body2" gutterBottom>
                 Low Stock
               </Typography>
               <Typography variant="h5" sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }} color="error.main">
-                {filteredProducts.filter(p => p.quantity <= 10).length}
+                {lowStockCount}
               </Typography>
             </CardContent>
           </Card>
