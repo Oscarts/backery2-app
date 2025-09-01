@@ -331,7 +331,8 @@ async function main() {
         salePrice: 6.99,
         costToProduce: 2.50,
         storageLocationId: storageLocations[0].id,
-        qualityStatusId: defaultQualityStatus?.id
+  qualityStatusId: defaultQualityStatus?.id,
+  status: 'IN_PRODUCTION'
       }
     }),
     prisma.finishedProduct.create({
@@ -349,7 +350,8 @@ async function main() {
         salePrice: 3.99,
         costToProduce: 1.20,
         storageLocationId: storageLocations[0].id,
-        qualityStatusId: defaultQualityStatus?.id
+  qualityStatusId: defaultQualityStatus?.id,
+  status: 'IN_PRODUCTION'
       }
     }),
     prisma.finishedProduct.create({
@@ -367,7 +369,8 @@ async function main() {
         salePrice: 4.50,
         costToProduce: 1.50,
         storageLocationId: storageLocations[0].id,
-        qualityStatusId: defaultQualityStatus?.id
+  qualityStatusId: defaultQualityStatus?.id,
+  status: 'IN_PRODUCTION'
       }
     })
   ]);

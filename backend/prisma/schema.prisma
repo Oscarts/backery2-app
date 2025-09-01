@@ -161,6 +161,7 @@ model FinishedProduct {
   packagingInfo     String?
   storageLocationId String?
   qualityStatusId   String?
+  status            IntermediateProductStatus @default(IN_PRODUCTION)
   isContaminated    Boolean          @default(false)
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt

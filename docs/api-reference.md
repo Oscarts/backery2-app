@@ -18,7 +18,7 @@ Currently using basic API without authentication. JWT authentication planned for
 ```json
 {
   "success": true,
-  "data": {...},
+  "data": {"...": "..."},
   "message": "Operation completed successfully"
 }
 ```
@@ -44,10 +44,6 @@ Check if the API server is running.
 ```json
 {
   "status": "OK",
-  "timestamp": "2025-08-31T10:00:00.000Z",
-  "database": "connected"
-}
-```
 
 ## 🥬 Raw Materials API
 
@@ -61,10 +57,7 @@ Get all raw materials with optional filtering and pagination.
 - `supplierId` (optional): Filter by supplier
 - `contaminated` (optional): Filter by contamination status
 
-**Response:**
-
-```json
-{
+  
   "success": true,
   "data": [
     {
@@ -103,6 +96,7 @@ Create a new raw material.
 **Request Body:**
 
 ```json
+  
 {
   "name": "Sugar",
   "description": "White granulated sugar",
@@ -163,24 +157,49 @@ Delete an intermediate product.
 
 Get all finished products.
 
-**Response:** Similar structure to other products with additional fields:
+**Query Parameters:**
 
-```json
-{
-  "sellingPrice": 15.99,
-  "available": 8.0,
-  "productionDate": "2025-08-30T00:00:00.000Z",
-  "recipeId": "rec_456"
-}
-```
+- `page`, `limit`, `search`, `categoryId`, `expiringSoon`, `lowStock`, `minStock`
+- `status` (IN_PRODUCTION | COMPLETED | ON_HOLD | DISCARDED)
 
 ### POST /finished-products
 
 Create a new finished product.
 
+**Request Body:**
+
+```json
+{
+  "name": "Artisan Bread",
+  "sku": "BRD-001",
+  "categoryId": "cat_123",
+  "batchNumber": "B001",
+  "productionDate": "2025-08-30T00:00:00.000Z",
+  "expirationDate": "2025-09-05T00:00:00.000Z",
+  "shelfLife": 6,
+  "quantity": 30,
+  "unit": "pcs",
+  "salePrice": 6.99,
+  "costToProduce": 2.5,
+  "storageLocationId": "loc_123",
+  "qualityStatusId": "qs_123",
+  "isContaminated": false,
+  "status": "IN_PRODUCTION"
+}
+```
+
 ### PUT /finished-products/:id
 
 Update an existing finished product.
+
+**Request Body (partial):**
+
+```json
+{
+  "quantity": 25,
+  "status": "COMPLETED"
+}
+```
 
 ### DELETE /finished-products/:id
 
