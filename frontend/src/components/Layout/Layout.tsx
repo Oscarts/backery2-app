@@ -36,8 +36,8 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom';
 
 // Define drawer widths for open and closed states
-const drawerWidth = 280;
-const drawerCollapsedWidth = 73; // Enough width to show just icons
+const drawerWidth = 240; // Reduced from 280
+const drawerCollapsedWidth = 65; // Reduced from 73, enough width to show just icons
 
 const menuItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
@@ -70,9 +70,9 @@ const Layout: React.FC = () => {
 
   const drawer = (
     <div>
-      <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', px: 1 }}>
+      <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', px: 1, minHeight: '56px' }}>
         {drawerOpen ? (
-          <Typography variant="h6" noWrap component="div">
+          <Typography variant="h6" noWrap component="div" sx={{ fontSize: '1.1rem' }}>
             🥖 Bakery Inventory
           </Typography>
         ) : null}
@@ -85,7 +85,7 @@ const Layout: React.FC = () => {
         </IconButton>
       </Toolbar>
       <Divider />
-      <List>
+      <List dense sx={{ py: 0.5 }}>
         {menuItems.map((item) => (
           <ListItem key={item.text} disablePadding>
             <Tooltip title={drawerOpen ? '' : item.text} placement="right">
@@ -97,8 +97,9 @@ const Layout: React.FC = () => {
                     setMobileOpen(false);
                   }
                 }}
+                sx={{ px: drawerOpen ? 2 : 1.5, py: 1 }} // Reduced horizontal padding
               >
-                <ListItemIcon>{item.icon}</ListItemIcon>
+                <ListItemIcon sx={{ minWidth: drawerOpen ? 40 : 32 }}>{item.icon}</ListItemIcon>
                 {drawerOpen && <ListItemText primary={item.text} />}
               </ListItemButton>
             </Tooltip>
@@ -184,7 +185,7 @@ const Layout: React.FC = () => {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
+          p: { xs: 2, sm: 2.5 },  // Reduced padding from 3
           width: {
             xs: '100%',
             md: `calc(100% - ${drawerOpen ? drawerWidth : drawerCollapsedWidth}px)`

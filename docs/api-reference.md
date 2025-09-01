@@ -168,7 +168,6 @@ Get all finished products.
 ```json
 {
   "sellingPrice": 15.99,
-  "reserved": 2.0,
   "available": 8.0,
   "productionDate": "2025-08-30T00:00:00.000Z",
   "recipeId": "rec_456"
@@ -187,9 +186,9 @@ Update an existing finished product.
 
 Delete a finished product.
 
-### PUT /finished-products/:id/reserve
+### PUT /finished-products/:id/reserve (Deprecated)
 
-Reserve quantity of a finished product.
+Deprecated: Reservation functionality is being removed from the system. This endpoint will be removed in a future release.
 
 Body:
 
@@ -204,9 +203,9 @@ Responses:
 - 404: Product not found
 - 409: Insufficient available quantity
 
-### PUT /finished-products/:id/release
+### PUT /finished-products/:id/release (Deprecated)
 
-Release previously reserved quantity.
+Deprecated: Reservation functionality is being removed from the system. This endpoint will be removed in a future release.
 
 Body:
 

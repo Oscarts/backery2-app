@@ -1,9 +1,9 @@
-# Feature Scope: Finished Products Reservation Workflow
+# Feature Scope: Finished Products Reservation Workflow (Deprecated)
 
 
 ## Summary
 
-Enable reserving and releasing quantities of finished products for pending orders. Supports partial and multiple reservations, prevents over-reservation, and keeps availability accurate across UI and API.
+Deprecated: The reservations workflow for finished products is being removed. This document remains for historical reference only.
 
 
 ## Contract (Inputs/Outputs)

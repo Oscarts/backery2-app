@@ -34,6 +34,7 @@ import {
   Science as ScienceIcon,
   LocalDining as LocalDiningIcon,
   MenuBook as MenuBookIcon,
+  CloudDownload as DownloadIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';

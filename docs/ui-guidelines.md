@@ -278,6 +278,13 @@ xl: 1536px   /* Extra large (wide desktop) */
 - Search and filter capabilities
 - Pull-to-refresh functionality
 
+#### Standard Search Pattern (Products)
+
+- Use a "Search By" dropdown next to the search input
+  - Options: All Attributes, Product, SKU, Batch
+  - Input placeholder reflects the selected attribute
+- Prefer a single attribute selector over multiple overlapping filters where possible
+
 ### Modal and Dialog Behavior
 
 - Full-screen on mobile devices
@@ -298,6 +305,15 @@ body1: 1rem (16px)  - Primary text
 body2: 0.875rem (14px) - Secondary text
 caption: 0.75rem (12px) - Fine print
 ```
+
+### Page Headers (Standard)
+
+- Container: `maxWidth="xl"` with `sx={{ mt: 4, mb: 4 }}`
+- Header row spacing: `mb: 3` between title/actions
+- Title: `<Typography variant="h4" component="h1">` for top-level page titles
+- Avoid per-page custom font sizes for titles unless a compelling reason exists; prefer variant-driven consistency
+
+Applied across Dashboard, Raw Materials, Intermediate Products, Finished Products, Reports, and Contamination pages.
 
 ## 🚨 Error States and Feedback
 

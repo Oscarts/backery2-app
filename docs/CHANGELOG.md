@@ -1,5 +1,29 @@
 # Changelog
 
+## Unreleased
+
+### UI Consistency
+
+- Standardized Finished Products page header and layout margins to match other pages:
+  - Container now uses `maxWidth="xl"` with `mt: 4, mb: 4`
+  - Title uses `<Typography variant="h4" component="h1">` without custom font overrides
+  - Aligns with conventions documented in `docs/ui-guidelines.md`
+
+### Finished Products Filters
+
+- Simplified filters: removed Category and Expiration dropdowns
+- Added a single "Search By" selector (All Attributes, Product, SKU, Batch) + search box
+- Updated filtering logic accordingly
+
+### Feature Removal: Reservations (Finished Products)
+
+- Removed the "Reserved Items" indicator from Finished Products page
+- Deprecated reservation functionality across the app:
+  - Frontend: Hide/remove any reserved counts and actions on Finished Products
+  - API: Marked `PUT /finished-products/:id/reserve` and `PUT /finished-products/:id/release` as deprecated (removal planned)
+  - Data model: `reserved`/`reservedQuantity` considered deprecated; future API responses will not include these fields
+  - Documentation updated (API Reference, Feature Scope, Technical Architecture)
+
 ## Version 1.0.0 (2025-08-30)
 
 ### UI/UX Improvements

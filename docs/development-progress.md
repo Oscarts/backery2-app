@@ -141,7 +141,7 @@ This document tracks all completed features and development milestones for the B
 **Notable decisions:**
 
 - Implemented reservation system for order management
-- Created calculated "available" field (stock - reserved)
+- Created calculated "available" field (stock - reserved) — reservations now deprecated
 - Added production date for freshness tracking
 
 ---

@@ -131,8 +131,8 @@ FinishedProduct {
   isContaminated: Boolean
   contaminationReason: String?
   batchNumber: String?
-  reserved: Decimal
-  available: Decimal (Computed: currentStock - reserved)
+  reserved: Decimal (Deprecated)
+  available: Decimal (Computed; reservations deprecated)
   recipeId: String? (Foreign Key)
   createdAt: DateTime
   updatedAt: DateTime

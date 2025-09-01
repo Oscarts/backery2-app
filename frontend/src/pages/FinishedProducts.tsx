@@ -98,8 +98,7 @@ const FinishedProducts: React.FC = () => {
 
   // Filter state
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const [expirationFilter, setExpirationFilter] = useState('');
+  const [searchAttribute, setSearchAttribute] = useState<'all' | 'product' | 'sku' | 'batch'>('all');
 
 
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
@@ -446,27 +445,35 @@ const FinishedProducts: React.FC = () => {
 
   // Filter products
   const filteredProducts = products?.data?.filter((product) => {
-    const matchesSearch = !searchTerm ||
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.batchNumber.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesCategory = !categoryFilter || product.categoryId === categoryFilter;
-
-    let matchesExpiration = true;
-    if (expirationFilter === 'expired') {
-      matchesExpiration = isExpired(product.expirationDate);
-    } else if (expirationFilter === 'expiring_soon') {
-      matchesExpiration = isExpiringSoon(product.expirationDate);
+    const term = searchTerm.trim().toLowerCase();
+    let matchesSearch = true;
+    if (term) {
+      switch (searchAttribute) {
+        case 'product':
+          matchesSearch = product.name.toLowerCase().includes(term);
+          break;
+        case 'sku':
+          matchesSearch = product.sku.toLowerCase().includes(term);
+          break;
+        case 'batch':
+          matchesSearch = product.batchNumber.toLowerCase().includes(term);
+          break;
+        case 'all':
+        default:
+          matchesSearch =
+            product.name.toLowerCase().includes(term) ||
+            product.sku.toLowerCase().includes(term) ||
+            product.batchNumber.toLowerCase().includes(term);
+      }
     }
 
-    return matchesSearch && matchesCategory && matchesExpiration;
+    return matchesSearch;
   }) || [];
 
   const paginatedProducts = filteredProducts.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4, px: { xs: 1, sm: 2, md: 3 } }}>
+    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
       {/* Header with responsive design */}
       <Box
         display="flex"
@@ -476,7 +483,7 @@ const FinishedProducts: React.FC = () => {
         mb={3}
         gap={2}
       >
-        <Typography variant="h4" component="h1" sx={{ fontSize: { xs: '1.8rem', md: '2.2rem' } }}>
+        <Typography variant="h4" component="h1">
           Finished Products
         </Typography>
 
@@ -581,28 +588,36 @@ const FinishedProducts: React.FC = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={6} md={3}>
-          <Card elevation={1} sx={{ borderRadius: 2 }}>
-            <CardContent sx={{ py: { xs: 1.5 }, px: { xs: 2 } }}>
-              <Typography color="textSecondary" variant="body2" gutterBottom>
-                Reserved Items
-              </Typography>
-              <Typography variant="h5" sx={{ fontSize: { xs: '1.5rem', md: '2rem' } }} color="info.main">
-                {filteredProducts.filter(p => p.reservedQuantity > 0).length}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+  {/* Reserved Items card removed as per requirement */}
       </Grid>
 
       {/* Filters - Regular view on larger screens, drawer on mobile */}
       {!isMobile ? (
         <Paper sx={{ p: 2, mb: 3 }}>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={3}>
+              <FormControl fullWidth size={isMobile ? "small" : "medium"}>
+                <InputLabel>Search By</InputLabel>
+                <Select
+                  value={searchAttribute}
+                  onChange={(e) => setSearchAttribute(e.target.value as any)}
+                  label="Search By"
+                >
+                  <MenuItem value="all">All Attributes</MenuItem>
+                  <MenuItem value="product">Product</MenuItem>
+                  <MenuItem value="sku">SKU</MenuItem>
+                  <MenuItem value="batch">Batch</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={9}>
               <TextField
                 fullWidth
-                placeholder="Search products..."
+                placeholder={
+                  searchAttribute === 'all'
+                    ? 'Search across all fields...'
+                    : `Search by ${searchAttribute}...`
+                }
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 InputProps={{
@@ -614,37 +629,6 @@ const FinishedProducts: React.FC = () => {
                 }}
                 size={isMobile ? "small" : "medium"}
               />
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <FormControl fullWidth size={isMobile ? "small" : "medium"}>
-                <InputLabel>Category</InputLabel>
-                <Select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  label="Category"
-                >
-                  <MenuItem value="">All Categories</MenuItem>
-                  {categories?.map((category) => (
-                    <MenuItem key={category.id} value={category.id}>
-                      {category.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <FormControl fullWidth size={isMobile ? "small" : "medium"}>
-                <InputLabel>Expiration</InputLabel>
-                <Select
-                  value={expirationFilter}
-                  onChange={(e) => setExpirationFilter(e.target.value)}
-                  label="Expiration"
-                >
-                  <MenuItem value="">All Products</MenuItem>
-                  <MenuItem value="expiring_soon">Expiring Soon</MenuItem>
-                  <MenuItem value="expired">Expired</MenuItem>
-                </Select>
-              </FormControl>
             </Grid>
           </Grid>
         </Paper>
@@ -670,9 +654,27 @@ const FinishedProducts: React.FC = () => {
             </Box>
 
             <Stack spacing={2}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Search By</InputLabel>
+                <Select
+                  value={searchAttribute}
+                  onChange={(e) => setSearchAttribute(e.target.value as any)}
+                  label="Search By"
+                >
+                  <MenuItem value="all">All Attributes</MenuItem>
+                  <MenuItem value="product">Product</MenuItem>
+                  <MenuItem value="sku">SKU</MenuItem>
+                  <MenuItem value="batch">Batch</MenuItem>
+                </Select>
+              </FormControl>
+
               <TextField
                 fullWidth
-                placeholder="Search products..."
+                placeholder={
+                  searchAttribute === 'all'
+                    ? 'Search across all fields...'
+                    : `Search by ${searchAttribute}...`
+                }
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 InputProps={{
@@ -684,35 +686,6 @@ const FinishedProducts: React.FC = () => {
                 }}
                 size="small"
               />
-
-              <FormControl fullWidth size="small">
-                <InputLabel>Category</InputLabel>
-                <Select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  label="Category"
-                >
-                  <MenuItem value="">All Categories</MenuItem>
-                  {categories?.map((category) => (
-                    <MenuItem key={category.id} value={category.id}>
-                      {category.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <FormControl fullWidth size="small">
-                <InputLabel>Expiration</InputLabel>
-                <Select
-                  value={expirationFilter}
-                  onChange={(e) => setExpirationFilter(e.target.value)}
-                  label="Expiration"
-                >
-                  <MenuItem value="">All Products</MenuItem>
-                  <MenuItem value="expiring_soon">Expiring Soon</MenuItem>
-                  <MenuItem value="expired">Expired</MenuItem>
-                </Select>
-              </FormControl>
 
               <Button
                 variant="contained"
