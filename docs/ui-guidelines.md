@@ -111,6 +111,23 @@ xl: 1536px   /* Extra large (wide desktop) */
 **Out of Stock:** Red chip with error icon
 **In Stock:** Green chip with check icon
 
+#### Production Status Chips
+
+Use consistent wording and colors across Intermediate and Finished Products:
+
+```jsx
+<Chip
+  label={status.replace('_', ' ')}
+  size="small"
+  color={
+    status === 'COMPLETED' ? 'success' :
+    status === 'IN_PRODUCTION' ? 'primary' :
+    status === 'ON_HOLD' ? 'warning' :
+    'error'
+  }
+/>
+```
+
 ### Data Tables
 
 #### Desktop View

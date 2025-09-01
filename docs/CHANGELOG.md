@@ -23,6 +23,15 @@
   - Expiring Soon → filters to expiring soon
   - Low Stock → filters to low stock
 
+### Finished Products Production Status
+
+- Added Production Status display to Finished Products:
+  - Table view: new Status column (desktop)
+  - Card view: Status chip in details grid (mobile/desktop)
+- Status values and colors mirror Intermediate Products:
+  - IN_PRODUCTION (primary), COMPLETED (success), ON_HOLD (warning), DISCARDED (error)
+- Types updated with a shared `ProductionStatus` alias for consistency
+
 ### Feature Removal: Reservations (Finished Products)
 
 - Removed the "Reserved Items" indicator from Finished Products page

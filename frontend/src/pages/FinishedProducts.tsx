@@ -55,7 +55,7 @@ import {
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { finishedProductsApi, categoriesApi, storageLocationsApi, unitsApi, qualityStatusApi } from '../services/realApi';
-import { FinishedProduct, CategoryType, CreateFinishedProductData, UpdateFinishedProductData } from '../types';
+import { FinishedProduct, CategoryType, CreateFinishedProductData, UpdateFinishedProductData, IntermediateProductStatus } from '../types';
 import { formatDate, formatQuantity, isExpired, isExpiringSoon, getDaysUntilExpiration, formatCurrency } from '../utils/api';
 
 // Status display helper functions
@@ -776,6 +776,7 @@ const FinishedProducts: React.FC = () => {
                   {!isMobile && <TableCell width="10%" align="center">Storage</TableCell>}
                   {!isMobile && <TableCell width="10%" align="right">Price</TableCell>}
                   <TableCell width="10%" align="center">Expiration</TableCell>
+                  {!isMobile && <TableCell width="10%" align="center">Status</TableCell>}
                   {!isMobile && <TableCell width="10%" align="center">Quality</TableCell>}
                   <TableCell width="10%" align="right">Actions</TableCell>
                 </TableRow>
@@ -850,6 +851,25 @@ const FinishedProducts: React.FC = () => {
                           {getExpirationBadge(product.expirationDate)}
                         </Box>
                       </TableCell>
+
+                      {!isMobile && (
+                        <TableCell align="center">
+                          {product.status ? (
+                            <Chip
+                              label={product.status.replace('_', ' ')}
+                              size="small"
+                              color={
+                                product.status === IntermediateProductStatus.COMPLETED ? 'success' :
+                                product.status === IntermediateProductStatus.IN_PRODUCTION ? 'primary' :
+                                product.status === IntermediateProductStatus.ON_HOLD ? 'warning' :
+                                'error'
+                              }
+                            />
+                          ) : (
+                            <Chip label="—" variant="outlined" size="small" />
+                          )}
+                        </TableCell>
+                      )}
 
                       <TableCell align="center">
                         <Box display="flex" justifyContent="center">
@@ -1015,6 +1035,27 @@ const FinishedProducts: React.FC = () => {
                           <Typography variant="body2" noWrap>
                             {formatDate(product.productionDate)}
                           </Typography>
+                        </Grid>
+
+                        <Grid item xs={6}>
+                          <Typography variant="subtitle2" color="text.secondary">
+                            Status
+                          </Typography>
+                          {product.status ? (
+                            <Chip
+                              label={product.status.replace('_', ' ')}
+                              size="small"
+                              color={
+                                product.status === IntermediateProductStatus.COMPLETED ? 'success' :
+                                product.status === IntermediateProductStatus.IN_PRODUCTION ? 'primary' :
+                                product.status === IntermediateProductStatus.ON_HOLD ? 'warning' :
+                                'error'
+                              }
+                              sx={{ fontWeight: 'medium' }}
+                            />
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">—</Typography>
+                          )}
                         </Grid>
                       </Grid>
                     </CardContent>

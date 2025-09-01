@@ -112,6 +112,9 @@ export enum IntermediateProductStatus {
   DISCARDED = 'DISCARDED'
 }
 
+// Shared alias for use across product types
+export type ProductionStatus = IntermediateProductStatus;
+
 // Raw Material types
 export interface RawMaterial {
   id: string;
@@ -199,6 +202,9 @@ export interface FinishedProduct {
   isContaminated: boolean;
   createdAt: string;
   updatedAt: string;
+
+  // Optional production status (front-end aligned with intermediate products)
+  status?: ProductionStatus;
 
   // Relations
   category?: Category;
