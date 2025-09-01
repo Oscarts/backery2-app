@@ -32,6 +32,7 @@
 - Status values and colors mirror Intermediate Products:
   - IN_PRODUCTION (primary), COMPLETED (success), ON_HOLD (warning), DISCARDED (error)
 - Types updated with a shared `ProductionStatus` alias for consistency
+- Create/Edit Form: Added a "Production Status" select with default "In Production"
 
 ### Feature Removal: Reservations (Finished Products)
 

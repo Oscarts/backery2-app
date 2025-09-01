@@ -177,6 +177,15 @@ Descriptions:
 ```
 
 #### Form Validation
+#### Production Status Field (Finished Products)
+
+ 
+ 
+ 
+- Include a "Production Status" select when creating or editing Finished Products
+- Default to "In Production"
+- Use the same status set as Intermediate Products for consistency
+
 
 - Real-time validation feedback
 - Clear error messages

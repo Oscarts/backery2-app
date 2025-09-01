@@ -229,6 +229,7 @@ export interface CreateFinishedProductData {
   storageLocationId?: string;
   qualityStatusId?: string;
   isContaminated?: boolean;
+  status?: ProductionStatus;
 }
 
 export interface UpdateFinishedProductData {
@@ -249,6 +250,7 @@ export interface UpdateFinishedProductData {
   storageLocationId?: string;
   qualityStatusId?: string;
   isContaminated?: boolean;
+  status?: ProductionStatus;
 }
 
 // API Response types

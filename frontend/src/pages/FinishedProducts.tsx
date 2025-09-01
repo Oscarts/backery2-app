@@ -243,7 +243,8 @@ const FinishedProducts: React.FC = () => {
       packagingInfo: editingProduct?.packagingInfo || '',
       storageLocationId: editingProduct?.storageLocationId || '',
       isContaminated: editingProduct?.isContaminated || false, // Default is not contaminated
-      qualityStatusId: editingProduct?.qualityStatusId || getDefaultQualityStatusId(),
+  qualityStatusId: editingProduct?.qualityStatusId || getDefaultQualityStatusId(),
+  status: (editingProduct as any)?.status || IntermediateProductStatus.IN_PRODUCTION,
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -438,6 +439,22 @@ const FinishedProducts: React.FC = () => {
                         </Box>
                       </MenuItem>
                     ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Production Status</InputLabel>
+                  <Select
+                    name="status"
+                    value={formData.status || ''}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                    label="Production Status"
+                  >
+                    <MenuItem value={IntermediateProductStatus.IN_PRODUCTION}>In Production</MenuItem>
+                    <MenuItem value={IntermediateProductStatus.COMPLETED}>Completed</MenuItem>
+                    <MenuItem value={IntermediateProductStatus.ON_HOLD}>On Hold</MenuItem>
+                    <MenuItem value={IntermediateProductStatus.DISCARDED}>Discarded</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>
