@@ -28,15 +28,7 @@ ALTER TABLE "raw_materials" ADD COLUMN "qualityStatusId" TEXT;
 ALTER TABLE "finished_products" ADD COLUMN "qualityStatusId" TEXT;
 ALTER TABLE "intermediate_products" ADD COLUMN "qualityStatusId" TEXT;
 
--- Migrate existing intermediate product quality status data
-UPDATE "intermediate_products" SET "qualityStatusId" = 
-    CASE 
-        WHEN "qualityStatus" = 'PENDING' THEN 'clz005'
-        WHEN "qualityStatus" = 'APPROVED' THEN 'clz001'
-        WHEN "qualityStatus" = 'REJECTED' THEN 'clz004'
-        WHEN "qualityStatus" = 'UNDER_REVIEW' THEN 'clz005'
-        ELSE 'clz005'
-    END;
+-- Note: Skipping migration of legacy qualityStatus string column as it does not exist in current schema
 
 -- Add foreign key constraints
 ALTER TABLE "raw_materials" ADD CONSTRAINT "raw_materials_qualityStatusId_fkey" FOREIGN KEY ("qualityStatusId") REFERENCES "quality_statuses"("id") ON DELETE SET NULL ON UPDATE CASCADE;

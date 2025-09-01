@@ -25,6 +25,22 @@ These guidelines are mandatory for all development work. Following them ensures 
 
 **Why:** All features must work with actual database constraints and be production-ready, not demo-ready.
 
+### 1b. Backend + Frontend Parity — No Frontend-only Enums
+
+- All domain attributes (enums, fields like production status) MUST be modeled in the database schema and exposed by the backend API.
+- Do not introduce UI-only enums, temp fields, or client-only state for persistent data.
+- Changes must be implemented end-to-end: Prisma schema + migrations → controllers/services → frontend types → UI.
+- PRs that add attributes in the frontend without backend support will be rejected.
+
+Checklist for new attributes:
+
+- [ ] Prisma schema updated and migration created/applied
+- [ ] Controller DTO validation (Joi/Zod) updated
+- [ ] API filtering/query support as needed
+- [ ] Frontend types and services updated
+- [ ] UI added/updated with accessible display
+- [ ] Docs updated (API Reference, UI Guidelines, Changelog)
+
 ### 2. Mandatory Testing Requirements
 
 **Every feature MUST include:**
@@ -198,7 +214,7 @@ console.log('✅ All tests passed!');
 
 **Commit Message Format:**
 
-```
+```text
 feat(scope): brief description
 
 - Bullet point of what was added/changed
