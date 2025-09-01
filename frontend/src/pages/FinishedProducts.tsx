@@ -477,14 +477,14 @@ const FinishedProducts: React.FC = () => {
 
   // Indicator counts based on base filter (not the indicator filter)
   const totalCount = baseFiltered.length;
-  const expiringSoonCount = baseFiltered.filter(p => isExpiringSoon(p.expirationDate)).length;
+  const expiringSoonCount = baseFiltered.filter(p => isExpiringSoon(p.expirationDate) || isExpired(p.expirationDate)).length;
   const lowStockCount = baseFiltered.filter(p => p.quantity <= 10).length;
 
   // Apply indicator filter
   const filteredProducts = baseFiltered.filter((product) => {
     switch (indicatorFilter) {
       case 'expiring_soon':
-        return isExpiringSoon(product.expirationDate);
+        return isExpiringSoon(product.expirationDate) || isExpired(product.expirationDate);
       case 'low_stock':
         return product.quantity <= 10;
       case 'all':
@@ -615,7 +615,7 @@ const FinishedProducts: React.FC = () => {
                 <ScheduleIcon fontSize="small" />
               </Avatar>
               <Box flexGrow={1}>
-                <Typography variant="caption" color="text.secondary">Expiring Soon</Typography>
+                <Typography variant="caption" color="text.secondary">Expiring Soon or Expired</Typography>
                 <Typography variant="h5" color="warning.main">{expiringSoonCount}</Typography>
               </Box>
             </CardContent>
