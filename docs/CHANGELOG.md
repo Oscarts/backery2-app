@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+### Development Environment
+
+- Added `run.sh` script for automated project setup:
+  - One-command installation and configuration
+  - Automatic dependency installation
+  - Database setup and seeding
+  - Development server startup
+  - Environment configuration
+  - Improved developer experience with clear error handling
+
+## Previous Changes
+
 ### UI Consistency
 
 - Standardized Finished Products page header and layout margins to match other pages:

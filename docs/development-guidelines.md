@@ -6,7 +6,42 @@ These guidelines are mandatory for all development work. Following them ensures 
 
 ## 🎯 Core Development Principles
 
-### 1. Real API Only - NO EXCEPTIONS
+### 1. Project Setup
+
+#### Automated Setup (Recommended)
+
+The project includes a setup script `run.sh` that automates the entire development environment setup:
+
+```bash
+./run.sh
+```
+
+This script will:
+
+- Install all dependencies (root, backend, and frontend)
+- Set up environment configurations
+- Initialize and seed the database
+- Start development servers
+
+Requirements:
+
+- Node.js and npm
+- PostgreSQL (running)
+
+The script includes error checking and will guide you through any missing requirements.
+
+#### Manual Setup
+
+If you prefer manual setup, follow these steps:
+
+1. Install dependencies in root, backend, and frontend
+2. Configure environment variables
+3. Run database migrations and seed
+4. Start development servers
+
+See detailed steps in the project README.md
+
+### 2. Real API Only - NO EXCEPTIONS
 
 **✅ ALWAYS USE:**
 
