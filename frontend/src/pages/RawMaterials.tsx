@@ -62,7 +62,7 @@ import { formatDate, formatQuantity, isExpired, isExpiringSoon, getDaysUntilExpi
 const RawMaterials: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  
+
   // View state
   const [viewMode, setViewMode] = useState<'list' | 'card'>(isMobile ? 'card' : 'list');
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -77,16 +77,17 @@ const RawMaterials: React.FC = () => {
   // Pagination state
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(isMobile ? 5 : 10);
-  
+
   // Form state
   const [openForm, setOpenForm] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<RawMaterial | null>(null);
-  
+
   // Filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [searchAttribute, setSearchAttribute] = useState<'all' | 'material' | 'batch' | 'supplier'>('all');
   const [expirationFilter, setExpirationFilter] = useState('');
-  
+  const [indicatorFilter, setIndicatorFilter] = useState<'all' | 'expiring_soon' | 'low_stock' | 'contaminated'>('all');
+
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -149,8 +150,8 @@ const RawMaterials: React.FC = () => {
     },
   });
 
-  // Filter materials
-  const filteredMaterials = materials?.data?.filter((material) => {
+  // Base filtering (search and expiration filter)
+  const baseFiltered = materials?.data?.filter((material) => {
     let matchesSearch = true;
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
@@ -166,7 +167,7 @@ const RawMaterials: React.FC = () => {
           break;
         case 'all':
         default:
-          matchesSearch = 
+          matchesSearch =
             material.name.toLowerCase().includes(term) ||
             material.batchNumber.toLowerCase().includes(term) ||
             (material.supplier?.name?.toLowerCase().includes(term) || false);
@@ -180,6 +181,27 @@ const RawMaterials: React.FC = () => {
 
     return matchesSearch && matchesExpiration;
   }) || [];
+  
+  // Calculate counts for KPI cards based on base filter
+  const totalCount = baseFiltered?.length || 0;
+  const expiringSoonCount = baseFiltered?.filter(m => isExpiringSoon(m.expirationDate) || isExpired(m.expirationDate))?.length || 0;
+  const lowStockCount = baseFiltered?.filter(m => m.quantity <= m.reorderLevel)?.length || 0;
+  const contaminatedCount = baseFiltered?.filter(m => m.isContaminated)?.length || 0;
+  
+  // Apply indicator filter
+  const filteredMaterials = baseFiltered.filter((material) => {
+    switch (indicatorFilter) {
+      case 'expiring_soon':
+        return isExpiringSoon(material.expirationDate) || isExpired(material.expirationDate);
+      case 'low_stock':
+        return material.quantity <= material.reorderLevel;
+      case 'contaminated':
+        return material.isContaminated;
+      case 'all':
+      default:
+        return true;
+    }
+  });
 
   // Handlers
   const handleChangePage = (event: unknown, newPage: number) => {
@@ -240,11 +262,8 @@ const RawMaterials: React.FC = () => {
     return <Chip label="In Stock" color="success" size="small" />;
   };
 
-  // Calculate counts for KPI cards
-  const totalCount = filteredMaterials?.length || 0;
-  const expiringSoonCount = filteredMaterials?.filter(m => isExpiringSoon(m.expirationDate) || isExpired(m.expirationDate))?.length || 0;
-  const lowStockCount = filteredMaterials?.filter(m => m.quantity <= m.reorderLevel)?.length || 0;
-  
+
+
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
       {/* Header with responsive design */}
@@ -322,8 +341,8 @@ const RawMaterials: React.FC = () => {
           )}
         </Box>
       </Box>
-      
-      {/* Modern KPI cards with icons */}
+
+      {/* Modern KPI cards with icons - now clickable */}
       <Grid container spacing={2} sx={{ mb: 2 }}>
         <Grid item xs={12} sm={4} md={4}>
           <Card
@@ -332,8 +351,17 @@ const RawMaterials: React.FC = () => {
               borderRadius: 2,
               p: 1,
               border: 1,
-              borderColor: 'divider',
+              borderColor: indicatorFilter === 'all' ? 'primary.main' : 'divider',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              '&:hover': { 
+                transform: 'translateY(-3px)', 
+                boxShadow: 3,
+                borderColor: 'primary.main'
+              },
+              backgroundColor: indicatorFilter === 'all' ? 'primary.50' : 'white',
             }}
+            onClick={() => setIndicatorFilter('all')}
           >
             <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1.5 }}>
               <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.contrastText', width: 36, height: 36 }}>
@@ -342,6 +370,11 @@ const RawMaterials: React.FC = () => {
               <Box flexGrow={1}>
                 <Typography variant="caption" color="text.secondary">Total Materials</Typography>
                 <Typography variant="h5">{totalCount}</Typography>
+                {indicatorFilter === 'all' && 
+                  <Typography variant="caption" color="primary" sx={{ display: 'block' }}>
+                    Currently viewing all items
+                  </Typography>
+                }
               </Box>
             </CardContent>
           </Card>
@@ -353,8 +386,17 @@ const RawMaterials: React.FC = () => {
               borderRadius: 2,
               p: 1,
               border: 1,
-              borderColor: 'warning.main',
+              borderColor: indicatorFilter === 'expiring_soon' ? 'warning.main' : (expiringSoonCount > 0 ? 'warning.main' : 'divider'),
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              '&:hover': { 
+                transform: 'translateY(-3px)', 
+                boxShadow: 3,
+                borderColor: 'warning.main'
+              },
+              backgroundColor: indicatorFilter === 'expiring_soon' ? 'warning.50' : 'white',
             }}
+            onClick={() => setIndicatorFilter('expiring_soon')}
           >
             <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1.5 }}>
               <Avatar sx={{ bgcolor: 'warning.light', color: 'warning.contrastText', width: 36, height: 36 }}>
@@ -363,6 +405,11 @@ const RawMaterials: React.FC = () => {
               <Box flexGrow={1}>
                 <Typography variant="caption" color="text.secondary">Expiring Soon or Expired</Typography>
                 <Typography variant="h5" color="warning.main">{expiringSoonCount}</Typography>
+                {indicatorFilter === 'expiring_soon' && 
+                  <Typography variant="caption" color="warning" sx={{ display: 'block' }}>
+                    Filtering by expiration
+                  </Typography>
+                }
               </Box>
             </CardContent>
           </Card>
@@ -374,8 +421,17 @@ const RawMaterials: React.FC = () => {
               borderRadius: 2,
               p: 1,
               border: 1,
-              borderColor: 'error.main',
+              borderColor: indicatorFilter === 'low_stock' ? 'error.main' : (lowStockCount > 0 ? 'error.main' : 'divider'),
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              '&:hover': { 
+                transform: 'translateY(-3px)', 
+                boxShadow: 3,
+                borderColor: 'error.main'
+              },
+              backgroundColor: indicatorFilter === 'low_stock' ? 'error.50' : 'white',
             }}
+            onClick={() => setIndicatorFilter('low_stock')}
           >
             <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1.5 }}>
               <Avatar sx={{ bgcolor: 'error.light', color: 'error.contrastText', width: 36, height: 36 }}>
@@ -384,6 +440,11 @@ const RawMaterials: React.FC = () => {
               <Box flexGrow={1}>
                 <Typography variant="caption" color="text.secondary">Low Stock Items</Typography>
                 <Typography variant="h5" color="error.main">{lowStockCount}</Typography>
+                {indicatorFilter === 'low_stock' && 
+                  <Typography variant="caption" color="error" sx={{ display: 'block' }}>
+                    Filtering by low stock
+                  </Typography>
+                }
               </Box>
             </CardContent>
           </Card>
@@ -481,7 +542,7 @@ const RawMaterials: React.FC = () => {
                   <MenuItem value="supplier">Supplier</MenuItem>
                 </Select>
               </FormControl>
-              
+
               <TextField
                 fullWidth
                 placeholder={
@@ -496,7 +557,7 @@ const RawMaterials: React.FC = () => {
                 }}
                 size="small"
               />
-              
+
               <FormControl fullWidth size="small">
                 <InputLabel>Filter By Status</InputLabel>
                 <Select
@@ -543,147 +604,147 @@ const RawMaterials: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-              {filteredMaterials
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((material) => {
-                  const isLowStock = material.quantity <= material.reorderLevel;
-                  
-                  return (
-                    <TableRow 
-                      key={material.id}
-                      onClick={() => handleOpenForm(material)}
-                      sx={{
-                        cursor: 'pointer',
-                        '&:hover': { bgcolor: 'action.hover' },
-                        borderLeft: material.isContaminated ? '3px solid #d32f2f' : 'none'
-                      }}
-                    >
-                      <TableCell>
-                        <Box>
-                          <Typography variant="subtitle2">
-                            {material.name}
+                {filteredMaterials
+                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                  .map((material) => {
+                    const isLowStock = material.quantity <= material.reorderLevel;
+
+                    return (
+                      <TableRow
+                        key={material.id}
+                        onClick={() => handleOpenForm(material)}
+                        sx={{
+                          cursor: 'pointer',
+                          '&:hover': { bgcolor: 'action.hover' },
+                          borderLeft: material.isContaminated ? '3px solid #d32f2f' : 'none'
+                        }}
+                      >
+                        <TableCell>
+                          <Box>
+                            <Typography variant="subtitle2">
+                              {material.name}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
+                              {material.category?.name || 'Uncategorized'}
+                              {material.isContaminated && (
+                                <Chip
+                                  label="CONTAMINATED"
+                                  color="error"
+                                  size="small"
+                                  sx={{ ml: 1, height: 16, '& .MuiChip-label': { px: 0.5, py: 0 } }}
+                                />
+                              )}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        {!isMobile && <TableCell>{material.batchNumber}</TableCell>}
+                        {!isMobile && <TableCell>{material.supplier?.name || 'Unknown'}</TableCell>}
+                        <TableCell align="center">
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: isLowStock ? 'error.main' : 'text.primary',
+                              fontWeight: isLowStock ? 'medium' : 'regular',
+                            }}
+                          >
+                            {formatQuantity(material.quantity, material.unit)}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
-                            {material.category?.name || 'Uncategorized'}
-                            {material.isContaminated && (
-                              <Chip 
-                                label="CONTAMINATED" 
-                                color="error" 
-                                size="small" 
-                                sx={{ ml: 1, height: 16, '& .MuiChip-label': { px: 0.5, py: 0 } }} 
-                              />
-                            )}
-                          </Typography>
-                        </Box>
-                      </TableCell>
-                      {!isMobile && <TableCell>{material.batchNumber}</TableCell>}
-                      {!isMobile && <TableCell>{material.supplier?.name || 'Unknown'}</TableCell>}
-                      <TableCell align="center">
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: isLowStock ? 'error.main' : 'text.primary',
-                            fontWeight: isLowStock ? 'medium' : 'regular',
-                          }}
-                        >
-                          {formatQuantity(material.quantity, material.unit)}
-                        </Typography>
+                          {!isMobile && (
+                            <Typography variant="caption" color="text.secondary">
+                              Reorder: {formatQuantity(material.reorderLevel, material.unit)}
+                            </Typography>
+                          )}
+                        </TableCell>
                         {!isMobile && (
-                          <Typography variant="caption" color="text.secondary">
-                            Reorder: {formatQuantity(material.reorderLevel, material.unit)}
-                          </Typography>
+                          <TableCell align="center">
+                            ${material.unitPrice?.toFixed(2) || 'N/A'}
+                          </TableCell>
                         )}
-                      </TableCell>
-                      {!isMobile && (
+                        {!isMobile && (
+                          <TableCell align="center">
+                            {material.quantity <= 0 ? (
+                              <Chip label="OUT OF STOCK" color="error" size="small" />
+                            ) : material.quantity <= material.reorderLevel ? (
+                              <Chip label="LOW STOCK" color="warning" size="small" />
+                            ) : (
+                              <Chip label="In Stock" color="success" size="small" />
+                            )}
+                          </TableCell>
+                        )}
                         <TableCell align="center">
-                          ${material.unitPrice?.toFixed(2) || 'N/A'}
-                        </TableCell>
-                      )}
-                      {!isMobile && (
-                        <TableCell align="center">
-                          {material.quantity <= 0 ? (
-                            <Chip label="OUT OF STOCK" color="error" size="small" />
-                          ) : material.quantity <= material.reorderLevel ? (
-                            <Chip label="LOW STOCK" color="warning" size="small" />
+                          {isExpired(material.expirationDate) ? (
+                            <Chip label="EXPIRED" size="small" sx={{ backgroundColor: theme => theme.palette.error.main, color: 'white' }} />
+                          ) : isExpiringSoon(material.expirationDate) ? (
+                            <Typography variant="caption" color="warning.main" fontWeight="medium" sx={{ display: 'block' }}>
+                              {getDaysUntilExpiration(material.expirationDate)} days left
+                            </Typography>
                           ) : (
-                            <Chip label="In Stock" color="success" size="small" />
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                              {formatDate(material.expirationDate)}
+                            </Typography>
                           )}
                         </TableCell>
-                      )}
-                      <TableCell align="center">
-                        {isExpired(material.expirationDate) ? (
-                          <Chip label="EXPIRED" size="small" sx={{ backgroundColor: theme => theme.palette.error.main, color: 'white' }} />
-                        ) : isExpiringSoon(material.expirationDate) ? (
-                          <Typography variant="caption" color="warning.main" fontWeight="medium" sx={{ display: 'block' }}>
-                            {getDaysUntilExpiration(material.expirationDate)} days left
-                          </Typography>
-                        ) : (
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                            {formatDate(material.expirationDate)}
-                          </Typography>
+                        {!isMobile && (
+                          <TableCell align="center">
+                            {material.qualityStatus ? (
+                              <Chip
+                                label={material.qualityStatus.name}
+                                size="small"
+                                variant="outlined"
+                                sx={{
+                                  borderColor: material.qualityStatus.color || '#gray',
+                                  color: material.qualityStatus.color || '#gray',
+                                  borderWidth: 1.5,
+                                  fontWeight: 'medium'
+                                }}
+                              />
+                            ) : (
+                              <Chip label="No status" variant="outlined" size="small" />
+                            )}
+                          </TableCell>
                         )}
-                      </TableCell>
-                      {!isMobile && (
-                        <TableCell align="center">
-                          {material.qualityStatus ? (
-                            <Chip
-                              label={material.qualityStatus.name}
+                        <TableCell align="right">
+                          <Tooltip title="Edit">
+                            <IconButton
                               size="small"
-                              variant="outlined"
-                              sx={{
-                                borderColor: material.qualityStatus.color || '#gray',
-                                color: material.qualityStatus.color || '#gray',
-                                borderWidth: 1.5,
-                                fontWeight: 'medium'
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenForm(material);
                               }}
-                            />
-                          ) : (
-                            <Chip label="No status" variant="outlined" size="small" />
-                          )}
+                              color="primary"
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Delete">
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(material);
+                              }}
+                              color="error"
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
                         </TableCell>
-                      )}
-                    <TableCell align="right">
-                      <Tooltip title="Edit">
-                        <IconButton
-                          size="small"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenForm(material);
-                          }}
-                          color="primary"
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Delete">
-                        <IconButton
-                          size="small"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(material);
-                          }}
-                          color="error"
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
-          component="div"
-          count={filteredMaterials.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-        />
-      </Paper>
+                      </TableRow>
+                    );
+                  })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25]}
+            component="div"
+            count={filteredMaterials.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+          />
+        </Paper>
       ) : (
         // Card View (for mobile)
         <Box>
@@ -692,10 +753,10 @@ const RawMaterials: React.FC = () => {
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((material) => {
                 const isLowStock = material.quantity <= material.reorderLevel;
-                
+
                 return (
                   <Grid item xs={12} sm={6} md={4} key={material.id}>
-                    <Card 
+                    <Card
                       sx={{
                         height: '100%',
                         display: 'flex',
@@ -713,8 +774,8 @@ const RawMaterials: React.FC = () => {
                           </Typography>
                           <Box sx={{ display: 'flex', gap: 1 }}>
                             <Tooltip title="Edit">
-                              <IconButton 
-                                size="small" 
+                              <IconButton
+                                size="small"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleOpenForm(material);
@@ -724,9 +785,9 @@ const RawMaterials: React.FC = () => {
                               </IconButton>
                             </Tooltip>
                             <Tooltip title="Delete">
-                              <IconButton 
-                                size="small" 
-                                color="error" 
+                              <IconButton
+                                size="small"
+                                color="error"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleDelete(material);
@@ -737,21 +798,21 @@ const RawMaterials: React.FC = () => {
                             </Tooltip>
                           </Box>
                         </Box>
-                        
+
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
                           {material.category?.name || 'Uncategorized'} • Batch: {material.batchNumber}
                         </Typography>
-                        
+
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
                           Supplier: {material.supplier?.name || 'Unknown'}
                         </Typography>
-                        
+
                         <Grid container spacing={1} sx={{ mt: 1 }}>
                           <Grid item xs={6}>
                             <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                               Quantity
                             </Typography>
-                            <Typography 
+                            <Typography
                               variant="body2"
                               sx={{
                                 color: isLowStock ? 'error.main' : 'text.primary',
@@ -771,7 +832,7 @@ const RawMaterials: React.FC = () => {
                           </Grid>
                         </Grid>
                       </Box>
-                      
+
                       <CardActions sx={{ p: 1, pt: 0, mt: 'auto', display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                         {material.qualityStatus && (
                           <Chip
@@ -787,19 +848,19 @@ const RawMaterials: React.FC = () => {
                             }}
                           />
                         )}
-                        
+
                         {isExpired(material.expirationDate) ? (
                           <Chip label="EXPIRED" size="small" color="error" />
                         ) : isExpiringSoon(material.expirationDate) ? (
                           <Chip label={`${getDaysUntilExpiration(material.expirationDate)} days left`} size="small" color="warning" />
                         ) : null}
-                        
+
                         {material.quantity <= 0 ? (
                           <Chip label="OUT OF STOCK" size="small" color="error" />
                         ) : material.quantity <= material.reorderLevel ? (
                           <Chip label="LOW STOCK" size="small" color="warning" />
                         ) : null}
-                        
+
                         {material.isContaminated && (
                           <Chip label="CONTAMINATED" size="small" color="error" />
                         )}

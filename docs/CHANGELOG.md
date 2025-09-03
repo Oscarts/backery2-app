@@ -28,6 +28,8 @@
   - Updated form dialog with actions at top per UI guidelines
   - Updated search functionality to match finished products page
   - Replaced category filter with search by attribute functionality
+  - **Added clickable KPI cards for smart filtering**
+  - **Implemented indicator filtering by expiration status and production status**
 
 - Updated RawMaterials page to match FinishedProducts page UI:
   - Added responsive view toggle (list/card view)
@@ -38,6 +40,8 @@
   - Added contamination status indicator below category
   - Improved expiration date display
   - Added card view for mobile devices
+  - **Added clickable KPI cards for smart filtering**
+  - **Implemented indicator filtering by expiration, low stock, and contamination**
 
 - Updated UI guidelines with inventory page patterns based on Finished Products page
 - Added standardized contamination status display patterns for table and card views

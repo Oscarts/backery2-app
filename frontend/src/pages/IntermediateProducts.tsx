@@ -67,14 +67,14 @@ const IntermediateProducts: React.FC = () => {
   // View state
   const [viewMode, setViewMode] = useState<'list' | 'card'>(isMobile ? 'card' : 'list');
   const [filtersOpen, setFiltersOpen] = useState(false);
-  
+
   // Update viewMode when screen size changes
   useEffect(() => {
     if (isMobile) {
       setViewMode('card');
     }
   }, [isMobile]);
-  
+
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(isMobile ? 5 : 10);
   const [openForm, setOpenForm] = useState(false);
@@ -82,6 +82,7 @@ const IntermediateProducts: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchAttribute, setSearchAttribute] = useState<'all' | 'product' | 'description' | 'batch'>('all');
   const [statusFilter, setStatusFilter] = useState('');
+  const [indicatorFilter, setIndicatorFilter] = useState<'all' | 'expiring_soon' | 'in_production'>('all');
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -190,11 +191,11 @@ const IntermediateProducts: React.FC = () => {
   };
 
   // Filter and sort products
-  const filteredProducts = products?.data?.filter((product) => {
-    const term = searchTerm.trim().toLowerCase();
+  // Base filtering (search and status)
+  const baseFiltered = products?.data?.filter((product) => {
     let matchesSearch = true;
-    
-    if (term) {
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
       switch (searchAttribute) {
         case 'product':
           matchesSearch = product.name.toLowerCase().includes(term);
@@ -217,8 +218,21 @@ const IntermediateProducts: React.FC = () => {
     const matchesStatus = !statusFilter || product.status === statusFilter;
     return matchesSearch && matchesStatus;
   }) || [];
+  
 
-  const displayedProducts = filteredProducts
+
+  // Apply indicator filter
+  const filteredProducts = baseFiltered.filter((product) => {
+    switch (indicatorFilter) {
+      case 'expiring_soon':
+        return isExpiringSoon(product.expirationDate) || isExpired(product.expirationDate);
+      case 'in_production':
+        return product.status === IntermediateProductStatus.IN_PRODUCTION;
+      case 'all':
+      default:
+        return true;
+    }
+  });  const displayedProducts = filteredProducts
     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   const handleSubmitForm = (e: React.FormEvent<HTMLFormElement>) => {
@@ -276,9 +290,10 @@ const IntermediateProducts: React.FC = () => {
   };
 
   // Calculate counts for KPI cards
-  const totalCount = filteredProducts?.length || 0;
-  const expiringSoonCount = filteredProducts?.filter(p => isExpiringSoon(p.expirationDate) || isExpired(p.expirationDate))?.length || 0;
-  const inProgressCount = filteredProducts?.filter(p => p.status === IntermediateProductStatus.IN_PRODUCTION)?.length || 0;
+  // Using baseFiltered so the KPI counts show the total before indicator filtering
+  const totalCount = baseFiltered?.length || 0;
+  const expiringSoonCount = baseFiltered?.filter(p => isExpiringSoon(p.expirationDate) || isExpired(p.expirationDate))?.length || 0;
+  const inProgressCount = baseFiltered?.filter(p => p.status === IntermediateProductStatus.IN_PRODUCTION)?.length || 0;
 
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
@@ -501,7 +516,7 @@ const IntermediateProducts: React.FC = () => {
                   <MenuItem value="batch">Batch</MenuItem>
                 </Select>
               </FormControl>
-              
+
               <TextField
                 fullWidth
                 placeholder={
@@ -516,7 +531,7 @@ const IntermediateProducts: React.FC = () => {
                 }}
                 size="small"
               />
-              
+
               <FormControl fullWidth size="small">
                 <InputLabel>Filter by Status</InputLabel>
                 <Select
@@ -565,9 +580,9 @@ const IntermediateProducts: React.FC = () => {
               <TableBody>
                 {displayedProducts.map((product) => {
                   const isLowStock = product.quantity <= 10;
-                  
+
                   return (
-                    <TableRow 
+                    <TableRow
                       key={product.id}
                       onClick={() => {
                         setEditingProduct(product);
@@ -587,11 +602,11 @@ const IntermediateProducts: React.FC = () => {
                           <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
                             {product.category?.name || 'N/A'}
                             {product.contaminated && (
-                              <Chip 
-                                label="CONTAMINATED" 
-                                color="error" 
-                                size="small" 
-                                sx={{ ml: 1, height: 16, '& .MuiChip-label': { px: 0.5, py: 0 } }} 
+                              <Chip
+                                label="CONTAMINATED"
+                                color="error"
+                                size="small"
+                                sx={{ ml: 1, height: 16, '& .MuiChip-label': { px: 0.5, py: 0 } }}
                               />
                             )}
                           </Typography>
@@ -859,11 +874,11 @@ const IntermediateProducts: React.FC = () => {
                           />
                         )}
                         {product.contaminated && (
-                          <Chip 
-                            label="CONTAMINATED" 
-                            color="error" 
-                            size="small" 
-                            sx={{ fontWeight: 'medium' }} 
+                          <Chip
+                            label="CONTAMINATED"
+                            color="error"
+                            size="small"
+                            sx={{ fontWeight: 'medium' }}
                           />
                         )}
                         {(() => {
