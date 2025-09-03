@@ -232,7 +232,9 @@ const IntermediateProducts: React.FC = () => {
       default:
         return true;
     }
-  });  const displayedProducts = filteredProducts
+  });
+  
+  const displayedProducts = filteredProducts
     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   const handleSubmitForm = (e: React.FormEvent<HTMLFormElement>) => {
@@ -373,7 +375,7 @@ const IntermediateProducts: React.FC = () => {
         </Box>
       </Box>
 
-      {/* Modern KPI cards with icons */}
+      {/* Modern KPI cards with icons - now clickable */}
       <Grid container spacing={2} sx={{ mb: 2 }}>
         <Grid item xs={12} sm={4} md={4}>
           <Card
@@ -382,8 +384,17 @@ const IntermediateProducts: React.FC = () => {
               borderRadius: 2,
               p: 1,
               border: 1,
-              borderColor: 'divider',
+              borderColor: indicatorFilter === 'all' ? 'primary.main' : 'divider',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              '&:hover': { 
+                transform: 'translateY(-3px)', 
+                boxShadow: 3,
+                borderColor: 'primary.main'
+              },
+              backgroundColor: indicatorFilter === 'all' ? 'primary.50' : 'white',
             }}
+            onClick={() => setIndicatorFilter('all')}
           >
             <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1.5 }}>
               <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.contrastText', width: 36, height: 36 }}>
@@ -392,6 +403,11 @@ const IntermediateProducts: React.FC = () => {
               <Box flexGrow={1}>
                 <Typography variant="caption" color="text.secondary">Total Products</Typography>
                 <Typography variant="h5">{totalCount}</Typography>
+                {indicatorFilter === 'all' && 
+                  <Typography variant="caption" color="primary" sx={{ display: 'block' }}>
+                    Currently viewing all items
+                  </Typography>
+                }
               </Box>
             </CardContent>
           </Card>
@@ -403,8 +419,17 @@ const IntermediateProducts: React.FC = () => {
               borderRadius: 2,
               p: 1,
               border: 1,
-              borderColor: 'warning.main',
+              borderColor: indicatorFilter === 'expiring_soon' ? 'warning.main' : (expiringSoonCount > 0 ? 'warning.main' : 'divider'),
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              '&:hover': { 
+                transform: 'translateY(-3px)', 
+                boxShadow: 3,
+                borderColor: 'warning.main'
+              },
+              backgroundColor: indicatorFilter === 'expiring_soon' ? 'warning.50' : 'white',
             }}
+            onClick={() => setIndicatorFilter('expiring_soon')}
           >
             <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1.5 }}>
               <Avatar sx={{ bgcolor: 'warning.light', color: 'warning.contrastText', width: 36, height: 36 }}>
@@ -413,6 +438,11 @@ const IntermediateProducts: React.FC = () => {
               <Box flexGrow={1}>
                 <Typography variant="caption" color="text.secondary">Expiring Soon or Expired</Typography>
                 <Typography variant="h5" color="warning.main">{expiringSoonCount}</Typography>
+                {indicatorFilter === 'expiring_soon' && 
+                  <Typography variant="caption" color="warning" sx={{ display: 'block' }}>
+                    Filtering by expiration
+                  </Typography>
+                }
               </Box>
             </CardContent>
           </Card>
@@ -424,8 +454,17 @@ const IntermediateProducts: React.FC = () => {
               borderRadius: 2,
               p: 1,
               border: 1,
-              borderColor: 'primary.main',
+              borderColor: indicatorFilter === 'in_production' ? 'primary.main' : (inProgressCount > 0 ? 'primary.main' : 'divider'),
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              '&:hover': { 
+                transform: 'translateY(-3px)', 
+                boxShadow: 3,
+                borderColor: 'primary.main'
+              },
+              backgroundColor: indicatorFilter === 'in_production' ? 'primary.50' : 'white',
             }}
+            onClick={() => setIndicatorFilter('in_production')}
           >
             <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1.5 }}>
               <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.contrastText', width: 36, height: 36 }}>
@@ -434,6 +473,11 @@ const IntermediateProducts: React.FC = () => {
               <Box flexGrow={1}>
                 <Typography variant="caption" color="text.secondary">In Production</Typography>
                 <Typography variant="h5" color="primary.main">{inProgressCount}</Typography>
+                {indicatorFilter === 'in_production' && 
+                  <Typography variant="caption" color="primary" sx={{ display: 'block' }}>
+                    Filtering by production status
+                  </Typography>
+                }
               </Box>
             </CardContent>
           </Card>
