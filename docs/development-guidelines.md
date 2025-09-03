@@ -10,18 +10,27 @@ These guidelines are mandatory for all development work. Following them ensures 
 
 #### Automated Setup (Recommended)
 
-The project includes a setup script `run.sh` that automates the entire development environment setup:
+The project includes several setup scripts that automate the development environment setup:
 
 ```bash
-./run.sh
+# For regular development (preserves data)
+./start-with-data.sh
+
+# For complete database reset and fresh start
+./reset-and-start.sh
+
+# To check database status
+./check-database.sh
 ```
 
-This script will:
+These scripts will:
 
 - Install all dependencies (root, backend, and frontend)
 - Set up environment configurations
-- Initialize and seed the database
+- Initialize and seed the database (or preserve existing data)
 - Start development servers
+
+For detailed information on these scripts, see [Running with Data](./running-with-data.md).
 
 Requirements:
 
