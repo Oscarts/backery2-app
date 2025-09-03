@@ -32,6 +32,7 @@ import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
   Science as ScienceIcon,
+  BakeryDining as BakeryIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -72,9 +73,23 @@ const Layout: React.FC = () => {
     <div>
       <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', px: 1, minHeight: '56px' }}>
         {drawerOpen ? (
-          <Typography variant="h6" noWrap component="div" sx={{ fontSize: '1.1rem' }}>
-            🥖 Bakery Inventory
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <BakeryIcon sx={{ color: 'secondary.main', fontSize: '1.3rem' }} />
+            <Typography
+              variant="h6"
+              noWrap
+              component="div"
+              sx={{
+                fontSize: '1.1rem',
+                fontWeight: 600,
+                background: 'linear-gradient(45deg, #2E7D32 30%, #FF8E53 90%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent'
+              }}
+            >
+              Freshed
+            </Typography>
+          </Box>
         ) : null}
         <IconButton onClick={handleDrawerCollapse}>
           {theme.direction === 'ltr' ? (
@@ -114,6 +129,7 @@ const Layout: React.FC = () => {
       <CssBaseline />
       <AppBar
         position="fixed"
+        elevation={0}
         sx={{
           width: { md: `calc(100% - ${drawerOpen ? drawerWidth : drawerCollapsedWidth}px)` },
           ml: { md: `${drawerOpen ? drawerWidth : drawerCollapsedWidth}px` },
@@ -121,6 +137,10 @@ const Layout: React.FC = () => {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.enteringScreen,
           }),
+          background: 'white',
+          color: 'text.primary',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
         }}
       >
         <Toolbar>
@@ -133,9 +153,36 @@ const Layout: React.FC = () => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div">
-            Bakery Inventory Management
-          </Typography>
+          <BakeryIcon sx={{ mr: 1.5, fontSize: '2.2rem', color: 'secondary.main' }} />
+          <Box>
+            <Typography
+              variant="h5"
+              noWrap
+              component="div"
+              sx={{
+                fontWeight: 700,
+                background: 'linear-gradient(45deg, #2E7D32 30%, #FF8E53 90%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                letterSpacing: '0.5px',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              Freshed
+            </Typography>
+            <Typography
+              variant="caption"
+              noWrap
+              sx={{
+                opacity: 0.8,
+                mt: -0.5,
+                display: { xs: 'none', sm: 'block' }
+              }}
+            >
+              Fresh Bakery Inventory
+            </Typography>
+          </Box>
         </Toolbar>
       </AppBar>
       <Box

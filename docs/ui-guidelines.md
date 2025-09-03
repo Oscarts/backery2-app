@@ -286,6 +286,39 @@ Descriptions:
 - Appropriate use of icons
 - Color coding for status indicators
 
+### KPI Indicator Cards
+
+#### Design Guidelines
+
+- **Height & Size**: Maintain compact size (64px height) to optimize vertical space
+- **Layout**: Use horizontal layout with left-aligned icon and right-aligned metric
+- **Typography**: Use h6 with bold styling for metrics, caption for labels
+- **Interaction**:
+  - Apply subtle hover animation (2px vertical lift, subtle shadow)
+  - Include visual feedback for selected state (background color change)
+  - Add status text for active filters (small caption below the main content)
+
+#### Technical Specifications
+
+- Icon container: 32px x 32px avatar
+- Internal padding: 1.25px with 8px bottom
+- Border radius: 1.5px (slightly softer than standard)
+- Gap between elements: 1.5 spacing units
+- Font size for filter state text: 0.7rem
+
+#### Color Guidelines
+
+- Total/All items: primary.main/primary.50
+- Expiring/Warning: warning.main/warning.50
+- Low stock/Error: error.main/error.50
+- Production status: primary.main/primary.50
+
+#### Accessibility
+
+- Ensure touch target size of at least 44x44px for mobile
+- Maintain color contrast ratio of 4.5:1 for all text
+- Provide clear hover and active states for interactive elements
+
 ### Charts and Graphs
 
 - Color-blind friendly palette
@@ -382,29 +415,54 @@ Based on the Finished Products page implementation, all inventory pages should f
    ```
 
 2. **Key Performance Indicators**
-   - Display cards with count metrics at top of page
-   - Implement as filter toggles (clicking filters the list)
+   - Display compact cards with count metrics at top of page
+   - Implement as interactive filter toggles (clicking filters the list)
    - Use consistent color scheme for all inventory pages
+   - Show active filter state with background color and status text
+   - Use horizontal layout with right-aligned count for better space utilization
 
    ```jsx
    <Card
-     onClick={() => setIndicatorFilter('low_stock')}
-     elevation={indicatorFilter === 'low_stock' ? 3 : 1}
+     elevation={1}
      sx={{
-       borderRadius: 2,
+       borderRadius: 1.5,
+       p: 0.5,
+       border: 1,
+       borderColor: indicatorFilter === 'low_stock' ? 'error.main' : (lowStockCount > 0 ? 'error.main' : 'divider'),
        cursor: 'pointer',
-       p: 1,
-       border: indicatorFilter === 'low_stock' ? 2 : 1,
-       borderColor: indicatorFilter === 'low_stock' ? 'error.main' : 'divider',
+       transition: 'all 0.2s',
+       '&:hover': { 
+         transform: 'translateY(-2px)', 
+         boxShadow: 2,
+         borderColor: 'error.main'
+       },
+       backgroundColor: indicatorFilter === 'low_stock' ? 'error.50' : 'white',
+       minHeight: '64px',
+       display: 'flex',
      }}
+     onClick={() => setIndicatorFilter('low_stock')}
    >
-     <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1.5 }}>
-       <Avatar sx={{ bgcolor: 'error.light', color: 'error.contrastText', width: 36, height: 36 }}>
-         <TrendingDownIcon fontSize="small" />
+     <CardContent sx={{ 
+       display: 'flex', 
+       alignItems: 'center', 
+       gap: 1.5, 
+       p: 1.25, 
+       pb: '8px !important',
+       width: '100%'
+     }}>
+       <Avatar sx={{ bgcolor: 'error.light', color: 'error.contrastText', width: 32, height: 32 }}>
+         <TrendingDownIcon sx={{ fontSize: '1rem' }} />
        </Avatar>
-       <Box flexGrow={1}>
-         <Typography variant="caption" color="text.secondary">Low Stock</Typography>
-         <Typography variant="h5" color="error.main">{lowStockCount}</Typography>
+       <Box flexGrow={1} sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+           <Typography variant="caption" color="text.secondary">Low Stock</Typography>
+           <Typography variant="h6" color="error.main" sx={{ ml: 1, fontWeight: 'bold' }}>{lowStockCount}</Typography>
+         </Box>
+         {indicatorFilter === 'low_stock' && 
+           <Typography variant="caption" color="error.dark" sx={{ fontSize: '0.7rem', lineHeight: 1 }}>
+             Filtered by low stock
+           </Typography>
+         }
        </Box>
      </CardContent>
    </Card>

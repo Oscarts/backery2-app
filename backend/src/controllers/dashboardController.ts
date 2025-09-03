@@ -224,11 +224,12 @@ export const dashboardController = {
             expiring: expiringFinishedProducts,
             lowStock: lowStockFinishedProducts,
             reserved: reservedProducts,
-            total: expiringFinishedProducts + lowStockFinishedProducts + (reservedProducts > 0 ? 1 : 0), // Count reserved as info alert
+            total: expiringFinishedProducts + lowStockFinishedProducts + reservedProducts, // Count all reserved products
           },
           totalAlerts: expiringRawMaterials + expiringIntermediateProducts + expiringFinishedProducts +
             lowStockRawMaterials + lowStockFinishedProducts +
-            contaminatedRawMaterials + contaminatedIntermediateProducts,
+            contaminatedRawMaterials + contaminatedIntermediateProducts +
+            reservedProducts, // Include all reserved products
         },
         recentActivity: {
           itemsCreatedToday,

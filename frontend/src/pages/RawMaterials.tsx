@@ -181,13 +181,13 @@ const RawMaterials: React.FC = () => {
 
     return matchesSearch && matchesExpiration;
   }) || [];
-  
+
   // Calculate counts for KPI cards based on base filter
   const totalCount = baseFiltered?.length || 0;
   const expiringSoonCount = baseFiltered?.filter(m => isExpiringSoon(m.expirationDate) || isExpired(m.expirationDate))?.length || 0;
   const lowStockCount = baseFiltered?.filter(m => m.quantity <= m.reorderLevel)?.length || 0;
   const contaminatedCount = baseFiltered?.filter(m => m.isContaminated)?.length || 0;
-  
+
   // Apply indicator filter
   const filteredMaterials = baseFiltered.filter((material) => {
     switch (indicatorFilter) {
@@ -354,8 +354,8 @@ const RawMaterials: React.FC = () => {
               borderColor: indicatorFilter === 'all' ? 'primary.main' : 'divider',
               cursor: 'pointer',
               transition: 'all 0.2s',
-              '&:hover': { 
-                transform: 'translateY(-2px)', 
+              '&:hover': {
+                transform: 'translateY(-2px)',
                 boxShadow: 2,
                 borderColor: 'primary.main'
               },
@@ -365,11 +365,11 @@ const RawMaterials: React.FC = () => {
             }}
             onClick={() => setIndicatorFilter('all')}
           >
-            <CardContent sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 1.5, 
-              p: 1.25, 
+            <CardContent sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              p: 1.25,
               pb: '8px !important',
               width: '100%'
             }}>
@@ -381,7 +381,7 @@ const RawMaterials: React.FC = () => {
                   <Typography variant="caption" color="text.secondary">Total Materials</Typography>
                   <Typography variant="h6" sx={{ ml: 1, fontWeight: 'bold' }}>{totalCount}</Typography>
                 </Box>
-                {indicatorFilter === 'all' && 
+                {indicatorFilter === 'all' &&
                   <Typography variant="caption" color="primary.dark" sx={{ fontSize: '0.7rem', lineHeight: 1 }}>
                     Currently viewing all
                   </Typography>
@@ -400,8 +400,8 @@ const RawMaterials: React.FC = () => {
               borderColor: indicatorFilter === 'expiring_soon' ? 'warning.main' : (expiringSoonCount > 0 ? 'warning.main' : 'divider'),
               cursor: 'pointer',
               transition: 'all 0.2s',
-              '&:hover': { 
-                transform: 'translateY(-2px)', 
+              '&:hover': {
+                transform: 'translateY(-2px)',
                 boxShadow: 2,
                 borderColor: 'warning.main'
               },
@@ -411,11 +411,11 @@ const RawMaterials: React.FC = () => {
             }}
             onClick={() => setIndicatorFilter('expiring_soon')}
           >
-            <CardContent sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 1.5, 
-              p: 1.25, 
+            <CardContent sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              p: 1.25,
               pb: '8px !important',
               width: '100%'
             }}>
@@ -427,7 +427,7 @@ const RawMaterials: React.FC = () => {
                   <Typography variant="caption" color="text.secondary">Expiring Soon</Typography>
                   <Typography variant="h6" color="warning.main" sx={{ ml: 1, fontWeight: 'bold' }}>{expiringSoonCount}</Typography>
                 </Box>
-                {indicatorFilter === 'expiring_soon' && 
+                {indicatorFilter === 'expiring_soon' &&
                   <Typography variant="caption" color="warning.dark" sx={{ fontSize: '0.7rem', lineHeight: 1 }}>
                     Filtered by expiration
                   </Typography>
@@ -446,8 +446,8 @@ const RawMaterials: React.FC = () => {
               borderColor: indicatorFilter === 'low_stock' ? 'error.main' : (lowStockCount > 0 ? 'error.main' : 'divider'),
               cursor: 'pointer',
               transition: 'all 0.2s',
-              '&:hover': { 
-                transform: 'translateY(-2px)', 
+              '&:hover': {
+                transform: 'translateY(-2px)',
                 boxShadow: 2,
                 borderColor: 'error.main'
               },
@@ -457,11 +457,11 @@ const RawMaterials: React.FC = () => {
             }}
             onClick={() => setIndicatorFilter('low_stock')}
           >
-            <CardContent sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 1.5, 
-              p: 1.25, 
+            <CardContent sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              p: 1.25,
               pb: '8px !important',
               width: '100%'
             }}>
@@ -473,7 +473,7 @@ const RawMaterials: React.FC = () => {
                   <Typography variant="caption" color="text.secondary">Low Stock Items</Typography>
                   <Typography variant="h6" color="error.main" sx={{ ml: 1, fontWeight: 'bold' }}>{lowStockCount}</Typography>
                 </Box>
-                {indicatorFilter === 'low_stock' && 
+                {indicatorFilter === 'low_stock' &&
                   <Typography variant="caption" color="error.dark" sx={{ fontSize: '0.7rem', lineHeight: 1 }}>
                     Filtered by low stock
                   </Typography>

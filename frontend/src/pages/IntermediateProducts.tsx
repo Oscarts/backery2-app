@@ -208,17 +208,17 @@ const IntermediateProducts: React.FC = () => {
           break;
         case 'all':
         default:
-          matchesSearch = 
+          matchesSearch =
             product.name.toLowerCase().includes(term) ||
             product.description.toLowerCase().includes(term) ||
             product.batchNumber.toLowerCase().includes(term);
       }
     }
-    
+
     const matchesStatus = !statusFilter || product.status === statusFilter;
     return matchesSearch && matchesStatus;
   }) || [];
-  
+
 
 
   // Apply indicator filter
@@ -233,7 +233,7 @@ const IntermediateProducts: React.FC = () => {
         return true;
     }
   });
-  
+
   const displayedProducts = filteredProducts
     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
@@ -387,8 +387,8 @@ const IntermediateProducts: React.FC = () => {
               borderColor: indicatorFilter === 'all' ? 'primary.main' : 'divider',
               cursor: 'pointer',
               transition: 'all 0.2s',
-              '&:hover': { 
-                transform: 'translateY(-2px)', 
+              '&:hover': {
+                transform: 'translateY(-2px)',
                 boxShadow: 2,
                 borderColor: 'primary.main'
               },
@@ -398,11 +398,11 @@ const IntermediateProducts: React.FC = () => {
             }}
             onClick={() => setIndicatorFilter('all')}
           >
-            <CardContent sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 1.5, 
-              p: 1.25, 
+            <CardContent sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              p: 1.25,
               pb: '8px !important',
               width: '100%'
             }}>
@@ -414,7 +414,7 @@ const IntermediateProducts: React.FC = () => {
                   <Typography variant="caption" color="text.secondary">Total Products</Typography>
                   <Typography variant="h6" sx={{ ml: 1, fontWeight: 'bold' }}>{totalCount}</Typography>
                 </Box>
-                {indicatorFilter === 'all' && 
+                {indicatorFilter === 'all' &&
                   <Typography variant="caption" color="primary" sx={{ fontSize: '0.7rem', lineHeight: 1 }}>
                     Currently viewing all
                   </Typography>
@@ -433,8 +433,8 @@ const IntermediateProducts: React.FC = () => {
               borderColor: indicatorFilter === 'expiring_soon' ? 'warning.main' : (expiringSoonCount > 0 ? 'warning.main' : 'divider'),
               cursor: 'pointer',
               transition: 'all 0.2s',
-              '&:hover': { 
-                transform: 'translateY(-2px)', 
+              '&:hover': {
+                transform: 'translateY(-2px)',
                 boxShadow: 2,
                 borderColor: 'warning.main'
               },
@@ -444,11 +444,11 @@ const IntermediateProducts: React.FC = () => {
             }}
             onClick={() => setIndicatorFilter('expiring_soon')}
           >
-            <CardContent sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 1.5, 
-              p: 1.25, 
+            <CardContent sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              p: 1.25,
               pb: '8px !important',
               width: '100%'
             }}>
@@ -460,7 +460,7 @@ const IntermediateProducts: React.FC = () => {
                   <Typography variant="caption" color="text.secondary">Expiring Soon</Typography>
                   <Typography variant="h6" color="warning.main" sx={{ ml: 1, fontWeight: 'bold' }}>{expiringSoonCount}</Typography>
                 </Box>
-                {indicatorFilter === 'expiring_soon' && 
+                {indicatorFilter === 'expiring_soon' &&
                   <Typography variant="caption" color="warning.dark" sx={{ fontSize: '0.7rem', lineHeight: 1 }}>
                     Filtered by expiration
                   </Typography>
@@ -479,8 +479,8 @@ const IntermediateProducts: React.FC = () => {
               borderColor: indicatorFilter === 'in_production' ? 'primary.main' : (inProgressCount > 0 ? 'primary.main' : 'divider'),
               cursor: 'pointer',
               transition: 'all 0.2s',
-              '&:hover': { 
-                transform: 'translateY(-2px)', 
+              '&:hover': {
+                transform: 'translateY(-2px)',
                 boxShadow: 2,
                 borderColor: 'primary.main'
               },
@@ -490,11 +490,11 @@ const IntermediateProducts: React.FC = () => {
             }}
             onClick={() => setIndicatorFilter('in_production')}
           >
-            <CardContent sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 1.5, 
-              p: 1.25, 
+            <CardContent sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              p: 1.25,
               pb: '8px !important',
               width: '100%'
             }}>
@@ -506,7 +506,7 @@ const IntermediateProducts: React.FC = () => {
                   <Typography variant="caption" color="text.secondary">In Production</Typography>
                   <Typography variant="h6" color="primary.main" sx={{ ml: 1, fontWeight: 'bold' }}>{inProgressCount}</Typography>
                 </Box>
-                {indicatorFilter === 'in_production' && 
+                {indicatorFilter === 'in_production' &&
                   <Typography variant="caption" color="primary.dark" sx={{ fontSize: '0.7rem', lineHeight: 1 }}>
                     Filtered by status
                   </Typography>
