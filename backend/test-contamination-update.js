@@ -25,8 +25,8 @@ async function testContaminationUpdate() {
         // Create a test raw material with contamination set to false
         const rawMaterialRes = await api.post('/raw-materials', {
             name: 'Test Flour Update',
-            categoryId: 'cmew0mv6w0000xv01uxzwl7x6',  // Flour category
-            supplierId: 'cmew0mv9u0008xv0183wv3krl',  // Premium Flour Co.
+            categoryId: 'cmf3qfokb0003t0jjmk2uizzx',  // Flour category
+            supplierId: 'cmf3qfoki0008t0jj29eg4win',  // Premium Flour Co.
             batchNumber: 'TEST-CONT-UPDATE-' + Date.now(),
             purchaseDate: new Date().toISOString(),
             expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
@@ -34,7 +34,7 @@ async function testContaminationUpdate() {
             unit: 'kg',
             costPerUnit: 2.5,
             reorderLevel: 5,
-            storageLocationId: 'cmew0mv9w000bxv01844m22br'  // Dry Storage A
+            storageLocationId: 'cmf3qfokk000ct0jjo5pk93zr'  // Dry Storage A
             // Note: contaminated is not allowed in the creation schema
         });
 
@@ -45,13 +45,13 @@ async function testContaminationUpdate() {
         const intermediateProductRes = await api.post('/intermediate-products', {
             name: 'Test Dough Update',
             description: 'Test dough for contamination update',
-            categoryId: 'cmew0mv9c0001xv01fuezdh9f',  // Dough category
+            categoryId: 'cmf3qfokb0004t0jjieeil2ym',  // Dough category
             batchNumber: 'TEST-IP-CONT-UPDATE-' + Date.now(),
             productionDate: new Date().toISOString(),
             expirationDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
             quantity: 5,
             unit: 'kg',
-            storageLocationId: 'cmew0mv9w000exv0165ovktcl',  // Production Area
+            storageLocationId: 'cmf3qfokk000et0jjs4a9nq62',  // Production Area
             status: 'IN_PRODUCTION'
             // By default, contaminated is false
         });
@@ -63,7 +63,7 @@ async function testContaminationUpdate() {
         const finishedProductRes = await api.post('/finished-products', {
             name: 'Test Bread Update',
             sku: 'TEST-FP-CONT-UPDATE-' + Date.now(),
-            categoryId: 'cmew0mv9e0003xv01yco0dexa',  // Breads category
+            categoryId: 'cmf3qfoke0006t0jjlgvd82w2',  // Breads category
             batchNumber: 'TEST-FP-BATCH-' + Date.now(),
             productionDate: new Date().toISOString(),
             expirationDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
@@ -71,7 +71,7 @@ async function testContaminationUpdate() {
             quantity: 10,
             unit: 'pcs',
             salePrice: 5.99,
-            storageLocationId: 'cmew0mv9w000bxv01844m22br'  // Dry Storage A
+            storageLocationId: 'cmf3qfokk000ct0jjo5pk93zr'  // Dry Storage A
             // By default, isContaminated is false
         });
 

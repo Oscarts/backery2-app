@@ -75,7 +75,7 @@ export const rawMaterialController = {
 
       // Find unit data for all raw materials
       const unitSymbols = new Set<string>();
-      
+
       // First get all raw materials
       const rawMaterialsData = await prisma.rawMaterial.findMany({
         where,
@@ -89,12 +89,12 @@ export const rawMaterialController = {
         skip,
         take: limit,
       });
-      
+
       // Collect all unique unit symbols
       rawMaterialsData.forEach(material => {
         if (material.unit) unitSymbols.add(material.unit);
       });
-      
+
       // Get unit details for all used unit symbols
       const unitDetails = await prisma.unit.findMany({
         where: {
@@ -103,13 +103,13 @@ export const rawMaterialController = {
           }
         }
       });
-      
+
       // Create a map of unit symbols to unit objects
       const unitMap = new Map();
       unitDetails.forEach(unit => {
         unitMap.set(unit.symbol, unit);
       });
-      
+
       // Add unit details to each raw material
       const rawMaterials = rawMaterialsData.map(material => {
         return {
@@ -117,7 +117,7 @@ export const rawMaterialController = {
           unitDetails: unitMap.get(material.unit) || null
         };
       });
-      
+
       const total = await prisma.rawMaterial.count({ where });
 
       res.json({
@@ -149,7 +149,7 @@ export const rawMaterialController = {
           qualityStatus: true,
         },
       });
-      
+
       // Get unit details if the raw material exists
       let unitDetails = null;
       if (rawMaterial && rawMaterial.unit) {
@@ -207,7 +207,7 @@ export const rawMaterialController = {
       // Verify related entities exist
       const supplier = await prisma.supplier.findUnique({ where: { id: value.supplierId } });
       const storageLocation = await prisma.storageLocation.findUnique({ where: { id: value.storageLocationId } });
-      
+
       // Only check for category if a categoryId is provided
       let category = null;
       if (value.categoryId) {
@@ -257,7 +257,7 @@ export const rawMaterialController = {
           qualityStatus: true,
         },
       });
-      
+
       // Get unit details
       let unitDetails = null;
       if (rawMaterial.unit) {
@@ -352,7 +352,7 @@ export const rawMaterialController = {
           qualityStatus: true,
         },
       });
-      
+
       // Get unit details
       let unitDetails = null;
       if (rawMaterial.unit) {

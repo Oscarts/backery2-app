@@ -29,7 +29,7 @@ const createFinishedProductSchema = Joi.object({
   storageLocationId: Joi.string().optional(),
   qualityStatusId: Joi.string().optional().allow('').allow(null),
   isContaminated: Joi.boolean().optional().default(false),
-  status: Joi.string().valid('IN_PRODUCTION','COMPLETED','ON_HOLD','DISCARDED').optional(),
+  status: Joi.string().valid('IN_PRODUCTION', 'COMPLETED', 'ON_HOLD', 'DISCARDED').optional(),
 });
 
 const updateFinishedProductSchema = createFinishedProductSchema.fork([
@@ -38,7 +38,7 @@ const updateFinishedProductSchema = createFinishedProductSchema.fork([
   'packagingInfo', 'storageLocationId', 'qualityStatusId', 'isContaminated'
 ], (schema) => schema.optional()).keys({
   reservedQuantity: Joi.number().optional().min(0),
-  status: Joi.string().valid('IN_PRODUCTION','COMPLETED','ON_HOLD','DISCARDED').optional(),
+  status: Joi.string().valid('IN_PRODUCTION', 'COMPLETED', 'ON_HOLD', 'DISCARDED').optional(),
 });
 
 const reserveQuantitySchema = Joi.object({
@@ -54,10 +54,10 @@ export const finishedProductController = {
       const limit = parseInt(req.query.limit as string) || 10;
       const search = req.query.search as string;
       const categoryId = req.query.categoryId as string;
-  const expiringSoon = req.query.expiringSoon === 'true';
+      const expiringSoon = req.query.expiringSoon === 'true';
       const lowStock = req.query.lowStock === 'true';
       const minStock = parseInt(req.query.minStock as string) || 10;
-  const status = req.query.status as string | undefined;
+      const status = req.query.status as string | undefined;
 
       const skip = (page - 1) * limit;
 
@@ -72,8 +72,8 @@ export const finishedProductController = {
         ];
       }
 
-  if (categoryId) where.categoryId = categoryId;
-  if (status) where.status = status;
+      if (categoryId) where.categoryId = categoryId;
+      if (status) where.status = status;
 
       if (expiringSoon) {
         const sevenDaysFromNow = new Date();
@@ -206,7 +206,7 @@ export const finishedProductController = {
       // Prepare create data
       const defaultQualityStatusId = value.qualityStatusId || await getDefaultQualityStatus();
 
-  const createData = {
+      const createData = {
         ...value,
         productionDate: new Date(value.productionDate),
         expirationDate: new Date(value.expirationDate),
@@ -290,12 +290,12 @@ export const finishedProductController = {
       }
 
       // Prepare update data
-  const updateData: any = { ...value };
-      
-  // Handle categoryId properly
-  if (value.categoryId === '' || value.categoryId === null) {
-    updateData.categoryId = null;
-  }
+      const updateData: any = { ...value };
+
+      // Handle categoryId properly
+      if (value.categoryId === '' || value.categoryId === null) {
+        updateData.categoryId = null;
+      }
       // Make sure isContaminated is properly handled
       if (value.isContaminated !== undefined) {
         updateData.isContaminated = value.isContaminated === true || value.isContaminated === 'on';

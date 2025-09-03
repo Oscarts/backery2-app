@@ -24,8 +24,8 @@ async function testQualityStatusUpdate() {
 
         const createRes = await api.post('/raw-materials', {
             name: 'Test Flour for Quality Update',
-            categoryId: 'cmew0mv6w0000xv01uxzwl7x6',  // Flour category
-            supplierId: 'cmew0mv9u0008xv0183wv3krl',  // Premium Flour Co.
+            categoryId: 'cmf3qfokb0003t0jjmk2uizzx',  // Flour category
+            supplierId: 'cmf3qfoki0008t0jj29eg4win',  // Premium Flour Co.
             batchNumber: 'TEST-RM-QUALITY-' + Date.now(),
             purchaseDate: new Date().toISOString(),
             expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
@@ -33,7 +33,7 @@ async function testQualityStatusUpdate() {
             unit: 'kg',
             costPerUnit: 2.5,
             reorderLevel: 5,
-            storageLocationId: 'cmew0mv9w000bxv01844m22br'  // Dry Storage A
+            storageLocationId: 'cmf3qfokk000ct0jjo5pk93zr'  // Dry Storage A
         });
 
         const rawMaterialId = createRes.data.data.id;

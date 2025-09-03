@@ -25,14 +25,14 @@ async function testIntermediateProductUpdate() {
         const createRes = await api.post('/intermediate-products', {
             name: 'Test Dough Update',
             description: 'Test description for quality status update',
-            categoryId: 'cmew0mv9s0007xv01w8k9nhb2',  // Assuming this is a valid category ID
+            categoryId: 'cmf3qfokb0004t0jjieeil2ym',  // Dough category ID
             batchNumber: 'TEST-INT-UPDATE-' + Date.now(),
             productionDate: new Date().toISOString(),
             expirationDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
             quantity: 10,
             unit: 'kg',
             status: 'IN_PRODUCTION',
-            storageLocationId: 'cmew0mv9w000bxv01844m22br'  // Assuming this is a valid storage location ID
+            storageLocationId: 'cmf3qfokk000et0jjs4a9nq62'  // Production Area
         });
 
         const productId = createRes.data.data.id;

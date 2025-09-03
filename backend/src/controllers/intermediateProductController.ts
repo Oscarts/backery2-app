@@ -28,13 +28,13 @@ export const intermediateProductController = {
           createdAt: 'desc'
         }
       });
-      
+
       // Collect all unique unit symbols
       const unitSymbols = new Set<string>();
       productsData.forEach(product => {
         if (product.unit) unitSymbols.add(product.unit);
       });
-      
+
       // Get unit details for all used unit symbols
       const unitDetails = await prisma.unit.findMany({
         where: {
@@ -43,13 +43,13 @@ export const intermediateProductController = {
           }
         }
       });
-      
+
       // Create a map of unit symbols to unit objects
       const unitMap = new Map();
       unitDetails.forEach(unit => {
         unitMap.set(unit.symbol, unit);
       });
-      
+
       // Add unit details to each intermediate product
       const products = productsData.map(product => {
         return {
@@ -57,7 +57,7 @@ export const intermediateProductController = {
           unitDetails: unitMap.get(product.unit) || null
         };
       });
-      
+
       res.json({ success: true, data: products });
     } catch (error) {
       console.error('Error fetching intermediate products:', error);
@@ -78,11 +78,11 @@ export const intermediateProductController = {
           qualityStatus: true
         }
       });
-      
+
       if (!product) {
         return res.status(404).json({ success: false, error: 'Intermediate product not found' });
       }
-      
+
       // Get unit details if the product exists
       let unitDetails = null;
       if (product.unit) {
@@ -90,13 +90,13 @@ export const intermediateProductController = {
           where: { symbol: product.unit }
         });
       }
-      
-      res.json({ 
-        success: true, 
+
+      res.json({
+        success: true,
         data: {
           ...product,
           unitDetails
-        } 
+        }
       });
     } catch (error) {
       console.error('Error fetching intermediate product:', error);
@@ -157,7 +157,7 @@ export const intermediateProductController = {
           qualityStatus: true
         }
       });
-      
+
       // Get unit details
       let unitDetails = null;
       if (unit) {
@@ -166,8 +166,8 @@ export const intermediateProductController = {
         });
       }
 
-      res.status(201).json({ 
-        success: true, 
+      res.status(201).json({
+        success: true,
         data: {
           ...product,
           unitDetails
@@ -237,7 +237,7 @@ export const intermediateProductController = {
           qualityStatus: true
         }
       });
-      
+
       // Get unit details
       let unitDetails = null;
       if (product.unit) {
@@ -246,12 +246,12 @@ export const intermediateProductController = {
         });
       }
 
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         data: {
           ...product,
           unitDetails
-        } 
+        }
       });
     } catch (error: any) {
       console.error('Error updating intermediate product:', error);

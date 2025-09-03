@@ -25,7 +25,7 @@ async function testFinishedProductUpdate() {
         const createRes = await api.post('/finished-products', {
             name: 'Test Croissant Update',
             sku: 'TEST-CROISSANT-' + Date.now(),
-            categoryId: 'cmew0mv9s0007xv01w8k9nhb2',  // Pastries category
+            categoryId: 'cmf3qfokg0007t0jjv60pa0u6',  // Pastries category
             batchNumber: 'TEST-FP-UPDATE-' + Date.now(),
             productionDate: new Date().toISOString(),
             expirationDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
@@ -33,7 +33,7 @@ async function testFinishedProductUpdate() {
             quantity: 10,
             unit: 'pcs',
             salePrice: 3.99,
-            storageLocationId: 'cmew0mv9w000bxv01844m22br'  // Dry Storage A
+            storageLocationId: 'cmf3qfokk000ct0jjo5pk93zr'  // Dry Storage A
         });
 
         const productId = createRes.data.data.id;

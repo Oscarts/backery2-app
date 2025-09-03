@@ -13,7 +13,7 @@ async function testRecipeOperations() {
     try {
         // Step 1: Create a test recipe without categoryId
         console.log('Creating test recipe...');
-        
+
         const createRes = await api.post('/recipes', {
             name: 'Test Recipe - No Category',
             description: 'A test recipe without category',
@@ -35,7 +35,7 @@ async function testRecipeOperations() {
         // Step 2: Verify the recipe was created without categoryId
         console.log('\nVerifying recipe...');
         const getRes = await api.get(`/recipes/${recipeId}`);
-        
+
         if (!getRes.data.success) {
             throw new Error(`Failed to get recipe: ${getRes.data.error}`);
         }
