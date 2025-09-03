@@ -29,6 +29,16 @@
   - Updated search functionality to match finished products page
   - Replaced category filter with search by attribute functionality
 
+- Updated RawMaterials page to match FinishedProducts page UI:
+  - Added responsive view toggle (list/card view)
+  - Added KPI cards with icons showing key metrics
+  - Enhanced header layout and added mobile-friendly controls
+  - Updated filter components to use search by attribute
+  - Removed category dropdown filter
+  - Added contamination status indicator below category
+  - Improved expiration date display
+  - Added card view for mobile devices
+
 - Updated UI guidelines with inventory page patterns based on Finished Products page
 - Added standardized contamination status display patterns for table and card views
 - Optimized contamination status display to save column space in tables

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Typography,
@@ -29,6 +29,16 @@ import {
   Tooltip,
   FormControlLabel,
   Checkbox,
+  useTheme,
+  useMediaQuery,
+  InputAdornment,
+  Card,
+  CardContent,
+  CardActions,
+  Avatar,
+  Stack,
+  Divider,
+  Drawer,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -36,6 +46,13 @@ import {
   Delete as DeleteIcon,
   Warning as WarningIcon,
   Search as SearchIcon,
+  GridView as GridViewIcon,
+  ViewList as ListViewIcon,
+  Close as CloseIcon,
+  FilterList as FilterIcon,
+  Inventory as InventoryIcon,
+  Schedule as ScheduleIcon,
+  TrendingDown as TrendingDownIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { rawMaterialsApi, categoriesApi, storageLocationsApi, unitsApi, suppliersApi, qualityStatusApi } from '../services/realApi';
@@ -43,13 +60,33 @@ import { RawMaterial, CategoryType, CreateRawMaterialData, UpdateRawMaterialData
 import { formatDate, formatQuantity, isExpired, isExpiringSoon, getDaysUntilExpiration } from '../utils/api';
 
 const RawMaterials: React.FC = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
+  // View state
+  const [viewMode, setViewMode] = useState<'list' | 'card'>(isMobile ? 'card' : 'list');
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // Update viewMode when screen size changes
+  useEffect(() => {
+    if (isMobile) {
+      setViewMode('card');
+    }
+  }, [isMobile]);
+
+  // Pagination state
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(isMobile ? 5 : 10);
+  
+  // Form state
   const [openForm, setOpenForm] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<RawMaterial | null>(null);
+  
+  // Filter state
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
+  const [searchAttribute, setSearchAttribute] = useState<'all' | 'material' | 'batch' | 'supplier'>('all');
   const [expirationFilter, setExpirationFilter] = useState('');
+  
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -114,18 +151,34 @@ const RawMaterials: React.FC = () => {
 
   // Filter materials
   const filteredMaterials = materials?.data?.filter((material) => {
-    const matchesSearch = !searchTerm ||
-      material.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      material.batchNumber.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesCategory = !categoryFilter || material.categoryId === categoryFilter;
+    let matchesSearch = true;
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      switch (searchAttribute) {
+        case 'material':
+          matchesSearch = material.name.toLowerCase().includes(term);
+          break;
+        case 'batch':
+          matchesSearch = material.batchNumber.toLowerCase().includes(term);
+          break;
+        case 'supplier':
+          matchesSearch = material.supplier?.name?.toLowerCase().includes(term) || false;
+          break;
+        case 'all':
+        default:
+          matchesSearch = 
+            material.name.toLowerCase().includes(term) ||
+            material.batchNumber.toLowerCase().includes(term) ||
+            (material.supplier?.name?.toLowerCase().includes(term) || false);
+      }
+    }
 
     const matchesExpiration = !expirationFilter ||
       (expirationFilter === 'expired' && isExpired(material.expirationDate)) ||
       (expirationFilter === 'expiring' && isExpiringSoon(material.expirationDate)) ||
       (expirationFilter === 'contaminated' && material.isContaminated);
 
-    return matchesSearch && matchesCategory && matchesExpiration;
+    return matchesSearch && matchesExpiration;
   }) || [];
 
   // Handlers
@@ -187,171 +240,437 @@ const RawMaterials: React.FC = () => {
     return <Chip label="In Stock" color="success" size="small" />;
   };
 
+  // Calculate counts for KPI cards
+  const totalCount = filteredMaterials?.length || 0;
+  const expiringSoonCount = filteredMaterials?.filter(m => isExpiringSoon(m.expirationDate) || isExpired(m.expirationDate))?.length || 0;
+  const lowStockCount = filteredMaterials?.filter(m => m.quantity <= m.reorderLevel)?.length || 0;
+  
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      {/* Header with responsive design */}
+      <Box
+        display="flex"
+        flexDirection={{ xs: 'column', sm: 'row' }}
+        justifyContent="space-between"
+        alignItems={{ xs: 'flex-start', sm: 'center' }}
+        mb={3}
+        gap={2}
+      >
         <Typography variant="h4" component="h1">
           Raw Materials
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenForm()}
-        >
-          Add Raw Material
-        </Button>
+
+        <Box display="flex" gap={1} width={{ xs: '100%', sm: 'auto' }}>
+          {/* View Toggle Buttons */}
+          <Box
+            sx={{
+              display: { xs: 'flex', md: 'flex' },
+              border: 1,
+              borderColor: 'divider',
+              borderRadius: 1,
+              mr: 1
+            }}
+          >
+            <Tooltip title="List View">
+              <IconButton
+                color={viewMode === 'list' ? 'primary' : 'default'}
+                onClick={() => setViewMode('list')}
+                sx={{
+                  borderRadius: '4px 0 0 4px',
+                  bgcolor: viewMode === 'list' ? 'action.selected' : 'transparent'
+                }}
+              >
+                <ListViewIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Card View">
+              <IconButton
+                color={viewMode === 'card' ? 'primary' : 'default'}
+                onClick={() => setViewMode('card')}
+                sx={{
+                  borderRadius: '0 4px 4px 0',
+                  bgcolor: viewMode === 'card' ? 'action.selected' : 'transparent'
+                }}
+              >
+                <GridViewIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
+
+          {/* Add Material Button - Full text on larger screens, icon-only on xs */}
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => handleOpenForm()}
+            sx={{
+              flexGrow: { xs: 1, sm: 0 },
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {!isMobile ? 'Add Raw Material' : 'Add'}
+          </Button>
+
+          {/* Filter Toggle Button for Mobile */}
+          {isMobile && (
+            <Button
+              variant="outlined"
+              startIcon={<FilterIcon />}
+              onClick={() => setFiltersOpen(!filtersOpen)}
+            >
+              Filters
+            </Button>
+          )}
+        </Box>
       </Box>
-
-      {/* Filters */}
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={3}>
-            <TextField
-              fullWidth
-              label="Search"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              InputProps={{
-                startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-              }}
-            />
-          </Grid>
-          <Grid item xs={12} sm={3}>
-            <FormControl fullWidth>
-              <InputLabel>Category</InputLabel>
-              <Select
-                value={categoryFilter}
-                label="Category"
-                onChange={(e) => setCategoryFilter(e.target.value)}
-              >
-                <MenuItem value="">All Categories</MenuItem>
-                {categories?.map((category) => (
-                  <MenuItem key={category.id} value={category.id}>
-                    {category.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} sm={3}>
-            <FormControl fullWidth>
-              <InputLabel>Filter</InputLabel>
-              <Select
-                value={expirationFilter}
-                label="Filter"
-                onChange={(e) => setExpirationFilter(e.target.value)}
-              >
-                <MenuItem value="">All Items</MenuItem>
-                <MenuItem value="expired">Expired</MenuItem>
-                <MenuItem value="expiring">Expiring Soon</MenuItem>
-                <MenuItem value="contaminated">Contaminated</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} sm={3}>
-            <Typography variant="body2" color="text.secondary">
-              Total: {filteredMaterials.length} items
-            </Typography>
-          </Grid>
+      
+      {/* Modern KPI cards with icons */}
+      <Grid container spacing={2} sx={{ mb: 2 }}>
+        <Grid item xs={12} sm={4} md={4}>
+          <Card
+            elevation={1}
+            sx={{
+              borderRadius: 2,
+              p: 1,
+              border: 1,
+              borderColor: 'divider',
+            }}
+          >
+            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1.5 }}>
+              <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.contrastText', width: 36, height: 36 }}>
+                <InventoryIcon fontSize="small" />
+              </Avatar>
+              <Box flexGrow={1}>
+                <Typography variant="caption" color="text.secondary">Total Materials</Typography>
+                <Typography variant="h5">{totalCount}</Typography>
+              </Box>
+            </CardContent>
+          </Card>
         </Grid>
-      </Paper>
+        <Grid item xs={12} sm={4} md={4}>
+          <Card
+            elevation={1}
+            sx={{
+              borderRadius: 2,
+              p: 1,
+              border: 1,
+              borderColor: 'warning.main',
+            }}
+          >
+            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1.5 }}>
+              <Avatar sx={{ bgcolor: 'warning.light', color: 'warning.contrastText', width: 36, height: 36 }}>
+                <ScheduleIcon fontSize="small" />
+              </Avatar>
+              <Box flexGrow={1}>
+                <Typography variant="caption" color="text.secondary">Expiring Soon or Expired</Typography>
+                <Typography variant="h5" color="warning.main">{expiringSoonCount}</Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={4} md={4}>
+          <Card
+            elevation={1}
+            sx={{
+              borderRadius: 2,
+              p: 1,
+              border: 1,
+              borderColor: 'error.main',
+            }}
+          >
+            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1.5 }}>
+              <Avatar sx={{ bgcolor: 'error.light', color: 'error.contrastText', width: 36, height: 36 }}>
+                <TrendingDownIcon fontSize="small" />
+              </Avatar>
+              <Box flexGrow={1}>
+                <Typography variant="caption" color="text.secondary">Low Stock Items</Typography>
+                <Typography variant="h5" color="error.main">{lowStockCount}</Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
-      {/* Materials Table */}
-      <Paper sx={{ width: '100%', mb: 2 }}>
-        <TableContainer>
-          <Table sx={{ minWidth: 750 }}>
-            <TableHead>
-              <TableRow>
-                <TableCell>Name & Batch</TableCell>
-                <TableCell>Category</TableCell>
-                <TableCell>Supplier</TableCell>
-                <TableCell>Quantity</TableCell>
-                <TableCell>Unit Price</TableCell>
-                <TableCell>Stock Level</TableCell>
-                <TableCell>Expiration</TableCell>
-                <TableCell>Quality</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
+      {/* Filters - Regular view on larger screens, drawer on mobile */}
+      {!isMobile ? (
+        <Paper sx={{ p: 2, mb: 3 }}>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} md={3}>
+              <FormControl fullWidth size={isMobile ? "small" : "medium"}>
+                <InputLabel>Search By</InputLabel>
+                <Select
+                  value={searchAttribute}
+                  onChange={(e) => setSearchAttribute(e.target.value as any)}
+                  label="Search By"
+                >
+                  <MenuItem value="all">All Attributes</MenuItem>
+                  <MenuItem value="material">Material</MenuItem>
+                  <MenuItem value="batch">Batch</MenuItem>
+                  <MenuItem value="supplier">Supplier</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                placeholder={
+                  searchAttribute === 'all'
+                    ? 'Search across all fields...'
+                    : `Search by ${searchAttribute}...`
+                }
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+                size={isMobile ? "small" : "medium"}
+              />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <FormControl fullWidth size={isMobile ? "small" : "medium"}>
+                <InputLabel>Filter By Status</InputLabel>
+                <Select
+                  value={expirationFilter}
+                  label="Filter By Status"
+                  onChange={(e) => setExpirationFilter(e.target.value)}
+                >
+                  <MenuItem value="">All Items</MenuItem>
+                  <MenuItem value="expired">Expired</MenuItem>
+                  <MenuItem value="expiring">Expiring Soon</MenuItem>
+                  <MenuItem value="contaminated">Contaminated</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+        </Paper>
+      ) : (
+        <Drawer
+          anchor="bottom"
+          open={filtersOpen}
+          onClose={() => setFiltersOpen(false)}
+          PaperProps={{
+            sx: {
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              pt: 1
+            }
+          }}
+        >
+          <Box sx={{ p: 2, pb: 4 }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="h6">Filters</Typography>
+              <IconButton onClick={() => setFiltersOpen(false)}>
+                <CloseIcon />
+              </IconButton>
+            </Box>
+
+            <Stack spacing={2}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Search By</InputLabel>
+                <Select
+                  value={searchAttribute}
+                  onChange={(e) => setSearchAttribute(e.target.value as any)}
+                  label="Search By"
+                >
+                  <MenuItem value="all">All Attributes</MenuItem>
+                  <MenuItem value="material">Material</MenuItem>
+                  <MenuItem value="batch">Batch</MenuItem>
+                  <MenuItem value="supplier">Supplier</MenuItem>
+                </Select>
+              </FormControl>
+              
+              <TextField
+                fullWidth
+                placeholder={
+                  searchAttribute === 'all'
+                    ? 'Search across all fields...'
+                    : `Search by ${searchAttribute}...`
+                }
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                InputProps={{
+                  startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment>,
+                }}
+                size="small"
+              />
+              
+              <FormControl fullWidth size="small">
+                <InputLabel>Filter By Status</InputLabel>
+                <Select
+                  value={expirationFilter}
+                  label="Filter By Status"
+                  onChange={(e) => setExpirationFilter(e.target.value)}
+                >
+                  <MenuItem value="">All Items</MenuItem>
+                  <MenuItem value="expired">Expired</MenuItem>
+                  <MenuItem value="expiring">Expiring Soon</MenuItem>
+                  <MenuItem value="contaminated">Contaminated</MenuItem>
+                </Select>
+              </FormControl>
+
+              <Button
+                variant="contained"
+                onClick={() => setFiltersOpen(false)}
+                fullWidth
+              >
+                Apply Filters
+              </Button>
+            </Stack>
+          </Box>
+        </Drawer>
+      )}
+
+      {/* Display either List View or Card View based on viewMode state */}
+      {viewMode === 'list' ? (
+        // List/Table View
+        <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
+          <TableContainer>
+            <Table size="small" sx={{ '& .MuiTableCell-root': { px: 2, py: 1.5, whiteSpace: 'nowrap' } }}>
+              <TableHead>
+                <TableRow>
+                  <TableCell width="20%">Material</TableCell>
+                  {!isMobile && <TableCell width="10%">Batch Number</TableCell>}
+                  {!isMobile && <TableCell width="15%">Supplier</TableCell>}
+                  <TableCell width="10%" align="center">Quantity</TableCell>
+                  {!isMobile && <TableCell width="10%" align="center">Price</TableCell>}
+                  {!isMobile && <TableCell width="10%" align="center">Stock Level</TableCell>}
+                  <TableCell width="10%" align="center">Expiration</TableCell>
+                  {!isMobile && <TableCell width="10%" align="center">Quality</TableCell>}
+                  <TableCell width="10%" align="right">Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
               {filteredMaterials
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((material) => (
-                  <TableRow hover key={material.id}>
-                    <TableCell>
-                      <Box>
-                        <Typography variant="subtitle2" fontWeight="bold">
-                          {material.name}
-                          {getContaminationChip(material.isContaminated)}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Batch: {material.batchNumber}
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      {material.category?.name || 'Unknown'}
-                    </TableCell>
-                    <TableCell>
-                      {material.supplier?.name || 'Unknown'}
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {formatQuantity(material.quantity, material.unit)}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Reorder: {formatQuantity(material.reorderLevel, material.unit)}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      ${material.unitPrice?.toFixed(2) || 'N/A'}
-                    </TableCell>
-                    <TableCell>
-                      {getStockLevelChip(material.quantity, material.reorderLevel)}
-                    </TableCell>
-                    <TableCell>
-                      <Box>
-                        <Typography variant="body2">
-                          {formatDate(material.expirationDate)}
-                        </Typography>
-                        {getExpirationChip(material.expirationDate)}
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      {material.qualityStatus ? (
-                        <Chip
-                          label={material.qualityStatus.name}
-                          size="small"
+                .map((material) => {
+                  const isLowStock = material.quantity <= material.reorderLevel;
+                  
+                  return (
+                    <TableRow 
+                      key={material.id}
+                      onClick={() => handleOpenForm(material)}
+                      sx={{
+                        cursor: 'pointer',
+                        '&:hover': { bgcolor: 'action.hover' },
+                        borderLeft: material.isContaminated ? '3px solid #d32f2f' : 'none'
+                      }}
+                    >
+                      <TableCell>
+                        <Box>
+                          <Typography variant="subtitle2">
+                            {material.name}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
+                            {material.category?.name || 'Uncategorized'}
+                            {material.isContaminated && (
+                              <Chip 
+                                label="CONTAMINATED" 
+                                color="error" 
+                                size="small" 
+                                sx={{ ml: 1, height: 16, '& .MuiChip-label': { px: 0.5, py: 0 } }} 
+                              />
+                            )}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      {!isMobile && <TableCell>{material.batchNumber}</TableCell>}
+                      {!isMobile && <TableCell>{material.supplier?.name || 'Unknown'}</TableCell>}
+                      <TableCell align="center">
+                        <Typography
+                          variant="body2"
                           sx={{
-                            backgroundColor: material.qualityStatus.color || '#gray',
-                            color: 'white',
+                            color: isLowStock ? 'error.main' : 'text.primary',
+                            fontWeight: isLowStock ? 'medium' : 'regular',
                           }}
-                        />
-                      ) : (
-                        <Chip label="No status" variant="outlined" size="small" />
+                        >
+                          {formatQuantity(material.quantity, material.unit)}
+                        </Typography>
+                        {!isMobile && (
+                          <Typography variant="caption" color="text.secondary">
+                            Reorder: {formatQuantity(material.reorderLevel, material.unit)}
+                          </Typography>
+                        )}
+                      </TableCell>
+                      {!isMobile && (
+                        <TableCell align="center">
+                          ${material.unitPrice?.toFixed(2) || 'N/A'}
+                        </TableCell>
                       )}
-                    </TableCell>
-                    <TableCell>
+                      {!isMobile && (
+                        <TableCell align="center">
+                          {material.quantity <= 0 ? (
+                            <Chip label="OUT OF STOCK" color="error" size="small" />
+                          ) : material.quantity <= material.reorderLevel ? (
+                            <Chip label="LOW STOCK" color="warning" size="small" />
+                          ) : (
+                            <Chip label="In Stock" color="success" size="small" />
+                          )}
+                        </TableCell>
+                      )}
+                      <TableCell align="center">
+                        {isExpired(material.expirationDate) ? (
+                          <Chip label="EXPIRED" size="small" sx={{ backgroundColor: theme => theme.palette.error.main, color: 'white' }} />
+                        ) : isExpiringSoon(material.expirationDate) ? (
+                          <Typography variant="caption" color="warning.main" fontWeight="medium" sx={{ display: 'block' }}>
+                            {getDaysUntilExpiration(material.expirationDate)} days left
+                          </Typography>
+                        ) : (
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                            {formatDate(material.expirationDate)}
+                          </Typography>
+                        )}
+                      </TableCell>
+                      {!isMobile && (
+                        <TableCell align="center">
+                          {material.qualityStatus ? (
+                            <Chip
+                              label={material.qualityStatus.name}
+                              size="small"
+                              variant="outlined"
+                              sx={{
+                                borderColor: material.qualityStatus.color || '#gray',
+                                color: material.qualityStatus.color || '#gray',
+                                borderWidth: 1.5,
+                                fontWeight: 'medium'
+                              }}
+                            />
+                          ) : (
+                            <Chip label="No status" variant="outlined" size="small" />
+                          )}
+                        </TableCell>
+                      )}
+                    <TableCell align="right">
                       <Tooltip title="Edit">
                         <IconButton
                           size="small"
-                          onClick={() => handleOpenForm(material)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenForm(material);
+                          }}
+                          color="primary"
                         >
-                          <EditIcon />
+                          <EditIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Delete">
                         <IconButton
                           size="small"
-                          onClick={() => handleDelete(material)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(material);
+                          }}
                           color="error"
                         >
-                          <DeleteIcon />
+                          <DeleteIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                     </TableCell>
                   </TableRow>
-                ))}
+                );
+              })}
             </TableBody>
           </Table>
         </TableContainer>
@@ -365,6 +684,142 @@ const RawMaterials: React.FC = () => {
           onRowsPerPageChange={handleChangeRowsPerPage}
         />
       </Paper>
+      ) : (
+        // Card View (for mobile)
+        <Box>
+          <Grid container spacing={2}>
+            {filteredMaterials
+              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+              .map((material) => {
+                const isLowStock = material.quantity <= material.reorderLevel;
+                
+                return (
+                  <Grid item xs={12} sm={6} md={4} key={material.id}>
+                    <Card 
+                      sx={{
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        borderLeft: material.isContaminated ? '4px solid #d32f2f' : 'none',
+                        '&:hover': { boxShadow: 3 },
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => handleOpenForm(material)}
+                    >
+                      <Box sx={{ p: 2, pb: 1 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <Typography variant="subtitle1" fontWeight="medium" sx={{ mb: 0.5 }}>
+                            {material.name}
+                          </Typography>
+                          <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Tooltip title="Edit">
+                              <IconButton 
+                                size="small" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenForm(material);
+                                }}
+                              >
+                                <EditIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Delete">
+                              <IconButton 
+                                size="small" 
+                                color="error" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDelete(material);
+                                }}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+                        </Box>
+                        
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                          {material.category?.name || 'Uncategorized'} • Batch: {material.batchNumber}
+                        </Typography>
+                        
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                          Supplier: {material.supplier?.name || 'Unknown'}
+                        </Typography>
+                        
+                        <Grid container spacing={1} sx={{ mt: 1 }}>
+                          <Grid item xs={6}>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                              Quantity
+                            </Typography>
+                            <Typography 
+                              variant="body2"
+                              sx={{
+                                color: isLowStock ? 'error.main' : 'text.primary',
+                                fontWeight: isLowStock ? 'medium' : 'regular',
+                              }}
+                            >
+                              {formatQuantity(material.quantity, material.unit)}
+                            </Typography>
+                          </Grid>
+                          <Grid item xs={6}>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                              Unit Price
+                            </Typography>
+                            <Typography variant="body2">
+                              ${material.unitPrice?.toFixed(2) || '0.00'}
+                            </Typography>
+                          </Grid>
+                        </Grid>
+                      </Box>
+                      
+                      <CardActions sx={{ p: 1, pt: 0, mt: 'auto', display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {material.qualityStatus && (
+                          <Chip
+                            label={material.qualityStatus.name}
+                            size="small"
+                            variant="outlined"
+                            sx={{
+                              borderColor: material.qualityStatus.color,
+                              color: material.qualityStatus.color,
+                              borderWidth: 1.5,
+                              fontWeight: 'medium',
+                              mr: 0.5
+                            }}
+                          />
+                        )}
+                        
+                        {isExpired(material.expirationDate) ? (
+                          <Chip label="EXPIRED" size="small" color="error" />
+                        ) : isExpiringSoon(material.expirationDate) ? (
+                          <Chip label={`${getDaysUntilExpiration(material.expirationDate)} days left`} size="small" color="warning" />
+                        ) : null}
+                        
+                        {material.quantity <= 0 ? (
+                          <Chip label="OUT OF STOCK" size="small" color="error" />
+                        ) : material.quantity <= material.reorderLevel ? (
+                          <Chip label="LOW STOCK" size="small" color="warning" />
+                        ) : null}
+                        
+                        {material.isContaminated && (
+                          <Chip label="CONTAMINATED" size="small" color="error" />
+                        )}
+                      </CardActions>
+                    </Card>
+                  </Grid>
+                );
+              })}
+          </Grid>
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25]}
+            component="div"
+            count={filteredMaterials.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+          />
+        </Box>
+      )}
 
       {/* Form Dialog */}
       <RawMaterialForm
