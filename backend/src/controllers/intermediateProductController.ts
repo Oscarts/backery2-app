@@ -16,7 +16,8 @@ export const intermediateProductController = {
   // Get all intermediate products
   getAll: async (req: Request, res: Response) => {
     try {
-      const products = await prisma.intermediateProduct.findMany({
+      // Get all intermediate products
+      const productsData = await prisma.intermediateProduct.findMany({
         include: {
           category: true,
           storageLocation: true,
@@ -27,6 +28,36 @@ export const intermediateProductController = {
           createdAt: 'desc'
         }
       });
+      
+      // Collect all unique unit symbols
+      const unitSymbols = new Set<string>();
+      productsData.forEach(product => {
+        if (product.unit) unitSymbols.add(product.unit);
+      });
+      
+      // Get unit details for all used unit symbols
+      const unitDetails = await prisma.unit.findMany({
+        where: {
+          symbol: {
+            in: Array.from(unitSymbols)
+          }
+        }
+      });
+      
+      // Create a map of unit symbols to unit objects
+      const unitMap = new Map();
+      unitDetails.forEach(unit => {
+        unitMap.set(unit.symbol, unit);
+      });
+      
+      // Add unit details to each intermediate product
+      const products = productsData.map(product => {
+        return {
+          ...product,
+          unitDetails: unitMap.get(product.unit) || null
+        };
+      });
+      
       res.json({ success: true, data: products });
     } catch (error) {
       console.error('Error fetching intermediate products:', error);
@@ -47,10 +78,26 @@ export const intermediateProductController = {
           qualityStatus: true
         }
       });
+      
       if (!product) {
         return res.status(404).json({ success: false, error: 'Intermediate product not found' });
       }
-      res.json({ success: true, data: product });
+      
+      // Get unit details if the product exists
+      let unitDetails = null;
+      if (product.unit) {
+        unitDetails = await prisma.unit.findFirst({
+          where: { symbol: product.unit }
+        });
+      }
+      
+      res.json({ 
+        success: true, 
+        data: {
+          ...product,
+          unitDetails
+        } 
+      });
     } catch (error) {
       console.error('Error fetching intermediate product:', error);
       res.status(500).json({ success: false, error: 'Failed to fetch intermediate product' });
@@ -77,7 +124,7 @@ export const intermediateProductController = {
       } = req.body;
 
       // Validate required fields
-      if (!name || !description || !categoryId || !storageLocationId || !batchNumber ||
+      if (!name || !description || !storageLocationId || !batchNumber ||
         !productionDate || !expirationDate || !quantity || !unit) {
         return res.status(400).json({
           success: false,
@@ -91,7 +138,7 @@ export const intermediateProductController = {
         data: {
           name,
           description,
-          categoryId,
+          categoryId: categoryId || undefined,
           storageLocationId,
           recipeId: recipeId || null,
           batchNumber,
@@ -110,8 +157,22 @@ export const intermediateProductController = {
           qualityStatus: true
         }
       });
+      
+      // Get unit details
+      let unitDetails = null;
+      if (unit) {
+        unitDetails = await prisma.unit.findFirst({
+          where: { symbol: unit }
+        });
+      }
 
-      res.status(201).json({ success: true, data: product });
+      res.status(201).json({ 
+        success: true, 
+        data: {
+          ...product,
+          unitDetails
+        }
+      });
     } catch (error: any) {
       console.error('Error creating intermediate product:', error);
       if (error.code === 'P2002') {
@@ -146,7 +207,7 @@ export const intermediateProductController = {
       const updateData: any = {};
       if (name !== undefined) updateData.name = name;
       if (description !== undefined) updateData.description = description;
-      if (categoryId !== undefined) updateData.categoryId = categoryId;
+      if (categoryId !== undefined) updateData.categoryId = categoryId || undefined;
       if (storageLocationId !== undefined) updateData.storageLocationId = storageLocationId;
       if (recipeId !== undefined) updateData.recipeId = recipeId || null;
       if (batchNumber !== undefined) updateData.batchNumber = batchNumber;
@@ -176,8 +237,22 @@ export const intermediateProductController = {
           qualityStatus: true
         }
       });
+      
+      // Get unit details
+      let unitDetails = null;
+      if (product.unit) {
+        unitDetails = await prisma.unit.findFirst({
+          where: { symbol: product.unit }
+        });
+      }
 
-      res.json({ success: true, data: product });
+      res.json({ 
+        success: true, 
+        data: {
+          ...product,
+          unitDetails
+        } 
+      });
     } catch (error: any) {
       console.error('Error updating intermediate product:', error);
       if (error.code === 'P2025') {

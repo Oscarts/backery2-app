@@ -14,7 +14,7 @@ const getDefaultQualityStatus = async () => {
 // Validation schemas
 const createRawMaterialSchema = Joi.object({
   name: Joi.string().required().min(1).max(255),
-  categoryId: Joi.string().required(),
+  categoryId: Joi.string().optional().allow('').allow(null),
   supplierId: Joi.string().required(),
   batchNumber: Joi.string().required().min(1).max(100),
   purchaseDate: Joi.date().required(),
@@ -73,21 +73,52 @@ export const rawMaterialController = {
         };
       }
 
-      const [rawMaterials, total] = await Promise.all([
-        prisma.rawMaterial.findMany({
-          where,
-          include: {
-            category: true,
-            supplier: true,
-            storageLocation: true,
-            qualityStatus: true,
-          },
-          orderBy: { createdAt: 'desc' },
-          skip,
-          take: limit,
-        }),
-        prisma.rawMaterial.count({ where }),
-      ]);
+      // Find unit data for all raw materials
+      const unitSymbols = new Set<string>();
+      
+      // First get all raw materials
+      const rawMaterialsData = await prisma.rawMaterial.findMany({
+        where,
+        include: {
+          category: true,
+          supplier: true,
+          storageLocation: true,
+          qualityStatus: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      });
+      
+      // Collect all unique unit symbols
+      rawMaterialsData.forEach(material => {
+        if (material.unit) unitSymbols.add(material.unit);
+      });
+      
+      // Get unit details for all used unit symbols
+      const unitDetails = await prisma.unit.findMany({
+        where: {
+          symbol: {
+            in: Array.from(unitSymbols)
+          }
+        }
+      });
+      
+      // Create a map of unit symbols to unit objects
+      const unitMap = new Map();
+      unitDetails.forEach(unit => {
+        unitMap.set(unit.symbol, unit);
+      });
+      
+      // Add unit details to each raw material
+      const rawMaterials = rawMaterialsData.map(material => {
+        return {
+          ...material,
+          unitDetails: unitMap.get(material.unit) || null
+        };
+      });
+      
+      const total = await prisma.rawMaterial.count({ where });
 
       res.json({
         success: true,
@@ -115,8 +146,17 @@ export const rawMaterialController = {
           category: true,
           supplier: true,
           storageLocation: true,
+          qualityStatus: true,
         },
       });
+      
+      // Get unit details if the raw material exists
+      let unitDetails = null;
+      if (rawMaterial && rawMaterial.unit) {
+        unitDetails = await prisma.unit.findFirst({
+          where: { symbol: rawMaterial.unit }
+        });
+      }
 
       if (!rawMaterial) {
         return res.status(404).json({
@@ -127,7 +167,10 @@ export const rawMaterialController = {
 
       res.json({
         success: true,
-        data: rawMaterial,
+        data: {
+          ...rawMaterial,
+          unitDetails
+        },
       });
     } catch (error) {
       next(error);
@@ -162,13 +205,17 @@ export const rawMaterialController = {
       }
 
       // Verify related entities exist
-      const [category, supplier, storageLocation] = await Promise.all([
-        prisma.category.findUnique({ where: { id: value.categoryId } }),
-        prisma.supplier.findUnique({ where: { id: value.supplierId } }),
-        prisma.storageLocation.findUnique({ where: { id: value.storageLocationId } }),
-      ]);
+      const supplier = await prisma.supplier.findUnique({ where: { id: value.supplierId } });
+      const storageLocation = await prisma.storageLocation.findUnique({ where: { id: value.storageLocationId } });
+      
+      // Only check for category if a categoryId is provided
+      let category = null;
+      if (value.categoryId) {
+        category = await prisma.category.findUnique({ where: { id: value.categoryId } });
+      }
 
-      if (!category) {
+      // Only validate category if categoryId was provided
+      if (value.categoryId && !category) {
         return res.status(400).json({
           success: false,
           error: 'Category not found',
@@ -210,10 +257,21 @@ export const rawMaterialController = {
           qualityStatus: true,
         },
       });
+      
+      // Get unit details
+      let unitDetails = null;
+      if (rawMaterial.unit) {
+        unitDetails = await prisma.unit.findFirst({
+          where: { symbol: rawMaterial.unit }
+        });
+      }
 
       res.status(201).json({
         success: true,
-        data: rawMaterial,
+        data: {
+          ...rawMaterial,
+          unitDetails
+        },
         message: 'Raw material created successfully',
       });
     } catch (error) {
@@ -294,10 +352,21 @@ export const rawMaterialController = {
           qualityStatus: true,
         },
       });
+      
+      // Get unit details
+      let unitDetails = null;
+      if (rawMaterial.unit) {
+        unitDetails = await prisma.unit.findFirst({
+          where: { symbol: rawMaterial.unit }
+        });
+      }
 
       res.json({
         success: true,
-        data: rawMaterial,
+        data: {
+          ...rawMaterial,
+          unitDetails
+        },
         message: 'Raw material updated successfully',
       });
     } catch (error) {

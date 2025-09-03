@@ -347,11 +347,6 @@ const Recipes: React.FC = () => {
       return;
     }
 
-    if (!formData.categoryId) {
-      alert('Category is required');
-      return;
-    }
-
     if (!formData.yieldQuantity || formData.yieldQuantity <= 0) {
       alert('Valid yield quantity is required');
       return;

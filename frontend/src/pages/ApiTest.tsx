@@ -649,7 +649,6 @@ const ApiTestPage: React.FC = () => {
       const testRecipe = {
         name: `Test Recipe ${Date.now()}`,
         description: 'Test recipe for API validation',
-        categoryId: recipeCategory.id,
         yieldQuantity: 1,
         yieldUnit: 'kg',
         prepTime: 30,

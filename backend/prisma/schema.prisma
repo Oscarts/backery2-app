@@ -94,7 +94,7 @@ model RawMaterial {
   id                String             @id @default(cuid())
   name              String
   description       String?
-  categoryId        String
+  categoryId        String?
   supplierId        String
   batchNumber       String
   purchaseDate      DateTime?
@@ -108,7 +108,7 @@ model RawMaterial {
   isContaminated    Boolean            @default(false)
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
-  category          Category           @relation(fields: [categoryId], references: [id])
+  category          Category?          @relation(fields: [categoryId], references: [id])
   storageLocation   StorageLocation    @relation(fields: [storageLocationId], references: [id])
   supplier          Supplier           @relation(fields: [supplierId], references: [id])
   qualityStatus     QualityStatus?     @relation(fields: [qualityStatusId], references: [id])
@@ -121,7 +121,7 @@ model IntermediateProduct {
   id                String                    @id @default(cuid())
   name              String
   description       String
-  categoryId        String
+  categoryId        String?
   batchNumber       String                    @unique
   productionDate    DateTime
   expirationDate    DateTime
@@ -134,7 +134,7 @@ model IntermediateProduct {
   recipeId          String?
   createdAt         DateTime                  @default(now())
   updatedAt         DateTime                  @updatedAt
-  category          Category                  @relation(fields: [categoryId], references: [id])
+  category          Category?                 @relation(fields: [categoryId], references: [id])
   recipe            Recipe?                   @relation(fields: [recipeId], references: [id])
   storageLocation   StorageLocation           @relation(fields: [storageLocationId], references: [id])
   qualityStatus     QualityStatus?            @relation(fields: [qualityStatusId], references: [id])
@@ -148,7 +148,7 @@ model FinishedProduct {
   name              String
   description       String?
   sku               String           @unique
-  categoryId        String
+  categoryId        String?
   batchNumber       String
   productionDate    DateTime
   expirationDate    DateTime
@@ -165,7 +165,7 @@ model FinishedProduct {
   isContaminated    Boolean          @default(false)
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
-  category          Category         @relation(fields: [categoryId], references: [id])
+  category          Category?        @relation(fields: [categoryId], references: [id])
   storageLocation   StorageLocation? @relation(fields: [storageLocationId], references: [id])
   qualityStatus     QualityStatus?   @relation(fields: [qualityStatusId], references: [id])
 
@@ -176,7 +176,7 @@ model Recipe {
   id                   String                @id @default(cuid())
   name                 String
   description          String?
-  categoryId           String
+  categoryId           String?
   yieldQuantity        Float
   yieldUnit            String
   prepTime             Int?
@@ -187,7 +187,7 @@ model Recipe {
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
   intermediateProducts IntermediateProduct[]
-  category             Category              @relation(fields: [categoryId], references: [id])
+  category             Category?             @relation(fields: [categoryId], references: [id])
   ingredients          RecipeIngredient[]
 
   @@map("recipes")

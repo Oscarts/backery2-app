@@ -16,7 +16,7 @@ const createFinishedProductSchema = Joi.object({
   name: Joi.string().required().min(1).max(255),
   description: Joi.string().optional().max(1000),
   sku: Joi.string().required().min(1).max(100),
-  categoryId: Joi.string().required(),
+  categoryId: Joi.string().optional().allow('').allow(null),
   batchNumber: Joi.string().required().min(1).max(100),
   productionDate: Joi.date().required(),
   expirationDate: Joi.date().required().greater(Joi.ref('productionDate')),
@@ -175,15 +175,18 @@ export const finishedProductController = {
       }
 
       // Verify related entities exist
-      const category = await prisma.category.findUnique({
-        where: { id: value.categoryId }
-      });
-
-      if (!category) {
-        return res.status(400).json({
-          success: false,
-          error: 'Category not found',
+      let category = null;
+      if (value.categoryId) {
+        category = await prisma.category.findUnique({
+          where: { id: value.categoryId }
         });
+
+        if (!category) {
+          return res.status(400).json({
+            success: false,
+            error: 'Category not found',
+          });
+        }
       }
 
       let storageLocation = null;
@@ -288,6 +291,11 @@ export const finishedProductController = {
 
       // Prepare update data
   const updateData: any = { ...value };
+      
+  // Handle categoryId properly
+  if (value.categoryId === '' || value.categoryId === null) {
+    updateData.categoryId = null;
+  }
       // Make sure isContaminated is properly handled
       if (value.isContaminated !== undefined) {
         updateData.isContaminated = value.isContaminated === true || value.isContaminated === 'on';

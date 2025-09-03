@@ -118,13 +118,6 @@ export const createRecipe = async (req: Request, res: Response) => {
       });
     }
 
-    if (!categoryId) {
-      return res.status(400).json({
-        success: false,
-        error: 'Category ID is required'
-      });
-    }
-
     // Create recipe with ingredients in a transaction
     const recipe = await prisma.$transaction(async (tx) => {
       // Create the recipe
@@ -132,7 +125,7 @@ export const createRecipe = async (req: Request, res: Response) => {
         data: {
           name,
           description: description || '',
-          categoryId,
+          categoryId: categoryId || undefined, // Make categoryId optional
           yieldQuantity: Number(yieldQuantity) || 1,
           yieldUnit: yieldUnit || '',
           prepTime: prepTime ? Number(prepTime) : null,
