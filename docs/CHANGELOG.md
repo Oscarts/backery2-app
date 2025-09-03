@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### Bug Fixes
+
+- Fixed "What Can I Make" page white screen issue:
+  - Updated backend API response format to match frontend expectations
+  - Added validation test to ensure API response structure consistency
+  - Improved error handling and logging for recipe ingredients
+  - Added support for recipes with missing ingredients
+
+### Documentation
+
+- Added comprehensive API response validation guidelines
+- Updated data persistence documentation with best practices
+- Enhanced development guidelines for handling nullable values
+- Created testing guidelines for API response structure validation
+
 ### Development Environment
 
 - Added `run.sh` script for automated project setup:

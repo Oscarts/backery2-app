@@ -310,6 +310,9 @@ feat(scope): brief description
 5. **Inconsistent Patterns** - Follow established UI/UX guidelines
 6. **Missing Documentation** - Update docs with every feature
 7. **Ignoring TypeScript Errors** - Fix all type errors before committing
+8. **API Response Mismatches** - Ensure backend responses match frontend expectations
+9. **Missing API Structure Tests** - Add tests to validate response structures
+10. **Nullable Values Handling** - Always handle potential null/undefined values
 
 ## 🎯 Quality Gates
 
