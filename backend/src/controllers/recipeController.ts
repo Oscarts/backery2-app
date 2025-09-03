@@ -450,6 +450,7 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
         isActive: true
       },
       include: {
+        category: true,
         ingredients: {
           include: {
             rawMaterial: {
@@ -466,6 +467,9 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
         }
       }
     });
+
+    // Get all categories
+    const categoriesData = await prisma.category.findMany();
 
     console.log(`Found ${recipes.length} active recipes`);
 
@@ -563,11 +567,21 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
         }
       }
 
+      // Create a recipe analysis object that matches the frontend's expected structure
       const recipeData = {
-        id: recipe.id,
-        name: recipe.name,
-        description: recipe.description,
-        missingIngredients: missingIngredients
+        recipeId: recipe.id,
+        recipeName: recipe.name,
+        category: recipe.category?.name || 'Uncategorized',
+        yieldQuantity: recipe.yieldQuantity || 0,
+        yieldUnit: recipe.yieldUnit || '',
+        canMake: canMake,
+        maxBatches: canMake ? 1 : 0, // Default to 1 for now, we could calculate this based on ingredients
+        missingIngredients: missingIngredients.map(ing => ({
+          name: ing.name,
+          needed: ing.required,
+          available: ing.available,
+          shortage: ing.required - ing.available
+        }))
       };
 
       if (canMake) {
@@ -577,18 +591,18 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
       }
     }
 
+    // Combine the recipes into a single flat array as expected by the frontend
+    const allRecipes = [...canMakeRecipes, ...cannotMakeRecipes];
+
     console.log(`Analysis complete: Can make ${canMakeRecipes.length} out of ${recipes.length} recipes`);
 
-    // Return the analysis
+    // Return the analysis in the format expected by the frontend
     res.json({
       success: true,
       data: {
         canMakeCount: canMakeRecipes.length,
         totalRecipes: recipes.length,
-        recipes: {
-          canMake: canMakeRecipes,
-          cannotMake: cannotMakeRecipes
-        }
+        recipes: allRecipes
       }
     });
   } catch (error: any) {
