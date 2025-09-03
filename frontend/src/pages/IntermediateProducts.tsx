@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Typography,
@@ -28,12 +28,32 @@ import {
   Snackbar,
   FormControlLabel,
   Checkbox,
+  useTheme,
+  useMediaQuery,
+  Tooltip,
+  Card,
+  CardContent,
+  CardHeader,
+  CardActions,
+  Avatar,
+  Divider,
+  InputAdornment,
+  Stack,
+  Drawer,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   Search as SearchIcon,
+  GridView as GridViewIcon,
+  ViewList as ListViewIcon,
+  FilterList as FilterIcon,
+  Close as CloseIcon,
+  Warning as WarningIcon,
+  TrendingDown as TrendingDownIcon,
+  Inventory as InventoryIcon,
+  Schedule as ScheduleIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { intermediateProductsApi, categoriesApi, storageLocationsApi, unitsApi, qualityStatusApi } from '../services/realApi';
@@ -41,12 +61,26 @@ import { IntermediateProduct, CategoryType, IntermediateProductStatus } from '..
 import { formatDate, formatQuantity, isExpired, isExpiringSoon, getDaysUntilExpiration } from '../utils/api';
 
 const IntermediateProducts: React.FC = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  // View state
+  const [viewMode, setViewMode] = useState<'list' | 'card'>(isMobile ? 'card' : 'list');
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  
+  // Update viewMode when screen size changes
+  useEffect(() => {
+    if (isMobile) {
+      setViewMode('card');
+    }
+  }, [isMobile]);
+  
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(isMobile ? 5 : 10);
   const [openForm, setOpenForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<IntermediateProduct | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
+  const [searchAttribute, setSearchAttribute] = useState<'all' | 'product' | 'description' | 'batch'>('all');
   const [statusFilter, setStatusFilter] = useState('');
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
@@ -56,24 +90,38 @@ const IntermediateProducts: React.FC = () => {
 
   const queryClient = useQueryClient();
 
-  // Helper functions for status chips (matching RawMaterials format)
-  const getContaminationChip = (contaminated: boolean) => {
-    if (contaminated) {
-      return <Chip label="CONTAMINATED" color="error" size="small" sx={{ ml: 1 }} />;
-    }
-    return null; // Don't show anything if clean
+  // Production status meta (color + labels) for subtle dot display
+  const getProductionStatusMeta = (status?: IntermediateProductStatus) => {
+    if (!status) return null;
+    const label = status.replace('_', ' ');
+    const descriptionMap: Record<string, string> = {
+      IN_PRODUCTION: 'Currently in production',
+      COMPLETED: 'Production completed',
+      ON_HOLD: 'Production paused',
+      DISCARDED: 'Discarded and not for use'
+    };
+    const colorMap: Record<string, (theme: any) => string> = {
+      IN_PRODUCTION: (theme) => theme.palette.primary.main,
+      COMPLETED: (theme) => theme.palette.success.main,
+      ON_HOLD: (theme) => theme.palette.warning.main,
+      DISCARDED: (theme) => theme.palette.error.main,
+    };
+    return {
+      label,
+      description: descriptionMap[status] || label,
+      getColor: colorMap[status] || ((theme: any) => theme.palette.text.secondary)
+    };
   };
 
-  const getExpirationChip = (expirationDate: string) => {
+  const getExpirationBadge = (expirationDate: string) => {
     if (isExpired(expirationDate)) {
-      return <Chip label="EXPIRED" color="error" size="small" />;
+      return <Chip label="EXPIRED" size="small" sx={{ backgroundColor: theme => theme.palette.error.main, color: 'white', fontWeight: 'medium' }} />;
     }
     if (isExpiringSoon(expirationDate)) {
       const days = getDaysUntilExpiration(expirationDate);
-      return <Chip label={`Expires in ${days} days`} color="warning" size="small" />;
+      return <Typography variant="caption" color="warning.main" fontWeight="medium" sx={{ display: 'block' }}>{days} days remaining</Typography>;
     }
-    const days = getDaysUntilExpiration(expirationDate);
-    return <Chip label={`${days} days left`} color="success" size="small" />;
+    return null;
   };
 
   // Fetch data
@@ -143,11 +191,31 @@ const IntermediateProducts: React.FC = () => {
 
   // Filter and sort products
   const filteredProducts = products?.data?.filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = !categoryFilter || product.categoryId === categoryFilter;
+    const term = searchTerm.trim().toLowerCase();
+    let matchesSearch = true;
+    
+    if (term) {
+      switch (searchAttribute) {
+        case 'product':
+          matchesSearch = product.name.toLowerCase().includes(term);
+          break;
+        case 'description':
+          matchesSearch = product.description.toLowerCase().includes(term);
+          break;
+        case 'batch':
+          matchesSearch = product.batchNumber.toLowerCase().includes(term);
+          break;
+        case 'all':
+        default:
+          matchesSearch = 
+            product.name.toLowerCase().includes(term) ||
+            product.description.toLowerCase().includes(term) ||
+            product.batchNumber.toLowerCase().includes(term);
+      }
+    }
+    
     const matchesStatus = !statusFilter || product.status === statusFilter;
-    return matchesSearch && matchesCategory && matchesStatus;
+    return matchesSearch && matchesStatus;
   }) || [];
 
   const displayedProducts = filteredProducts
@@ -207,176 +275,666 @@ const IntermediateProducts: React.FC = () => {
     }
   };
 
+  // Calculate counts for KPI cards
+  const totalCount = filteredProducts?.length || 0;
+  const expiringSoonCount = filteredProducts?.filter(p => isExpiringSoon(p.expirationDate) || isExpired(p.expirationDate))?.length || 0;
+  const inProgressCount = filteredProducts?.filter(p => p.status === IntermediateProductStatus.IN_PRODUCTION)?.length || 0;
+
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+      {/* Header with responsive design */}
+      <Box
+        display="flex"
+        flexDirection={{ xs: 'column', sm: 'row' }}
+        justifyContent="space-between"
+        alignItems={{ xs: 'flex-start', sm: 'center' }}
+        mb={3}
+        gap={2}
+      >
         <Typography variant="h4" component="h1">
           Intermediate Products
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setOpenForm(true)}
-        >
-          Add Product
-        </Button>
+
+        <Box display="flex" gap={1} width={{ xs: '100%', sm: 'auto' }}>
+          {/* View Toggle Buttons */}
+          <Box
+            sx={{
+              display: { xs: 'flex', md: 'flex' },
+              border: 1,
+              borderColor: 'divider',
+              borderRadius: 1,
+              mr: 1
+            }}
+          >
+            <Tooltip title="List View">
+              <IconButton
+                color={viewMode === 'list' ? 'primary' : 'default'}
+                onClick={() => setViewMode('list')}
+                sx={{
+                  borderRadius: '4px 0 0 4px',
+                  bgcolor: viewMode === 'list' ? 'action.selected' : 'transparent'
+                }}
+              >
+                <ListViewIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Card View">
+              <IconButton
+                color={viewMode === 'card' ? 'primary' : 'default'}
+                onClick={() => setViewMode('card')}
+                sx={{
+                  borderRadius: '0 4px 4px 0',
+                  bgcolor: viewMode === 'card' ? 'action.selected' : 'transparent'
+                }}
+              >
+                <GridViewIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
+
+          {/* Add Product Button - Full text on larger screens, icon-only on xs */}
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setOpenForm(true)}
+            sx={{
+              flexGrow: { xs: 1, sm: 0 },
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {!isMobile ? 'Add Product' : 'Add'}
+          </Button>
+
+          {/* Filter Toggle Button for Mobile */}
+          {isMobile && (
+            <Button
+              variant="outlined"
+              startIcon={<FilterIcon />}
+              onClick={() => setFiltersOpen(!filtersOpen)}
+            >
+              Filters
+            </Button>
+          )}
+        </Box>
       </Box>
 
-      {/* Filters */}
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={4}>
-            <TextField
-              fullWidth
-              variant="outlined"
-              label="Search"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              InputProps={{
-                startAdornment: <SearchIcon sx={{ mr: 1 }} />,
-              }}
-            />
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <FormControl fullWidth>
-              <InputLabel>Filter by Category</InputLabel>
-              <Select
-                value={categoryFilter}
-                label="Filter by Category"
-                onChange={(e) => setCategoryFilter(e.target.value)}
-              >
-                <MenuItem value="">All Categories</MenuItem>
-                {categories?.map((category) => (
-                  <MenuItem key={category.id} value={category.id}>
-                    {category.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-          <Grid item xs={12} sm={4}>
-            <FormControl fullWidth>
-              <InputLabel>Filter by Status</InputLabel>
-              <Select
-                value={statusFilter}
-                label="Filter by Status"
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <MenuItem value="">All Statuses</MenuItem>
-                <MenuItem value={IntermediateProductStatus.IN_PRODUCTION}>In Production</MenuItem>
-                <MenuItem value={IntermediateProductStatus.COMPLETED}>Completed</MenuItem>
-                <MenuItem value={IntermediateProductStatus.ON_HOLD}>On Hold</MenuItem>
-                <MenuItem value={IntermediateProductStatus.DISCARDED}>Discarded</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
+      {/* Modern KPI cards with icons */}
+      <Grid container spacing={2} sx={{ mb: 2 }}>
+        <Grid item xs={12} sm={4} md={4}>
+          <Card
+            elevation={1}
+            sx={{
+              borderRadius: 2,
+              p: 1,
+              border: 1,
+              borderColor: 'divider',
+            }}
+          >
+            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1.5 }}>
+              <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.contrastText', width: 36, height: 36 }}>
+                <InventoryIcon fontSize="small" />
+              </Avatar>
+              <Box flexGrow={1}>
+                <Typography variant="caption" color="text.secondary">Total Products</Typography>
+                <Typography variant="h5">{totalCount}</Typography>
+              </Box>
+            </CardContent>
+          </Card>
         </Grid>
-      </Paper>
+        <Grid item xs={12} sm={4} md={4}>
+          <Card
+            elevation={1}
+            sx={{
+              borderRadius: 2,
+              p: 1,
+              border: 1,
+              borderColor: 'warning.main',
+            }}
+          >
+            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1.5 }}>
+              <Avatar sx={{ bgcolor: 'warning.light', color: 'warning.contrastText', width: 36, height: 36 }}>
+                <ScheduleIcon fontSize="small" />
+              </Avatar>
+              <Box flexGrow={1}>
+                <Typography variant="caption" color="text.secondary">Expiring Soon or Expired</Typography>
+                <Typography variant="h5" color="warning.main">{expiringSoonCount}</Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={4} md={4}>
+          <Card
+            elevation={1}
+            sx={{
+              borderRadius: 2,
+              p: 1,
+              border: 1,
+              borderColor: 'primary.main',
+            }}
+          >
+            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1.5 }}>
+              <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.contrastText', width: 36, height: 36 }}>
+                <TrendingDownIcon fontSize="small" />
+              </Avatar>
+              <Box flexGrow={1}>
+                <Typography variant="caption" color="text.secondary">In Production</Typography>
+                <Typography variant="h5" color="primary.main">{inProgressCount}</Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
-      {/* Products Table */}
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Name</TableCell>
-              <TableCell>Category</TableCell>
-              <TableCell>Batch Number</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Production Date</TableCell>
-              <TableCell>Expiration Date</TableCell>
-              <TableCell>Quantity</TableCell>
-              <TableCell>Storage Location</TableCell>
-              <TableCell>Quality</TableCell>
-              <TableCell>Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {displayedProducts.map((product) => (
-              <TableRow key={product.id}>
-                <TableCell>
-                  <Box display="flex" alignItems="center">
-                    {product.name}
-                    {getContaminationChip(product.contaminated)}
-                  </Box>
-                </TableCell>
-                <TableCell>{product.category?.name || 'N/A'}</TableCell>
-                <TableCell>{product.batchNumber}</TableCell>
-                <TableCell>
-                  <Chip
-                    label={product.status.replace('_', ' ')}
-                    color={
-                      product.status === IntermediateProductStatus.COMPLETED ? 'success' :
-                        product.status === IntermediateProductStatus.IN_PRODUCTION ? 'primary' :
-                          product.status === IntermediateProductStatus.ON_HOLD ? 'warning' :
-                            'error'
-                    }
-                  />
-                </TableCell>
-                <TableCell>{formatDate(product.productionDate)}</TableCell>
-                <TableCell>
-                  <Box>
-                    <Typography variant="body2">
-                      {formatDate(product.expirationDate)}
-                    </Typography>
-                    {getExpirationChip(product.expirationDate)}
-                  </Box>
-                </TableCell>
-                <TableCell>{formatQuantity(product.quantity, product.unit)}</TableCell>
-                <TableCell>
-                  {product.storageLocation?.name || 'N/A'}
-                </TableCell>
-                <TableCell>
-                  {product.qualityStatus ? (
-                    <Chip
-                      label={product.qualityStatus.name}
-                      size="small"
-                      sx={{
-                        backgroundColor: product.qualityStatus.color || '#gray',
-                        color: 'white',
+      {/* Filters - Regular view on larger screens, drawer on mobile */}
+      {!isMobile ? (
+        <Paper sx={{ p: 2, mb: 3 }}>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} md={3}>
+              <FormControl fullWidth size={isMobile ? "small" : "medium"}>
+                <InputLabel>Search By</InputLabel>
+                <Select
+                  value={searchAttribute}
+                  onChange={(e) => setSearchAttribute(e.target.value as any)}
+                  label="Search By"
+                >
+                  <MenuItem value="all">All Attributes</MenuItem>
+                  <MenuItem value="product">Product</MenuItem>
+                  <MenuItem value="description">Description</MenuItem>
+                  <MenuItem value="batch">Batch</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={9}>
+              <TextField
+                fullWidth
+                placeholder={
+                  searchAttribute === 'all'
+                    ? 'Search across all fields...'
+                    : `Search by ${searchAttribute}...`
+                }
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+                size={isMobile ? "small" : "medium"}
+              />
+            </Grid>
+          </Grid>
+        </Paper>
+      ) : (
+        <Drawer
+          anchor="bottom"
+          open={filtersOpen}
+          onClose={() => setFiltersOpen(false)}
+          PaperProps={{
+            sx: {
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              pt: 1
+            }
+          }}
+        >
+          <Box sx={{ p: 2, pb: 4 }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="h6">Filters</Typography>
+              <IconButton onClick={() => setFiltersOpen(false)}>
+                <CloseIcon />
+              </IconButton>
+            </Box>
+
+            <Stack spacing={2}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Search By</InputLabel>
+                <Select
+                  value={searchAttribute}
+                  onChange={(e) => setSearchAttribute(e.target.value as any)}
+                  label="Search By"
+                >
+                  <MenuItem value="all">All Attributes</MenuItem>
+                  <MenuItem value="product">Product</MenuItem>
+                  <MenuItem value="description">Description</MenuItem>
+                  <MenuItem value="batch">Batch</MenuItem>
+                </Select>
+              </FormControl>
+              
+              <TextField
+                fullWidth
+                placeholder={
+                  searchAttribute === 'all'
+                    ? 'Search across all fields...'
+                    : `Search by ${searchAttribute}...`
+                }
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                InputProps={{
+                  startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment>,
+                }}
+                size="small"
+              />
+              
+              <FormControl fullWidth size="small">
+                <InputLabel>Filter by Status</InputLabel>
+                <Select
+                  value={statusFilter}
+                  label="Filter by Status"
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <MenuItem value="">All Statuses</MenuItem>
+                  <MenuItem value={IntermediateProductStatus.IN_PRODUCTION}>In Production</MenuItem>
+                  <MenuItem value={IntermediateProductStatus.COMPLETED}>Completed</MenuItem>
+                  <MenuItem value={IntermediateProductStatus.ON_HOLD}>On Hold</MenuItem>
+                  <MenuItem value={IntermediateProductStatus.DISCARDED}>Discarded</MenuItem>
+                </Select>
+              </FormControl>
+
+              <Button
+                variant="contained"
+                onClick={() => setFiltersOpen(false)}
+                fullWidth
+              >
+                Apply Filters
+              </Button>
+            </Stack>
+          </Box>
+        </Drawer>
+      )}
+
+      {/* List/Table View */}
+      {viewMode === 'list' && (
+        <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
+          <TableContainer>
+            <Table size="small" sx={{ '& .MuiTableCell-root': { px: 2, py: 1.5, whiteSpace: 'nowrap' } }}>
+              <TableHead>
+                <TableRow>
+                  <TableCell width="20%">Product</TableCell>
+                  {!isMobile && <TableCell width="10%">Batch Number</TableCell>}
+                  <TableCell width="10%" align="center">Quantity</TableCell>
+                  {!isMobile && <TableCell width="10%" align="center">Production</TableCell>}
+                  {!isMobile && <TableCell width="10%" align="center">Storage</TableCell>}
+                  <TableCell width="10%" align="center">Expiration</TableCell>
+                  {!isMobile && <TableCell width="10%" align="center">Status</TableCell>}
+                  {!isMobile && <TableCell width="10%" align="center">Quality</TableCell>}
+                  <TableCell width="10%" align="right">Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {displayedProducts.map((product) => {
+                  const isLowStock = product.quantity <= 10;
+                  
+                  return (
+                    <TableRow 
+                      key={product.id}
+                      onClick={() => {
+                        setEditingProduct(product);
+                        setOpenForm(true);
                       }}
-                    />
-                  ) : (
-                    <Chip label="No status" variant="outlined" size="small" />
-                  )}
-                </TableCell>
-                <TableCell>
-                  <IconButton
-                    size="small"
+                      sx={{
+                        cursor: 'pointer',
+                        '&:hover': { bgcolor: 'action.hover' },
+                        borderLeft: product.contaminated ? '3px solid #d32f2f' : 'none'
+                      }}
+                    >
+                      <TableCell>
+                        <Box>
+                          <Typography variant="subtitle2">
+                            {product.name}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
+                            {product.category?.name || 'N/A'}
+                            {product.contaminated && (
+                              <Chip 
+                                label="CONTAMINATED" 
+                                color="error" 
+                                size="small" 
+                                sx={{ ml: 1, height: 16, '& .MuiChip-label': { px: 0.5, py: 0 } }} 
+                              />
+                            )}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      {!isMobile && <TableCell>{product.batchNumber}</TableCell>}
+                      <TableCell align="center">
+                        <Box display="flex" alignItems="center" justifyContent="center" gap={1}>
+                          <Typography
+                            sx={{
+                              fontWeight: isLowStock ? 'bold' : 'regular',
+                              color: isLowStock ? 'warning.main' : 'text.primary',
+                              borderBottom: isLowStock ? '1px solid' : 'none',
+                              borderColor: 'warning.main'
+                            }}
+                          >
+                            {formatQuantity(product.quantity, product.unit)}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      {!isMobile && (
+                        <TableCell align="center">
+                          <Typography variant="body2">
+                            {formatDate(product.productionDate)}
+                          </Typography>
+                        </TableCell>
+                      )}
+                      {!isMobile && (
+                        <TableCell align="center">
+                          <Typography variant="body2">
+                            {product.storageLocation?.name || 'N/A'}
+                          </Typography>
+                        </TableCell>
+                      )}
+                      <TableCell align="center">
+                        <Box display="flex" flexDirection="column" alignItems="center" gap={0.5}>
+                          <Typography variant="body2">
+                            {formatDate(product.expirationDate)}
+                          </Typography>
+                          {isExpired(product.expirationDate) && (
+                            <Chip label="EXPIRED" size="small" sx={{ backgroundColor: theme => theme.palette.error.main, color: 'white', fontWeight: 'medium' }} />
+                          )}
+                          {isExpiringSoon(product.expirationDate) && !isExpired(product.expirationDate) && (
+                            <Typography variant="caption" color="warning.main" fontWeight="medium" sx={{ display: 'block' }}>
+                              {getDaysUntilExpiration(product.expirationDate)} days remaining
+                            </Typography>
+                          )}
+                        </Box>
+                      </TableCell>
+                      {!isMobile && (
+                        <TableCell align="center">
+                          {(() => {
+                            const meta = getProductionStatusMeta(product.status);
+                            return meta ? (
+                              <Tooltip title={meta.description} arrow>
+                                <Box
+                                  component="span"
+                                  sx={(theme) => ({
+                                    display: 'inline-block',
+                                    width: 10,
+                                    height: 10,
+                                    borderRadius: '50%',
+                                    bgcolor: meta.getColor(theme),
+                                    boxShadow: 0.5,
+                                  })}
+                                  aria-label={`${meta.label} status`}
+                                />
+                              </Tooltip>
+                            ) : (
+                              <Typography variant="body2" color="text.disabled">—</Typography>
+                            );
+                          })()}
+                        </TableCell>
+                      )}
+                      {!isMobile && (
+                        <TableCell align="center">
+                          <Box display="flex" justifyContent="center">
+                            {product.qualityStatus ? (
+                              <Chip
+                                label={product.qualityStatus.name}
+                                size="small"
+                                variant="outlined"
+                                sx={{
+                                  borderColor: product.qualityStatus.color || '#gray',
+                                  color: product.qualityStatus.color || '#gray',
+                                  borderWidth: 1.5,
+                                  fontWeight: 'medium'
+                                }}
+                              />
+                            ) : (
+                              <Chip label="No status" variant="outlined" size="small" />
+                            )}
+                          </Box>
+                        </TableCell>
+                      )}
+                      <TableCell align="right">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm('Are you sure you want to delete this product?')) {
+                              deleteMutation.mutate(product.id);
+                            }
+                          }}
+                          color="error"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <TablePagination
+            component="div"
+            count={filteredProducts.length}
+            page={page}
+            onPageChange={(_, newPage) => setPage(newPage)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(e) => setRowsPerPage(parseInt(e.target.value, 10))}
+            labelRowsPerPage={isMobile ? "Items:" : "Items per page:"}
+            sx={{ px: 2 }}
+          />
+        </Paper>
+      )}
+
+      {/* Card View for Mobile */}
+      {viewMode === 'card' && (
+        <Box sx={{ mt: 2 }}>
+          <Grid container spacing={2}>
+            {displayedProducts.map((product) => {
+              const isLowStock = product.quantity <= 10;
+
+              return (
+                <Grid item xs={12} sm={6} md={4} key={product.id}>
+                  <Card
+                    elevation={2}
                     onClick={() => {
                       setEditingProduct(product);
                       setOpenForm(true);
                     }}
-                  >
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    onClick={() => {
-                      if (window.confirm('Are you sure you want to delete this product?')) {
-                        deleteMutation.mutate(product.id);
-                      }
+                    sx={{
+                      cursor: 'pointer',
+                      '&:hover': { boxShadow: 6 },
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      borderLeft: product.contaminated ? '4px solid #d32f2f' : 'none',
+                      position: 'relative',
+                      borderRadius: 2
                     }}
                   >
-                    <DeleteIcon />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
-          component="div"
-          count={filteredProducts.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={(_, newPage) => setPage(newPage)}
-          onRowsPerPageChange={(e) => {
-            setRowsPerPage(parseInt(e.target.value, 10));
-            setPage(0);
-          }}
-        />
-      </TableContainer>      {/* Form Dialog */}
+                    <CardHeader
+                      title={
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography variant="h6" noWrap>
+                            {product.name}
+                          </Typography>
+                        </Box>
+                      }
+                      subheader={
+                        <Box sx={{ mt: 0.5 }}>
+                          <Typography variant="caption" color="text.secondary" display="block">
+                            Batch: {product.batchNumber}
+                          </Typography>
+                        </Box>
+                      }
+                      action={null}
+                      sx={{ pb: 1 }}
+                    />
+
+                    <Divider />
+
+                    <CardContent sx={{ pt: 2, pb: 1, flexGrow: 1 }}>
+                      <Grid container spacing={2}>
+                        <Grid item xs={6}>
+                          <Typography variant="subtitle2" color="text.secondary">
+                            Available
+                          </Typography>
+                          <Typography
+                            variant="body1"
+                            sx={{
+                              fontWeight: isLowStock ? 'bold' : 'medium',
+                              color: isLowStock ? 'error.main' : 'text.primary',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 0.5
+                            }}
+                          >
+                            {formatQuantity(product.quantity, product.unit)}
+                            {isLowStock && (
+                              <Tooltip title="Low stock">
+                                <WarningIcon color="error" fontSize="small" sx={{ fontSize: '1rem' }} />
+                              </Tooltip>
+                            )}
+                          </Typography>
+                        </Grid>
+
+                        <Grid item xs={6}>
+                          <Typography variant="subtitle2" color="text.secondary">
+                            Status
+                          </Typography>
+                          <Typography variant="body1">
+                            {product.status.replace('_', ' ')}
+                          </Typography>
+                        </Grid>
+
+                        <Grid item xs={6}>
+                          <Typography variant="subtitle2" color="text.secondary">
+                            Expires
+                          </Typography>
+                          <Typography variant="body2">
+                            {formatDate(product.expirationDate)}
+                          </Typography>
+                        </Grid>
+
+                        <Grid item xs={6}>
+                          <Typography variant="subtitle2" color="text.secondary">
+                            Category
+                          </Typography>
+                          <Typography variant="body2" noWrap>
+                            {product.category?.name || 'N/A'}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Typography variant="subtitle2" color="text.secondary">
+                            Storage
+                          </Typography>
+                          <Typography variant="body2" noWrap>
+                            {product.storageLocation?.name || 'N/A'}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Typography variant="subtitle2" color="text.secondary">
+                            Production
+                          </Typography>
+                          <Typography variant="body2" noWrap>
+                            {formatDate(product.productionDate)}
+                          </Typography>
+                        </Grid>
+                      </Grid>
+                    </CardContent>
+
+                    <CardActions sx={{ px: 2, py: 1, justifyContent: 'space-between', bgcolor: 'background.default' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        {isExpired(product.expirationDate) && (
+                          <Chip label="EXPIRED" size="small" sx={{ backgroundColor: theme => theme.palette.error.main, color: 'white', fontWeight: 'medium' }} />
+                        )}
+                        {isExpiringSoon(product.expirationDate) && !isExpired(product.expirationDate) && (
+                          <Chip label={`${getDaysUntilExpiration(product.expirationDate)} days left`} color="warning" size="small" />
+                        )}
+                        {product.qualityStatus && (
+                          <Chip
+                            label={product.qualityStatus.name}
+                            size="small"
+                            variant="outlined"
+                            sx={{
+                              borderColor: product.qualityStatus.color || '#gray',
+                              color: product.qualityStatus.color || '#gray',
+                              borderWidth: 1.5,
+                              fontWeight: 'medium'
+                            }}
+                          />
+                        )}
+                        {product.contaminated && (
+                          <Chip 
+                            label="CONTAMINATED" 
+                            color="error" 
+                            size="small" 
+                            sx={{ fontWeight: 'medium' }} 
+                          />
+                        )}
+                        {(() => {
+                          const meta = getProductionStatusMeta(product.status);
+                          return meta ? (
+                            <Tooltip title={meta.description} arrow>
+                              <Box
+                                component="span"
+                                sx={(theme) => ({
+                                  display: 'inline-block',
+                                  width: 10,
+                                  height: 10,
+                                  borderRadius: '50%',
+                                  bgcolor: meta.getColor(theme),
+                                  ml: 0.5,
+                                })}
+                                aria-label={`${meta.label} status`}
+                              />
+                            </Tooltip>
+                          ) : null;
+                        })()}
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm('Are you sure you want to delete this product?')) {
+                              deleteMutation.mutate(product.id);
+                            }
+                          }}
+                          aria-label="Delete product"
+                        >
+                          <Tooltip title="Delete product">
+                            <DeleteIcon fontSize="small" />
+                          </Tooltip>
+                        </IconButton>
+                      </Box>
+                    </CardActions>
+                  </Card>
+                </Grid>
+              );
+            })}
+          </Grid>
+
+          {/* Card view pagination */}
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+            <TablePagination
+              component="div"
+              count={filteredProducts.length}
+              page={page}
+              onPageChange={(_, newPage) => setPage(newPage)}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={(e) => {
+                setRowsPerPage(parseInt(e.target.value, 10));
+                setPage(0);
+              }}
+              labelRowsPerPage={isMobile ? "Items:" : "Items per page:"}
+              sx={{
+                '.MuiTablePagination-selectLabel': {
+                  margin: 0,
+                },
+                '.MuiTablePagination-displayedRows': {
+                  margin: 0,
+                }
+              }}
+            />
+          </Box>
+        </Box>
+      )}      {/* Form Dialog */}
       <Dialog
         open={openForm}
         onClose={handleCloseForm}
@@ -384,9 +942,20 @@ const IntermediateProducts: React.FC = () => {
         fullWidth
       >
         <form onSubmit={handleSubmitForm}>
-          <DialogTitle>
+          <DialogTitle sx={{ pb: 1 }}>
             {editingProduct ? 'Edit' : 'Add'} Intermediate Product
           </DialogTitle>
+          <DialogActions sx={{ justifyContent: 'flex-start', px: 3, pb: 2, pt: 0 }}>
+            <Button
+              variant="contained"
+              type="submit"
+            >
+              {editingProduct ? 'Update' : 'Create'}
+            </Button>
+            <Button onClick={handleCloseForm} variant="outlined">
+              Cancel
+            </Button>
+          </DialogActions>
           <DialogContent>
             <Box sx={{ pt: 2 }}>
               <Grid container spacing={2}>
@@ -558,15 +1127,6 @@ const IntermediateProducts: React.FC = () => {
               </Grid>
             </Box>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseForm}>Cancel</Button>
-            <Button
-              variant="contained"
-              type="submit"
-            >
-              {editingProduct ? 'Update' : 'Create'}
-            </Button>
-          </DialogActions>
         </form>
       </Dialog>
 
