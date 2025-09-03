@@ -342,37 +342,48 @@ const RawMaterials: React.FC = () => {
         </Box>
       </Box>
 
-      {/* Modern KPI cards with icons - now clickable */}
-      <Grid container spacing={2} sx={{ mb: 2 }}>
+      {/* Modern KPI cards with icons - now clickable and more compact */}
+      <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
         <Grid item xs={12} sm={4} md={4}>
           <Card
             elevation={1}
             sx={{
-              borderRadius: 2,
-              p: 1,
+              borderRadius: 1.5,
+              p: 0.5,
               border: 1,
               borderColor: indicatorFilter === 'all' ? 'primary.main' : 'divider',
               cursor: 'pointer',
               transition: 'all 0.2s',
               '&:hover': { 
-                transform: 'translateY(-3px)', 
-                boxShadow: 3,
+                transform: 'translateY(-2px)', 
+                boxShadow: 2,
                 borderColor: 'primary.main'
               },
               backgroundColor: indicatorFilter === 'all' ? 'primary.50' : 'white',
+              minHeight: '64px',
+              display: 'flex',
             }}
             onClick={() => setIndicatorFilter('all')}
           >
-            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1.5 }}>
-              <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.contrastText', width: 36, height: 36 }}>
-                <InventoryIcon fontSize="small" />
+            <CardContent sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1.5, 
+              p: 1.25, 
+              pb: '8px !important',
+              width: '100%'
+            }}>
+              <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.contrastText', width: 32, height: 32 }}>
+                <InventoryIcon sx={{ fontSize: '1rem' }} />
               </Avatar>
-              <Box flexGrow={1}>
-                <Typography variant="caption" color="text.secondary">Total Materials</Typography>
-                <Typography variant="h5">{totalCount}</Typography>
+              <Box flexGrow={1} sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <Typography variant="caption" color="text.secondary">Total Materials</Typography>
+                  <Typography variant="h6" sx={{ ml: 1, fontWeight: 'bold' }}>{totalCount}</Typography>
+                </Box>
                 {indicatorFilter === 'all' && 
-                  <Typography variant="caption" color="primary" sx={{ display: 'block' }}>
-                    Currently viewing all items
+                  <Typography variant="caption" color="primary.dark" sx={{ fontSize: '0.7rem', lineHeight: 1 }}>
+                    Currently viewing all
                   </Typography>
                 }
               </Box>
@@ -383,31 +394,42 @@ const RawMaterials: React.FC = () => {
           <Card
             elevation={1}
             sx={{
-              borderRadius: 2,
-              p: 1,
+              borderRadius: 1.5,
+              p: 0.5,
               border: 1,
               borderColor: indicatorFilter === 'expiring_soon' ? 'warning.main' : (expiringSoonCount > 0 ? 'warning.main' : 'divider'),
               cursor: 'pointer',
               transition: 'all 0.2s',
               '&:hover': { 
-                transform: 'translateY(-3px)', 
-                boxShadow: 3,
+                transform: 'translateY(-2px)', 
+                boxShadow: 2,
                 borderColor: 'warning.main'
               },
               backgroundColor: indicatorFilter === 'expiring_soon' ? 'warning.50' : 'white',
+              minHeight: '64px',
+              display: 'flex',
             }}
             onClick={() => setIndicatorFilter('expiring_soon')}
           >
-            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1.5 }}>
-              <Avatar sx={{ bgcolor: 'warning.light', color: 'warning.contrastText', width: 36, height: 36 }}>
-                <ScheduleIcon fontSize="small" />
+            <CardContent sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1.5, 
+              p: 1.25, 
+              pb: '8px !important',
+              width: '100%'
+            }}>
+              <Avatar sx={{ bgcolor: 'warning.light', color: 'warning.contrastText', width: 32, height: 32 }}>
+                <ScheduleIcon sx={{ fontSize: '1rem' }} />
               </Avatar>
-              <Box flexGrow={1}>
-                <Typography variant="caption" color="text.secondary">Expiring Soon or Expired</Typography>
-                <Typography variant="h5" color="warning.main">{expiringSoonCount}</Typography>
+              <Box flexGrow={1} sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <Typography variant="caption" color="text.secondary">Expiring Soon</Typography>
+                  <Typography variant="h6" color="warning.main" sx={{ ml: 1, fontWeight: 'bold' }}>{expiringSoonCount}</Typography>
+                </Box>
                 {indicatorFilter === 'expiring_soon' && 
-                  <Typography variant="caption" color="warning" sx={{ display: 'block' }}>
-                    Filtering by expiration
+                  <Typography variant="caption" color="warning.dark" sx={{ fontSize: '0.7rem', lineHeight: 1 }}>
+                    Filtered by expiration
                   </Typography>
                 }
               </Box>
@@ -418,31 +440,42 @@ const RawMaterials: React.FC = () => {
           <Card
             elevation={1}
             sx={{
-              borderRadius: 2,
-              p: 1,
+              borderRadius: 1.5,
+              p: 0.5,
               border: 1,
               borderColor: indicatorFilter === 'low_stock' ? 'error.main' : (lowStockCount > 0 ? 'error.main' : 'divider'),
               cursor: 'pointer',
               transition: 'all 0.2s',
               '&:hover': { 
-                transform: 'translateY(-3px)', 
-                boxShadow: 3,
+                transform: 'translateY(-2px)', 
+                boxShadow: 2,
                 borderColor: 'error.main'
               },
               backgroundColor: indicatorFilter === 'low_stock' ? 'error.50' : 'white',
+              minHeight: '64px',
+              display: 'flex',
             }}
             onClick={() => setIndicatorFilter('low_stock')}
           >
-            <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1.5 }}>
-              <Avatar sx={{ bgcolor: 'error.light', color: 'error.contrastText', width: 36, height: 36 }}>
-                <TrendingDownIcon fontSize="small" />
+            <CardContent sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1.5, 
+              p: 1.25, 
+              pb: '8px !important',
+              width: '100%'
+            }}>
+              <Avatar sx={{ bgcolor: 'error.light', color: 'error.contrastText', width: 32, height: 32 }}>
+                <TrendingDownIcon sx={{ fontSize: '1rem' }} />
               </Avatar>
-              <Box flexGrow={1}>
-                <Typography variant="caption" color="text.secondary">Low Stock Items</Typography>
-                <Typography variant="h5" color="error.main">{lowStockCount}</Typography>
+              <Box flexGrow={1} sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <Typography variant="caption" color="text.secondary">Low Stock Items</Typography>
+                  <Typography variant="h6" color="error.main" sx={{ ml: 1, fontWeight: 'bold' }}>{lowStockCount}</Typography>
+                </Box>
                 {indicatorFilter === 'low_stock' && 
-                  <Typography variant="caption" color="error" sx={{ display: 'block' }}>
-                    Filtering by low stock
+                  <Typography variant="caption" color="error.dark" sx={{ fontSize: '0.7rem', lineHeight: 1 }}>
+                    Filtered by low stock
                   </Typography>
                 }
               </Box>
