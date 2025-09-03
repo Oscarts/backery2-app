@@ -93,17 +93,69 @@ xl: 1536px   /* Extra large (wide desktop) */
 
 #### Contamination Alerts
 
-**Display Style:** Error-colored chips with warning icon
+**Display Styles:**
 
-```jsx
-<Chip
-  icon={<WarningIcon />}
-  label="CONTAMINATED"
-  size="small"
-  color="error"
-  variant="filled"
-/>
-```
+1. **Table View:**  
+   - Place CONTAMINATED status below the category name to save column space
+   - Add left border indicator for quick visual scanning
+
+   ```jsx
+   <TableCell>
+     <Box>
+       <Typography variant="subtitle2">
+         {product.name}
+       </Typography>
+       <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
+         {product.category?.name}
+         {product.isContaminated && (
+           <Chip 
+             label="CONTAMINATED" 
+             color="error" 
+             size="small" 
+             sx={{ ml: 1, height: 16, '& .MuiChip-label': { px: 0.5, py: 0 } }} 
+           />
+         )}
+       </Typography>
+     </Box>
+   </TableCell>
+   ```
+
+   Table row with contamination indicator:
+
+   ```jsx
+   <TableRow
+     sx={{
+       borderLeft: product.isContaminated ? '3px solid #d32f2f' : 'none'
+     }}
+   >
+   ```
+
+2. **Card View:**  
+   - Place CONTAMINATED status in the card footer area
+   - Add left border indicator for the entire card
+
+   ```jsx
+   <Card
+     sx={{
+       borderLeft: product.isContaminated ? '4px solid #d32f2f' : 'none',
+     }}
+   >
+     {/* Card content */}
+     <CardActions>
+       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+         {/* Other status chips */}
+         {product.isContaminated && (
+           <Chip 
+             label="CONTAMINATED" 
+             color="error" 
+             size="small" 
+             sx={{ fontWeight: 'medium' }} 
+           />
+         )}
+       </Box>
+     </CardActions>
+   </Card>
+   ```
 
 #### Stock Level Indicators
 
@@ -177,15 +229,17 @@ Descriptions:
 ```
 
 #### Form Validation
+
+- Real-time validation feedback
+- Clear error messages
+- Required field indicators
+- Success confirmation
+
 #### Production Status Field (Finished Products)
 
- 
- 
- 
 - Include a "Production Status" select when creating or editing Finished Products
 - Default to "In Production"
 - Use the same status set as Intermediate Products for consistency
-
 
 - Real-time validation feedback
 - Clear error messages
@@ -297,7 +351,85 @@ Descriptions:
 </FormControl>
 ```
 
-## 📱 Mobile-First Design Patterns
+## � Inventory Page Patterns
+
+### Standardized Inventory View
+
+Based on the Finished Products page implementation, all inventory pages should follow this pattern:
+
+1. **Dual View Toggle**
+   - Provide both List (table) and Card views
+   - Auto-select Card view on mobile, List view on desktop
+   - Allow users to manually toggle between views
+
+   ```jsx
+   <Box sx={{ display: 'flex', border: 1, borderColor: 'divider', borderRadius: 1 }}>
+     <IconButton
+       color={viewMode === 'list' ? 'primary' : 'default'}
+       onClick={() => setViewMode('list')}
+       sx={{ borderRadius: '4px 0 0 4px', bgcolor: viewMode === 'list' ? 'action.selected' : 'transparent' }}
+     >
+       <ListViewIcon />
+     </IconButton>
+     <IconButton
+       color={viewMode === 'card' ? 'primary' : 'default'}
+       onClick={() => setViewMode('card')}
+       sx={{ borderRadius: '0 4px 4px 0', bgcolor: viewMode === 'card' ? 'action.selected' : 'transparent' }}
+     >
+       <GridViewIcon />
+     </IconButton>
+   </Box>
+   ```
+
+2. **Key Performance Indicators**
+   - Display cards with count metrics at top of page
+   - Implement as filter toggles (clicking filters the list)
+   - Use consistent color scheme for all inventory pages
+
+   ```jsx
+   <Card
+     onClick={() => setIndicatorFilter('low_stock')}
+     elevation={indicatorFilter === 'low_stock' ? 3 : 1}
+     sx={{
+       borderRadius: 2,
+       cursor: 'pointer',
+       p: 1,
+       border: indicatorFilter === 'low_stock' ? 2 : 1,
+       borderColor: indicatorFilter === 'low_stock' ? 'error.main' : 'divider',
+     }}
+   >
+     <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2, py: 1.5 }}>
+       <Avatar sx={{ bgcolor: 'error.light', color: 'error.contrastText', width: 36, height: 36 }}>
+         <TrendingDownIcon fontSize="small" />
+       </Avatar>
+       <Box flexGrow={1}>
+         <Typography variant="caption" color="text.secondary">Low Stock</Typography>
+         <Typography variant="h5" color="error.main">{lowStockCount}</Typography>
+       </Box>
+     </CardContent>
+   </Card>
+   ```
+
+3. **Search & Filter Panel**
+   - Standard search with attribute selector
+   - Drawer-style filters on mobile
+   - Persistent filter panel on desktop
+   - Apply button for complex filters
+
+4. **Status Visual Indicators**
+   - Left border indicators for status (contaminated, expired)
+   - Status chips in consistent locations
+   - Color coding consistent across all inventory types
+
+5. **Responsive Pagination**
+   - Consistent pagination UI at bottom of both views
+   - Adapt labels on mobile ("Items:" instead of "Items per page:")
+
+6. **Common Action Layout**
+   - Action buttons in right-aligned column in tables
+   - Action buttons in card footer area in card view
+
+## �📱 Mobile-First Design Patterns
 
 ### Card Layouts
 

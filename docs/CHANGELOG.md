@@ -17,6 +17,13 @@
 - Enhanced development guidelines for handling nullable values
 - Created testing guidelines for API response structure validation
 
+### UI Improvements
+
+- Updated UI guidelines with inventory page patterns based on Finished Products page
+- Added standardized contamination status display patterns for table and card views
+- Optimized contamination status display to save column space in tables
+- Enhanced card view with consistent status indicators at the bottom
+
 ### Development Environment
 
 - Added `run.sh` script for automated project setup:

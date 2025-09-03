@@ -25,6 +25,7 @@ When defining fields in the schema:
 - Provide default values where appropriate
 
 Example:
+
 ```prisma
 model Recipe {
   id            String    @id @default(cuid())
@@ -45,6 +46,7 @@ model Recipe {
 - **Explicit Checks**: Always check for existence of optional relationship IDs
 
 Example:
+
 ```typescript
 // Good practice
 if (data.categoryId) {
@@ -163,6 +165,7 @@ All API responses should follow a consistent structure:
 - Create validation tests for API response structures
 
 Example test for API response structure:
+
 ```javascript
 const response = await fetch('/api/recipes/what-can-i-make');
 const data = await response.json();

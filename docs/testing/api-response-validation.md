@@ -7,14 +7,17 @@ This document outlines guidelines for ensuring API response structure consistenc
 ## Recent Issue: "What Can I Make" Page White Screen
 
 **Problem**: The frontend's "What Can I Make" page displayed a white screen due to a mismatch between:
+
 - What the backend API returned
 - What the frontend components expected
 
-**Root Cause**: 
+**Root Cause**:
+
 - Backend: Returned a nested structure with `canMake` and `cannotMake` arrays
 - Frontend: Expected a single flat array with a `canMake` boolean property on each item
 
-**Solution**: 
+**Solution**:
+
 - Modified backend to return data in the format expected by the frontend
 - Added a dedicated test to validate the API response structure
 

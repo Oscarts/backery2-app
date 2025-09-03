@@ -59,12 +59,6 @@ import { FinishedProduct, CategoryType, CreateFinishedProductData, UpdateFinishe
 import { formatDate, formatQuantity, isExpired, isExpiringSoon, getDaysUntilExpiration, formatCurrency } from '../utils/api';
 
 // Status display helper functions
-const getContaminationBadge = (isContaminated: boolean) => {
-  if (isContaminated) {
-    return <Chip label="CONTAMINATED" size="small" variant="outlined" color="error" sx={{ borderWidth: 1 }} />;
-  }
-  return null;
-};
 
 // Production status meta (color + labels) for subtle dot display
 const getProductionStatusMeta = (status?: typeof IntermediateProductStatus[keyof typeof IntermediateProductStatus]) => {
@@ -154,13 +148,7 @@ const FinishedProducts: React.FC = () => {
     return qualityStatuses.length > 0 ? qualityStatuses[0].id : '';
   };
 
-  // Helper function to display contamination status (only if contaminated)
-  const getContaminationChip = (isContaminated: boolean) => {
-    if (isContaminated) {
-      return <Chip label="CONTAMINATED" color="error" size="small" sx={{ ml: 1 }} />;
-    }
-    return null; // Don't show anything if clean
-  };
+  // Get default quality status (first in list)
 
   // Mutations
   const createMutation = useMutation(finishedProductsApi.create, {
@@ -243,8 +231,8 @@ const FinishedProducts: React.FC = () => {
       packagingInfo: editingProduct?.packagingInfo || '',
       storageLocationId: editingProduct?.storageLocationId || '',
       isContaminated: editingProduct?.isContaminated || false, // Default is not contaminated
-  qualityStatusId: editingProduct?.qualityStatusId || getDefaultQualityStatusId(),
-  status: (editingProduct as any)?.status || IntermediateProductStatus.IN_PRODUCTION,
+      qualityStatusId: editingProduct?.qualityStatusId || getDefaultQualityStatusId(),
+      status: (editingProduct as any)?.status || IntermediateProductStatus.IN_PRODUCTION,
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -831,17 +819,25 @@ const FinishedProducts: React.FC = () => {
                       onClick={() => handleOpenForm(product)}
                       sx={{
                         cursor: 'pointer',
-                        '&:hover': { bgcolor: 'action.hover' }
+                        '&:hover': { bgcolor: 'action.hover' },
+                        borderLeft: product.isContaminated ? '3px solid #d32f2f' : 'none'
                       }}
                     >
                       <TableCell>
                         <Box>
-                          <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Typography variant="subtitle2">
                             {product.name}
-                            {getContaminationChip(product.isContaminated)}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
                             {product.category?.name}
+                            {product.isContaminated && (
+                              <Chip
+                                label="CONTAMINATED"
+                                color="error"
+                                size="small"
+                                sx={{ ml: 1, height: 16, '& .MuiChip-label': { px: 0.5, py: 0 } }}
+                              />
+                            )}
                           </Typography>
                         </Box>
                       </TableCell>
@@ -997,7 +993,6 @@ const FinishedProducts: React.FC = () => {
                           <Typography variant="h6" noWrap>
                             {product.name}
                           </Typography>
-                          {getContaminationBadge(product.isContaminated)}
                         </Box>
                       }
                       subheader={
@@ -1084,7 +1079,7 @@ const FinishedProducts: React.FC = () => {
                           </Typography>
                         </Grid>
 
-                        
+
                       </Grid>
                     </CardContent>
 
@@ -1102,6 +1097,14 @@ const FinishedProducts: React.FC = () => {
                               borderWidth: 1.5,
                               fontWeight: 'medium'
                             }}
+                          />
+                        )}
+                        {product.isContaminated && (
+                          <Chip
+                            label="CONTAMINATED"
+                            color="error"
+                            size="small"
+                            sx={{ fontWeight: 'medium' }}
                           />
                         )}
                         {(() => {
