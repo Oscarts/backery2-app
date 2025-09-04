@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -24,7 +24,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Alert,
   Tabs,
   Tab,
   List,
@@ -33,16 +32,24 @@ import {
   ListItemSecondaryAction,
   InputAdornment,
   FormControlLabel,
-  Switch
+  Switch,
+  useTheme,
+  useMediaQuery,
+  TablePagination,
+  CardActions,
+  CardHeader,
+  Divider,
+  Avatar
 } from '@mui/material';
 import {
   Add as AddIcon,
-  Edit as EditIcon,
   Delete as DeleteIcon,
   Search as SearchIcon,
   MenuBook as MenuBookIcon,
   Calculate as CalculateIcon,
-  Close as CloseIcon
+  Close as CloseIcon,
+  GridView as GridViewIcon,
+  ViewList as ListViewIcon
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -51,7 +58,6 @@ import {
   RawMaterial,
   IntermediateProduct,
   CreateRecipeData,
-  RecipeCostAnalysis,
   WhatCanIMakeAnalysis,
   Unit
 } from '../types';
@@ -62,7 +68,7 @@ import {
   intermediateProductsApi,
   unitsApi
 } from '../services/realApi';
-import { formatDate, formatQuantity, formatCurrency } from '../utils/api';
+// We removed the formatCurrency import since we're using toFixed instead
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -86,15 +92,36 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const Recipes: React.FC = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const queryClient = useQueryClient();
+
+  // View state
+  const [viewMode, setViewMode] = useState<'list' | 'card'>(isMobile ? 'card' : 'list');
   const [currentTab, setCurrentTab] = useState(0);
+
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(isMobile ? 5 : 10);
+
+  // Search and filter state
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [whatCanIMakeSearchTerm, setWhatCanIMakeSearchTerm] = useState('');
+
+  // Form and dialog state
   const [openDialog, setOpenDialog] = useState(false);
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
   const [selectedRecipeForCost, setSelectedRecipeForCost] = useState<string | null>(null);
   const [selectedRecipeForIngredients, setSelectedRecipeForIngredients] = useState<string | null>(null);
   const [ingredientsDialogOpen, setIngredientsDialogOpen] = useState(false);
+  const [costDialogOpen, setCostDialogOpen] = useState(false);
+
+  // Update viewMode when screen size changes
+  useEffect(() => {
+    if (isMobile) {
+      setViewMode('card');
+    }
+  }, [isMobile]);
 
   // Form state
   const [formData, setFormData] = useState<CreateRecipeData>({
@@ -239,6 +266,13 @@ const Recipes: React.FC = () => {
     }
   });
 
+  // Handler functions
+  const handleDeleteRecipe = (id: string) => {
+    if (window.confirm('Are you sure you want to delete this recipe?')) {
+      deleteRecipeMutation.mutate(id);
+    }
+  };
+
   // Data processing from API responses
   const recipes: Recipe[] = recipesResponse?.data || [];
   const categories: Category[] = categoriesResponse?.data || [];
@@ -264,13 +298,7 @@ const Recipes: React.FC = () => {
   // Filter categories for recipes (RECIPE type)
   const recipeCategories = categories.filter(cat => cat.type === 'RECIPE');
 
-  // Filter recipes based on search and category
-  const filteredRecipes = recipes.filter(recipe => {
-    const matchesSearch = recipe.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (recipe.description?.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesCategory = !selectedCategory || recipe.categoryId === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  // We're now filtering recipes directly in the UI render
 
   const handleOpenDialog = (recipe?: Recipe) => {
     if (recipe) {
@@ -375,11 +403,7 @@ const Recipes: React.FC = () => {
     }
   };
 
-  const handleDelete = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this recipe?')) {
-      deleteRecipeMutation.mutate(id);
-    }
-  };
+  // We're now using handleDeleteRecipe instead
 
   const addInstruction = () => {
     if (instructionText.trim()) {
@@ -463,13 +487,31 @@ const Recipes: React.FC = () => {
           <MenuBookIcon color="primary" />
           Recipe Management
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenDialog()}
-        >
-          Add Recipe
-        </Button>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: { xs: 'none', sm: 'flex' }, gap: 1 }}>
+            <IconButton
+              color={viewMode === 'list' ? 'primary' : 'default'}
+              onClick={() => setViewMode('list')}
+              sx={{ border: viewMode === 'list' ? 1 : 0, borderColor: 'primary.main' }}
+            >
+              <ListViewIcon />
+            </IconButton>
+            <IconButton
+              color={viewMode === 'card' ? 'primary' : 'default'}
+              onClick={() => setViewMode('card')}
+              sx={{ border: viewMode === 'card' ? 1 : 0, borderColor: 'primary.main' }}
+            >
+              <GridViewIcon />
+            </IconButton>
+          </Box>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => handleOpenDialog()}
+          >
+            Add Recipe
+          </Button>
+        </Box>
       </Box>
 
       <Tabs value={currentTab} onChange={(_, newValue) => setCurrentTab(newValue)} sx={{ mb: 3 }}>
@@ -480,237 +522,453 @@ const Recipes: React.FC = () => {
 
       <TabPanel value={currentTab} index={0}>
         {/* Recipe Management Tab */}
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid item xs={12} md={4}>
-            <TextField
-              fullWidth
-              label="Search recipes"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon />
-                  </InputAdornment>
-                )
-              }}
-            />
+        <Box sx={{ mb: 3 }}>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} md={8}>
+              <TextField
+                fullWidth
+                label="Search recipes by name, description, or category"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon />
+                    </InputAdornment>
+                  ),
+                }}
+                size="small"
+                sx={{ minWidth: { xs: '100%', sm: 300 } }}
+              />
+            </Grid>
+            <Grid item xs={12} md={4} sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
+              <Box sx={{ display: { xs: 'flex', sm: 'none' }, gap: 1 }}>
+                <IconButton
+                  color={viewMode === 'list' ? 'primary' : 'default'}
+                  onClick={() => setViewMode('list')}
+                  sx={{ border: viewMode === 'list' ? 1 : 0, borderColor: 'primary.main' }}
+                >
+                  <ListViewIcon />
+                </IconButton>
+                <IconButton
+                  color={viewMode === 'card' ? 'primary' : 'default'}
+                  onClick={() => setViewMode('card')}
+                  sx={{ border: viewMode === 'card' ? 1 : 0, borderColor: 'primary.main' }}
+                >
+                  <GridViewIcon />
+                </IconButton>
+              </Box>
+            </Grid>
           </Grid>
-          <Grid item xs={12} md={8}>
-            <FormControl fullWidth>
-              <InputLabel>Category</InputLabel>
-              <Select
-                value={selectedCategory}
-                label="Category"
-                onChange={(e) => setSelectedCategory(e.target.value)}
-              >
-                <MenuItem value="">All Categories</MenuItem>
-                {recipeCategories.map((category) => (
-                  <MenuItem key={category.id} value={category.id}>
-                    {category.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-        </Grid>
+        </Box>
 
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Category</TableCell>
-                <TableCell>Yield</TableCell>
-                <TableCell>Prep Time</TableCell>
-                <TableCell>Cook Time</TableCell>
-                <TableCell>Ingredients</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredRecipes.map((recipe) => (
-                <TableRow key={recipe.id}>
-                  <TableCell>
-                    <Typography variant="subtitle2">{recipe.name}</Typography>
-                    {recipe.description && (
-                      <Typography variant="body2" color="textSecondary">
-                        {recipe.description}
-                      </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {recipe.category?.name || 'Unknown'}
-                  </TableCell>
-                  <TableCell>
-                    {recipe.yieldQuantity} {recipe.yieldUnit}
-                  </TableCell>
-                  <TableCell>
-                    {recipe.prepTime ? `${recipe.prepTime} min` : 'N/A'}
-                  </TableCell>
-                  <TableCell>
-                    {recipe.cookTime ? `${recipe.cookTime} min` : 'N/A'}
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      size="small"
-                      label={`${recipe.ingredients?.length || 0} ingredients`}
-                      color="primary"
-                      variant="outlined"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      size="small"
-                      label={recipe.isActive ? 'Active' : 'Inactive'}
-                      color={recipe.isActive ? 'success' : 'default'}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <IconButton
-                      size="small"
-                      onClick={() => setSelectedRecipeForCost(recipe.id)}
-                      title="View Cost"
-                    >
-                      <CalculateIcon />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleOpenDialog(recipe)}
-                      title="Edit"
-                    >
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleDelete(recipe.id)}
-                      title="Delete"
-                      color="error"
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        {/* Filter recipes */}
+        {(() => {
+          const filteredRecipes = recipesResponse?.data
+            ?.filter(recipe => {
+              // Filter by search term (case insensitive)
+              const matchesSearch = !searchTerm ||
+                recipe.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (recipe.description && recipe.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                (recipe.category?.name && recipe.category.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+              return matchesSearch;
+            }) || [];          // Pagination
+          const paginatedRecipes = filteredRecipes.slice(
+            page * rowsPerPage,
+            page * rowsPerPage + rowsPerPage
+          );
+
+          if (viewMode === 'list') {
+            return (
+              <Box>
+                <TableContainer component={Paper}>
+                  <Table sx={{ minWidth: 650 }}>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Name</TableCell>
+                        <TableCell>Category</TableCell>
+                        <TableCell>Yield</TableCell>
+                        <TableCell>Time</TableCell>
+                        <TableCell>Ingredients</TableCell>
+                        <TableCell>Actions</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {paginatedRecipes.map((recipe) => (
+                        <TableRow
+                          key={recipe.id}
+                          hover
+                          onClick={() => handleOpenDialog(recipe)}
+                          sx={{ cursor: 'pointer' }}
+                        >
+                          <TableCell>
+                            <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                              <Typography variant="subtitle2">{recipe.name}</Typography>
+                              {recipe.description && (
+                                <Typography variant="body2" color="text.secondary" sx={{
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  display: '-webkit-box',
+                                  WebkitLineClamp: 1,
+                                  WebkitBoxOrient: 'vertical',
+                                }}>
+                                  {recipe.description}
+                                </Typography>
+                              )}
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            {recipe.category?.name || 'Uncategorized'}
+                          </TableCell>
+                          <TableCell>
+                            {`${recipe.yieldQuantity} ${recipe.yieldUnit}`}
+                          </TableCell>
+                          <TableCell>
+                            {recipe.prepTime || recipe.cookTime ? (
+                              <Box>
+                                {recipe.prepTime && recipe.prepTime > 0 && `Prep: ${recipe.prepTime} min`}
+                                {recipe.prepTime && recipe.prepTime > 0 && recipe.cookTime && recipe.cookTime > 0 && <br />}
+                                {recipe.cookTime && recipe.cookTime > 0 && `Cook: ${recipe.cookTime} min`}
+                              </Box>
+                            ) : (
+                              'Not specified'
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedRecipeForIngredients(recipe.id);
+                                setIngredientsDialogOpen(true);
+                              }}
+                            >
+                              View {recipe.ingredients?.length || 0} ingredients
+                            </Button>
+                          </TableCell>
+                          <TableCell>
+                            <Box sx={{ display: 'flex', gap: 2 }}>
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteRecipe(recipe.id);
+                                }}
+                                sx={{ p: 1 }}
+                              >
+                                <DeleteIcon />
+                              </IconButton>
+                              <IconButton
+                                size="small"
+                                color="info"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedRecipeForCost(recipe.id);
+                                  setCostDialogOpen(true);
+                                }}
+                                sx={{ p: 1 }}
+                              >
+                                <CalculateIcon />
+                              </IconButton>
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+                <TablePagination
+                  component="div"
+                  count={filteredRecipes.length}
+                  page={page}
+                  onPageChange={(_, newPage) => setPage(newPage)}
+                  rowsPerPage={rowsPerPage}
+                  onRowsPerPageChange={(e) => {
+                    setRowsPerPage(parseInt(e.target.value, 10));
+                    setPage(0);
+                  }}
+                  rowsPerPageOptions={[5, 10, 25, 50]}
+                />
+              </Box>
+            );
+          } else {
+            return (
+              <Box>
+                <Grid container spacing={3}>
+                  {paginatedRecipes.map((recipe) => (
+                    <Grid item xs={12} sm={6} md={4} lg={3} key={recipe.id}>
+                      <Card
+                        sx={{
+                          height: '100%',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+                          '&:hover': {
+                            transform: 'translateY(-4px)',
+                            boxShadow: 6,
+                            cursor: 'pointer'
+                          }
+                        }}
+                        onClick={() => handleOpenDialog(recipe)}
+                      >
+                        <CardHeader
+                          avatar={
+                            <Avatar sx={{ bgcolor: theme.palette.primary.main }}>
+                              <MenuBookIcon />
+                            </Avatar>
+                          }
+                          title={recipe.name}
+                          subheader={recipe.category?.name || 'Uncategorized'}
+                        />
+                        <CardContent sx={{ flexGrow: 1 }}>
+                          <Typography variant="body2" color="text.secondary" sx={{
+                            mb: 2,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                          }}>
+                            {recipe.description || 'No description available'}
+                          </Typography>
+
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                            <Typography variant="body2" fontWeight="bold">Yield:</Typography>
+                            <Typography variant="body2">{recipe.yieldQuantity} {recipe.yieldUnit}</Typography>
+                          </Box>
+
+                          {recipe.prepTime && recipe.prepTime > 0 && (
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                              <Typography variant="body2" fontWeight="bold">Prep Time:</Typography>
+                              <Typography variant="body2">{recipe.prepTime} min</Typography>
+                            </Box>
+                          )}
+
+                          {recipe.cookTime && recipe.cookTime > 0 && (
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                              <Typography variant="body2" fontWeight="bold">Cook Time:</Typography>
+                              <Typography variant="body2">{recipe.cookTime} min</Typography>
+                            </Box>
+                          )}
+
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <Typography variant="body2" fontWeight="bold">Ingredients:</Typography>
+                            <Typography variant="body2">{recipe.ingredients?.length || 0} items</Typography>
+                          </Box>
+                        </CardContent>
+                        <Divider />
+                        <CardActions sx={{ justifyContent: 'space-between', px: 2 }}>
+                          <Button
+                            size="small"
+                            startIcon={<CalculateIcon />}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedRecipeForCost(recipe.id);
+                              setCostDialogOpen(true);
+                            }}
+                            sx={{ minWidth: 90 }}
+                          >
+                            Cost
+                          </Button>
+                          <Button
+                            size="small"
+                            color="error"
+                            startIcon={<DeleteIcon />}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteRecipe(recipe.id);
+                            }}
+                            sx={{ minWidth: 90 }}
+                          >
+                            Delete
+                          </Button>
+                        </CardActions>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+                  <TablePagination
+                    component="div"
+                    count={filteredRecipes.length}
+                    page={page}
+                    onPageChange={(_, newPage) => setPage(newPage)}
+                    rowsPerPage={rowsPerPage}
+                    onRowsPerPageChange={(e) => {
+                      setRowsPerPage(parseInt(e.target.value, 10));
+                      setPage(0);
+                    }}
+                    rowsPerPageOptions={[8, 16, 24, 32]}
+                  />
+                </Box>
+              </Box>
+            );
+          }
+        })()}
       </TabPanel>
 
       <TabPanel value={currentTab} index={1}>
         {/* What Can I Make Tab */}
         {whatCanIMake && (
-          <Grid container spacing={3}>
-            <Grid item xs={12}>
-              <Alert severity="info" sx={{ mb: 3 }}>
-                You can make {whatCanIMake.canMakeCount} out of {whatCanIMake.totalRecipes} recipes
-              </Alert>
-            </Grid>
+          <>
+            <Box sx={{ mb: 3 }}>
+              <Grid container spacing={2} alignItems="center">
+                <Grid item xs={12} md={8}>
+                  <TextField
+                    fullWidth
+                    label="Search recipes by name or ingredient"
+                    value={whatCanIMakeSearchTerm}
+                    onChange={(e) => setWhatCanIMakeSearchTerm(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SearchIcon />
+                        </InputAdornment>
+                      ),
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <Chip
+                            label={`${whatCanIMake.canMakeCount} of ${whatCanIMake.totalRecipes} recipes available`}
+                            color="info"
+                            size="small"
+                            sx={{ mr: 1 }}
+                          />
+                        </InputAdornment>
+                      ),
+                    }}
+                    size="small"
+                    sx={{ minWidth: { xs: '100%', sm: 300 } }}
+                  />
+                </Grid>
+              </Grid>
+            </Box>
 
-            {whatCanIMake.recipes.map((recipe) => (
-              <Grid item xs={12} sm={6} md={4} lg={3} key={recipe.recipeId}>
-                <Card
-                  sx={{
-                    cursor: 'pointer',
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    transition: 'transform 0.2s, box-shadow 0.2s',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: 4,
-                      bgcolor: 'background.default'
-                    }
-                  }}
-                  onClick={() => {
-                    setSelectedRecipeForIngredients(recipe.recipeId);
-                    setIngredientsDialogOpen(true);
-                  }}
-                >
-                  <CardContent sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    flexGrow: 1,
-                    height: '100%',
-                    pb: 1 // Reduce padding at bottom for status indicator
-                  }}>
-                    {/* Recipe name */}
-                    <Typography variant="h6" gutterBottom>
-                      {recipe.recipeName}
-                    </Typography>
+            <Grid container spacing={3}>
 
-                    {/* Essential information in a compact layout */}
-                    <Grid container spacing={2} sx={{ mb: 2 }}>
-                      {/* Left column: Category */}
-                      <Grid item xs={6}>
-                        <Typography variant="caption" color="textSecondary" display="block">
-                          Category
-                        </Typography>
-                        <Typography variant="body2" noWrap>
-                          {recipe.category}
-                        </Typography>
-                      </Grid>
+              {whatCanIMake.recipes
+                .filter(recipe => {
+                  if (!whatCanIMakeSearchTerm) return true;
 
-                      {/* Right column: Yield per batch */}
-                      <Grid item xs={6}>
-                        <Typography variant="caption" color="textSecondary" display="block">
-                          Yield per Batch
-                        </Typography>
-                        <Typography variant="body2">
-                          {recipe.yieldQuantity} {recipe.yieldUnit}
-                        </Typography>
-                      </Grid>
-                    </Grid>
+                  const lowerSearchTerm = whatCanIMakeSearchTerm.toLowerCase();
 
-                    {recipe.canMake ? (
-                      <Box sx={{ mb: 2 }}>
-                        <Typography variant="caption" color="textSecondary" display="block">
-                          Production Capacity
+                  // Search by recipe name
+                  if (recipe.recipeName.toLowerCase().includes(lowerSearchTerm)) {
+                    return true;
+                  }
+
+                  // Search by ingredients (if available)
+                  const hasMatchingIngredient = recipe.missingIngredients?.some(
+                    (ing: any) => ing.name.toLowerCase().includes(lowerSearchTerm)
+                  );
+
+                  return hasMatchingIngredient;
+                })
+                .map((recipe) => (
+                  <Grid item xs={12} sm={6} md={4} lg={3} key={recipe.recipeId}>
+                    <Card
+                      sx={{
+                        cursor: 'pointer',
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        transition: 'transform 0.2s, box-shadow 0.2s',
+                        '&:hover': {
+                          transform: 'translateY(-4px)',
+                          boxShadow: 4,
+                          bgcolor: 'background.default'
+                        }
+                      }}
+                      onClick={() => {
+                        setSelectedRecipeForIngredients(recipe.recipeId);
+                        setIngredientsDialogOpen(true);
+                      }}
+                    >
+                      <CardContent sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        flexGrow: 1,
+                        height: '100%',
+                        pb: 1 // Reduce padding at bottom for status indicator
+                      }}>
+                        {/* Recipe name */}
+                        <Typography variant="h6" gutterBottom>
+                          {recipe.recipeName}
                         </Typography>
-                        <Typography variant="body2">
-                          <strong>{recipe.maxBatches}</strong> batches ({recipe.maxBatches * recipe.yieldQuantity} {recipe.yieldUnit} total)
-                        </Typography>
-                      </Box>
-                    ) : (
-                      <Box sx={{ mb: 2 }}>
-                        <Typography variant="caption" color="textSecondary" display="block">
-                          Missing Ingredients
-                        </Typography>
-                        {recipe.missingIngredients.length > 0 ? (
-                          <Box sx={{ maxHeight: '120px', overflow: 'auto' }}>
-                            {recipe.missingIngredients.map((missing, index) => (
-                              <Box key={index} sx={{ mb: 1 }}>
-                                <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                                  {missing.name}
-                                </Typography>
-                                <Typography variant="caption" color="error.main">
-                                  Need {missing.needed}, have {missing.available}
-                                </Typography>
-                              </Box>
-                            ))}
+
+                        {/* Essential information in a compact layout */}
+                        <Grid container spacing={2} sx={{ mb: 2 }}>
+                          {/* Left column: Category */}
+                          <Grid item xs={6}>
+                            <Typography variant="caption" color="textSecondary" display="block">
+                              Category
+                            </Typography>
+                            <Typography variant="body2" noWrap>
+                              {recipe.category}
+                            </Typography>
+                          </Grid>
+
+                          {/* Right column: Yield per batch */}
+                          <Grid item xs={6}>
+                            <Typography variant="caption" color="textSecondary" display="block">
+                              Yield per Batch
+                            </Typography>
+                            <Typography variant="body2">
+                              {recipe.yieldQuantity} {recipe.yieldUnit}
+                            </Typography>
+                          </Grid>
+                        </Grid>
+
+                        {recipe.canMake ? (
+                          <Box sx={{ mb: 2 }}>
+                            <Typography variant="caption" color="textSecondary" display="block">
+                              Production Capacity
+                            </Typography>
+                            <Typography variant="body2">
+                              <strong>{recipe.maxBatches}</strong> batches ({recipe.maxBatches * recipe.yieldQuantity} {recipe.yieldUnit} total)
+                            </Typography>
                           </Box>
                         ) : (
-                          <Typography variant="body2">None</Typography>
+                          <Box sx={{ mb: 2 }}>
+                            <Typography variant="caption" color="textSecondary" display="block">
+                              Missing Ingredients
+                            </Typography>
+                            {recipe.missingIngredients.length > 0 ? (
+                              <Box sx={{ maxHeight: '120px', overflow: 'auto' }}>
+                                {recipe.missingIngredients.map((missing, index) => (
+                                  <Box key={index} sx={{ mb: 1 }}>
+                                    <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                                      {missing.name}
+                                    </Typography>
+                                    <Typography variant="caption" color="error.main">
+                                      Need {missing.needed}, have {missing.available}
+                                    </Typography>
+                                  </Box>
+                                ))}
+                              </Box>
+                            ) : (
+                              <Typography variant="body2">None</Typography>
+                            )}
+                          </Box>
                         )}
-                      </Box>
-                    )}
 
-                    {/* Clear status indicator */}
-                    <Box sx={{ mt: 'auto', display: 'flex', justifyContent: 'center', pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
-                      <Chip
-                        label={recipe.canMake ? "Ready to Make" : "Cannot Make"}
-                        color={recipe.canMake ? "success" : "error"}
-                        size="small"
-                        variant="outlined"
-                        sx={{ width: '100%', justifyContent: 'center' }}
-                      />
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
+                        {/* Clear status indicator */}
+                        <Box sx={{ mt: 'auto', display: 'flex', justifyContent: 'center', pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+                          <Chip
+                            label={recipe.canMake ? "Ready to Make" : "Cannot Make"}
+                            color={recipe.canMake ? "success" : "error"}
+                            size="small"
+                            variant="outlined"
+                            sx={{ width: '100%', justifyContent: 'center' }}
+                          />
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+            </Grid>
+          </>
         )}
       </TabPanel>
 
@@ -1253,6 +1511,125 @@ const Recipes: React.FC = () => {
               setSelectedRecipeForIngredients(null);
             }}
           >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Cost Analysis Dialog */}
+      <Dialog
+        open={costDialogOpen}
+        onClose={() => {
+          setCostDialogOpen(false);
+        }}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6">Recipe Cost Analysis</Typography>
+            <IconButton onClick={() => setCostDialogOpen(false)} size="small">
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {recipeCost && (
+            <>
+              <Typography variant="h6" gutterBottom>
+                {recipeCost.recipeName}
+              </Typography>
+
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                <Grid item xs={6} md={3}>
+                  <Typography variant="body2" color="textSecondary">
+                    Total Cost
+                  </Typography>
+                  <Typography variant="h6">
+                    ${recipeCost.totalCost.toFixed(2)}
+                  </Typography>
+                </Grid>
+                <Grid item xs={6} md={3}>
+                  <Typography variant="body2" color="textSecondary">
+                    Cost per Unit
+                  </Typography>
+                  <Typography variant="h6">
+                    ${recipeCost.costPerUnit.toFixed(2)}
+                  </Typography>
+                </Grid>
+                <Grid item xs={6} md={3}>
+                  <Typography variant="body2" color="textSecondary">
+                    Yield
+                  </Typography>
+                  <Typography variant="h6">
+                    {recipeCost.yieldQuantity} {recipeCost.yieldUnit}
+                  </Typography>
+                </Grid>
+                <Grid item xs={6} md={3}>
+                  <Typography variant="body2" color="textSecondary">
+                    Can Make
+                  </Typography>
+                  <Chip
+                    label={recipeCost.canMakeRecipe ? 'Yes' : 'No'}
+                    color={recipeCost.canMakeRecipe ? 'success' : 'error'}
+                  />
+                </Grid>
+              </Grid>
+
+              <Typography variant="h6" gutterBottom>
+                Ingredient Breakdown
+              </Typography>
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Ingredient</TableCell>
+                      <TableCell>Quantity</TableCell>
+                      <TableCell>Unit Cost</TableCell>
+                      <TableCell>Total Cost</TableCell>
+                      <TableCell>Available</TableCell>
+                      <TableCell>Status</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {recipeCost.ingredientCosts.map((ingredient) => (
+                      <TableRow key={ingredient.ingredientId}>
+                        <TableCell>{ingredient.name}</TableCell>
+                        <TableCell>
+                          {ingredient.quantity} {ingredient.unit}
+                        </TableCell>
+                        <TableCell>${ingredient.unitCost.toFixed(2)}</TableCell>
+                        <TableCell>${ingredient.totalCost.toFixed(2)}</TableCell>
+                        <TableCell>
+                          {ingredient.availableQuantity || 0} {ingredient.unit}
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            size="small"
+                            label={
+                              ingredient.availableQuantity >= ingredient.quantity
+                                ? "Available"
+                                : "Insufficient"
+                            }
+                            color={ingredient.availableQuantity >= ingredient.quantity ? "success" : "error"}
+                            variant="outlined"
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </>
+          )}
+          {!recipeCost && selectedRecipeForCost && (
+            <Box sx={{ py: 4, textAlign: 'center' }}>
+              <Typography>Loading cost analysis...</Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCostDialogOpen(false)}>
             Close
           </Button>
         </DialogActions>
