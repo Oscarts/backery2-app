@@ -4,6 +4,8 @@
 
 This document establishes UI/UX patterns and design standards for the bakery inventory management application to ensure consistency across all components and views.
 
+For specific guidelines on page layouts and structural consistency, please refer to [Page Layout Guidelines](./page-layout-guidelines.md).
+
 ## 🎯 Core Design Principles
 
 ### Material Design Foundation

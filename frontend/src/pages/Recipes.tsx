@@ -39,7 +39,8 @@ import {
   CardActions,
   CardHeader,
   Divider,
-  Avatar
+  Avatar,
+  Tooltip
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -482,34 +483,67 @@ const Recipes: React.FC = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      {/* Header with responsive design */}
+      <Box
+        display="flex"
+        flexDirection={{ xs: 'column', sm: 'row' }}
+        justifyContent="space-between"
+        alignItems={{ xs: 'flex-start', sm: 'center' }}
+        mb={3}
+        gap={2}
+      >
+        <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <MenuBookIcon color="primary" />
           Recipe Management
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box sx={{ display: { xs: 'none', sm: 'flex' }, gap: 1 }}>
-            <IconButton
-              color={viewMode === 'list' ? 'primary' : 'default'}
-              onClick={() => setViewMode('list')}
-              sx={{ border: viewMode === 'list' ? 1 : 0, borderColor: 'primary.main' }}
-            >
-              <ListViewIcon />
-            </IconButton>
-            <IconButton
-              color={viewMode === 'card' ? 'primary' : 'default'}
-              onClick={() => setViewMode('card')}
-              sx={{ border: viewMode === 'card' ? 1 : 0, borderColor: 'primary.main' }}
-            >
-              <GridViewIcon />
-            </IconButton>
+
+        <Box display="flex" gap={1} width={{ xs: '100%', sm: 'auto' }}>
+          {/* View Toggle Buttons */}
+          <Box
+            sx={{
+              display: 'flex',
+              border: 1,
+              borderColor: 'divider',
+              borderRadius: 1,
+              mr: 1
+            }}
+          >
+            <Tooltip title="List View">
+              <IconButton
+                color={viewMode === 'list' ? 'primary' : 'default'}
+                onClick={() => setViewMode('list')}
+                sx={{
+                  borderRadius: '4px 0 0 4px',
+                  bgcolor: viewMode === 'list' ? 'action.selected' : 'transparent'
+                }}
+              >
+                <ListViewIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Card View">
+              <IconButton
+                color={viewMode === 'card' ? 'primary' : 'default'}
+                onClick={() => setViewMode('card')}
+                sx={{
+                  borderRadius: '0 4px 4px 0',
+                  bgcolor: viewMode === 'card' ? 'action.selected' : 'transparent'
+                }}
+              >
+                <GridViewIcon />
+              </IconButton>
+            </Tooltip>
           </Box>
+
           <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => handleOpenDialog()}
+            sx={{
+              flexGrow: { xs: 1, sm: 0 },
+              whiteSpace: 'nowrap'
+            }}
           >
-            Add Recipe
+            {!isMobile ? 'Add Recipe' : 'Add'}
           </Button>
         </Box>
       </Box>
@@ -541,23 +575,8 @@ const Recipes: React.FC = () => {
                 sx={{ minWidth: { xs: '100%', sm: 300 } }}
               />
             </Grid>
-            <Grid item xs={12} md={4} sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
-              <Box sx={{ display: { xs: 'flex', sm: 'none' }, gap: 1 }}>
-                <IconButton
-                  color={viewMode === 'list' ? 'primary' : 'default'}
-                  onClick={() => setViewMode('list')}
-                  sx={{ border: viewMode === 'list' ? 1 : 0, borderColor: 'primary.main' }}
-                >
-                  <ListViewIcon />
-                </IconButton>
-                <IconButton
-                  color={viewMode === 'card' ? 'primary' : 'default'}
-                  onClick={() => setViewMode('card')}
-                  sx={{ border: viewMode === 'card' ? 1 : 0, borderColor: 'primary.main' }}
-                >
-                  <GridViewIcon />
-                </IconButton>
-              </Box>
+            <Grid item xs={12} md={4}>
+              {/* Removed redundant toggle view buttons */}
             </Grid>
           </Grid>
         </Box>
@@ -715,14 +734,23 @@ const Recipes: React.FC = () => {
                       >
                         <CardHeader
                           avatar={
-                            <Avatar sx={{ bgcolor: theme.palette.primary.main }}>
-                              <MenuBookIcon />
+                            <Avatar sx={{ bgcolor: theme.palette.primary.main, width: 40, height: 40 }}>
+                              <MenuBookIcon fontSize="small" />
                             </Avatar>
                           }
-                          title={recipe.name}
-                          subheader={recipe.category?.name || 'Uncategorized'}
+                          title={
+                            <Typography variant="subtitle1" fontWeight="medium" noWrap>
+                              {recipe.name}
+                            </Typography>
+                          }
+                          subheader={
+                            <Typography variant="body2" color="text.secondary" noWrap>
+                              {recipe.category?.name || 'Uncategorized'}
+                            </Typography>
+                          }
+                          sx={{ pb: 1 }}
                         />
-                        <CardContent sx={{ flexGrow: 1 }}>
+                        <CardContent sx={{ flexGrow: 1, pt: 0 }}>
                           <Typography variant="body2" color="text.secondary" sx={{
                             mb: 2,
                             overflow: 'hidden',
