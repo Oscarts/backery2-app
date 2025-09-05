@@ -48,11 +48,11 @@ import {
   GridView as GridViewIcon,
   ViewList as ListViewIcon,
   Close as CloseIcon,
-  Cake as CakeIcon,
   FilterList as FilterIcon,
   Inventory as InventoryIcon,
   Schedule as ScheduleIcon,
   TrendingDown as TrendingDownIcon,
+  LocalDining as LocalDiningIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { finishedProductsApi, categoriesApi, storageLocationsApi, unitsApi, qualityStatusApi } from '../services/realApi';
@@ -536,7 +536,7 @@ const FinishedProducts: React.FC = () => {
         gap={2}
       >
         <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <CakeIcon color="success" />
+          <LocalDiningIcon color="success" />
           Finished Products
         </Typography>
 
@@ -1061,7 +1061,7 @@ const FinishedProducts: React.FC = () => {
                     <CardHeader
                       avatar={
                         <Avatar sx={{ bgcolor: theme.palette.success.main, width: 40, height: 40 }}>
-                          <CakeIcon fontSize="small" />
+                          <LocalDiningIcon fontSize="small" />
                         </Avatar>
                       }
                       title={

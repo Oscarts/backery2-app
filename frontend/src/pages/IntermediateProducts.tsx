@@ -53,7 +53,7 @@ import {
   TrendingDown as TrendingDownIcon,
   Inventory as InventoryIcon,
   Schedule as ScheduleIcon,
-  Science as ScienceIcon,
+  Kitchen as KitchenIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { intermediateProductsApi, categoriesApi, storageLocationsApi, unitsApi, qualityStatusApi } from '../services/realApi';
@@ -298,7 +298,7 @@ const IntermediateProducts: React.FC = () => {
         gap={2}
       >
         <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <ScienceIcon color="primary" />
+          <KitchenIcon color="warning" />
           Intermediate Products
         </Typography>
 
@@ -830,8 +830,8 @@ const IntermediateProducts: React.FC = () => {
                   >
                     <CardHeader
                       avatar={
-                        <Avatar sx={{ bgcolor: theme.palette.primary.main, width: 40, height: 40 }}>
-                          <ScienceIcon fontSize="small" />
+                        <Avatar sx={{ bgcolor: theme.palette.warning.main, width: 40, height: 40 }}>
+                          <KitchenIcon fontSize="small" />
                         </Avatar>
                       }
                       title={

@@ -43,7 +43,7 @@ import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Warning as WarningIcon,
+  Warning as WarningIcon, // Keeping for now in case it's used elsewhere
   Search as SearchIcon,
   GridView as GridViewIcon,
   ViewList as ListViewIcon,
@@ -245,7 +245,7 @@ const RawMaterials: React.FC = () => {
         gap={2}
       >
         <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <WarningIcon color="secondary" />
+          <InventoryIcon color="secondary" />
           Raw Materials
         </Typography>
 

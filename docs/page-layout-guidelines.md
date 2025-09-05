@@ -219,8 +219,10 @@ Use consistent icons for similar concepts across the application:
 | Page Type | Icon Component | Description |
 |-----------|---------------|-------------|
 | Recipes | `<MenuBookIcon />` | Recipe management |
-| Finished Products | `<InventoryIcon />` | Product inventory |
-| Ingredients | `<ShoppingBasketIcon />` | Ingredients/materials |
+| Raw Materials | `<InventoryIcon />` | Raw materials inventory |
+| Intermediate Products | `<KitchenIcon />` | Semi-processed ingredients |
+| Finished Products | `<LocalDiningIcon />` | Final bakery products |
+| Ingredients | `<ShoppingBasketIcon />` | General ingredients/materials |
 | Dashboard | `<DashboardIcon />` | Analytics/overview |
 | Settings | `<SettingsIcon />` | Configuration |
 | Categories | `<CategoryIcon />` | Categorization |
@@ -240,3 +242,35 @@ Maintain consistent icons for actions:
 | Calculate | `<CalculateIcon />` | Cost analysis, calculations |
 | Filter | `<FilterListIcon />` | Filter data |
 | Settings | `<SettingsIcon />` | Configure options |
+
+## Avatar Standards
+
+For consistent visual recognition across the application, use these avatar standards:
+
+### Page Title Icons
+
+Icons next to page titles should use the appropriate icon from the Page-Specific Icons table with the following style:
+
+```jsx
+<Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+  <PageSpecificIcon color="primary" /> {/* Use color appropriate to the item type */}
+  Page Title
+</Typography>
+```
+
+### Card Avatars
+
+Card avatars should use the appropriate icon with the following style and sizes:
+
+```jsx
+<Avatar sx={{ bgcolor: theme.palette.primary.main, width: 40, height: 40 }}>
+  <PageSpecificIcon fontSize="small" />
+</Avatar>
+```
+
+### Avatar Color Standards
+
+- **Recipes**: primary.main
+- **Raw Materials**: secondary.main
+- **Intermediate Products**: warning.main
+- **Finished Products**: success.main
