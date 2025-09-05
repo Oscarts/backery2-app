@@ -518,3 +518,30 @@ This document tracks all completed features and development milestones for the B
 - Removed unused icon imports to fix linting errors
 
 **Testing:** UI verified through visual inspection
+
+---
+
+### 🚀 Production Scheduling and Workflow Management Planning (September 5, 2025)
+
+**Completed:** September 5, 2025  
+**Files Created:**
+
+- `/docs/feature-scopes/production-scheduling.md` - Comprehensive feature scope for production scheduling
+- `/docs/feature-scopes/production-scheduling-implementation.md` - Detailed implementation plan with timeline
+
+**Description:** Created comprehensive planning documents for the next phase of development focusing on production scheduling and workflow management. The feature scope includes:
+
+- Database schema design for production schedules, steps, and resource allocations
+- API endpoint specifications for managing production workflows
+- Frontend component architecture and UI patterns
+- Integration points with existing systems
+- Testing strategy and implementation timeline
+
+**Implementation Timeline:**
+- Sprint 1: Database Schema & API Foundations (2 weeks)
+- Sprint 2: Production Calendar & Scheduling UI (2 weeks)
+- Sprint 3: Resource Allocation & Workflow Tracking (2 weeks)
+- Sprint 4: Integration & Automation (2 weeks)
+- Sprint 5: Testing & Documentation (1 week)
+
+**Next Steps:** Begin implementation with database schema changes and core API endpoints in Sprint 1

@@ -1,0 +1,88 @@
+// Production scheduling additions to schema.prisma
+
+// Existing imports and generator blocks would be here...
+
+// Add these new models to the schema
+
+enum ProductionStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  ON_HOLD
+}
+
+enum StepStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+  FAILED
+}
+
+enum ResourceType {
+  RAW_MATERIAL
+  INTERMEDIATE_PRODUCT
+  EQUIPMENT
+  PERSONNEL
+}
+
+model ProductionSchedule {
+  id                String               @id @default(uuid())
+  name              String
+  description       String?
+  status            ProductionStatus     @default(PLANNED)
+  startDate         DateTime
+  endDate           DateTime?
+  recipeId          String
+  recipe            Recipe               @relation(fields: [recipeId], references: [id])
+  outputQuantity    Float
+  outputUnit        String
+  notes             String?
+  assignedTo        String?              // Optional assignment to personnel
+  productionSteps   ProductionStep[]
+  resourceAllocations ResourceAllocation[]
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  @@index([recipeId])
+  @@index([status])
+  @@index([startDate])
+}
+
+model ProductionStep {
+  id                  String           @id @default(uuid())
+  productionScheduleId String
+  productionSchedule   ProductionSchedule @relation(fields: [productionScheduleId], references: [id], onDelete: Cascade)
+  name                String
+  description         String?
+  status              StepStatus       @default(PENDING)
+  startTime           DateTime?
+  endTime             DateTime?
+  durationMinutes     Int?             // Expected duration
+  actualDurationMinutes Int?           // Actual time taken
+  ordinalPosition     Int              // Order in the production workflow
+  notes               String?
+  ingredientsMapped   Json?            // Specific ingredients assigned to this step
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@index([productionScheduleId])
+}
+
+model ResourceAllocation {
+  id                  String           @id @default(uuid())
+  productionScheduleId String
+  productionSchedule   ProductionSchedule @relation(fields: [productionScheduleId], references: [id], onDelete: Cascade)
+  resourceType        ResourceType
+  resourceId          String           // ID of the raw material, equipment, etc.
+  quantityRequired    Float?
+  unit                String?
+  isConfirmed         Boolean          @default(false)
+  notes               String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@index([productionScheduleId])
+  @@index([resourceType, resourceId])
+}
