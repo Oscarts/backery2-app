@@ -35,9 +35,11 @@ import {
   Card,
   CardContent,
   CardActions,
+  CardHeader,
   Avatar,
   Stack,
   Drawer,
+  Divider,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -458,7 +460,7 @@ const RawMaterials: React.FC = () => {
       {!isMobile ? (
         <Paper sx={{ p: 2, mb: 3 }}>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={3}>
+            <Grid item xs={12} md={4}>
               <FormControl fullWidth size={isMobile ? "small" : "medium"}>
                 <InputLabel>Search By</InputLabel>
                 <Select
@@ -473,7 +475,7 @@ const RawMaterials: React.FC = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={8}>
               <TextField
                 fullWidth
                 placeholder={
@@ -492,21 +494,6 @@ const RawMaterials: React.FC = () => {
                 }}
                 size={isMobile ? "small" : "medium"}
               />
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth size={isMobile ? "small" : "medium"}>
-                <InputLabel>Filter By Status</InputLabel>
-                <Select
-                  value={expirationFilter}
-                  label="Filter By Status"
-                  onChange={(e) => setExpirationFilter(e.target.value)}
-                >
-                  <MenuItem value="">All Items</MenuItem>
-                  <MenuItem value="expired">Expired</MenuItem>
-                  <MenuItem value="expiring">Expiring Soon</MenuItem>
-                  <MenuItem value="contaminated">Contaminated</MenuItem>
-                </Select>
-              </FormControl>
             </Grid>
           </Grid>
         </Paper>
@@ -765,125 +752,171 @@ const RawMaterials: React.FC = () => {
                         display: 'flex',
                         flexDirection: 'column',
                         borderLeft: material.isContaminated ? '4px solid #d32f2f' : 'none',
-                        '&:hover': { boxShadow: 3 },
-                        cursor: 'pointer'
+                        position: 'relative',
+                        borderRadius: 2,
+                        '&:hover': { boxShadow: 6 },
+                        cursor: 'pointer',
                       }}
                       onClick={() => handleOpenForm(material)}
                     >
-                      <Box sx={{ p: 2, pb: 1 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Avatar sx={{ bgcolor: theme.palette.secondary.main, width: 40, height: 40 }}>
-                              <InventoryIcon fontSize="small" />
-                            </Avatar>
-                            <Typography
-                              variant="subtitle1"
-                              fontWeight="medium"
-                              sx={{
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                display: '-webkit-box',
-                                WebkitLineClamp: 2,
-                                WebkitBoxOrient: 'vertical',
-                                lineHeight: 1.2,
-                                height: 'auto',
-                              }}
-                            >
-                              {material.name}
+                      <CardHeader
+                        avatar={
+                          <Avatar sx={{ bgcolor: theme.palette.secondary.main, width: 40, height: 40 }}>
+                            <InventoryIcon fontSize="small" />
+                          </Avatar>
+                        }
+                        title={
+                          <Typography
+                            variant="subtitle1"
+                            fontWeight="medium"
+                            sx={{
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              lineHeight: 1.2,
+                              height: 'auto',
+                            }}
+                          >
+                            {material.name}
+                          </Typography>
+                        }
+                        subheader={
+                          <Box sx={{ mt: 0.5 }}>
+                            <Typography variant="caption" color="text.secondary" display="block">
+                              Batch: {material.batchNumber}
                             </Typography>
                           </Box>
-                          <Box sx={{ display: 'flex', gap: 1 }}>
-                            <Tooltip title="Edit">
-                              <IconButton
-                                size="small"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleOpenForm(material);
-                                }}
-                              >
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Delete">
-                              <IconButton
-                                size="small"
-                                color="error"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDelete(material);
-                                }}
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          </Box>
-                        </Box>
-
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                          {material.category?.name || 'Uncategorized'} • Batch: {material.batchNumber}
-                        </Typography>
-
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
-                          Supplier: {material.supplier?.name || 'Unknown'}
-                        </Typography>
-
-                        <Grid container spacing={1} sx={{ mt: 1 }}>
+                        }
+                        action={null}
+                        sx={{ pb: 1 }}
+                      />
+                      
+                      <Divider />
+                      
+                      <CardContent sx={{ pt: 2, pb: 1, flexGrow: 1 }}>
+                        <Grid container spacing={2}>
                           <Grid item xs={6}>
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                              Quantity
+                            <Typography variant="subtitle2" color="text.secondary">
+                              Available
                             </Typography>
                             <Typography
-                              variant="body2"
+                              variant="body1"
                               sx={{
+                                fontWeight: isLowStock ? 'bold' : 'medium',
                                 color: isLowStock ? 'error.main' : 'text.primary',
-                                fontWeight: isLowStock ? 'medium' : 'regular',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 0.5
                               }}
                             >
                               {formatQuantity(material.quantity, material.unit)}
+                              {isLowStock && (
+                                <Tooltip title="Low stock">
+                                  <WarningIcon color="error" fontSize="small" sx={{ fontSize: '1rem' }} />
+                                </Tooltip>
+                              )}
                             </Typography>
                           </Grid>
+                          
                           <Grid item xs={6}>
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                              Unit Price
+                            <Typography variant="subtitle2" color="text.secondary">
+                              Price
                             </Typography>
-                            <Typography variant="body2">
+                            <Typography variant="body1">
                               ${material.unitPrice?.toFixed(2) || '0.00'}
                             </Typography>
                           </Grid>
+                          
+                          <Grid item xs={6}>
+                            <Typography variant="subtitle2" color="text.secondary">
+                              Expires
+                            </Typography>
+                            <Typography variant="body2">
+                              {formatDate(material.expirationDate)}
+                            </Typography>
+                          </Grid>
+                          
+                          <Grid item xs={6}>
+                            <Typography variant="subtitle2" color="text.secondary">
+                              Supplier
+                            </Typography>
+                            <Typography variant="body2" noWrap>
+                              {material.supplier?.name || 'Unknown'}
+                            </Typography>
+                          </Grid>
+                          
+                          <Grid item xs={6}>
+                            <Typography variant="subtitle2" color="text.secondary">
+                              Category
+                            </Typography>
+                            <Typography variant="body2" noWrap>
+                              {material.category?.name || 'Uncategorized'}
+                            </Typography>
+                          </Grid>
+                          
+                          <Grid item xs={6}>
+                            <Typography variant="subtitle2" color="text.secondary">
+                              Storage
+                            </Typography>
+                            <Typography variant="body2" noWrap>
+                              {material.storageLocation?.name || 'N/A'}
+                            </Typography>
+                          </Grid>
                         </Grid>
-                      </Box>
+                      </CardContent>
 
-                      <CardActions sx={{ p: 1, pt: 0, mt: 'auto', display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                        {material.qualityStatus && (
-                          <Chip
-                            label={material.qualityStatus.name}
+                      <CardActions sx={{ px: 2, py: 1, justifyContent: 'space-between', bgcolor: 'background.default' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          {isExpired(material.expirationDate) && (
+                            <Chip label="EXPIRED" size="small" sx={{ backgroundColor: theme => theme.palette.error.main, color: 'white', fontWeight: 'medium' }} />
+                          )}
+                          {isExpiringSoon(material.expirationDate) && !isExpired(material.expirationDate) && (
+                            <Chip label={`${getDaysUntilExpiration(material.expirationDate)} days left`} color="warning" size="small" />
+                          )}
+                          {material.qualityStatus && (
+                            <Chip
+                              label={material.qualityStatus.name}
+                              size="small"
+                              variant="outlined"
+                              sx={{
+                                borderColor: material.qualityStatus.color || '#gray',
+                                color: material.qualityStatus.color || '#gray',
+                                borderWidth: 1.5,
+                                fontWeight: 'medium'
+                              }}
+                            />
+                          )}
+                          {material.isContaminated && (
+                            <Chip
+                              label="CONTAMINATED"
+                              color="error"
+                              size="small"
+                              sx={{ fontWeight: 'medium' }}
+                            />
+                          )}
+                          {material.quantity <= 0 ? (
+                            <Chip label="OUT OF STOCK" size="small" color="error" />
+                          ) : material.quantity <= material.reorderLevel ? (
+                            <Chip label="LOW STOCK" size="small" color="warning" />
+                          ) : null}
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <IconButton
                             size="small"
-                            variant="outlined"
-                            sx={{
-                              borderColor: material.qualityStatus.color,
-                              color: material.qualityStatus.color,
-                              borderWidth: 1.5,
-                              fontWeight: 'medium',
-                              mr: 0.5
+                            color="error"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(material);
                             }}
-                          />
-                        )}
-
-                        {isExpired(material.expirationDate) ? (
-                          <Chip label="EXPIRED" size="small" color="error" />
-                        ) : isExpiringSoon(material.expirationDate) ? (
-                          <Chip label={`${getDaysUntilExpiration(material.expirationDate)} days left`} size="small" color="warning" />
-                        ) : null}
-
-                        {material.quantity <= 0 ? (
-                          <Chip label="OUT OF STOCK" size="small" color="error" />
-                        ) : material.quantity <= material.reorderLevel ? (
-                          <Chip label="LOW STOCK" size="small" color="warning" />
-                        ) : null}
-
-                        {material.isContaminated && (
-                          <Chip label="CONTAMINATED" size="small" color="error" />
-                        )}
+                            aria-label="Delete material"
+                          >
+                            <Tooltip title="Delete material">
+                              <DeleteIcon fontSize="small" />
+                            </Tooltip>
+                          </IconButton>
+                        </Box>
                       </CardActions>
                     </Card>
                   </Grid>

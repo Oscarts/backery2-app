@@ -118,58 +118,105 @@ Pages with multiple view modes should include toggle buttons in the header area:
 
 ### Card View Layout
 
-All cards should include proper avatars with appropriate icons as specified in the Page-Specific Icons section. Cards should follow this structure:
+All cards should include proper avatars with appropriate icons as specified in the Page-Specific Icons section. Cards should follow this standardized structure across all product pages (Raw Materials, Intermediate Products, and Finished Products):
 
 ```jsx
 <Card sx={{
   height: '100%',
   display: 'flex',
   flexDirection: 'column',
-  transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-  '&:hover': {
-    transform: 'translateY(-4px)',
+  borderLeft: item.isContaminated ? '4px solid #d32f2f' : 'none',
+  position: 'relative',
+  borderRadius: 2,
+  '&:hover': { 
     boxShadow: 6,
     cursor: 'pointer'
   }
 }}>
   <CardHeader
     avatar={
-      <Avatar sx={{ bgcolor: theme.palette.primary.main, width: 40, height: 40 }}>
-        <ItemIcon fontSize="small" />
+      <Avatar sx={{ bgcolor: theme.palette.secondary.main, width: 40, height: 40 }}>
+        <PageSpecificIcon fontSize="small" />
       </Avatar>
     }
     title={
-      <Typography variant="subtitle1" fontWeight="medium" noWrap>
+      <Typography
+        variant="subtitle1"
+        fontWeight="medium"
+        sx={{
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+          lineHeight: 1.2,
+          height: 'auto',
+        }}
+      >
         {item.name}
       </Typography>
     }
     subheader={
-      <Typography variant="body2" color="text.secondary" noWrap>
-        {item.category || 'Uncategorized'}
-      </Typography>
+      <Box sx={{ mt: 0.5 }}>
+        <Typography variant="caption" color="text.secondary" display="block">
+          Batch: {item.batchNumber}
+        </Typography>
+      </Box>
     }
+    action={null}
     sx={{ pb: 1 }}
   />
-  <CardContent sx={{ flexGrow: 1, pt: 0 }}>
-    {/* Card content here */}
-  </CardContent>
+  
   <Divider />
-  <CardActions sx={{ justifyContent: 'space-between', px: 2 }}>
-    {/* Action buttons with sufficient spacing */}
-    <Button
-      size="small"
-      startIcon={<ActionIcon />}
-      sx={{ minWidth: 90 }}
-      onClick={(e) => {
-        e.stopPropagation();
-        handleAction();
-      }}
-    >
-      Action
-    </Button>
+  
+  <CardContent sx={{ pt: 2, pb: 1, flexGrow: 1 }}>
+    <Grid container spacing={2}>
+      {/* Card content here with consistent Grid layout */}
+      <Grid item xs={6}>
+        <Typography variant="subtitle2" color="text.secondary">
+          Available
+        </Typography>
+        <Typography variant="body1">
+          {formatQuantity(item.quantity, item.unit)}
+        </Typography>
+      </Grid>
+      
+      {/* Additional grid items with standardized layout */}
+    </Grid>
+  </CardContent>
+
+  <CardActions sx={{ px: 2, py: 1, justifyContent: 'space-between', bgcolor: 'background.default' }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      {/* Status chips and indicators */}
+      {isExpired(item.expirationDate) && (
+        <Chip label="EXPIRED" size="small" sx={{ backgroundColor: theme => theme.palette.error.main, color: 'white', fontWeight: 'medium' }} />
+      )}
+    </Box>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+      <IconButton
+        size="small"
+        color="error"
+        onClick={(e) => {
+          e.stopPropagation();
+          handleDelete(item);
+        }}
+        aria-label="Delete item"
+      >
+        <Tooltip title="Delete item">
+          <DeleteIcon fontSize="small" />
+        </Tooltip>
+      </IconButton>
+    </Box>
   </CardActions>
 </Card>
 ```
+
+**Key Card Design Standards:**
+1. Delete buttons should always be at the bottom in the CardActions component
+2. No edit button should be included in the card (edit on click)
+3. Page-specific icons must match the sidebar navigation panel standards
+4. Status chips should be displayed in the CardActions area
+5. Use Divider between CardHeader and CardContent
 
 ### Table/List View Layout
 
