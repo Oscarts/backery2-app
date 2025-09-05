@@ -48,6 +48,7 @@ import {
   GridView as GridViewIcon,
   ViewList as ListViewIcon,
   Close as CloseIcon,
+  Cake as CakeIcon,
   FilterList as FilterIcon,
   Inventory as InventoryIcon,
   Schedule as ScheduleIcon,
@@ -534,7 +535,8 @@ const FinishedProducts: React.FC = () => {
         mb={3}
         gap={2}
       >
-        <Typography variant="h4" component="h1">
+        <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <CakeIcon color="success" />
           Finished Products
         </Typography>
 
@@ -1057,12 +1059,27 @@ const FinishedProducts: React.FC = () => {
                     }}
                   >
                     <CardHeader
+                      avatar={
+                        <Avatar sx={{ bgcolor: theme.palette.success.main, width: 40, height: 40 }}>
+                          <CakeIcon fontSize="small" />
+                        </Avatar>
+                      }
                       title={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography variant="h6" noWrap>
-                            {product.name}
-                          </Typography>
-                        </Box>
+                        <Typography
+                          variant="subtitle1"
+                          fontWeight="medium"
+                          sx={{
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            lineHeight: 1.2,
+                            height: 'auto',
+                          }}
+                        >
+                          {product.name}
+                        </Typography>
                       }
                       subheader={
                         <Box sx={{ mt: 0.5 }}>

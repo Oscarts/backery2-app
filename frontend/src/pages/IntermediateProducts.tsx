@@ -43,7 +43,6 @@ import {
 } from '@mui/material';
 import {
   Add as AddIcon,
-  Edit as EditIcon,
   Delete as DeleteIcon,
   Search as SearchIcon,
   GridView as GridViewIcon,
@@ -54,6 +53,7 @@ import {
   TrendingDown as TrendingDownIcon,
   Inventory as InventoryIcon,
   Schedule as ScheduleIcon,
+  Science as ScienceIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { intermediateProductsApi, categoriesApi, storageLocationsApi, unitsApi, qualityStatusApi } from '../services/realApi';
@@ -112,17 +112,6 @@ const IntermediateProducts: React.FC = () => {
       description: descriptionMap[status] || label,
       getColor: colorMap[status] || ((theme: any) => theme.palette.text.secondary)
     };
-  };
-
-  const getExpirationBadge = (expirationDate: string) => {
-    if (isExpired(expirationDate)) {
-      return <Chip label="EXPIRED" size="small" sx={{ backgroundColor: theme => theme.palette.error.main, color: 'white', fontWeight: 'medium' }} />;
-    }
-    if (isExpiringSoon(expirationDate)) {
-      const days = getDaysUntilExpiration(expirationDate);
-      return <Typography variant="caption" color="warning.main" fontWeight="medium" sx={{ display: 'block' }}>{days} days remaining</Typography>;
-    }
-    return null;
   };
 
   // Fetch data
@@ -308,7 +297,8 @@ const IntermediateProducts: React.FC = () => {
         mb={3}
         gap={2}
       >
-        <Typography variant="h4" component="h1">
+        <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <ScienceIcon color="primary" />
           Intermediate Products
         </Typography>
 
@@ -839,12 +829,27 @@ const IntermediateProducts: React.FC = () => {
                     }}
                   >
                     <CardHeader
+                      avatar={
+                        <Avatar sx={{ bgcolor: theme.palette.primary.main, width: 40, height: 40 }}>
+                          <ScienceIcon fontSize="small" />
+                        </Avatar>
+                      }
                       title={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography variant="h6" noWrap>
-                            {product.name}
-                          </Typography>
-                        </Box>
+                        <Typography
+                          variant="subtitle1"
+                          fontWeight="medium"
+                          sx={{
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            lineHeight: 1.2,
+                            height: 'auto',
+                          }}
+                        >
+                          {product.name}
+                        </Typography>
                       }
                       subheader={
                         <Box sx={{ mt: 0.5 }}>

@@ -37,7 +37,6 @@ import {
   CardActions,
   Avatar,
   Stack,
-  Divider,
   Drawer,
 } from '@mui/material';
 import {
@@ -186,7 +185,6 @@ const RawMaterials: React.FC = () => {
   const totalCount = baseFiltered?.length || 0;
   const expiringSoonCount = baseFiltered?.filter(m => isExpiringSoon(m.expirationDate) || isExpired(m.expirationDate))?.length || 0;
   const lowStockCount = baseFiltered?.filter(m => m.quantity <= m.reorderLevel)?.length || 0;
-  const contaminatedCount = baseFiltered?.filter(m => m.isContaminated)?.length || 0;
 
   // Apply indicator filter
   const filteredMaterials = baseFiltered.filter((material) => {
@@ -204,7 +202,7 @@ const RawMaterials: React.FC = () => {
   });
 
   // Handlers
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
   };
 
@@ -233,35 +231,6 @@ const RawMaterials: React.FC = () => {
     setSnackbar({ open: true, message, severity });
   };
 
-  const getContaminationChip = (isContaminated: boolean) => {
-    if (isContaminated) {
-      return <Chip label="CONTAMINATED" color="error" size="small" sx={{ ml: 1 }} />;
-    }
-    return null; // Don't show anything if clean
-  };
-
-  const getExpirationChip = (expirationDate: string) => {
-    if (isExpired(expirationDate)) {
-      return <Chip label="EXPIRED" color="error" size="small" />;
-    }
-    if (isExpiringSoon(expirationDate)) {
-      const days = getDaysUntilExpiration(expirationDate);
-      return <Chip label={`Expires in ${days} days`} color="warning" size="small" />;
-    }
-    const days = getDaysUntilExpiration(expirationDate);
-    return <Chip label={`${days} days left`} color="success" size="small" />;
-  };
-
-  const getStockLevelChip = (quantity: number, reorderLevel: number) => {
-    if (quantity <= 0) {
-      return <Chip label="OUT OF STOCK" color="error" size="small" />;
-    }
-    if (quantity <= reorderLevel) {
-      return <Chip label="LOW STOCK" color="warning" size="small" />;
-    }
-    return <Chip label="In Stock" color="success" size="small" />;
-  };
-
 
 
   return (
@@ -275,7 +244,8 @@ const RawMaterials: React.FC = () => {
         mb={3}
         gap={2}
       >
-        <Typography variant="h4" component="h1">
+        <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <WarningIcon color="secondary" />
           Raw Materials
         </Typography>
 
@@ -801,10 +771,27 @@ const RawMaterials: React.FC = () => {
                       onClick={() => handleOpenForm(material)}
                     >
                       <Box sx={{ p: 2, pb: 1 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                          <Typography variant="subtitle1" fontWeight="medium" sx={{ mb: 0.5 }}>
-                            {material.name}
-                          </Typography>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Avatar sx={{ bgcolor: theme.palette.secondary.main, width: 40, height: 40 }}>
+                              <InventoryIcon fontSize="small" />
+                            </Avatar>
+                            <Typography
+                              variant="subtitle1"
+                              fontWeight="medium"
+                              sx={{
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical',
+                                lineHeight: 1.2,
+                                height: 'auto',
+                              }}
+                            >
+                              {material.name}
+                            </Typography>
+                          </Box>
                           <Box sx={{ display: 'flex', gap: 1 }}>
                             <Tooltip title="Edit">
                               <IconButton

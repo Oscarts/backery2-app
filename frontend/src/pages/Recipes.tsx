@@ -739,7 +739,19 @@ const Recipes: React.FC = () => {
                             </Avatar>
                           }
                           title={
-                            <Typography variant="subtitle1" fontWeight="medium" noWrap>
+                            <Typography
+                              variant="subtitle1"
+                              fontWeight="medium"
+                              sx={{
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical',
+                                lineHeight: 1.2,
+                                height: 'auto',
+                              }}
+                            >
                               {recipe.name}
                             </Typography>
                           }
