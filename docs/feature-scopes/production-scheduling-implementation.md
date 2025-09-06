@@ -19,6 +19,7 @@ The Production Scheduling and Workflow Management phase will enable the bakery t
 ### Sprint 1: Database Schema & API Foundations
 
 #### Week 1
+
 - [ ] Create Prisma schema updates for new models
 - [ ] Generate and apply migrations
 - [ ] Implement base API controllers for production schedules
@@ -26,6 +27,7 @@ The Production Scheduling and Workflow Management phase will enable the bakery t
 - [ ] Develop data validation and business logic
 
 #### Week 2
+
 - [ ] Implement resource allocation API endpoints
 - [ ] Develop production step management endpoints
 - [ ] Create availability checking algorithms
@@ -35,12 +37,14 @@ The Production Scheduling and Workflow Management phase will enable the bakery t
 ### Sprint 2: Production Calendar & Scheduling UI
 
 #### Week 1
+
 - [ ] Develop calendar component with multiple views
 - [ ] Implement schedule visualization with color coding
 - [ ] Create drag-and-drop interface for scheduling
 - [ ] Build filter and search functionality
 
 #### Week 2
+
 - [ ] Develop schedule creation wizard UI
 - [ ] Implement recipe selection and quantity calculation
 - [ ] Create date and time selection controls
@@ -50,12 +54,14 @@ The Production Scheduling and Workflow Management phase will enable the bakery t
 ### Sprint 3: Resource Allocation & Workflow Tracking
 
 #### Week 1
+
 - [ ] Create resource allocation UI
 - [ ] Implement availability visualization
 - [ ] Develop resource conflict resolution
 - [ ] Build allocation confirmation workflow
 
 #### Week 2
+
 - [ ] Implement production step tracking UI
 - [ ] Create timeline visualization component
 - [ ] Develop status update controls
@@ -65,12 +71,14 @@ The Production Scheduling and Workflow Management phase will enable the bakery t
 ### Sprint 4: Integration & Automation
 
 #### Week 1
+
 - [ ] Integrate with inventory management system
 - [ ] Implement automatic resource reservation
 - [ ] Create finished product generation on completion
 - [ ] Develop intermediate product tracking
 
 #### Week 2
+
 - [ ] Implement notifications and alerts
 - [ ] Create dashboard widgets for production overview
 - [ ] Develop reporting and analytics features
@@ -79,6 +87,7 @@ The Production Scheduling and Workflow Management phase will enable the bakery t
 ### Sprint 5: Testing & Documentation
 
 #### Week 1
+
 - [ ] Conduct comprehensive integration testing
 - [ ] Perform user acceptance testing
 - [ ] Update all documentation
@@ -97,6 +106,7 @@ The backend implementation will follow the existing architecture pattern:
 4. **Models**: Define data structures and relationships
 
 New services will be created for:
+
 - `ProductionScheduleService` - Main scheduling logic
 - `ResourceAllocationService` - Resource availability and allocation
 - `ProductionWorkflowService` - Step management and status tracking
@@ -111,6 +121,7 @@ The frontend implementation will use the existing component structure:
 4. **Store**: State management for production workflows
 
 New components will be created for:
+
 - `ProductionCalendar` - Visual scheduling interface
 - `ProductionWizard` - Step-by-step schedule creation
 - `ResourceManager` - Resource allocation and visualization

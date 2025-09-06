@@ -538,6 +538,7 @@ This document tracks all completed features and development milestones for the B
 - Testing strategy and implementation timeline
 
 **Implementation Timeline:**
+
 - Sprint 1: Database Schema & API Foundations (2 weeks)
 - Sprint 2: Production Calendar & Scheduling UI (2 weeks)
 - Sprint 3: Resource Allocation & Workflow Tracking (2 weeks)

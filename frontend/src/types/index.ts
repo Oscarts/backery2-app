@@ -113,7 +113,7 @@ export enum IntermediateProductStatus {
 }
 
 // Shared alias for use across product types
-export type ProductionStatus = IntermediateProductStatus;
+export type ProductStatus = IntermediateProductStatus;
 
 // Raw Material types
 export interface RawMaterial {
@@ -315,6 +315,10 @@ export interface Recipe {
   instructions?: string[] | string | any; // JSON field can be array, string, or other format
   version: number;
   isActive: boolean;
+  emoji?: string; // Added for production module
+  difficulty?: string; // Added for production module
+  estimatedTotalTime?: number; // Added for production module
+  equipmentRequired?: string[]; // Added for production module
   createdAt: string;
   updatedAt: string;
   ingredients?: RecipeIngredient[];
@@ -399,4 +403,95 @@ export interface CreateRecipeIngredientData {
   quantity: number;
   unit: string;
   notes?: string;
+}
+
+// Production types
+export enum ProductionStatus {
+  PLANNED = 'PLANNED',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+  ON_HOLD = 'ON_HOLD'
+}
+
+export enum ProductionStepStatus {
+  PENDING = 'PENDING',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  SKIPPED = 'SKIPPED',
+  FAILED = 'FAILED'
+}
+
+export interface ProductionRun {
+  id: string;
+  name: string;
+  recipeId: string;
+  targetQuantity: number;
+  targetUnit: string;
+  status: ProductionStatus;
+  currentStepIndex: number;
+  startedAt: string;
+  completedAt?: string;
+  estimatedFinish?: string;
+  actualCost?: number;
+  finalQuantity?: number;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  recipe?: Recipe;
+  steps?: ProductionStep[];
+}
+
+export interface ProductionStep {
+  id: string;
+  productionRunId: string;
+  name: string;
+  description?: string;
+  stepOrder: number;
+  estimatedMinutes?: number;
+  status: ProductionStepStatus;
+  startedAt?: string;
+  completedAt?: string;
+  actualMinutes?: number;
+  notes?: string;
+  temperature?: number;
+  equipmentUsed?: string[];
+  qualityCheckPassed?: boolean;
+  createdAt: string;
+  updatedAt: string;
+  productionRun?: ProductionRun;
+}
+
+export interface CreateProductionRunData {
+  name: string;
+  recipeId: string;
+  targetQuantity: number;
+  targetUnit: string;
+  notes?: string;
+}
+
+export interface UpdateProductionRunData {
+  name?: string;
+  status?: ProductionStatus;
+  completedAt?: string;
+  finalQuantity?: number;
+  actualCost?: number;
+  notes?: string;
+}
+
+export interface UpdateProductionStepData {
+  status?: ProductionStepStatus;
+  startedAt?: string;
+  completedAt?: string;
+  actualMinutes?: number;
+  notes?: string;
+  temperature?: number;
+  equipmentUsed?: string[];
+  qualityCheckPassed?: boolean;
+}
+
+export interface CompleteProductionStepData {
+  notes?: string;
+  qualityNotes?: string;
+  qualityCheckPassed?: boolean;
 }

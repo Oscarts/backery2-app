@@ -212,6 +212,7 @@ All cards should include proper avatars with appropriate icons as specified in t
 ```
 
 **Key Card Design Standards:**
+
 1. Delete buttons should always be at the bottom in the CardActions component
 2. No edit button should be included in the card (edit on click)
 3. Page-specific icons must match the sidebar navigation panel standards

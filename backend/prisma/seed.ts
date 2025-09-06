@@ -5,6 +5,20 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting seed...');
 
+  // Delete existing data in reverse order (to respect foreign keys)
+  console.log('🗑️  Cleaning existing data...');
+  await prisma.finishedProduct.deleteMany();
+  await prisma.intermediateProduct.deleteMany();
+  await prisma.rawMaterial.deleteMany();
+  await prisma.recipeIngredient.deleteMany();
+  await prisma.recipe.deleteMany();
+  await prisma.qualityStatus.deleteMany();
+  await prisma.storageLocation.deleteMany();
+  await prisma.unit.deleteMany();
+  await prisma.supplier.deleteMany();
+  await prisma.category.deleteMany();
+  console.log('✅ Cleaned existing data');
+
   // Create categories
   const categories = await Promise.all([
     // Raw Material Categories
@@ -170,7 +184,17 @@ async function main() {
           'Knead for 10 minutes',
           'First rise: 1 hour',
           'Shape and second rise: 30 minutes'
-        ])
+        ]),
+        // Production fields
+        emoji: '🍞',
+        difficulty: 'MEDIUM',
+        estimatedTotalTime: 135, // 45 min prep + 90 min rise times
+        equipmentRequired: [
+          'Stand mixer or mixing bowl',
+          'Kitchen scale',
+          'Proofing baskets',
+          'Oven with steam capability'
+        ]
       }
     }),
     prisma.recipe.create({
@@ -186,7 +210,17 @@ async function main() {
           'Whisk egg yolks with sugar',
           'Temper and cook until thick',
           'Strain and cool'
-        ])
+        ]),
+        // Production fields
+        emoji: '🍰',
+        difficulty: 'EASY',
+        estimatedTotalTime: 45, // 30 min prep + 15 min cooling
+        equipmentRequired: [
+          'Heavy-bottom saucepan',
+          'Whisk',
+          'Strainer',
+          'Digital thermometer'
+        ]
       }
     })
   ]);
@@ -331,8 +365,8 @@ async function main() {
         salePrice: 6.99,
         costToProduce: 2.50,
         storageLocationId: storageLocations[0].id,
-  qualityStatusId: defaultQualityStatus?.id,
-  status: 'IN_PRODUCTION'
+        qualityStatusId: defaultQualityStatus?.id,
+        status: 'IN_PRODUCTION'
       }
     }),
     prisma.finishedProduct.create({
@@ -350,8 +384,8 @@ async function main() {
         salePrice: 3.99,
         costToProduce: 1.20,
         storageLocationId: storageLocations[0].id,
-  qualityStatusId: defaultQualityStatus?.id,
-  status: 'IN_PRODUCTION'
+        qualityStatusId: defaultQualityStatus?.id,
+        status: 'IN_PRODUCTION'
       }
     }),
     prisma.finishedProduct.create({
@@ -369,8 +403,8 @@ async function main() {
         salePrice: 4.50,
         costToProduce: 1.50,
         storageLocationId: storageLocations[0].id,
-  qualityStatusId: defaultQualityStatus?.id,
-  status: 'IN_PRODUCTION'
+        qualityStatusId: defaultQualityStatus?.id,
+        status: 'IN_PRODUCTION'
       }
     })
   ]);

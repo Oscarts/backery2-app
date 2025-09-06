@@ -792,9 +792,9 @@ const RawMaterials: React.FC = () => {
                         action={null}
                         sx={{ pb: 1 }}
                       />
-                      
+
                       <Divider />
-                      
+
                       <CardContent sx={{ pt: 2, pb: 1, flexGrow: 1 }}>
                         <Grid container spacing={2}>
                           <Grid item xs={6}>
@@ -819,7 +819,7 @@ const RawMaterials: React.FC = () => {
                               )}
                             </Typography>
                           </Grid>
-                          
+
                           <Grid item xs={6}>
                             <Typography variant="subtitle2" color="text.secondary">
                               Price
@@ -828,7 +828,7 @@ const RawMaterials: React.FC = () => {
                               ${material.unitPrice?.toFixed(2) || '0.00'}
                             </Typography>
                           </Grid>
-                          
+
                           <Grid item xs={6}>
                             <Typography variant="subtitle2" color="text.secondary">
                               Expires
@@ -837,7 +837,7 @@ const RawMaterials: React.FC = () => {
                               {formatDate(material.expirationDate)}
                             </Typography>
                           </Grid>
-                          
+
                           <Grid item xs={6}>
                             <Typography variant="subtitle2" color="text.secondary">
                               Supplier
@@ -846,7 +846,7 @@ const RawMaterials: React.FC = () => {
                               {material.supplier?.name || 'Unknown'}
                             </Typography>
                           </Grid>
-                          
+
                           <Grid item xs={6}>
                             <Typography variant="subtitle2" color="text.secondary">
                               Category
@@ -855,7 +855,7 @@ const RawMaterials: React.FC = () => {
                               {material.category?.name || 'Uncategorized'}
                             </Typography>
                           </Grid>
-                          
+
                           <Grid item xs={6}>
                             <Typography variant="subtitle2" color="text.secondary">
                               Storage

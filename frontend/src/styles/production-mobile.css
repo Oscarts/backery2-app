@@ -1,0 +1,213 @@
+/* Mobile-First Production Interface Styles */
+
+/* Enhanced touch targets for mobile */
+.production-touch-button {
+    min-height: 48px !important;
+    min-width: 48px !important;
+    padding: 12px 16px !important;
+}
+
+/* Swipe-friendly cards */
+.production-card {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+}
+
+.production-card:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+}
+
+/* Large, finger-friendly recipe cards */
+.recipe-card {
+    min-height: 280px;
+    border-radius: 16px !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.recipe-card:hover,
+.recipe-card:focus {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Progressive Web App friendly */
+@media (display-mode: standalone) {
+    .production-header {
+        padding-top: env(safe-area-inset-top, 20px);
+    }
+}
+
+/* iPhone notch support */
+@supports (padding: max(0px)) {
+    .production-fab {
+        bottom: max(24px, env(safe-area-inset-bottom, 24px)) !important;
+        right: max(24px, env(safe-area-inset-right, 24px)) !important;
+    }
+}
+
+/* Dark mode optimizations */
+@media (prefers-color-scheme: dark) {
+    .production-card {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+    }
+
+    .recipe-emoji {
+        filter: brightness(1.1);
+    }
+}
+
+/* Reduced motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+
+    .production-card,
+    .recipe-card {
+        transition: none !important;
+    }
+
+    .production-card:hover,
+    .recipe-card:hover {
+        transform: none !important;
+    }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    .production-card {
+        border: 2px solid !important;
+    }
+
+    .recipe-status-badge {
+        font-weight: bold !important;
+        border: 1px solid !important;
+    }
+}
+
+/* Landscape mobile optimizations */
+@media (orientation: landscape) and (max-height: 500px) {
+    .production-dialog-content {
+        padding: 8px !important;
+    }
+
+    .recipe-grid {
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+}
+
+/* Large button styles for production actions */
+.production-action-button {
+    height: 56px !important;
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+    border-radius: 12px !important;
+    text-transform: none !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.production-action-button:active {
+    transform: scale(0.95);
+    transition: transform 0.1s ease;
+}
+
+/* Step completion animations */
+@keyframes stepComplete {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.step-completed {
+    animation: stepComplete 0.3s ease;
+}
+
+/* Progress bar enhancements */
+.production-progress {
+    height: 8px !important;
+    border-radius: 4px !important;
+    overflow: hidden;
+}
+
+.production-progress .MuiLinearProgress-bar {
+    border-radius: 4px !important;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+/* Floating action button enhancements */
+.production-fab {
+    width: 64px !important;
+    height: 64px !important;
+    box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3) !important;
+}
+
+.production-fab:hover {
+    transform: scale(1.1);
+    transition: all 0.2s ease;
+}
+
+/* Recipe emoji animations */
+.recipe-emoji {
+    font-size: 4rem !important;
+    line-height: 1 !important;
+    transition: transform 0.2s ease;
+}
+
+.recipe-card:hover .recipe-emoji {
+    transform: scale(1.1) rotate(5deg);
+}
+
+/* Kitchen timer styles */
+.kitchen-timer {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.5px;
+}
+
+/* Status chip improvements */
+.status-chip {
+    font-weight: 600 !important;
+    letter-spacing: 0.25px;
+    border-radius: 16px !important;
+}
+
+/* iOS-style switches and controls */
+.ios-style-switch {
+    border-radius: 16px !important;
+}
+
+/* Material-style elevation for cards */
+.elevated-card {
+    box-shadow:
+        0px 2px 1px -1px rgba(0, 0, 0, 0.2),
+        0px 1px 1px 0px rgba(0, 0, 0, 0.14),
+        0px 1px 3px 0px rgba(0, 0, 0, 0.12) !important;
+}
+
+.elevated-card:hover {
+    box-shadow:
+        0px 8px 10px -5px rgba(0, 0, 0, 0.2),
+        0px 16px 24px 2px rgba(0, 0, 0, 0.14),
+        0px 6px 30px 5px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Gradient backgrounds */
+.gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.gradient-success {
+    background: linear-gradient(135deg, #4caf50 0%, #8bc34a 100%) !important;
+}
+
+.gradient-warning {
+    background: linear-gradient(135deg, #ff9800 0%, #ffc107 100%) !important;
+}

@@ -11,7 +11,13 @@ import {
   CreateFinishedProductData,
   UpdateFinishedProductData,
   Supplier,
-  ApiResponse
+  ApiResponse,
+  ProductionRun,
+  ProductionStep,
+  CreateProductionRunData,
+  UpdateProductionRunData,
+  UpdateProductionStepData,
+  CompleteProductionStepData
 } from '../types';
 
 const API_BASE_URL = 'http://localhost:8000/api';
@@ -365,5 +371,70 @@ export const recipesApi = {
 
   getWhatCanIMake: async (): Promise<ApiResponse<WhatCanIMakeAnalysis>> => {
     return apiCall<WhatCanIMakeAnalysis>('/recipes/what-can-i-make');
+  }
+};
+
+// Production API
+export const productionApi = {
+  // Production Runs
+  getRuns: async (): Promise<ApiResponse<ProductionRun[]>> => {
+    return apiCall<ProductionRun[]>('/production/runs');
+  },
+
+  getDashboardRuns: async (): Promise<ApiResponse<ProductionRun[]>> => {
+    return apiCall<ProductionRun[]>('/production/runs/dashboard');
+  },
+
+  getRunById: async (id: string): Promise<ApiResponse<ProductionRun>> => {
+    return apiCall<ProductionRun>(`/production/runs/${id}`);
+  },
+
+  createRun: async (data: CreateProductionRunData): Promise<ApiResponse<ProductionRun>> => {
+    return apiCall<ProductionRun>('/production/runs', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  updateRun: async (id: string, data: UpdateProductionRunData): Promise<ApiResponse<ProductionRun>> => {
+    return apiCall<ProductionRun>(`/production/runs/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  deleteRun: async (id: string): Promise<ApiResponse<void>> => {
+    return apiCall<void>(`/production/runs/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Production Steps
+  getSteps: async (productionRunId: string): Promise<ApiResponse<ProductionStep[]>> => {
+    return apiCall<ProductionStep[]>(`/production/runs/${productionRunId}/steps`);
+  },
+
+  getStepById: async (id: string): Promise<ApiResponse<ProductionStep>> => {
+    return apiCall<ProductionStep>(`/production/steps/${id}`);
+  },
+
+  updateStep: async (id: string, data: UpdateProductionStepData): Promise<ApiResponse<ProductionStep>> => {
+    return apiCall<ProductionStep>(`/production/steps/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  startStep: async (id: string): Promise<ApiResponse<ProductionStep>> => {
+    return apiCall<ProductionStep>(`/production/steps/${id}/start`, {
+      method: 'POST',
+    });
+  },
+
+  completeStep: async (id: string, data: CompleteProductionStepData): Promise<ApiResponse<ProductionStep>> => {
+    return apiCall<ProductionStep>(`/production/steps/${id}/complete`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 };

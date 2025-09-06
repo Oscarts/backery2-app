@@ -184,11 +184,19 @@ model Recipe {
   instructions         Json?
   version              Int                   @default(1)
   isActive             Boolean               @default(true)
+  
+  // Production-specific fields
+  emoji                String?
+  difficulty           RecipeDifficulty?     @default(MEDIUM)
+  estimatedTotalTime   Int?                  // minutes
+  equipmentRequired    String[]              @default([])
+  
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
   intermediateProducts IntermediateProduct[]
   category             Category?             @relation(fields: [categoryId], references: [id])
   ingredients          RecipeIngredient[]
+  productionRuns       ProductionRun[]
 
   @@map("recipes")
 }
@@ -207,6 +215,52 @@ model RecipeIngredient {
   intermediateProduct   IntermediateProduct? @relation(fields: [intermediateProductId], references: [id])
 
   @@map("recipe_ingredients")
+}
+
+model ProductionRun {
+  id                String              @id @default(cuid())
+  name              String
+  recipeId          String
+  targetQuantity    Float
+  targetUnit        String
+  status            ProductionStatus    @default(PLANNED)
+  currentStepIndex  Int                 @default(0)
+  startedAt         DateTime            @default(now())
+  completedAt       DateTime?
+  estimatedFinish   DateTime?
+  actualCost        Float?
+  finalQuantity     Float?
+  notes             String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  recipe            Recipe              @relation(fields: [recipeId], references: [id])
+  steps             ProductionStep[]
+
+  @@map("production_runs")
+}
+
+model ProductionStep {
+  id                String              @id @default(cuid())
+  productionRunId   String
+  name              String
+  description       String?
+  stepOrder         Int
+  estimatedMinutes  Int?
+  status            ProductionStepStatus @default(PENDING)
+  startedAt         DateTime?
+  completedAt       DateTime?
+  actualMinutes     Int?
+  notes             String?
+  temperature       Int?                // Fahrenheit
+  equipmentUsed     String[]            @default([])
+  qualityCheckPassed Boolean?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  productionRun     ProductionRun       @relation(fields: [productionRunId], references: [id], onDelete: Cascade)
+
+  @@map("production_steps")
 }
 
 enum UserRole {
@@ -228,4 +282,25 @@ enum IntermediateProductStatus {
   COMPLETED
   ON_HOLD
   DISCARDED
+}
+
+enum RecipeDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum ProductionStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  ON_HOLD
+}
+
+enum ProductionStepStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
 }
