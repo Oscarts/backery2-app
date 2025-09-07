@@ -20,10 +20,17 @@ export const getProductionSteps = async (req: Request, res: Response) => {
       }
     });
 
-    res.json(steps);
+    res.json({
+      success: true,
+      data: steps,
+      message: 'Production steps retrieved successfully'
+    });
   } catch (error) {
     console.error('Error fetching production steps:', error);
-    res.status(500).json({ error: 'Failed to fetch production steps' });
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to fetch production steps' 
+    });
   }
 };
 
@@ -44,13 +51,23 @@ export const getProductionStepById = async (req: Request, res: Response) => {
     });
 
     if (!step) {
-      return res.status(404).json({ error: 'Production step not found' });
+      return res.status(404).json({ 
+        success: false,
+        error: 'Production step not found' 
+      });
     }
 
-    res.json(step);
+    res.json({
+      success: true,
+      data: step,
+      message: 'Production step retrieved successfully'
+    });
   } catch (error) {
     console.error('Error fetching production step:', error);
-    res.status(500).json({ error: 'Failed to fetch production step' });
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to fetch production step' 
+    });
   }
 };
 
@@ -89,10 +106,17 @@ export const updateProductionStep = async (req: Request, res: Response) => {
       }
     });
 
-    res.json(updatedStep);
+    res.json({
+      success: true,
+      data: updatedStep,
+      message: 'Production step updated successfully'
+    });
   } catch (error) {
     console.error('Error updating production step:', error);
-    res.status(500).json({ error: 'Failed to update production step' });
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to update production step' 
+    });
   }
 };
 
@@ -108,15 +132,24 @@ export const startProductionStep = async (req: Request, res: Response) => {
     });
 
     if (!currentStep) {
-      return res.status(404).json({ error: 'Production step not found' });
+      return res.status(404).json({ 
+        success: false,
+        error: 'Production step not found' 
+      });
     }
 
     if (currentStep.status === ProductionStepStatus.IN_PROGRESS) {
-      return res.status(400).json({ error: 'Production step is already in progress' });
+      return res.status(400).json({ 
+        success: false,
+        error: 'Production step is already in progress' 
+      });
     }
 
     if (currentStep.status === ProductionStepStatus.COMPLETED) {
-      return res.status(400).json({ error: 'Production step is already completed' });
+      return res.status(400).json({ 
+        success: false,
+        error: 'Production step is already completed' 
+      });
     }
 
     const updatedStep = await prisma.productionStep.update({
@@ -136,10 +169,17 @@ export const startProductionStep = async (req: Request, res: Response) => {
       }
     });
 
-    res.json(updatedStep);
+    res.json({
+      success: true,
+      data: updatedStep,
+      message: 'Production step started successfully'
+    });
   } catch (error) {
     console.error('Error starting production step:', error);
-    res.status(500).json({ error: 'Failed to start production step' });
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to start production step' 
+    });
   }
 };
 
@@ -173,11 +213,17 @@ export const completeProductionStep = async (req: Request, res: Response) => {
     });
 
     if (!currentStep) {
-      return res.status(404).json({ error: 'Production step not found' });
+      return res.status(404).json({ 
+        success: false,
+        error: 'Production step not found' 
+      });
     }
 
     if (currentStep.status !== ProductionStepStatus.IN_PROGRESS) {
-      return res.status(400).json({ error: 'Production step must be in progress to complete' });
+      return res.status(400).json({ 
+        success: false,
+        error: 'Production step must be in progress to complete' 
+      });
     }
 
     const completionTime = new Date();
@@ -289,14 +335,21 @@ export const completeProductionStep = async (req: Request, res: Response) => {
     }
 
     res.json({
-      step: updatedStep,
-      productionCompleted: allStepsCompleted,
-      completedProductionRun,
-      createdFinishedProduct
+      success: true,
+      data: {
+        step: updatedStep,
+        productionCompleted: allStepsCompleted,
+        completedProductionRun,
+        createdFinishedProduct
+      },
+      message: allStepsCompleted ? 'Production step completed and production run finished' : 'Production step completed successfully'
     });
   } catch (error) {
     console.error('Error completing production step:', error);
-    res.status(500).json({ error: 'Failed to complete production step' });
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to complete production step' 
+    });
   }
 };
 
@@ -337,7 +390,10 @@ export const logQualityCheckpoint = async (req: Request, res: Response) => {
     });
 
     if (!currentStep) {
-      return res.status(404).json({ error: 'Production step not found' });
+      return res.status(404).json({ 
+        success: false,
+        error: 'Production step not found' 
+      });
     }
 
     // Create quality checkpoint data (store in notes for now since schema doesn't have qualityCheckData)
@@ -379,12 +435,19 @@ export const logQualityCheckpoint = async (req: Request, res: Response) => {
     }
 
     res.json({
-      productionStep: updatedStep,
-      checkpoint,
-      alerts: qualityStatus === 'FAIL' ? alerts : []
+      success: true,
+      data: {
+        productionStep: updatedStep,
+        checkpoint,
+        alerts: qualityStatus === 'FAIL' ? alerts : []
+      },
+      message: 'Quality checkpoint logged successfully'
     });
   } catch (error) {
     console.error('Error logging quality checkpoint:', error);
-    res.status(500).json({ error: 'Failed to log quality checkpoint' });
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to log quality checkpoint' 
+    });
   }
 };
