@@ -49,7 +49,7 @@ const RecipeSelectionDialog: React.FC<RecipeSelectionDialogProps> = ({
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const [selectedCategory, setSelectedCategory] = useState<string>('All');
-    const [recipes, setRecipes] = useState<Recipe[]>([]);
+    const [recipes, setRecipes] = useState<(Recipe & { canMake?: boolean; maxBatches?: number; missingIngredients?: any[]; shortage?: string })[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -64,9 +64,39 @@ const RecipeSelectionDialog: React.FC<RecipeSelectionDialogProps> = ({
         setLoading(true);
         setError(null);
         try {
-            const response = await recipesApi.getAll();
+            const response = await recipesApi.getWhatCanIMake();
             if (response.success && response.data) {
-                setRecipes(response.data);
+                // Transform RecipeAnalysis to Recipe format with availability data
+                const recipesWithAvailability = response.data.recipes.map(recipeAnalysis => ({
+                    id: recipeAnalysis.recipeId,
+                    name: recipeAnalysis.recipeName,
+                    categoryId: 'unknown', // We don't have this from the analysis
+                    category: {
+                        id: 'unknown',
+                        name: recipeAnalysis.category,
+                        type: 'INTERMEDIATE' as const,
+                        createdAt: new Date().toISOString()
+                    },
+                    yieldQuantity: recipeAnalysis.yieldQuantity,
+                    yieldUnit: recipeAnalysis.yieldUnit,
+                    version: 1,
+                    isActive: true,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    canMake: recipeAnalysis.canMake,
+                    maxBatches: recipeAnalysis.maxBatches,
+                    missingIngredients: recipeAnalysis.missingIngredients,
+                    shortage: recipeAnalysis.missingIngredients.length > 0 
+                        ? recipeAnalysis.missingIngredients.map(ing => 
+                            `Missing ${ing.shortage} ${ing.name}`
+                          ).join(', ')
+                        : undefined,
+                    // Add some default values
+                    emoji: '🥖',
+                    difficulty: 'MEDIUM',
+                    estimatedTotalTime: 60
+                } as Recipe & { canMake: boolean; maxBatches: number; missingIngredients: any[]; shortage?: string }));
+                setRecipes(recipesWithAvailability);
             } else {
                 setError('Failed to load recipes');
             }
