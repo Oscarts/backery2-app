@@ -31,7 +31,7 @@ import { ProductionRun, ProductionStatus, ProductionStepStatus } from '../../typ
 import { productionApi } from '../../services/realApi';
 import RecipeSelectionDialog from './RecipeSelectionDialog';
 import QuantitySelectionDialog from './QuantitySelectionDialog';
-import ProductionTracker from './ProductionTracker';
+import ProductionTracker from './EnhancedProductionTracker';
 
 const ProductionDashboard: React.FC = () => {
     const theme = useTheme();

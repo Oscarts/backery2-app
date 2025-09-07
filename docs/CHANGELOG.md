@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Critical Bug Fixes
+
+- **🔧 FIXED: Production Capacity Calculation (Sept 7, 2025)**
+  - Fixed `maxBatches` calculation in "What Can I Make" analysis
+  - Was hardcoded to 1 batch for all recipes, now properly calculates based on ingredient availability
+  - Implemented limiting ingredient analysis (finds ingredient that runs out first)
+  - **Impact**: 50x improvement in production capacity accuracy (e.g., 500kg vs 10kg for bread dough)
+  - Added comprehensive unit tests to prevent regression
+  - See: `/docs/fixes/production-capacity-calculation-fix.md` for detailed analysis
+
 ### Bug Fixes
 
 - Fixed "What Can I Make" page white screen issue:
@@ -9,6 +19,14 @@
   - Added validation test to ensure API response structure consistency
   - Improved error handling and logging for recipe ingredients
   - Added support for recipes with missing ingredients
+
+### Frontend Improvements
+
+- Enhanced Recipe Selection Dialog with proper availability indicators:
+  - Red/green visual cues for recipe availability
+  - Disabled interaction for unavailable recipes
+  - Clear shortage information display
+  - Accurate batch count display: "(50 batches possible)" instead of hardcoded values
 
 ### Documentation
 

@@ -12,7 +12,8 @@ import {
     getProductionStepById,
     updateProductionStep,
     startProductionStep,
-    completeProductionStep
+    completeProductionStep,
+    logQualityCheckpoint
 } from '../controllers/productionStepController';
 
 const router = Router();
@@ -31,6 +32,7 @@ router.get('/steps/:id', getProductionStepById);
 router.put('/steps/:id', updateProductionStep);
 router.post('/steps/:id/start', startProductionStep);
 router.post('/steps/:id/complete', completeProductionStep);
+router.post('/steps/:id/quality-check', logQualityCheckpoint);
 
 // Legacy route for backward compatibility
 router.post('/what-can-i-make', (req, res) => res.json({ message: 'Production planning API - to be implemented' }));

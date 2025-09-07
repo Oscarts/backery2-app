@@ -260,6 +260,13 @@ model ProductionStep {
   temperature       Int?                // Fahrenheit
   equipmentUsed     String[]            @default([])
   qualityCheckPassed Boolean?
+  qualityCheckData  Json?               // Quality checkpoint details
+  resourcesConsumed Json?               // Materials consumed in this step
+  yieldQuantity     Float?              // Actual output from this step
+  yieldUnit         String?             // Unit for yield
+  efficiencyScore   Float?              // Planned vs actual time efficiency
+  alertsGenerated   String[]            @default([]) // Any alerts during step
+  stepPhotos        String[]            @default([]) // Photo documentation
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   

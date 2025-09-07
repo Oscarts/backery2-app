@@ -567,6 +567,38 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
         }
       }
 
+      // Calculate maximum batches based on ingredient availability
+      let maxBatches = 0;
+      if (canMake) {
+        maxBatches = Number.MAX_SAFE_INTEGER; // Start with infinite, reduce based on limiting ingredient
+        
+        for (const ingredient of recipe.ingredients) {
+          // Skip invalid ingredients
+          if (!ingredient.rawMaterialId && !ingredient.intermediateProductId) {
+            continue;
+          }
+
+          let availableQuantity = 0;
+          
+          if (ingredient.rawMaterialId) {
+            const material = rawMaterialInventory.get(ingredient.rawMaterialId);
+            availableQuantity = material ? material.quantity : 0;
+          } else if (ingredient.intermediateProductId) {
+            const product = intermediateProductInventory.get(ingredient.intermediateProductId);
+            availableQuantity = product ? product.quantity : 0;
+          }
+
+          // Calculate how many batches this ingredient allows
+          const batchesForThisIngredient = Math.floor(availableQuantity / ingredient.quantity);
+          maxBatches = Math.min(maxBatches, batchesForThisIngredient);
+        }
+
+        // If we didn't find any ingredients or maxBatches is still infinite, set to 0
+        if (maxBatches === Number.MAX_SAFE_INTEGER || maxBatches < 0) {
+          maxBatches = 0;
+        }
+      }
+
       // Create a recipe analysis object that matches the frontend's expected structure
       const recipeData = {
         recipeId: recipe.id,
@@ -575,7 +607,7 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
         yieldQuantity: recipe.yieldQuantity || 0,
         yieldUnit: recipe.yieldUnit || '',
         canMake: canMake,
-        maxBatches: canMake ? 1 : 0, // Default to 1 for now, we could calculate this based on ingredients
+        maxBatches: maxBatches,
         missingIngredients: missingIngredients.map(ing => ({
           name: ing.name,
           needed: ing.required,

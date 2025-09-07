@@ -436,5 +436,23 @@ export const productionApi = {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  },
+
+  logQualityCheckpoint: async (id: string, data: {
+    checkpointType: string;
+    qualityStatus: 'PASS' | 'FAIL' | 'WARNING';
+    measurements?: Record<string, any>;
+    notes?: string;
+    photos?: string[];
+    checkedByUserId?: string;
+  }): Promise<ApiResponse<{
+    productionStep: ProductionStep;
+    checkpoint: any;
+    alerts: string[];
+  }>> => {
+    return apiCall(`/production/steps/${id}/quality-check`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 };

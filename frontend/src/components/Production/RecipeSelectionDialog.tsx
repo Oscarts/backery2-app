@@ -21,6 +21,7 @@ import {
     CheckCircle as CheckIcon,
     Schedule as TimeIcon,
     TrendingUp as DifficultyIcon,
+    Error as ErrorIcon,
 } from '@mui/icons-material';
 import { TransitionProps } from '@mui/material/transitions';
 import { Recipe } from '../../types/index';
@@ -207,21 +208,26 @@ const RecipeSelectionDialog: React.FC<RecipeSelectionDialogProps> = ({
                                 <Grid item xs={12} sm={6} md={4} key={recipe.id}>
                                     <Card
                                         sx={{
-                                            cursor: 'pointer',
+                                            cursor: recipe.canMake ? 'pointer' : 'not-allowed',
                                             transition: 'all 0.3s ease',
                                             border: 2,
-                                            borderColor: 'success.light', // All recipes are available for now
-                                            '&:hover': {
+                                            borderColor: recipe.canMake ? 'success.light' : 'error.light',
+                                            opacity: recipe.canMake ? 1 : 0.6,
+                                            '&:hover': recipe.canMake ? {
                                                 transform: 'translateY(-4px)',
                                                 boxShadow: 6,
-                                            }
+                                            } : {}
                                         }}
-                                        onClick={() => onSelectRecipe(recipe)}
+                                        onClick={() => recipe.canMake && onSelectRecipe(recipe)}
                                     >
                                         <CardContent sx={{ p: 2 }}>
                                             {/* Recipe Status Icon */}
                                             <Box sx={{ position: 'absolute', top: 8, right: 8 }}>
-                                                <CheckIcon color="success" fontSize="small" />
+                                                {recipe.canMake ? (
+                                                    <CheckIcon color="success" fontSize="small" />
+                                                ) : (
+                                                    <ErrorIcon color="error" fontSize="small" />
+                                                )}
                                             </Box>
 
                                             {/* Recipe Icon */}
@@ -278,11 +284,20 @@ const RecipeSelectionDialog: React.FC<RecipeSelectionDialogProps> = ({
                                             </Stack>
 
                                             {/* Availability Status */}
-                                            <Alert severity="success" sx={{ py: 0.5 }}>
-                                                <Typography variant="caption">
-                                                    ✅ Ready to make up to {recipe.yieldQuantity} {recipe.yieldUnit}
-                                                </Typography>
-                                            </Alert>
+                                            {recipe.canMake ? (
+                                                <Alert severity="success" sx={{ py: 0.5 }}>
+                                                    <Typography variant="caption">
+                                                        ✅ Ready to make up to {recipe.yieldQuantity} {recipe.yieldUnit}
+                                                        {recipe.maxBatches && recipe.maxBatches > 1 && ` (${recipe.maxBatches} batches possible)`}
+                                                    </Typography>
+                                                </Alert>
+                                            ) : (
+                                                <Alert severity="error" sx={{ py: 0.5 }}>
+                                                    <Typography variant="caption">
+                                                        ❌ Missing ingredients: {recipe.shortage}
+                                                    </Typography>
+                                                </Alert>
+                                            )}
 
                                             {/* Cost estimate removed for now */}
                                         </CardContent>
