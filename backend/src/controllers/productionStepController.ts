@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { ProductionCompletionService } from '../services/productionCompletionService';
 
 const prisma = new PrismaClient();
+const completionService = new ProductionCompletionService();
 
 // Get all steps for a production run
 export const getProductionSteps = async (req: Request, res: Response) => {
@@ -41,8 +43,7 @@ export const getProductionStepById = async (req: Request, res: Response) => {
                     include: {
                         recipe: true
                     }
-                },
-                qualityChecks: true
+                }
             }
         });
 
@@ -132,14 +133,28 @@ export const updateProductionStep = async (req: Request, res: Response) => {
                     data: { status: 'IN_PROGRESS', startedAt: new Date() }
                 });
             } else {
-                // No more steps, mark production run as completed
-                await prisma.productionRun.update({
-                    where: { id: updatedStep.productionRunId },
-                    data: {
-                        status: 'COMPLETED',
-                        completedAt: new Date()
+                // No more steps, complete production run and create finished products
+                try {
+                    console.log('🏁 Last step completed, completing production run...');
+                    const completionResult = await completionService.completeProductionRun(
+                        updatedStep.productionRunId
+                    );
+                    if (completionResult && 'finishedProduct' in completionResult) {
+                        console.log('✅ Production completed successfully:', completionResult.finishedProduct.name);
+                    } else {
+                        console.log('✅ Production completed successfully');
                     }
-                });
+                } catch (error) {
+                    console.error('❌ Error completing production run:', error);
+                    // Still mark production as completed even if finished product creation fails
+                    await prisma.productionRun.update({
+                        where: { id: updatedStep.productionRunId },
+                        data: {
+                            status: 'COMPLETED',
+                            completedAt: new Date()
+                        }
+                    });
+                }
             }
         }
 
