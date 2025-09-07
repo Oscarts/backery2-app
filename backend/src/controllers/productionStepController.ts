@@ -72,36 +72,34 @@ export const updateProductionStep = async (req: Request, res: Response) => {
         const { id } = req.params;
         const {
             status,
-            actualStartTime,
-            actualEndTime,
+            startedAt,
+            completedAt,
             notes,
-            qualityNotes,
-            actualDuration
+            actualMinutes
         } = req.body;
 
         const updateData: any = {};
 
         if (status) updateData.status = status;
-        if (actualStartTime) updateData.actualStartTime = new Date(actualStartTime);
-        if (actualEndTime) updateData.actualEndTime = new Date(actualEndTime);
+        if (startedAt) updateData.startedAt = new Date(startedAt);
+        if (completedAt) updateData.completedAt = new Date(completedAt);
         if (notes !== undefined) updateData.notes = notes;
-        if (qualityNotes !== undefined) updateData.qualityNotes = qualityNotes;
-        if (actualDuration) updateData.actualDuration = actualDuration;
+        if (actualMinutes) updateData.actualMinutes = actualMinutes;
 
         // If marking as completed, set end time if not provided
-        if (status === 'COMPLETED' && !actualEndTime && !updateData.actualEndTime) {
-            updateData.actualEndTime = new Date();
+        if (status === 'COMPLETED' && !completedAt && !updateData.completedAt) {
+            updateData.completedAt = new Date();
         }
 
         // If starting step, set start time if not provided
-        if (status === 'IN_PROGRESS' && !actualStartTime && !updateData.actualStartTime) {
-            updateData.actualStartTime = new Date();
+        if (status === 'IN_PROGRESS' && !startedAt && !updateData.startedAt) {
+            updateData.startedAt = new Date();
         }
 
         // Calculate actual duration if both start and end times are available
-        if (updateData.actualStartTime && updateData.actualEndTime) {
-            updateData.actualDuration = Math.ceil(
-                (updateData.actualEndTime.getTime() - updateData.actualStartTime.getTime()) / (1000 * 60)
+        if (updateData.startedAt && updateData.completedAt) {
+            updateData.actualMinutes = Math.ceil(
+                (updateData.completedAt.getTime() - updateData.startedAt.getTime()) / (1000 * 60)
             );
         }
 
@@ -113,8 +111,7 @@ export const updateProductionStep = async (req: Request, res: Response) => {
                     include: {
                         recipe: true
                     }
-                },
-                qualityChecks: true
+                }
             }
         });
 
@@ -123,16 +120,16 @@ export const updateProductionStep = async (req: Request, res: Response) => {
             const nextStep = await prisma.productionStep.findFirst({
                 where: {
                     productionRunId: updatedStep.productionRunId,
-                    ordinalPosition: { gt: updatedStep.ordinalPosition },
+                    stepOrder: { gt: updatedStep.stepOrder },
                     status: 'PENDING'
                 },
-                orderBy: { ordinalPosition: 'asc' }
+                orderBy: { stepOrder: 'asc' }
             });
 
             if (nextStep) {
                 await prisma.productionStep.update({
                     where: { id: nextStep.id },
-                    data: { status: 'IN_PROGRESS', actualStartTime: new Date() }
+                    data: { status: 'IN_PROGRESS', startedAt: new Date() }
                 });
             } else {
                 // No more steps, mark production run as completed
@@ -140,7 +137,7 @@ export const updateProductionStep = async (req: Request, res: Response) => {
                     where: { id: updatedStep.productionRunId },
                     data: {
                         status: 'COMPLETED',
-                        actualEndTime: new Date()
+                        completedAt: new Date()
                     }
                 });
             }
@@ -193,7 +190,7 @@ export const startProductionStep = async (req: Request, res: Response) => {
         const incompletePreviousSteps = await prisma.productionStep.count({
             where: {
                 productionRunId: step.productionRunId,
-                ordinalPosition: { lt: step.ordinalPosition },
+                stepOrder: { lt: step.stepOrder },
                 status: { notIn: ['COMPLETED', 'SKIPPED'] }
             }
         });
@@ -210,25 +207,23 @@ export const startProductionStep = async (req: Request, res: Response) => {
             where: { id },
             data: {
                 status: 'IN_PROGRESS',
-                actualStartTime: new Date()
+                startedAt: new Date()
             },
             include: {
                 productionRun: {
                     include: {
                         recipe: true
                     }
-                },
-                qualityChecks: true
+                }
             }
         });
 
         // If this is the first step, update production run status
-        if (step.ordinalPosition === 1) {
+        if (step.stepOrder === 1) {
             await prisma.productionRun.update({
                 where: { id: step.productionRunId },
                 data: {
-                    status: 'IN_PROGRESS',
-                    actualStartTime: new Date()
+                    status: 'IN_PROGRESS'
                 }
             });
         }
@@ -250,34 +245,19 @@ export const startProductionStep = async (req: Request, res: Response) => {
 export const completeProductionStep = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { notes, qualityNotes, qualityCheckPassed = true } = req.body;
+        const { notes } = req.body;
 
         const updatedStep = await prisma.productionStep.update({
             where: { id },
             data: {
                 status: 'COMPLETED',
-                actualEndTime: new Date(),
-                notes,
-                qualityNotes
+                completedAt: new Date(),
+                notes
             },
             include: {
-                productionRun: true,
-                qualityChecks: true
+                productionRun: true
             }
         });
-
-        // Create quality check record if this is a quality step
-        if (updatedStep.name.toLowerCase().includes('quality')) {
-            await prisma.qualityCheck.create({
-                data: {
-                    productionStepId: id,
-                    checkType: 'STEP_COMPLETION',
-                    result: qualityCheckPassed ? 'PASS' : 'FAIL',
-                    notes: qualityNotes,
-                    checkedAt: new Date()
-                }
-            });
-        }
 
         res.json({
             success: true,

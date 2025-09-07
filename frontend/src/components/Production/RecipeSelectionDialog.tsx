@@ -275,7 +275,7 @@ const RecipeSelectionDialog: React.FC<RecipeSelectionDialogProps> = ({
                         </Grid>
                     )}
                 </Box>
-                
+
                 {/* Bottom Action Area */}
                 <Box
                     sx={{

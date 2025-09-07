@@ -17,22 +17,19 @@ import {
     LinearProgress,
     Fab,
     TextField,
-    Collapse,
+    CircularProgress,
 } from '@mui/material';
 import {
     Close as CloseIcon,
     PlayArrow as PlayIcon,
     Pause as PauseIcon,
     Check as CheckIcon,
-    Add as AddIcon,
-    Edit as EditIcon,
     Timer as TimerIcon,
-    Notes as NotesIcon,
-    TrendingUp as ProgressIcon,
     Kitchen as KitchenIcon,
 } from '@mui/icons-material';
 import { TransitionProps } from '@mui/material/transitions';
-import { ProductionRun, ProductionStepStatus, ProductionStatus } from '../../types/index';
+import { ProductionRun, ProductionStep, ProductionStepStatus, ProductionStatus } from '../../types/index';
+import { productionApi } from '../../services/realApi';
 import { formatDistanceToNow } from 'date-fns';
 
 const Transition = React.forwardRef(function Transition(
@@ -46,40 +43,40 @@ const Transition = React.forwardRef(function Transition(
 
 interface ProductionTrackerProps {
     open: boolean;
-    production: ProductionRun;
+    production: ProductionRun | null;
     onClose: () => void;
-    onCompleteStep: (stepId: string, data?: any) => void;
-    onAddStep: (data: any) => void;
-    onPause: () => void;
-    onResume: () => void;
-    onComplete: () => void;
+    onProductionUpdated?: () => void;
 }
 
 const ProductionTracker: React.FC<ProductionTrackerProps> = ({
     open,
     production,
     onClose,
-    onCompleteStep,
-    onAddStep,
-    onPause,
-    onResume,
-    onComplete,
+    onProductionUpdated,
 }) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+    
+    // State management
+    const [steps, setSteps] = useState<ProductionStep[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [timer, setTimer] = useState(0);
-    const [showAddStep, setShowAddStep] = useState(false);
-    const [newStepName, setNewStepName] = useState('');
     const [stepNotes, setStepNotes] = useState<{ [key: string]: string }>({});
+    const [updatingSteps, setUpdatingSteps] = useState<Set<string>>(new Set());
 
-    const steps = production.steps || [];
-    const currentStep = steps.find(s => s.status === ProductionStepStatus.IN_PROGRESS);
-    const completedSteps = steps.filter(s => s.status === ProductionStepStatus.COMPLETED).length;
-    const progressPercentage = (completedSteps / steps.length) * 100;
+    // Load production steps when dialog opens or production changes
+    useEffect(() => {
+        if (open && production?.id) {
+            loadProductionSteps();
+        }
+    }, [open, production?.id]);
 
     // Timer for current step
     useEffect(() => {
-        if (currentStep && production.status === ProductionStatus.IN_PROGRESS) {
+        const currentStep = steps.find(s => s.status === ProductionStepStatus.IN_PROGRESS);
+        
+        if (currentStep?.startedAt && production?.status === ProductionStatus.IN_PROGRESS) {
             const interval = setInterval(() => {
                 const startTime = new Date(currentStep.startedAt!).getTime();
                 const now = new Date().getTime();
@@ -88,9 +85,153 @@ const ProductionTracker: React.FC<ProductionTrackerProps> = ({
 
             return () => clearInterval(interval);
         }
-    }, [currentStep, production.status]);
+    }, [steps, production?.status]);
 
-    const getStepStatusIcon = (step: any) => {
+    const loadProductionSteps = async () => {
+        if (!production?.id) return;
+        
+        try {
+            setLoading(true);
+            setError(null);
+            const response = await productionApi.getSteps(production.id);
+            if (response.success && response.data) {
+                setSteps(response.data);
+            } else {
+                setError('Failed to load production steps');
+            }
+        } catch (error) {
+            console.error('Error loading production steps:', error);
+            setError('Failed to load production steps');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleStartStep = async (step: ProductionStep) => {
+        if (!step.id) return;
+        
+        try {
+            setUpdatingSteps(prev => new Set(prev).add(step.id));
+            const response = await productionApi.startStep(step.id);
+            if (response.success) {
+                await loadProductionSteps(); // Reload to get updated state
+                onProductionUpdated?.();
+            } else {
+                setError('Failed to start step');
+            }
+        } catch (error) {
+            console.error('Error starting step:', error);
+            setError('Failed to start step');
+        } finally {
+            setUpdatingSteps(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(step.id);
+                return newSet;
+            });
+        }
+    };
+
+    const handleCompleteStep = async (step: ProductionStep) => {
+        if (!step.id) return;
+        
+        const notes = stepNotes[step.id] || '';
+        
+        try {
+            setUpdatingSteps(prev => new Set(prev).add(step.id));
+            const response = await productionApi.completeStep(step.id, {
+                notes: notes.trim() || undefined,
+            });
+            
+            if (response.success) {
+                await loadProductionSteps(); // Reload to get updated state
+                setStepNotes({ ...stepNotes, [step.id]: '' }); // Clear notes
+                onProductionUpdated?.();
+            } else {
+                setError('Failed to complete step');
+            }
+        } catch (error) {
+            console.error('Error completing step:', error);
+            setError('Failed to complete step');
+        } finally {
+            setUpdatingSteps(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(step.id);
+                return newSet;
+            });
+        }
+    };
+
+    const handlePauseProduction = async () => {
+        if (!production?.id) return;
+        
+        try {
+            const response = await productionApi.updateRun(production.id, {
+                status: ProductionStatus.ON_HOLD
+            });
+            if (response.success) {
+                onProductionUpdated?.();
+            } else {
+                setError('Failed to pause production');
+            }
+        } catch (error) {
+            console.error('Error pausing production:', error);
+            setError('Failed to pause production');
+        }
+    };
+
+    const handleResumeProduction = async () => {
+        if (!production?.id) return;
+        
+        try {
+            const response = await productionApi.updateRun(production.id, {
+                status: ProductionStatus.IN_PROGRESS
+            });
+            if (response.success) {
+                onProductionUpdated?.();
+            } else {
+                setError('Failed to resume production');
+            }
+        } catch (error) {
+            console.error('Error resuming production:', error);
+            setError('Failed to resume production');
+        }
+    };
+
+    const handleCompleteProduction = async () => {
+        if (!production?.id) return;
+        
+        try {
+            const response = await productionApi.updateRun(production.id, {
+                status: ProductionStatus.COMPLETED,
+                completedAt: new Date().toISOString(),
+                finalQuantity: production.targetQuantity
+            });
+            if (response.success) {
+                onProductionUpdated?.();
+                onClose();
+            } else {
+                setError('Failed to complete production');
+            }
+        } catch (error) {
+            console.error('Error completing production:', error);
+            setError('Failed to complete production');
+        }
+    };
+
+    if (!production) return null;
+
+    const currentStep = steps.find(s => s.status === ProductionStepStatus.IN_PROGRESS);
+    const completedSteps = steps.filter(s => s.status === ProductionStepStatus.COMPLETED).length;
+    const progressPercentage = steps.length > 0 ? (completedSteps / steps.length) * 100 : 0;
+    const allStepsCompleted = steps.length > 0 && steps.every(s => 
+        s.status === ProductionStepStatus.COMPLETED || s.status === ProductionStepStatus.SKIPPED
+    );
+
+    const getStepStatusIcon = (step: ProductionStep) => {
+        if (updatingSteps.has(step.id)) {
+            return <CircularProgress size={20} />;
+        }
+        
         switch (step.status) {
             case ProductionStepStatus.COMPLETED:
                 return <CheckIcon color="success" />;
@@ -103,7 +244,7 @@ const ProductionTracker: React.FC<ProductionTrackerProps> = ({
         }
     };
 
-    const getStepStatusColor = (step: any) => {
+    const getStepStatusColor = (step: ProductionStep) => {
         switch (step.status) {
             case ProductionStepStatus.COMPLETED:
                 return 'success.light';
@@ -115,31 +256,6 @@ const ProductionTracker: React.FC<ProductionTrackerProps> = ({
                 return 'grey.100';
         }
     };
-
-    const handleCompleteStep = (step: any) => {
-        const notes = stepNotes[step.id] || '';
-        onCompleteStep(step.id, {
-            actualMinutes: timer,
-            notes: notes.trim() || undefined,
-        });
-        setStepNotes({ ...stepNotes, [step.id]: '' });
-    };
-
-    const handleAddCustomStep = () => {
-        if (newStepName.trim()) {
-            onAddStep({
-                name: newStepName,
-                insertAfter: currentStep?.stepOrder || steps.length,
-                estimatedMinutes: 10,
-            });
-            setNewStepName('');
-            setShowAddStep(false);
-        }
-    };
-
-    const allStepsCompleted = steps.every(s =>
-        s.status === ProductionStepStatus.COMPLETED || s.status === ProductionStepStatus.SKIPPED
-    );
 
     return (
         <Dialog
@@ -225,141 +341,153 @@ const ProductionTracker: React.FC<ProductionTrackerProps> = ({
                     </Stack>
                 </Box>
 
-                {/* Steps List */}
-                <Box sx={{ p: 2, maxHeight: 'calc(100vh - 300px)', overflowY: 'auto' }}>
-                    <Stack spacing={2}>
-                        {steps.map((step, index) => (
-                            <Card
-                                key={step.id}
-                                variant="outlined"
-                                sx={{
-                                    borderColor: getStepStatusColor(step),
-                                    borderWidth: step.status === ProductionStepStatus.IN_PROGRESS ? 2 : 1,
-                                    backgroundColor: step.status === ProductionStepStatus.IN_PROGRESS
-                                        ? 'primary.50'
-                                        : step.status === ProductionStepStatus.COMPLETED
-                                            ? 'success.50'
-                                            : 'background.paper',
-                                }}
-                            >
-                                <CardContent sx={{ p: 2 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                                        {/* Step Icon */}
-                                        <Box sx={{ mt: 0.5 }}>
-                                            {getStepStatusIcon(step)}
-                                        </Box>
+                {/* Error Display */}
+                {error && (
+                    <Alert severity="error" sx={{ mx: 2, mt: 2 }}>
+                        {error}
+                    </Alert>
+                )}
 
-                                        {/* Step Content */}
-                                        <Box sx={{ flexGrow: 1 }}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                                                    {index + 1}. {step.name}
-                                                </Typography>
-                                                {step.status === ProductionStepStatus.IN_PROGRESS && (
-                                                    <Chip
-                                                        label={`${timer} min`}
-                                                        color="primary"
-                                                        size="small"
-                                                        sx={{ animation: 'pulse 2s infinite' }}
-                                                    />
-                                                )}
+                {/* Loading State */}
+                {loading && (
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 4 }}>
+                        <CircularProgress size={60} />
+                    </Box>
+                )}
+
+                {/* Steps List */}
+                {!loading && (
+                    <Box sx={{ p: 2, maxHeight: 'calc(100vh - 300px)', overflowY: 'auto' }}>
+                        <Stack spacing={2}>
+                            {steps.map((step, index) => (
+                                <Card
+                                    key={step.id}
+                                    variant="outlined"
+                                    sx={{
+                                        borderColor: getStepStatusColor(step),
+                                        borderWidth: step.status === ProductionStepStatus.IN_PROGRESS ? 2 : 1,
+                                        backgroundColor: step.status === ProductionStepStatus.IN_PROGRESS
+                                            ? 'primary.50'
+                                            : step.status === ProductionStepStatus.COMPLETED
+                                                ? 'success.50'
+                                                : 'background.paper',
+                                    }}
+                                >
+                                    <CardContent sx={{ p: 2 }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                                            {/* Step Icon */}
+                                            <Box sx={{ mt: 0.5 }}>
+                                                {getStepStatusIcon(step)}
                                             </Box>
 
-                                            {step.description && (
-                                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                                                    {step.description}
-                                                </Typography>
-                                            )}
-
-                                            {step.estimatedMinutes && (
-                                                <Typography variant="caption" color="text.secondary">
-                                                    Estimated: {step.estimatedMinutes} minutes
-                                                </Typography>
-                                            )}
-
-                                            {/* Step Actions */}
-                                            {step.status === ProductionStepStatus.IN_PROGRESS && (
-                                                <Box sx={{ mt: 2 }}>
-                                                    <TextField
-                                                        placeholder="Add notes for this step..."
-                                                        multiline
-                                                        rows={2}
-                                                        fullWidth
-                                                        size="small"
-                                                        value={stepNotes[step.id] || ''}
-                                                        onChange={(e) => setStepNotes({
-                                                            ...stepNotes,
-                                                            [step.id]: e.target.value
-                                                        })}
-                                                        sx={{ mb: 2 }}
-                                                    />
-                                                    <Button
-                                                        variant="contained"
-                                                        fullWidth
-                                                        onClick={() => handleCompleteStep(step)}
-                                                        startIcon={<CheckIcon />}
-                                                        sx={{
-                                                            height: 48,
-                                                            fontSize: '1rem',
-                                                            fontWeight: 'bold',
-                                                        }}
-                                                    >
-                                                        ✅ Complete Step
-                                                    </Button>
-                                                </Box>
-                                            )}
-
-                                            {/* Completed Step Info */}
-                                            {step.status === ProductionStepStatus.COMPLETED && (
-                                                <Box sx={{ mt: 1, p: 1, backgroundColor: 'success.50', borderRadius: 1 }}>
-                                                    <Typography variant="caption" color="success.dark">
-                                                        ✅ Completed in {step.actualMinutes || 'unknown'} minutes
-                                                        {step.completedAt && ` at ${new Date(step.completedAt).toLocaleTimeString()}`}
+                                            {/* Step Content */}
+                                            <Box sx={{ flexGrow: 1 }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                                                        {index + 1}. {step.name}
                                                     </Typography>
-                                                    {step.notes && (
-                                                        <Typography variant="body2" sx={{ mt: 0.5 }}>
-                                                            📝 {step.notes}
-                                                        </Typography>
+                                                    {step.status === ProductionStepStatus.IN_PROGRESS && (
+                                                        <Chip
+                                                            label={`${timer} min`}
+                                                            color="primary"
+                                                            size="small"
+                                                            sx={{ animation: 'pulse 2s infinite' }}
+                                                        />
                                                     )}
                                                 </Box>
-                                            )}
-                                        </Box>
-                                    </Box>
-                                </CardContent>
-                            </Card>
-                        ))}
 
-                        {/* Add Custom Step */}
-                        <Collapse in={showAddStep}>
-                            <Card variant="outlined" sx={{ border: '2px dashed', borderColor: 'primary.main' }}>
-                                <CardContent>
-                                    <TextField
-                                        placeholder="What additional step do you need?"
-                                        fullWidth
-                                        value={newStepName}
-                                        onChange={(e) => setNewStepName(e.target.value)}
-                                        sx={{ mb: 2 }}
-                                    />
-                                    <Stack direction="row" spacing={1}>
-                                        <Button
-                                            variant="outlined"
-                                            onClick={() => setShowAddStep(false)}
-                                        >
-                                            Cancel
-                                        </Button>
-                                        <Button
-                                            variant="contained"
-                                            onClick={handleAddCustomStep}
-                                            disabled={!newStepName.trim()}
-                                        >
-                                            Add Step
-                                        </Button>
-                                    </Stack>
-                                </CardContent>
-                            </Card>
-                        </Collapse>
-                    </Stack>
-                </Box>
+                                                {step.description && (
+                                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                                        {step.description}
+                                                    </Typography>
+                                                )}
+
+                                                {step.estimatedMinutes && (
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        Estimated: {step.estimatedMinutes} minutes
+                                                    </Typography>
+                                                )}
+
+                                                {/* Step Actions */}
+                                                {step.status === ProductionStepStatus.PENDING && (
+                                                    <Box sx={{ mt: 2 }}>
+                                                        <Button
+                                                            variant="contained"
+                                                            fullWidth
+                                                            onClick={() => handleStartStep(step)}
+                                                            startIcon={<PlayIcon />}
+                                                            disabled={updatingSteps.has(step.id)}
+                                                            sx={{
+                                                                height: 48,
+                                                                fontSize: '1rem',
+                                                                fontWeight: 'bold',
+                                                            }}
+                                                        >
+                                                            ▶️ Start Step
+                                                        </Button>
+                                                    </Box>
+                                                )}
+
+                                                {step.status === ProductionStepStatus.IN_PROGRESS && (
+                                                    <Box sx={{ mt: 2 }}>
+                                                        <TextField
+                                                            placeholder="Add notes for this step..."
+                                                            multiline
+                                                            rows={2}
+                                                            fullWidth
+                                                            size="small"
+                                                            value={stepNotes[step.id] || ''}
+                                                            onChange={(e) => setStepNotes({
+                                                                ...stepNotes,
+                                                                [step.id]: e.target.value
+                                                            })}
+                                                            sx={{ mb: 2 }}
+                                                        />
+                                                        <Button
+                                                            variant="contained"
+                                                            fullWidth
+                                                            onClick={() => handleCompleteStep(step)}
+                                                            startIcon={<CheckIcon />}
+                                                            disabled={updatingSteps.has(step.id)}
+                                                            sx={{
+                                                                height: 48,
+                                                                fontSize: '1rem',
+                                                                fontWeight: 'bold',
+                                                            }}
+                                                        >
+                                                            ✅ Complete Step
+                                                        </Button>
+                                                    </Box>
+                                                )}
+
+                                                {/* Completed Step Info */}
+                                                {step.status === ProductionStepStatus.COMPLETED && (
+                                                    <Box sx={{ mt: 1, p: 1, backgroundColor: 'success.50', borderRadius: 1 }}>
+                                                        <Typography variant="caption" color="success.dark">
+                                                            ✅ Completed in {step.actualMinutes || 'unknown'} minutes
+                                                            {step.completedAt && ` at ${new Date(step.completedAt).toLocaleTimeString()}`}
+                                                        </Typography>
+                                                        {step.notes && (
+                                                            <Typography variant="body2" sx={{ mt: 0.5 }}>
+                                                                📝 {step.notes}
+                                                            </Typography>
+                                                        )}
+                                                    </Box>
+                                                )}
+                                            </Box>
+                                        </Box>
+                                    </CardContent>
+                                </Card>
+                            ))}
+
+                            {steps.length === 0 && !loading && (
+                                <Alert severity="info">
+                                    No production steps found. Steps should be automatically created when starting production.
+                                </Alert>
+                            )}
+                        </Stack>
+                    </Box>
+                )}
 
                 {/* Floating Action Buttons */}
                 <Box
@@ -372,20 +500,10 @@ const ProductionTracker: React.FC<ProductionTrackerProps> = ({
                         gap: 1,
                     }}
                 >
-                    {!showAddStep && (
-                        <Fab
-                            color="secondary"
-                            onClick={() => setShowAddStep(true)}
-                            size="medium"
-                        >
-                            <AddIcon />
-                        </Fab>
-                    )}
-
                     {production.status === ProductionStatus.IN_PROGRESS && (
                         <Fab
                             color="warning"
-                            onClick={onPause}
+                            onClick={handlePauseProduction}
                             size="medium"
                         >
                             <PauseIcon />
@@ -395,7 +513,7 @@ const ProductionTracker: React.FC<ProductionTrackerProps> = ({
                     {production.status === ProductionStatus.ON_HOLD && (
                         <Fab
                             color="primary"
-                            onClick={onResume}
+                            onClick={handleResumeProduction}
                             size="medium"
                         >
                             <PlayIcon />
@@ -418,7 +536,7 @@ const ProductionTracker: React.FC<ProductionTrackerProps> = ({
                         <Button
                             variant="contained"
                             fullWidth
-                            onClick={onComplete}
+                            onClick={handleCompleteProduction}
                             size="large"
                             startIcon={<KitchenIcon />}
                             sx={{
@@ -432,7 +550,12 @@ const ProductionTracker: React.FC<ProductionTrackerProps> = ({
                         </Button>
                     ) : (
                         <Alert severity="info" sx={{ textAlign: 'center' }}>
-                            Continue with the current step to progress your production
+                            {steps.length === 0 
+                                ? 'Loading production steps...'
+                                : currentStep 
+                                    ? `Currently working on: ${currentStep.name}`
+                                    : 'Continue with the current step to progress your production'
+                            }
                         </Alert>
                     )}
                 </Box>
@@ -451,5 +574,4 @@ const ProductionTracker: React.FC<ProductionTrackerProps> = ({
         </Dialog>
     );
 };
-
 export default ProductionTracker;

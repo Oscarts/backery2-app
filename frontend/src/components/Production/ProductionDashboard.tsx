@@ -481,47 +481,7 @@ const ProductionDashboard: React.FC = () => {
                                 setShowProductionTracker(false);
                                 setSelectedProduction(null);
                             }}
-                            onCompleteStep={(stepId, data) => {
-                                // Mock step completion
-                                const updatedProductions = activeProductions.map(p => {
-                                    if (p.id === selectedProduction.id) {
-                                        const updatedSteps = p.steps?.map(s => {
-                                            if (s.id === stepId) {
-                                                return { ...s, status: 'COMPLETED' as any, completedAt: new Date().toISOString(), ...data };
-                                            }
-                                            return s;
-                                        }) || [];
-
-                                        // Start next step
-                                        const nextPendingStep = updatedSteps.find(s => s.status === 'PENDING');
-                                        if (nextPendingStep) {
-                                            nextPendingStep.status = 'IN_PROGRESS' as any;
-                                            nextPendingStep.startedAt = new Date().toISOString();
-                                        }
-
-                                        return { ...p, steps: updatedSteps };
-                                    }
-                                    return p;
-                                });
-                                setActiveProductions(updatedProductions);
-
-                                // Update selected production
-                                const updatedProduction = updatedProductions.find(p => p.id === selectedProduction.id);
-                                if (updatedProduction) {
-                                    setSelectedProduction(updatedProduction);
-                                }
-                            }}
-                            onAddStep={(stepData) => {
-                                console.log('Add step:', stepData);
-                            }}
-                            onPause={() => handlePauseProduction(selectedProduction.id)}
-                            onResume={() => handleResumeProduction(selectedProduction.id)}
-                            onComplete={() => {
-                                // Complete production
-                                setActiveProductions(activeProductions.filter(p => p.id !== selectedProduction.id));
-                                setShowProductionTracker(false);
-                                setSelectedProduction(null);
-                            }}
+                            onProductionUpdated={loadActiveProductions}
                         />
                     )}
                 </>
