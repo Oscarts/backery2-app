@@ -13,9 +13,7 @@ import {
     Alert,
     Slider,
     Card,
-    CardContent,
     Chip,
-    Divider,
     LinearProgress,
 } from '@mui/material';
 import {
@@ -55,12 +53,10 @@ const QuantitySelectionDialog: React.FC<QuantitySelectionDialogProps> = ({
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const [quantity, setQuantity] = useState(recipe?.yieldQuantity || 12);
-    const [multiplier, setMultiplier] = useState(1);
 
     useEffect(() => {
         if (recipe) {
             setQuantity(recipe.yieldQuantity);
-            setMultiplier(1);
         }
     }, [recipe]);
 
@@ -74,7 +70,6 @@ const QuantitySelectionDialog: React.FC<QuantitySelectionDialogProps> = ({
     const handleQuantityChange = (newQuantity: number) => {
         const clampedQuantity = Math.min(Math.max(newQuantity, recipe.yieldQuantity), maxQuantity);
         setQuantity(clampedQuantity);
-        setMultiplier(clampedQuantity / recipe.yieldQuantity);
     };
 
     const handleSliderChange = (_: Event, newValue: number | number[]) => {

@@ -2,7 +2,7 @@
 
 // Test Inventory Integration Service
 const { PrismaClient } = require('@prisma/client');
-const { ProductionInventoryService } = require('./src/services/productionInventoryService.ts');
+const { productionInventoryService } = require('./src/services/productionInventoryService.ts');
 
 const prisma = new PrismaClient();
 
@@ -10,7 +10,7 @@ async function testInventoryIntegration() {
     try {
         console.log('🔧 Testing Production Inventory Integration...\n');
 
-        const inventoryService = new ProductionInventoryService();
+        const inventoryService = productionInventoryService;
 
         // Get first recipe for testing
         const recipe = await prisma.recipe.findFirst({

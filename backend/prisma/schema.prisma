@@ -133,6 +133,8 @@ model IntermediateProduct {
   contaminated      Boolean                   @default(false)
   qualityStatusId   String?
   recipeId          String?
+  costPerUnit       Float?                    // Cost per unit for calculations
+  reservedQuantity  Float                     @default(0) // Reserved quantity for production
   createdAt         DateTime                  @default(now())
   updatedAt         DateTime                  @updatedAt
   category          Category?                 @relation(fields: [categoryId], references: [id])
@@ -190,6 +192,7 @@ model Recipe {
   emoji                String?
   difficulty           RecipeDifficulty?     @default(MEDIUM)
   estimatedTotalTime   Int?                  // minutes
+  estimatedCost        Float?                // Estimated cost to produce
   equipmentRequired    String[]              @default([])
   
   createdAt            DateTime              @default(now())

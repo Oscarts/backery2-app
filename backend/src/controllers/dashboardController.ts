@@ -283,7 +283,7 @@ export const dashboardController = {
             severity: 'critical',
             quantity: rm.quantity,
             unit: rm.unit,
-            category: rm.category.name,
+            category: rm.category?.name || 'Unknown',
             location: rm.storageLocation?.name,
           });
         } else if (daysUntilExpiration < 0) {
@@ -297,7 +297,7 @@ export const dashboardController = {
             unit: rm.unit,
             expirationDate: rm.expirationDate.toISOString(),
             daysUntilExpiration,
-            category: rm.category.name,
+            category: rm.category?.name || 'Unknown',
             location: rm.storageLocation?.name,
           });
         } else if (daysUntilExpiration <= 7) {
@@ -311,7 +311,7 @@ export const dashboardController = {
             unit: rm.unit,
             expirationDate: rm.expirationDate.toISOString(),
             daysUntilExpiration,
-            category: rm.category.name,
+            category: rm.category?.name || 'Unknown',
             location: rm.storageLocation?.name,
           });
         }
@@ -325,7 +325,7 @@ export const dashboardController = {
             severity: rm.quantity === 0 ? 'critical' : 'warning',
             quantity: rm.quantity,
             unit: rm.unit,
-            category: rm.category.name,
+            category: rm.category?.name || 'Unknown',
             location: rm.storageLocation?.name,
           });
         }
@@ -358,7 +358,7 @@ export const dashboardController = {
             severity: 'critical',
             quantity: ip.quantity,
             unit: ip.unit,
-            category: ip.category.name,
+            category: ip.category?.name || 'Unknown',
             location: ip.storageLocation?.name,
           });
         } else if (daysUntilExpiration < 0) {
@@ -372,7 +372,7 @@ export const dashboardController = {
             unit: ip.unit,
             expirationDate: ip.expirationDate.toISOString(),
             daysUntilExpiration,
-            category: ip.category.name,
+            category: ip.category?.name || 'Unknown',
             location: ip.storageLocation?.name,
           });
         } else if (daysUntilExpiration <= 7) {
@@ -386,7 +386,7 @@ export const dashboardController = {
             unit: ip.unit,
             expirationDate: ip.expirationDate.toISOString(),
             daysUntilExpiration,
-            category: ip.category.name,
+            category: ip.category?.name || 'Unknown',
             location: ip.storageLocation?.name,
           });
         }
@@ -421,7 +421,7 @@ export const dashboardController = {
             unit: fp.unit,
             expirationDate: fp.expirationDate.toISOString(),
             daysUntilExpiration,
-            category: fp.category.name,
+            category: fp.category?.name || 'Unknown',
             location: fp.storageLocation?.name,
           });
         } else if (daysUntilExpiration <= 7) {
@@ -435,7 +435,7 @@ export const dashboardController = {
             unit: fp.unit,
             expirationDate: fp.expirationDate.toISOString(),
             daysUntilExpiration,
-            category: fp.category.name,
+            category: fp.category?.name || 'Unknown',
             location: fp.storageLocation?.name,
           });
         }
@@ -449,7 +449,7 @@ export const dashboardController = {
             severity: fp.quantity === 0 ? 'critical' : 'warning',
             quantity: fp.quantity,
             unit: fp.unit,
-            category: fp.category.name,
+            category: fp.category?.name || 'Unknown',
             location: fp.storageLocation?.name,
           });
         }
@@ -640,7 +640,7 @@ export const dashboardController = {
         .map(rm => ({
           id: rm.id,
           name: rm.name,
-          category: rm.category.name,
+          category: rm.category?.name || 'Unknown',
           quantity: rm.quantity,
           unit: rm.unit,
           unitPrice: rm.unitPrice,
@@ -651,7 +651,7 @@ export const dashboardController = {
       const finishedProductsBreakdown = finishedProducts.map(fp => ({
         id: fp.id,
         name: fp.name,
-        category: fp.category.name,
+        category: fp.category?.name || 'Unknown',
         quantity: fp.quantity,
         availableQuantity: fp.quantity - fp.reservedQuantity,
         reservedQuantity: fp.reservedQuantity,

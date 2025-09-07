@@ -9,22 +9,18 @@ import {
     Chip,
     Box,
     IconButton,
-    Fab,
     Slide,
     useTheme,
     useMediaQuery,
     Stack,
-    Button,
     Alert,
     CircularProgress,
 } from '@mui/material';
 import {
     Close as CloseIcon,
     CheckCircle as CheckIcon,
-    Warning as WarningIcon,
     Schedule as TimeIcon,
     TrendingUp as DifficultyIcon,
-    LocalDining as ServingIcon,
 } from '@mui/icons-material';
 import { TransitionProps } from '@mui/material/transitions';
 import { Recipe } from '../../types/index';
@@ -95,15 +91,6 @@ const RecipeSelectionDialog: React.FC<RecipeSelectionDialogProps> = ({
             case 'Hard': return 'error';
             default: return 'default';
         }
-    };
-
-    const getRecipeStatusColor = (recipe: any) => {
-        return recipe.canMake ? 'success' : 'error';
-    };
-
-    const handleRecipeSelect = (recipe: any) => {
-        onSelectRecipe(recipe);
-        onClose();
     };
 
     return (

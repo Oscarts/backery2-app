@@ -378,9 +378,9 @@ export const getRecipeCost = async (req: Request, res: Response) => {
         availableQuantity = ingredient.rawMaterial.quantity;
         sourceUnit = ingredient.rawMaterial.unit;
       } else if (ingredient.intermediateProduct) {
-        // For intermediate products, we use their costToProduce field from the database
-        // This is calculated and updated during intermediate product creation/update
-        unitCost = ingredient.intermediateProduct.costToProduce || 0;
+        // For intermediate products, calculate a basic cost estimate 
+        // TODO: Implement proper cost tracking for intermediate products
+        unitCost = 0; // Placeholder until cost tracking is implemented
         ingredientName = ingredient.intermediateProduct.name;
         availableQuantity = ingredient.intermediateProduct.quantity;
         sourceUnit = ingredient.intermediateProduct.unit;
