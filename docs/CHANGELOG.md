@@ -4,6 +4,14 @@
 
 ### Critical Bug Fixes
 
+- **🔧 FIXED: Production Progress Bar Always Showing 100% (Sept 7, 2025)**
+  - Fixed progress bars showing incorrect values (always 100% or 0%) in production dashboard
+  - **Root Cause**: Dashboard API was only returning IN_PROGRESS steps, not all steps needed for progress calculation
+  - **Solution**: Updated `getDashboardProductionRuns` to include all production steps with proper ordering
+  - **Impact**: Dashboard now shows accurate real-time progress tracking (0%, 50%, 100% based on actual step completion)
+  - Enhanced frontend edge case handling to prevent division by zero errors
+  - **Verification**: Multiple production runs now show correct progress percentages
+
 - **🔧 FIXED: Production Steps API Response Format (Sept 7, 2025)**
   - Fixed "Failed to load production steps" error in production tracking
   - Updated all production step controller endpoints to return standardized `{success, data, message}` format
