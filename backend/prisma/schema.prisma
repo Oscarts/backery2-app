@@ -103,6 +103,7 @@ model RawMaterial {
   unit              String
   unitPrice         Float
   reorderLevel      Float
+  reservedQuantity  Float              @default(0) @map("reserved_quantity")
   storageLocationId String
   qualityStatusId   String?
   isContaminated    Boolean            @default(false)
@@ -236,6 +237,7 @@ model ProductionRun {
   
   recipe            Recipe              @relation(fields: [recipeId], references: [id])
   steps             ProductionStep[]
+  allocations       ProductionAllocation[]
 
   @@map("production_runs")
 }
@@ -261,6 +263,26 @@ model ProductionStep {
   productionRun     ProductionRun       @relation(fields: [productionRunId], references: [id], onDelete: Cascade)
 
   @@map("production_steps")
+}
+
+model ProductionAllocation {
+  id                String              @id @default(cuid())
+  productionRunId   String              @map("production_run_id")
+  materialType      String              @map("material_type")
+  materialId        String              @map("material_id")
+  materialName      String              @map("material_name")
+  quantityAllocated Float               @map("quantity_allocated")
+  unit              String
+  status            String              @default("ALLOCATED")
+  allocatedAt       DateTime            @default(now()) @map("allocated_at")
+  consumedAt        DateTime?           @map("consumed_at")
+  releasedAt        DateTime?           @map("released_at")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+  
+  productionRun     ProductionRun       @relation(fields: [productionRunId], references: [id], onDelete: Cascade)
+
+  @@map("production_allocations")
 }
 
 enum UserRole {
