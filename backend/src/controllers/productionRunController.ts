@@ -159,8 +159,7 @@ export const getDashboardProductionRuns = async (req: Request, res: Response) =>
             include: {
                 recipe: true,
                 steps: {
-                    where: { status: ProductionStepStatus.IN_PROGRESS },
-                    take: 1
+                    orderBy: { stepOrder: 'asc' }
                 }
             },
             orderBy: [

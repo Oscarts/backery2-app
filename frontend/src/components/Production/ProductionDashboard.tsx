@@ -149,7 +149,9 @@ const ProductionDashboard: React.FC = () => {
     };
 
     const calculateProgress = (production: ProductionRun) => {
-        if (!production.steps) return 0;
+        if (!production.steps || production.steps.length === 0) {
+            return 0;
+        }
         const completedSteps = production.steps.filter(s => s.status === ProductionStepStatus.COMPLETED).length;
         return (completedSteps / production.steps.length) * 100;
     };
