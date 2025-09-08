@@ -57,9 +57,6 @@ export class ProductionCompletionService {
 
     // Create finished product from production run
     private async createFinishedProduct(productionRun: any, quantity: number, customExpirationDate?: Date) {
-
-    // Create finished product from production run
-    private async createFinishedProduct(productionRun: any, quantity: number, customExpirationDate?: Date) {
         try {
             // Generate batch number
             const batchNumber = `BATCH-${Date.now()}`;
