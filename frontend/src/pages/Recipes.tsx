@@ -135,9 +135,7 @@ const Recipes: React.FC = () => {
     cookTime: 0,
     instructions: [],
     ingredients: [],
-    isActive: true,
-    emoji: '🍞',
-    difficulty: 'MEDIUM'
+    isActive: true
   });
   const [ingredientForm, setIngredientForm] = useState({
     type: 'raw', // 'raw' or 'intermediate'
@@ -338,9 +336,7 @@ const Recipes: React.FC = () => {
           unit: ing.unit,
           notes: ing.notes
         })) || [],
-        isActive: recipe.isActive,
-        emoji: recipe.emoji || '🍞',
-        difficulty: (recipe.difficulty as 'EASY' | 'MEDIUM' | 'HARD') || 'MEDIUM'
+        isActive: recipe.isActive
       });
     } else {
       setEditingRecipe(null);
@@ -354,9 +350,7 @@ const Recipes: React.FC = () => {
         cookTime: 0,
         instructions: [],
         ingredients: [],
-        isActive: true,
-        emoji: '🍞',
-        difficulty: 'MEDIUM'
+        isActive: true
       });
     }
     setOpenDialog(true);
@@ -741,7 +735,7 @@ const Recipes: React.FC = () => {
                         <CardHeader
                           avatar={
                             <Avatar sx={{ bgcolor: theme.palette.primary.main, width: 40, height: 40 }}>
-                              {recipe.emoji || '🍞'}
+                              <MenuBookIcon fontSize="small" />
                             </Avatar>
                           }
                           title={
@@ -982,39 +976,16 @@ const Recipes: React.FC = () => {
                             </Typography>
                             {recipe.missingIngredients.length > 0 ? (
                               <Box sx={{ maxHeight: '120px', overflow: 'auto' }}>
-                                {recipe.missingIngredients.map((missing, index) => {
-                                  const getReasonIcon = (reason?: string) => {
-                                    switch (reason) {
-                                      case 'expired': return '⏰';
-                                      case 'contaminated': return '⚠️';
-                                      case 'not_found': return '❌';
-                                      default: return '📉';
-                                    }
-                                  };
-
-                                  const getReasonText = (reason?: string) => {
-                                    switch (reason) {
-                                      case 'expired': return 'Expired';
-                                      case 'contaminated': return 'Contaminated';
-                                      case 'not_found': return 'Not found';
-                                      default: return 'Insufficient';
-                                    }
-                                  };
-
-                                  return (
-                                    <Box key={index} sx={{ mb: 1 }}>
-                                      <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-                                        {getReasonIcon(missing.reason)} {missing.name}
-                                      </Typography>
-                                      <Typography variant="caption" color="error.main">
-                                        {missing.reason === 'insufficient' 
-                                          ? `Need ${missing.needed}, have ${missing.available}`
-                                          : getReasonText(missing.reason)
-                                        }
-                                      </Typography>
-                                    </Box>
-                                  );
-                                })}
+                                {recipe.missingIngredients.map((missing, index) => (
+                                  <Box key={index} sx={{ mb: 1 }}>
+                                    <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                                      {missing.name}
+                                    </Typography>
+                                    <Typography variant="caption" color="error.main">
+                                      Need {missing.needed}, have {missing.available}
+                                    </Typography>
+                                  </Box>
+                                ))}
                               </Box>
                             ) : (
                               <Typography variant="body2">None</Typography>
@@ -1246,30 +1217,6 @@ const Recipes: React.FC = () => {
                 value={formData.cookTime}
                 onChange={(e) => setFormData(prev => ({ ...prev, cookTime: Number(e.target.value) }))}
               />
-            </Grid>
-            <Grid item xs={6} md={3}>
-              <TextField
-                fullWidth
-                label="Emoji"
-                value={formData.emoji}
-                onChange={(e) => setFormData(prev => ({ ...prev, emoji: e.target.value }))}
-                placeholder="🍞"
-                inputProps={{ maxLength: 2 }}
-              />
-            </Grid>
-            <Grid item xs={6} md={3}>
-              <FormControl fullWidth>
-                <InputLabel>Difficulty</InputLabel>
-                <Select
-                  value={formData.difficulty}
-                  label="Difficulty"
-                  onChange={(e) => setFormData(prev => ({ ...prev, difficulty: e.target.value as 'EASY' | 'MEDIUM' | 'HARD' }))}
-                >
-                  <MenuItem value="EASY">Easy</MenuItem>
-                  <MenuItem value="MEDIUM">Medium</MenuItem>
-                  <MenuItem value="HARD">Hard</MenuItem>
-                </Select>
-              </FormControl>
             </Grid>
             <Grid item xs={6} md={3}>
               <FormControlLabel

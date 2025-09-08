@@ -237,6 +237,48 @@ Descriptions:
 - Required field indicators
 - Success confirmation
 
+#### Production Dialog Patterns (New - Sept 2025)
+
+##### ProductionStepsDialog Component
+
+A comprehensive dialog for customizing production workflows with the following features:
+
+- **Header**: Dialog title with close button
+- **Content Area**: Scrollable step list with drag-and-drop reordering
+- **Step Cards**: Individual step components with edit/delete actions
+- **Add Step Section**: Form for creating new custom steps
+- **Action Buttons**: Save/Cancel at bottom with proper spacing
+
+```jsx
+// Production Steps Dialog Pattern
+<Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+  <DialogTitle>
+    <Box display="flex" justifyContent="space-between" alignItems="center">
+      <Typography variant="h5">Customize Production Steps</Typography>
+      <IconButton onClick={onClose}>
+        <CloseIcon />
+      </IconButton>
+    </Box>
+  </DialogTitle>
+  <DialogContent>
+    {/* Step management interface */}
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={onClose}>Cancel</Button>
+    <Button variant="contained" onClick={handleSave}>Save Changes</Button>
+  </DialogActions>
+</Dialog>
+```
+
+##### Enhanced Recipe Selection
+
+Updated recipe selection dialogs now include:
+
+- **Expiration Warnings**: Clear visual indicators for expired ingredients
+- **Contamination Alerts**: Specific messaging for contaminated materials
+- **Detailed Error States**: Comprehensive ingredient status reporting
+- **Step Customization Access**: Button to open production steps dialog
+
 #### Production Status Field (Finished Products)
 
 - Include a "Production Status" select when creating or editing Finished Products

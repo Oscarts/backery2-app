@@ -316,7 +316,7 @@ export interface Recipe {
   version: number;
   isActive: boolean;
   emoji?: string; // Added for production module
-  difficulty?: 'EASY' | 'MEDIUM' | 'HARD'; // Added for production module
+  difficulty?: string; // Added for production module
   estimatedTotalTime?: number; // Added for production module
   equipmentRequired?: string[]; // Added for production module
   createdAt: string;
@@ -382,7 +382,6 @@ export interface MissingIngredient {
   needed: number;
   available: number;
   shortage: number;
-  reason?: 'insufficient' | 'expired' | 'contaminated' | 'not_found';
 }
 
 export interface CreateRecipeData {
@@ -396,8 +395,6 @@ export interface CreateRecipeData {
   instructions?: string[];
   ingredients?: CreateRecipeIngredientData[];
   isActive?: boolean;
-  emoji?: string;
-  difficulty?: 'EASY' | 'MEDIUM' | 'HARD';
 }
 
 export interface CreateRecipeIngredientData {

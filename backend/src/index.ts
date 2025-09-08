@@ -21,6 +21,7 @@ import supplierRoutes from './routes/suppliers';
 import storageLocationRoutes from './routes/storageLocations';
 import unitRoutes from './routes/units';
 import qualityStatusRoutes from './routes/qualityStatuses';
+import productionStepTemplateRoutes from './routes/productionStepTemplates';
 
 // Import middleware
 import { errorHandler } from './middleware/errorHandler';
@@ -80,6 +81,7 @@ app.use('/api/suppliers', supplierRoutes);
 app.use('/api/storage-locations', storageLocationRoutes);
 app.use('/api/units', unitRoutes);
 app.use('/api/quality-statuses', qualityStatusRoutes);
+app.use('/api/production/step-templates', productionStepTemplateRoutes);
 
 // Error handling middleware
 app.use(notFound);

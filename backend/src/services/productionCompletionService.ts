@@ -7,12 +7,12 @@ const prisma = new PrismaClient();
 
 export class ProductionCompletionService {
 
-    // Complete a production run and create finished product
-    async completeProductionRun(productionRunId: string, finalQuantity?: number, customExpirationDate?: Date): Promise<{ productionRun: any; finishedProduct: any }> {
+    // Complete production run and create finished products
+    async completeProductionRun(productionRunId: string, actualQuantity?: number) {
         try {
             console.log(`🏁 Completing production run: ${productionRunId}`);
 
-            // Get production run with recipe details
+            // Get production run details
             const productionRun = await prisma.productionRun.findUnique({
                 where: { id: productionRunId },
                 include: {
@@ -25,27 +25,44 @@ export class ProductionCompletionService {
                 throw new Error('Production run not found');
             }
 
-            // Calculate actual quantity
-            const quantity = finalQuantity || productionRun.targetQuantity;
+            if (productionRun.status === 'COMPLETED') {
+                console.log('Production run already completed');
+                return productionRun;
+            }
+
+            // Verify all steps are completed
+            const pendingSteps = productionRun.steps.filter(step =>
+                step.status !== 'COMPLETED' && step.status !== 'SKIPPED'
+            );
+
+            if (pendingSteps.length > 0) {
+                throw new Error(`Cannot complete production: ${pendingSteps.length} steps still pending`);
+            }
+
+            // Use actual quantity if provided, otherwise use target quantity
+            const finalQuantity = actualQuantity || productionRun.targetQuantity;
+
+            // Create finished product in inventory
+            const finishedProduct = await this.createFinishedProduct(productionRun, finalQuantity);
 
             // Update production run status
-            const updatedProductionRun = await prisma.productionRun.update({
+            const completedRun = await prisma.productionRun.update({
                 where: { id: productionRunId },
                 data: {
-                    status: 'COMPLETED' as any,
+                    status: 'COMPLETED',
                     completedAt: new Date(),
-                    finalQuantity: quantity,
-                    actualCost: await this.calculateProductionCost(productionRun)
+                    finalQuantity
+                },
+                include: {
+                    recipe: true,
+                    steps: true
                 }
             });
 
-            // Create finished product
-            const finishedProduct = await this.createFinishedProduct(productionRun, quantity, customExpirationDate);
-
-            console.log(`✅ Production run completed successfully`);
+            console.log(`✅ Production completed: ${finishedProduct.quantity} ${finishedProduct.unit} of ${finishedProduct.name}`);
 
             return {
-                productionRun: updatedProductionRun,
+                productionRun: completedRun,
                 finishedProduct
             };
 
@@ -56,16 +73,14 @@ export class ProductionCompletionService {
     }
 
     // Create finished product from production run
-    private async createFinishedProduct(productionRun: any, quantity: number, customExpirationDate?: Date) {
+    private async createFinishedProduct(productionRun: any, quantity: number, expirationDate?: Date) {
         try {
             // Generate batch number
             const batchNumber = `BATCH-${Date.now()}`;
             const productionDate = new Date();
 
-            // Calculate expiration date (default 7 days for bakery products)
-            const defaultExpirationDate = new Date();
-            defaultExpirationDate.setDate(defaultExpirationDate.getDate() + 7);
-            const expirationDate = customExpirationDate || defaultExpirationDate;
+            // Calculate expiration date (use provided date or default 7 days for bakery products)
+            const finalExpirationDate = expirationDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
             // Get default storage location
             const defaultLocation = await this.getOrCreateDefaultStorageLocation();
@@ -81,8 +96,8 @@ export class ProductionCompletionService {
                     sku,
                     batchNumber,
                     productionDate,
-                    expirationDate,
-                    shelfLife: Math.ceil((expirationDate.getTime() - productionDate.getTime()) / (1000 * 60 * 60 * 24)), // Calculate shelf life in days
+                    expirationDate: finalExpirationDate,
+                    shelfLife: 7, // days
                     quantity,
                     unit: productionRun.targetUnit,
                     salePrice: 10.0, // Default price - should be calculated based on recipe cost

@@ -333,6 +333,52 @@ prisma/
 3. **Global State** → Context API for user authentication and theme
 4. **Form State** → Local component state with validation
 
+## 🎛️ Enhanced Controller Architecture
+
+### Production System Controllers
+
+As of September 2025, the backend includes specialized controllers for advanced production management:
+
+#### ProductionStepTemplateController
+- **Purpose**: Manages customizable production step templates
+- **Key Methods**:
+  - `getDefaultStepTemplates()` - Returns standard production steps
+  - `getRecipeStepTemplates(recipeId)` - Gets recipe-specific custom steps
+  - `createCustomStepTemplate(recipeId, stepData)` - Creates new custom steps
+- **Integration**: Allows complete customization of production workflows
+
+#### Enhanced RecipeController
+- **New Features**: Expiration date validation in what-can-i-make analysis
+- **Key Enhancement**: `getWhatCanIMake()` now includes:
+  - Expiration date filtering for all ingredients
+  - Contamination status checking
+  - Detailed shortage reasons (expired vs insufficient vs contaminated)
+  - Enhanced response format with emoji and difficulty data
+
+#### Enhanced ProductionStepController
+- **New Features**: Custom expiration date support in production completion
+- **Key Enhancement**: `completeProductionStep()` now accepts:
+  - Custom expiration dates for final products
+  - Automatic shelf life calculation
+  - Enhanced finished product creation with proper expiration tracking
+
+### Controller Design Pattern
+
+All controllers follow a consistent pattern:
+```typescript
+export const controllerMethod = async (req: Request, res: Response) => {
+  try {
+    // Input validation
+    // Business logic via service layer
+    // Database operations via Prisma
+    // Standardized response format
+    res.json({ success: true, data: result, message: "Success" });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+```
+
 ## 🛡️ Security Architecture
 
 ### Authentication

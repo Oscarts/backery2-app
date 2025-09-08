@@ -92,9 +92,11 @@ export const getRecipeById = async (req: Request, res: Response) => {
   }
 };
 
-// Create recipe
+// Create new recipe
 export const createRecipe = async (req: Request, res: Response) => {
   try {
+    console.log('Creating recipe with data:', JSON.stringify(req.body, null, 2));
+
     const {
       name,
       description,
@@ -107,7 +109,8 @@ export const createRecipe = async (req: Request, res: Response) => {
       ingredients,
       isActive,
       emoji,
-      difficulty
+      difficulty,
+      estimatedTotalTime
     } = req.body;
 
     // Validate required fields
@@ -132,9 +135,10 @@ export const createRecipe = async (req: Request, res: Response) => {
           cookTime: cookTime ? Number(cookTime) : null,
           instructions: instructions || [],
           isActive: isActive !== undefined ? isActive : true,
-          version: 1, // Default version
-          emoji: emoji || '🍞', // Default emoji
-          difficulty: difficulty || 'MEDIUM'
+          emoji: emoji || '🍞',
+          difficulty: difficulty || 'MEDIUM',
+          estimatedTotalTime: estimatedTotalTime ? Number(estimatedTotalTime) : null,
+          version: 1 // Default version
         }
       });
 
@@ -222,7 +226,8 @@ export const updateRecipe = async (req: Request, res: Response) => {
       ingredients,
       isActive,
       emoji,
-      difficulty
+      difficulty,
+      estimatedTotalTime
     } = req.body;
 
     console.log('Update recipe request:', { id, body: req.body });
@@ -243,6 +248,7 @@ export const updateRecipe = async (req: Request, res: Response) => {
           isActive,
           emoji,
           difficulty,
+          estimatedTotalTime,
           version: {
             increment: 1
           }
@@ -497,44 +503,60 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
       console.warn('⚠️ Some recipes have invalid ingredients. This may affect results.');
     }
 
-    // Step 2: Get current inventory of raw materials (excluding expired and contaminated)
-    const currentDate = new Date();
-    const rawMaterials = await prisma.rawMaterial.findMany({
-      where: {
-        isContaminated: false,
-        expirationDate: { gt: currentDate }
-      }
-    });
+    // Step 2: Get current inventory of raw materials (exclude expired and contaminated)
+    const rawMaterials = await prisma.rawMaterial.findMany();
     const rawMaterialInventory = new Map();
+    const now = new Date();
+    
     rawMaterials.forEach(material => {
-      rawMaterialInventory.set(material.id, {
-        quantity: material.quantity,
-        unit: material.unit,
-        isExpired: material.expirationDate <= currentDate,
-        isContaminated: material.isContaminated
-      });
-    });
-
-    console.log(`Found ${rawMaterials.length} available raw materials in inventory (excluding expired/contaminated)`);
-
-    // Step 3: Get current inventory of intermediate products (excluding expired and contaminated)
-    const intermediateProducts = await prisma.intermediateProduct.findMany({
-      where: {
-        contaminated: false,
-        expirationDate: { gt: currentDate }
+      // Only include materials that are not expired and not contaminated
+      const isExpired = material.expirationDate && material.expirationDate <= now;
+      const isContaminated = material.isContaminated;
+      
+      if (!isExpired && !isContaminated) {
+        rawMaterialInventory.set(material.id, {
+          quantity: material.quantity,
+          unit: material.unit
+        });
+      } else {
+        // Set quantity to 0 for expired or contaminated materials
+        rawMaterialInventory.set(material.id, {
+          quantity: 0,
+          unit: material.unit,
+          expired: isExpired,
+          contaminated: isContaminated
+        });
       }
     });
+
+    console.log(`Found ${rawMaterials.length} raw materials in inventory`);
+
+    // Step 3: Get current inventory of intermediate products (exclude expired and contaminated)
+    const intermediateProducts = await prisma.intermediateProduct.findMany();
     const intermediateProductInventory = new Map();
+    
     intermediateProducts.forEach(product => {
-      intermediateProductInventory.set(product.id, {
-        quantity: product.quantity,
-        unit: product.unit,
-        isExpired: product.expirationDate <= currentDate,
-        isContaminated: product.contaminated
-      });
+      // Only include products that are not expired and not contaminated
+      const isExpired = product.expirationDate && product.expirationDate <= now;
+      const isContaminated = product.contaminated;
+      
+      if (!isExpired && !isContaminated) {
+        intermediateProductInventory.set(product.id, {
+          quantity: product.quantity,
+          unit: product.unit
+        });
+      } else {
+        // Set quantity to 0 for expired or contaminated products
+        intermediateProductInventory.set(product.id, {
+          quantity: 0,
+          unit: product.unit,
+          expired: isExpired,
+          contaminated: isContaminated
+        });
+      }
     });
 
-    console.log(`Found ${intermediateProducts.length} available intermediate products in inventory (excluding expired/contaminated)`);
+    console.log(`Found ${intermediateProducts.length} intermediate products in inventory`);
 
     // Step 4: Check which recipes can be made based on inventory
     const canMakeRecipes = [];
@@ -561,30 +583,17 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
               where: { id: ingredient.rawMaterialId }
             });
 
-            // Determine the reason for unavailability
             let reason = 'insufficient';
-            if (!material) {
-              // Check if the material exists but is expired or contaminated
-              const allMaterials = await prisma.rawMaterial.findUnique({
-                where: { id: ingredient.rawMaterialId }
-              });
-              if (allMaterials) {
-                if (allMaterials.isContaminated) {
-                  reason = 'contaminated';
-                } else if (allMaterials.expirationDate <= currentDate) {
-                  reason = 'expired';
-                }
-              } else {
-                reason = 'not_found';
-              }
-            }
+            if (material?.expired) reason = 'expired';
+            if (material?.contaminated) reason = 'contaminated';
 
             missingIngredients.push({
               name: rawMaterial?.name || `Raw Material (${ingredient.rawMaterialId})`,
               required: ingredient.quantity,
               available: material ? material.quantity : 0,
               unit: ingredient.unit,
-              reason
+              reason: reason,
+              shortage: ingredient.quantity - (material ? material.quantity : 0)
             });
           }
         } else if (ingredient.intermediateProductId) {
@@ -597,30 +606,17 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
               where: { id: ingredient.intermediateProductId }
             });
 
-            // Determine the reason for unavailability
             let reason = 'insufficient';
-            if (!product) {
-              // Check if the product exists but is expired or contaminated
-              const allProducts = await prisma.intermediateProduct.findUnique({
-                where: { id: ingredient.intermediateProductId }
-              });
-              if (allProducts) {
-                if (allProducts.contaminated) {
-                  reason = 'contaminated';
-                } else if (allProducts.expirationDate <= currentDate) {
-                  reason = 'expired';
-                }
-              } else {
-                reason = 'not_found';
-              }
-            }
+            if (product?.expired) reason = 'expired';
+            if (product?.contaminated) reason = 'contaminated';
 
             missingIngredients.push({
               name: intermediateProduct?.name || `Intermediate Product (${ingredient.intermediateProductId})`,
               required: ingredient.quantity,
               available: product ? product.quantity : 0,
               unit: ingredient.unit,
-              reason
+              reason: reason,
+              shortage: ingredient.quantity - (product ? product.quantity : 0)
             });
           }
         }
@@ -667,12 +663,17 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
         yieldUnit: recipe.yieldUnit || '',
         canMake: canMake,
         maxBatches: maxBatches,
+        emoji: recipe.emoji || '🍞', // Include emoji in response
+        difficulty: recipe.difficulty || 'MEDIUM',
+        prepTime: recipe.prepTime,
+        cookTime: recipe.cookTime,
+        description: recipe.description,
         missingIngredients: missingIngredients.map(ing => ({
           name: ing.name,
           needed: ing.required,
           available: ing.available,
-          shortage: ing.required - ing.available,
-          reason: ing.reason || 'insufficient'
+          shortage: ing.shortage,
+          reason: ing.reason // Add reason field for frontend
         }))
       };
 

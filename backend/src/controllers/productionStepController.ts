@@ -198,7 +198,7 @@ export const completeProductionStep = async (req: Request, res: Response) => {
       temperature,
       equipmentUsed,
       stepPhotos,
-      customExpirationDate // New field for setting custom expiration date
+      expirationDate // Add expiration date parameter
     } = req.body;
 
     const currentStep = await prisma.productionStep.findUnique({
@@ -309,10 +309,6 @@ export const completeProductionStep = async (req: Request, res: Response) => {
       const batchNumber = `BATCH-${Date.now()}`;
 
       try {
-        // Calculate expiration date
-        const defaultExpirationDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
-        const expirationDate = customExpirationDate ? new Date(customExpirationDate) : defaultExpirationDate;
-
         createdFinishedProduct = await prisma.finishedProduct.create({
           data: {
             name: recipe.name,
@@ -320,8 +316,8 @@ export const completeProductionStep = async (req: Request, res: Response) => {
             sku: `SKU-${recipe.name.replace(/\s+/g, '-').toUpperCase()}-${Date.now()}`,
             batchNumber,
             productionDate: completionTime,
-            expirationDate,
-            shelfLife: Math.ceil((expirationDate.getTime() - completionTime.getTime()) / (1000 * 60 * 60 * 24)), // Calculate shelf life in days
+            expirationDate: expirationDate ? new Date(expirationDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Use provided date or default to 7 days
+            shelfLife: expirationDate ? Math.ceil((new Date(expirationDate).getTime() - completionTime.getTime()) / (1000 * 60 * 60 * 24)) : 7, // Calculate shelf life from expiration date
             quantity: finalYield,
             unit: currentStep.productionRun.targetUnit,
             salePrice: 10.0, // Default price - should be configurable

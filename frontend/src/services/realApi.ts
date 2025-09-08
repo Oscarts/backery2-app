@@ -454,5 +454,27 @@ export const productionApi = {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  },
+
+  // Production Step Templates
+  getDefaultStepTemplates: async (): Promise<ApiResponse<any[]>> => {
+    return apiCall<any[]>('/production/step-templates/default');
+  },
+
+  getRecipeStepTemplates: async (recipeId: string): Promise<ApiResponse<any[]>> => {
+    return apiCall<any[]>(`/production/step-templates/recipe/${recipeId}`);
+  },
+
+  createCustomStepTemplate: async (recipeId: string, data: {
+    name: string;
+    description?: string;
+    estimatedMinutes: number;
+    order: number;
+    isRequired?: boolean;
+  }): Promise<ApiResponse<any>> => {
+    return apiCall<any>(`/production/step-templates/recipe/${recipeId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 };

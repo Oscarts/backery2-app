@@ -294,7 +294,11 @@ const RecipeSelectionDialog: React.FC<RecipeSelectionDialogProps> = ({
                                             ) : (
                                                 <Alert severity="error" sx={{ py: 0.5 }}>
                                                     <Typography variant="caption">
-                                                        ❌ Missing ingredients: {recipe.shortage}
+                                                        ❌ Issues: {recipe.missingIngredients?.map((ing: any) => {
+                                                            if (ing.reason === 'expired') return `${ing.name} expired`;
+                                                            if (ing.reason === 'contaminated') return `${ing.name} contaminated`;
+                                                            return `${ing.name} insufficient (${ing.shortage} short)`;
+                                                        }).join(', ')}
                                                     </Typography>
                                                 </Alert>
                                             )}

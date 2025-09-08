@@ -308,7 +308,139 @@ Create a new recipe.
 
 ### GET /recipes/what-can-i-make
 
-Get recipes that can be made with current inventory, including detailed analysis.
+Get recipes that can be made with current inventory, including expiration date validation.
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "recipe": { 
+        "id": "rec_123",
+        "name": "Chocolate Cake",
+        "emoji": "🍰",
+        "difficulty": "medium"
+      },
+      "canMake": true,
+      "maxServings": 5,
+      "missingIngredients": [],
+      "insufficientIngredients": [
+        {
+          "ingredient": "Flour",
+          "needed": 5.0,
+          "available": 3.0,
+          "shortage": 2.0
+        }
+      ],
+      "expiredIngredients": [
+        {
+          "ingredient": "Milk",
+          "expirationDate": "2025-09-07T00:00:00.000Z",
+          "daysExpired": 1
+        }
+      ],
+      "contaminatedIngredients": [
+        {
+          "ingredient": "Eggs",
+          "contaminationReason": "Cross-contamination detected"
+        }
+      ],
+      "shortage": "Some ingredients are expired or contaminated"
+    }
+  ]
+}
+```
+
+## 🏭 Production APIs
+
+### Production Step Templates
+
+#### GET /production/step-templates/default
+
+Get default production step templates.
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "prep",
+      "name": "Preparation",
+      "description": "Gather and prepare all ingredients",
+      "estimatedMinutes": 15,
+      "order": 1,
+      "isRequired": true
+    },
+    {
+      "id": "production",
+      "name": "Production",
+      "description": "Mix, bake, or process according to recipe",
+      "estimatedMinutes": 60,
+      "order": 2,
+      "isRequired": true
+    },
+    {
+      "id": "quality",
+      "name": "Quality Check",
+      "description": "Inspect product quality and standards",
+      "estimatedMinutes": 10,
+      "order": 3,
+      "isRequired": true
+    },
+    {
+      "id": "packaging",
+      "name": "Packaging",
+      "description": "Package finished products for inventory",
+      "estimatedMinutes": 15,
+      "order": 4,
+      "isRequired": true
+    }
+  ]
+}
+```
+
+#### GET /production/step-templates/recipe/:recipeId
+
+Get production step templates for a specific recipe.
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "custom-1",
+      "name": "Dough Preparation",
+      "description": "Prepare dough with specific technique",
+      "estimatedMinutes": 20,
+      "order": 1,
+      "isRequired": true,
+      "recipeId": "rec_123"
+    }
+  ]
+}
+```
+
+#### POST /production/step-templates/recipe/:recipeId
+
+Create a custom production step template for a recipe.
+
+**Request Body:**
+
+```json
+{
+  "name": "Custom Step Name",
+  "description": "Step description",
+  "estimatedMinutes": 30,
+  "order": 2,
+  "isRequired": false
+}
+```
 
 **Response:**
 
@@ -316,50 +448,54 @@ Get recipes that can be made with current inventory, including detailed analysis
 {
   "success": true,
   "data": {
-    "canMakeCount": 2,
-    "totalRecipes": 5,
-    "recipes": [
-      {
-        "recipeId": "recipe_123",
-        "recipeName": "Basic Bread",
-        "category": "Bread",
-        "yieldQuantity": 10,
-        "yieldUnit": "kg",
-        "canMake": true,
-        "maxBatches": 5,
-        "missingIngredients": []
-      },
-      {
-        "recipeId": "recipe_456", 
-        "recipeName": "Chocolate Cake",
-        "category": "Cakes",
-        "yieldQuantity": 2,
-        "yieldUnit": "kg",
-        "canMake": false,
-        "maxBatches": 0,
-        "missingIngredients": [
-          {
-            "name": "Dark Chocolate",
-            "needed": 500,
-            "available": 200,
-            "shortage": 300,
-            "reason": "insufficient"
-          }
-        ]
-      }
-    ]
+    "id": "custom-new",
+    "name": "Custom Step Name",
+    "description": "Step description",
+    "estimatedMinutes": 30,
+    "order": 2,
+    "isRequired": false,
+    "recipeId": "rec_123"
   }
 }
 ```
 
-**Response Fields:**
-- `canMakeCount`: Number of recipes that can be made with current inventory
-- `totalRecipes`: Total number of recipes analyzed
-- `recipes`: Array of recipe analysis objects
-- `canMake`: Boolean indicating if recipe can be produced
-- `maxBatches`: Maximum number of recipe batches possible with current inventory
-- `missingIngredients`: Array of ingredients that are missing or insufficient
-- `reason`: Reason for unavailability ("insufficient", "expired", "contaminated", "not_found")
+### Production Steps
+
+#### PUT /production/steps/:id/complete
+
+Complete a production step with optional custom expiration date.
+
+**Request Body:**
+
+```json
+{
+  "qualityNotes": "Product meets all quality standards",
+  "qualityStatus": "PASS",
+  "actualQuantity": 12,
+  "expirationDate": "2025-09-15T00:00:00.000Z"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "step_123",
+    "status": "COMPLETED",
+    "completedAt": "2025-09-08T10:30:00.000Z",
+    "qualityStatus": "PASS",
+    "actualQuantity": 12,
+    "expirationDate": "2025-09-15T00:00:00.000Z",
+    "finishedProduct": {
+      "id": "fp_456",
+      "name": "Chocolate Cake",
+      "expirationDate": "2025-09-15T00:00:00.000Z"
+    }
+  }
+}
+```
 
 ## ⚙️ Settings APIs
 

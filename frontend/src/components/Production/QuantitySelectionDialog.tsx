@@ -27,6 +27,7 @@ import {
     Kitchen as KitchenIcon,
 } from '@mui/icons-material';
 import { TransitionProps } from '@mui/material/transitions';
+import ProductionStepsDialog from './ProductionStepsDialog';
 
 const Transition = React.forwardRef(function Transition(
     props: TransitionProps & {
@@ -53,6 +54,7 @@ const QuantitySelectionDialog: React.FC<QuantitySelectionDialogProps> = ({
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const [quantity, setQuantity] = useState(recipe?.yieldQuantity || 12);
+    const [showProductionStepsDialog, setShowProductionStepsDialog] = useState(false);
 
     useEffect(() => {
         if (recipe) {
@@ -351,26 +353,50 @@ const QuantitySelectionDialog: React.FC<QuantitySelectionDialogProps> = ({
                         bottom: 0,
                     }}
                 >
-                    <Stack direction="row" spacing={2}>
+                    <Stack spacing={2}>
+                        {/* Customize Steps Button */}
                         <Button
                             variant="outlined"
-                            onClick={onClose}
-                            sx={{ flex: 1 }}
+                            onClick={() => setShowProductionStepsDialog(true)}
+                            startIcon={<KitchenIcon />}
+                            size="small"
+                            sx={{ alignSelf: 'flex-start' }}
                         >
-                            Cancel
+                            Customize Production Steps
                         </Button>
-                        <Button
-                            variant="contained"
-                            onClick={handleConfirm}
-                            disabled={!recipe.canMake}
-                            sx={{ flex: 2 }}
-                            startIcon={<TrendingUpIcon />}
-                        >
-                            🚀 Start Production!
-                        </Button>
+                        
+                        <Stack direction="row" spacing={2}>
+                            <Button
+                                variant="outlined"
+                                onClick={onClose}
+                                sx={{ flex: 1 }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                variant="contained"
+                                onClick={handleConfirm}
+                                disabled={!recipe.canMake}
+                                sx={{ flex: 2 }}
+                                startIcon={<TrendingUpIcon />}
+                            >
+                                🚀 Start Production!
+                            </Button>
+                        </Stack>
                     </Stack>
                 </Box>
             </DialogContent>
+            
+            {/* Production Steps Dialog */}
+            <ProductionStepsDialog
+                open={showProductionStepsDialog}
+                recipe={recipe}
+                onClose={() => setShowProductionStepsDialog(false)}
+                onConfirm={(customSteps) => {
+                    console.log('Custom production steps:', customSteps);
+                    setShowProductionStepsDialog(false);
+                }}
+            />
         </Dialog>
     );
 };
