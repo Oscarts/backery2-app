@@ -40,7 +40,7 @@ async function createSimpleSeedData() {
         let flour = await prisma.rawMaterial.findFirst({
             where: { name: { contains: 'Flour' } }
         });
-        
+
         if (!flour) {
             flour = await prisma.rawMaterial.create({
                 data: {
@@ -62,7 +62,7 @@ async function createSimpleSeedData() {
         let water = await prisma.rawMaterial.findFirst({
             where: { name: { contains: 'Water' } }
         });
-        
+
         if (!water) {
             water = await prisma.rawMaterial.create({
                 data: {

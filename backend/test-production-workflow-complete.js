@@ -11,17 +11,17 @@ async function testProductionWorkflow() {
 
         // 1. Check current state
         console.log('1️⃣ Checking current database state...');
-        
+
         const recipes = await prisma.recipe.findMany({
             include: { ingredients: true }
         });
         console.log(`📋 Recipes available: ${recipes.length}`);
-        
+
         const productionRuns = await prisma.productionRun.findMany({
             include: { steps: true }
         });
         console.log(`🏭 Production runs: ${productionRuns.length}`);
-        
+
         const finishedProducts = await prisma.finishedProduct.findMany();
         console.log(`📦 Finished products: ${finishedProducts.length}`);
 
@@ -33,7 +33,7 @@ async function testProductionWorkflow() {
                 steps: true
             }
         });
-        
+
         console.log(`\n2️⃣ Completed production runs: ${completedRuns.length}`);
         if (completedRuns.length > 0) {
             for (const run of completedRuns) {
@@ -46,7 +46,7 @@ async function testProductionWorkflow() {
         // 3. Create a test production run if we have recipes
         if (recipes.length > 0) {
             console.log(`\n3️⃣ Creating test production run...`);
-            
+
             const testRecipe = recipes[0];
             console.log(`Using recipe: ${testRecipe.name}`);
 
@@ -103,11 +103,11 @@ async function testProductionWorkflow() {
 
             // 4. Simulate completing all steps
             console.log(`\n4️⃣ Simulating production step completion...`);
-            
+
             for (let i = 0; i < testRun.steps.length; i++) {
                 const step = testRun.steps[i];
                 console.log(`   Starting step ${i + 1}: ${step.name}`);
-                
+
                 // Start step
                 await prisma.productionStep.update({
                     where: { id: step.id },
@@ -119,7 +119,7 @@ async function testProductionWorkflow() {
 
                 // Complete step after a short delay
                 await new Promise(resolve => setTimeout(resolve, 100));
-                
+
                 await prisma.productionStep.update({
                     where: { id: step.id },
                     data: {
@@ -145,7 +145,7 @@ async function testProductionWorkflow() {
 
             // 5. Check if finished products were created
             console.log(`\n5️⃣ Checking for finished products after completion...`);
-            
+
             const finishedProductsAfter = await prisma.finishedProduct.findMany({
                 where: {
                     name: { contains: testRecipe.name }
@@ -153,7 +153,7 @@ async function testProductionWorkflow() {
             });
 
             console.log(`📦 Finished products found: ${finishedProductsAfter.length}`);
-            
+
             if (finishedProductsAfter.length === 0) {
                 console.log(`❌ ISSUE IDENTIFIED: No finished products were created!`);
                 console.log(`   Expected: ${testRun.targetQuantity} ${testRun.targetUnit} of ${testRecipe.name}`);

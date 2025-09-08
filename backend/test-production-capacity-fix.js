@@ -16,7 +16,7 @@ async function testProductionCapacityFix() {
     // Test 1: Get what-can-i-make analysis
     console.log('📊 Fetching what-can-i-make analysis...');
     const response = await axios.get(`${API_BASE}/api/recipes/what-can-i-make`);
-    
+
     if (!response.data.success) {
       throw new Error('API returned error: ' + response.data.error);
     }
@@ -26,17 +26,17 @@ async function testProductionCapacityFix() {
 
     // Test 2: Validate maxBatches calculation
     let allTestsPassed = true;
-    
+
     for (const recipe of recipes) {
       console.log(`📝 Testing: ${recipe.recipeName}`);
       console.log(`   Can Make: ${recipe.canMake}`);
       console.log(`   Max Batches: ${recipe.maxBatches}`);
       console.log(`   Yield: ${recipe.yieldQuantity} ${recipe.yieldUnit}`);
-      
+
       if (recipe.canMake) {
         const totalCapacity = recipe.maxBatches * recipe.yieldQuantity;
         console.log(`   Total Capacity: ${totalCapacity} ${recipe.yieldUnit}`);
-        
+
         // Critical test: maxBatches should NOT be hardcoded to 1
         if (recipe.maxBatches === 1) {
           console.log(`   ❌ FAIL: maxBatches is 1 (likely hardcoded bug)`);
@@ -80,7 +80,7 @@ async function testProductionCapacityFix() {
     console.log('\n🔍 Validating Response Structure:');
     const requiredFields = ['recipeId', 'recipeName', 'canMake', 'maxBatches', 'yieldQuantity', 'yieldUnit'];
     let structureValid = true;
-    
+
     for (const recipe of recipes) {
       for (const field of requiredFields) {
         if (!(field in recipe)) {
@@ -90,7 +90,7 @@ async function testProductionCapacityFix() {
         }
       }
     }
-    
+
     if (structureValid) {
       console.log('   ✅ PASS: All required fields present in response');
     }
@@ -100,7 +100,7 @@ async function testProductionCapacityFix() {
     if (allTestsPassed) {
       console.log('🎉 ALL TESTS PASSED! Production capacity fix is working correctly.');
       console.log('✅ maxBatches calculation is properly implemented');
-      console.log('✅ Limiting ingredient analysis is working'); 
+      console.log('✅ Limiting ingredient analysis is working');
       console.log('✅ API response structure is correct');
       process.exit(0);
     } else {

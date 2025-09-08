@@ -35,10 +35,10 @@ async function testInventoryIntegration() {
         // Test 1: Check ingredient availability
         console.log('\n1️⃣ Testing ingredient availability check...');
         const availability = await inventoryService.checkIngredientAvailability(recipe.id, 1);
-        
+
         console.log(`✅ Can produce: ${availability.canProduce}`);
         console.log(`📊 Checks: ${availability.checks.length}`);
-        
+
         if (availability.insufficientIngredients.length > 0) {
             console.log(`⚠️  Insufficient ingredients: ${availability.insufficientIngredients.length}`);
             availability.insufficientIngredients.forEach(ing => {

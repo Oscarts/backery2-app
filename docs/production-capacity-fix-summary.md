@@ -24,17 +24,20 @@ Fixed a critical bug in the production capacity calculation where `maxBatches` w
 ## Testing Results
 
 ### ✅ Unit Tests
+
 - **11/11 tests passing**
 - Covers algorithm logic, edge cases, and real-world scenarios
 - Prevents regression of the bug
 
 ### ✅ Integration Tests  
+
 - API endpoint validation
 - Real inventory data verification
 - Response structure validation
 - Cross-validation with expected values
 
 ### ✅ Manual Verification
+
 ```bash
 # API Test Results
 curl -s http://localhost:8000/api/recipes/what-can-i-make
@@ -47,6 +50,7 @@ curl -s http://localhost:8000/api/recipes/what-can-i-make
 ## Algorithm Implementation
 
 **Core Logic**: Limiting ingredient analysis
+
 ```typescript
 // For each ingredient, calculate possible batches
 const batchesForThisIngredient = Math.floor(availableQuantity / ingredient.quantity);
@@ -55,7 +59,8 @@ const batchesForThisIngredient = Math.floor(availableQuantity / ingredient.quant
 maxBatches = Math.min(maxBatches, batchesForThisIngredient);
 ```
 
-**Example**: 
+**Example**:
+
 - Recipe needs: 1kg flour per batch
 - Available: 50kg flour  
 - Calculation: `Math.floor(50 / 1) = 50 batches`

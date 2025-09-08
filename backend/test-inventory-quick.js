@@ -11,7 +11,7 @@ async function quickTest() {
 
         // Add some raw materials for testing
         console.log('1️⃣ Adding test raw materials...');
-        
+
         const flour = await prisma.rawMaterial.upsert({
             where: { name: 'All-Purpose Flour' },
             update: { quantity: 1000, reservedQuantity: 0 },
@@ -62,7 +62,7 @@ async function quickTest() {
 
         // Add ingredients to the recipe
         console.log('3️⃣ Adding ingredients to recipe...');
-        
+
         await prisma.recipeIngredient.deleteMany({
             where: { recipeId: recipe.id }
         });
@@ -90,7 +90,7 @@ async function quickTest() {
 
         // Test the inventory service
         console.log('\n4️⃣ Testing ProductionInventoryService...');
-        
+
         // Import the service (require works better with ts files in node)
         const { ProductionInventoryService } = require('./src/services/productionInventoryService.ts');
         const inventoryService = new ProductionInventoryService();

@@ -11,20 +11,20 @@ async function apiRequest(endpoint, options = {}) {
         headers: { 'Content-Type': 'application/json' },
         ...options
     });
-    
+
     if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
-    
+
     return response.json();
 }
 
 async function runComprehensiveTest() {
     console.log('🧪 Running Comprehensive Application Test\n');
-    
+
     let testsPassed = 0;
     let testsTotal = 0;
-    
+
     // Test 1: Backend Health Check
     testsTotal++;
     try {
@@ -175,8 +175,8 @@ async function runComprehensiveTest() {
     console.log('🎯 COMPREHENSIVE TEST RESULTS');
     console.log('='.repeat(60));
     console.log(`✅ Tests Passed: ${testsPassed}/${testsTotal}`);
-    console.log(`📊 Success Rate: ${(testsPassed/testsTotal*100).toFixed(1)}%`);
-    
+    console.log(`📊 Success Rate: ${(testsPassed / testsTotal * 100).toFixed(1)}%`);
+
     if (testsPassed === testsTotal) {
         console.log('🎉 ALL TESTS PASSED! Application is fully functional.');
     } else if (testsPassed >= testsTotal * 0.8) {
@@ -184,7 +184,7 @@ async function runComprehensiveTest() {
     } else {
         console.log('❌ Multiple test failures. Application needs attention.');
     }
-    
+
     console.log('\n✅ Frontend running at: http://localhost:3005');
     console.log('✅ Backend running at: http://localhost:8000');
     console.log('✅ Health endpoint: http://localhost:8000/health');

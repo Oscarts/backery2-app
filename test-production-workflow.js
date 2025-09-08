@@ -11,12 +11,12 @@ async function testProductionWorkflow() {
         console.log('1. 📋 Fetching available recipes...');
         const recipesResponse = await fetch(`${API_BASE}/recipes`);
         const recipesData = await recipesResponse.json();
-        
+
         if (!recipesData.success || !recipesData.data.length) {
             console.error('❌ No recipes found!');
             return;
         }
-        
+
         const recipe = recipesData.data[0]; // Use first recipe
         console.log(`✅ Found recipe: ${recipe.name}`);
 
@@ -54,7 +54,7 @@ async function testProductionWorkflow() {
         // 4. Start first step
         const firstStep = productionRun.data.steps[0];
         console.log(`\n4. ▶️  Starting first step: ${firstStep.name}`);
-        
+
         const startResponse = await fetch(`${API_BASE}/production/steps/${firstStep.id}/start`, {
             method: 'POST'
         });
@@ -88,13 +88,13 @@ async function testProductionWorkflow() {
         console.log('\n6. 📊 Checking production status...');
         const statusResponse = await fetch(`${API_BASE}/production/runs/${productionRun.data.id}`);
         const updatedProduction = await statusResponse.json();
-        
+
         if (updatedProduction.success) {
             console.log(`📈 Production status: ${updatedProduction.data.status}`);
             console.log('📋 Current step statuses:');
             updatedProduction.data.steps.forEach((step, index) => {
-                const status = step.status === 'COMPLETED' ? '✅' : 
-                              step.status === 'IN_PROGRESS' ? '⏳' : '⏸️';
+                const status = step.status === 'COMPLETED' ? '✅' :
+                    step.status === 'IN_PROGRESS' ? '⏳' : '⏸️';
                 console.log(`   ${index + 1}. ${step.name} ${status} ${step.status}`);
                 if (step.actualStartTime) {
                     console.log(`      Started: ${new Date(step.actualStartTime).toLocaleTimeString()}`);

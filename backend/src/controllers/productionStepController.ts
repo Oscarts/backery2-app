@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 export const getProductionSteps = async (req: Request, res: Response) => {
   try {
     const { productionRunId } = req.params;
-    
+
     const steps = await prisma.productionStep.findMany({
       where: { productionRunId: productionRunId },
       orderBy: { stepOrder: 'asc' },
@@ -27,9 +27,9 @@ export const getProductionSteps = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error fetching production steps:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: 'Failed to fetch production steps' 
+      error: 'Failed to fetch production steps'
     });
   }
 };
@@ -38,7 +38,7 @@ export const getProductionSteps = async (req: Request, res: Response) => {
 export const getProductionStepById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    
+
     const step = await prisma.productionStep.findUnique({
       where: { id: id },
       include: {
@@ -51,9 +51,9 @@ export const getProductionStepById = async (req: Request, res: Response) => {
     });
 
     if (!step) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        error: 'Production step not found' 
+        error: 'Production step not found'
       });
     }
 
@@ -64,9 +64,9 @@ export const getProductionStepById = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error fetching production step:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: 'Failed to fetch production step' 
+      error: 'Failed to fetch production step'
     });
   }
 };
@@ -113,9 +113,9 @@ export const updateProductionStep = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error updating production step:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: 'Failed to update production step' 
+      error: 'Failed to update production step'
     });
   }
 };
@@ -132,23 +132,23 @@ export const startProductionStep = async (req: Request, res: Response) => {
     });
 
     if (!currentStep) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        error: 'Production step not found' 
+        error: 'Production step not found'
       });
     }
 
     if (currentStep.status === ProductionStepStatus.IN_PROGRESS) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        error: 'Production step is already in progress' 
+        error: 'Production step is already in progress'
       });
     }
 
     if (currentStep.status === ProductionStepStatus.COMPLETED) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        error: 'Production step is already completed' 
+        error: 'Production step is already completed'
       });
     }
 
@@ -176,9 +176,9 @@ export const startProductionStep = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error starting production step:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: 'Failed to start production step' 
+      error: 'Failed to start production step'
     });
   }
 };
@@ -197,7 +197,8 @@ export const completeProductionStep = async (req: Request, res: Response) => {
       qualityCheckPassed,
       temperature,
       equipmentUsed,
-      stepPhotos
+      stepPhotos,
+      customExpirationDate // New field for setting custom expiration date
     } = req.body;
 
     const currentStep = await prisma.productionStep.findUnique({
@@ -213,29 +214,29 @@ export const completeProductionStep = async (req: Request, res: Response) => {
     });
 
     if (!currentStep) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        error: 'Production step not found' 
+        error: 'Production step not found'
       });
     }
 
     if (currentStep.status !== ProductionStepStatus.IN_PROGRESS) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        error: 'Production step must be in progress to complete' 
+        error: 'Production step must be in progress to complete'
       });
     }
 
     const completionTime = new Date();
     const startTime = currentStep.startedAt;
-    const calculatedMinutes = startTime ? 
-      Math.round((completionTime.getTime() - startTime.getTime()) / (1000 * 60)) : 
+    const calculatedMinutes = startTime ?
+      Math.round((completionTime.getTime() - startTime.getTime()) / (1000 * 60)) :
       actualMinutes;
 
     // Calculate efficiency score
     const expectedMinutes = currentStep.estimatedMinutes || 60;
     const actualDuration = actualMinutes || calculatedMinutes || expectedMinutes;
-    const efficiencyScore = expectedMinutes > 0 ? 
+    const efficiencyScore = expectedMinutes > 0 ?
       Math.round((expectedMinutes / actualDuration) * 100) : 100;
 
     // Generate alerts for efficiency issues
@@ -270,7 +271,7 @@ export const completeProductionStep = async (req: Request, res: Response) => {
 
     // Check if all steps are completed
     const allSteps = currentStep.productionRun.steps;
-    const allStepsCompleted = allSteps.every(step => 
+    const allStepsCompleted = allSteps.every(step =>
       step.id === id ? true : step.status === ProductionStepStatus.COMPLETED
     );
 
@@ -306,8 +307,12 @@ export const completeProductionStep = async (req: Request, res: Response) => {
       // Create finished product
       const recipe = currentStep.productionRun.recipe;
       const batchNumber = `BATCH-${Date.now()}`;
-      
+
       try {
+        // Calculate expiration date
+        const defaultExpirationDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
+        const expirationDate = customExpirationDate ? new Date(customExpirationDate) : defaultExpirationDate;
+
         createdFinishedProduct = await prisma.finishedProduct.create({
           data: {
             name: recipe.name,
@@ -315,8 +320,8 @@ export const completeProductionStep = async (req: Request, res: Response) => {
             sku: `SKU-${recipe.name.replace(/\s+/g, '-').toUpperCase()}-${Date.now()}`,
             batchNumber,
             productionDate: completionTime,
-            expirationDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-            shelfLife: 7, // days
+            expirationDate,
+            shelfLife: Math.ceil((expirationDate.getTime() - completionTime.getTime()) / (1000 * 60 * 60 * 24)), // Calculate shelf life in days
             quantity: finalYield,
             unit: currentStep.productionRun.targetUnit,
             salePrice: 10.0, // Default price - should be configurable
@@ -346,9 +351,9 @@ export const completeProductionStep = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error completing production step:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: 'Failed to complete production step' 
+      error: 'Failed to complete production step'
     });
   }
 };
@@ -359,7 +364,7 @@ function calculateProductionCost(steps: any[]): number {
   const baseLabourCost = 15; // $15/hour
   const totalMinutes = steps.reduce((total, step) => total + (step.actualMinutes || step.estimatedMinutes || 0), 0);
   const labourCost = (totalMinutes / 60) * baseLabourCost;
-  
+
   // Add material costs from resourcesConsumed if available
   const materialCost = steps.reduce((total, step) => {
     if (step.resourcesConsumed) {
@@ -390,9 +395,9 @@ export const logQualityCheckpoint = async (req: Request, res: Response) => {
     });
 
     if (!currentStep) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        error: 'Production step not found' 
+        error: 'Production step not found'
       });
     }
 
@@ -408,7 +413,7 @@ export const logQualityCheckpoint = async (req: Request, res: Response) => {
     };
 
     // Update step with quality information
-    const updatedNotes = currentStep.notes 
+    const updatedNotes = currentStep.notes
       ? `${currentStep.notes}\n\nQuality Check: ${checkpointType} - ${qualityStatus}\nMeasurements: ${JSON.stringify(measurements)}\nNotes: ${notes}`
       : `Quality Check: ${checkpointType} - ${qualityStatus}\nMeasurements: ${JSON.stringify(measurements)}\nNotes: ${notes}`;
 
@@ -445,9 +450,9 @@ export const logQualityCheckpoint = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error logging quality checkpoint:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: 'Failed to log quality checkpoint' 
+      error: 'Failed to log quality checkpoint'
     });
   }
 };

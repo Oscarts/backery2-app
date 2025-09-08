@@ -56,7 +56,7 @@ const ProductionTracker: React.FC<ProductionTrackerProps> = ({
 }) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-    
+
     // State management
     const [steps, setSteps] = useState<ProductionStep[]>([]);
     const [loading, setLoading] = useState(false);
@@ -75,7 +75,7 @@ const ProductionTracker: React.FC<ProductionTrackerProps> = ({
     // Timer for current step
     useEffect(() => {
         const currentStep = steps.find(s => s.status === ProductionStepStatus.IN_PROGRESS);
-        
+
         if (currentStep?.startedAt && production?.status === ProductionStatus.IN_PROGRESS) {
             const interval = setInterval(() => {
                 const startTime = new Date(currentStep.startedAt!).getTime();
@@ -89,7 +89,7 @@ const ProductionTracker: React.FC<ProductionTrackerProps> = ({
 
     const loadProductionSteps = async () => {
         if (!production?.id) return;
-        
+
         try {
             setLoading(true);
             setError(null);
@@ -109,7 +109,7 @@ const ProductionTracker: React.FC<ProductionTrackerProps> = ({
 
     const handleStartStep = async (step: ProductionStep) => {
         if (!step.id) return;
-        
+
         try {
             setUpdatingSteps(prev => new Set(prev).add(step.id));
             const response = await productionApi.startStep(step.id);
@@ -133,15 +133,15 @@ const ProductionTracker: React.FC<ProductionTrackerProps> = ({
 
     const handleCompleteStep = async (step: ProductionStep) => {
         if (!step.id) return;
-        
+
         const notes = stepNotes[step.id] || '';
-        
+
         try {
             setUpdatingSteps(prev => new Set(prev).add(step.id));
             const response = await productionApi.completeStep(step.id, {
                 notes: notes.trim() || undefined,
             });
-            
+
             if (response.success) {
                 await loadProductionSteps(); // Reload to get updated state
                 setStepNotes({ ...stepNotes, [step.id]: '' }); // Clear notes
@@ -163,7 +163,7 @@ const ProductionTracker: React.FC<ProductionTrackerProps> = ({
 
     const handlePauseProduction = async () => {
         if (!production?.id) return;
-        
+
         try {
             const response = await productionApi.updateRun(production.id, {
                 status: ProductionStatus.ON_HOLD
@@ -181,7 +181,7 @@ const ProductionTracker: React.FC<ProductionTrackerProps> = ({
 
     const handleResumeProduction = async () => {
         if (!production?.id) return;
-        
+
         try {
             const response = await productionApi.updateRun(production.id, {
                 status: ProductionStatus.IN_PROGRESS
@@ -199,7 +199,7 @@ const ProductionTracker: React.FC<ProductionTrackerProps> = ({
 
     const handleCompleteProduction = async () => {
         if (!production?.id) return;
-        
+
         try {
             const response = await productionApi.updateRun(production.id, {
                 status: ProductionStatus.COMPLETED,
@@ -223,7 +223,7 @@ const ProductionTracker: React.FC<ProductionTrackerProps> = ({
     const currentStep = steps.find(s => s.status === ProductionStepStatus.IN_PROGRESS);
     const completedSteps = steps.filter(s => s.status === ProductionStepStatus.COMPLETED).length;
     const progressPercentage = steps.length > 0 ? (completedSteps / steps.length) * 100 : 0;
-    const allStepsCompleted = steps.length > 0 && steps.every(s => 
+    const allStepsCompleted = steps.length > 0 && steps.every(s =>
         s.status === ProductionStepStatus.COMPLETED || s.status === ProductionStepStatus.SKIPPED
     );
 
@@ -231,7 +231,7 @@ const ProductionTracker: React.FC<ProductionTrackerProps> = ({
         if (updatingSteps.has(step.id)) {
             return <CircularProgress size={20} />;
         }
-        
+
         switch (step.status) {
             case ProductionStepStatus.COMPLETED:
                 return <CheckIcon color="success" />;
@@ -550,9 +550,9 @@ const ProductionTracker: React.FC<ProductionTrackerProps> = ({
                         </Button>
                     ) : (
                         <Alert severity="info" sx={{ textAlign: 'center' }}>
-                            {steps.length === 0 
+                            {steps.length === 0
                                 ? 'Loading production steps...'
-                                : currentStep 
+                                : currentStep
                                     ? `Currently working on: ${currentStep.name}`
                                     : 'Continue with the current step to progress your production'
                             }

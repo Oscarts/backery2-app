@@ -6,13 +6,13 @@
  */
 
 describe('Recipe Production Capacity Calculation', () => {
-  
+
   describe('Maximum Batches Calculation Logic', () => {
     /**
      * Test the core algorithm for calculating maximum batches
      * This is the critical logic that was fixed in the production capacity bug
      */
-    
+
     it('should calculate correct maxBatches for single ingredient recipe', () => {
       // Simulate the algorithm from recipeController.ts
       const ingredient = {
@@ -20,12 +20,12 @@ describe('Recipe Production Capacity Calculation', () => {
         quantity: 1, // 1kg flour needed per batch
         unit: 'kg'
       };
-      
+
       const availableQuantity = 50; // 50kg flour available
-      
+
       // This is the core calculation logic
       const batchesForThisIngredient = Math.floor(availableQuantity / ingredient.quantity);
-      
+
       expect(batchesForThisIngredient).toBe(50); // 50kg ÷ 1kg = 50 batches
     });
 
@@ -34,22 +34,22 @@ describe('Recipe Production Capacity Calculation', () => {
         { rawMaterialId: 'flour-1', quantity: 2, unit: 'kg' },  // 2kg flour per batch
         { rawMaterialId: 'sugar-1', quantity: 1, unit: 'kg' },  // 1kg sugar per batch
       ];
-      
+
       const inventory = new Map([
         ['flour-1', { quantity: 50, unit: 'kg' }], // 50÷2 = 25 batches possible
         ['sugar-1', { quantity: 15, unit: 'kg' }], // 15÷1 = 15 batches possible (limiting factor)
       ]);
-      
+
       // Simulate the maxBatches calculation algorithm
       let maxBatches = Number.MAX_SAFE_INTEGER;
-      
+
       for (const ingredient of ingredients) {
         const material = inventory.get(ingredient.rawMaterialId);
         const availableQuantity = material ? material.quantity : 0;
         const batchesForThisIngredient = Math.floor(availableQuantity / ingredient.quantity);
         maxBatches = Math.min(maxBatches, batchesForThisIngredient);
       }
-      
+
       expect(maxBatches).toBe(15); // Limited by sugar availability
     });
 
@@ -59,11 +59,11 @@ describe('Recipe Production Capacity Calculation', () => {
         quantity: 10, // Need 10kg per batch
         unit: 'kg'
       };
-      
+
       const availableQuantity = 5; // Only 5kg available
-      
+
       const batchesForThisIngredient = Math.floor(availableQuantity / ingredient.quantity);
-      
+
       expect(batchesForThisIngredient).toBe(0); // 5kg ÷ 10kg = 0 batches (floor of 0.5)
     });
 
@@ -73,11 +73,11 @@ describe('Recipe Production Capacity Calculation', () => {
         quantity: 2, // 2kg dough per batch
         unit: 'kg'
       };
-      
+
       const availableQuantity = 20; // 20kg dough available
-      
+
       const batchesForThisIngredient = Math.floor(availableQuantity / ingredient.quantity);
-      
+
       expect(batchesForThisIngredient).toBe(10); // 20kg ÷ 2kg = 10 batches
     });
 
@@ -87,14 +87,14 @@ describe('Recipe Production Capacity Calculation', () => {
         quantity: 0, // Zero quantity ingredient (edge case)
         unit: 'L'
       };
-      
+
       const availableQuantity = 100;
-      
+
       // Division by zero should be handled
-      const batchesForThisIngredient = ingredient.quantity === 0 
-        ? Number.MAX_SAFE_INTEGER 
+      const batchesForThisIngredient = ingredient.quantity === 0
+        ? Number.MAX_SAFE_INTEGER
         : Math.floor(availableQuantity / ingredient.quantity);
-      
+
       expect(batchesForThisIngredient).toBe(Number.MAX_SAFE_INTEGER);
     });
   });
@@ -128,9 +128,9 @@ describe('Recipe Production Capacity Calculation', () => {
     it('should handle zero yield quantity edge case', () => {
       const maxBatches = 50;
       const yieldQuantity = 0; // Edge case
-      
+
       const totalCapacity = maxBatches * yieldQuantity;
-      
+
       expect(totalCapacity).toBe(0);
     });
   });
@@ -138,26 +138,26 @@ describe('Recipe Production Capacity Calculation', () => {
   describe('Algorithm Edge Cases', () => {
     it('should handle recipes with no ingredients', () => {
       const ingredients: any[] = []; // No ingredients
-      
+
       // If no ingredients, should default to 0 batches
       let maxBatches = Number.MAX_SAFE_INTEGER;
-      
+
       if (ingredients.length === 0) {
         maxBatches = 0;
       }
-      
+
       expect(maxBatches).toBe(0);
     });
 
     it('should handle maxBatches overflow protection', () => {
       // Test the overflow protection logic
       let maxBatches = Number.MAX_SAFE_INTEGER;
-      
+
       // Simulate the overflow protection from the actual code
       if (maxBatches === Number.MAX_SAFE_INTEGER || maxBatches < 0) {
         maxBatches = 0;
       }
-      
+
       expect(maxBatches).toBe(0);
     });
 
@@ -167,11 +167,11 @@ describe('Recipe Production Capacity Calculation', () => {
         quantity: 5,
         unit: 'kg'
       };
-      
+
       const availableQuantity = -10; // Negative inventory (data corruption edge case)
-      
+
       const batchesForThisIngredient = Math.floor(Math.max(0, availableQuantity) / ingredient.quantity);
-      
+
       expect(batchesForThisIngredient).toBe(0); // Should handle negative gracefully
     });
   });
@@ -218,7 +218,7 @@ describe('Recipe Production Capacity Calculation', () => {
       // Verify total capacity calculations
       const breadRecipe = mockApiResponse.data.recipes[0];
       const creamRecipe = mockApiResponse.data.recipes[1];
-      
+
       expect(breadRecipe.maxBatches * breadRecipe.yieldQuantity).toBe(500); // 50 × 10 = 500kg
       expect(creamRecipe.maxBatches * creamRecipe.yieldQuantity).toBe(50);  // 10 × 5 = 50L
     });

@@ -108,7 +108,7 @@ async function minimalTest() {
 
         // Test the inventory service
         console.log('\n3️⃣ Testing ProductionInventoryService...');
-        
+
         const { ProductionInventoryService } = require('./src/services/productionInventoryService.ts');
         const inventoryService = new ProductionInventoryService();
 
@@ -132,7 +132,7 @@ async function minimalTest() {
         // Test allocation if possible
         if (availability.canProduce) {
             console.log('\n4️⃣ Testing allocation...');
-            
+
             // Create a production run
             const productionRun = await prisma.productionRun.create({
                 data: {
@@ -158,7 +158,7 @@ async function minimalTest() {
             const allocationRecords = await prisma.productionAllocation.findMany({
                 where: { productionRunId: productionRun.id }
             });
-            
+
             allocationRecords.forEach(record => {
                 console.log(`   - ${record.materialName}: ${record.quantityAllocated} ${record.unit} (${record.status})`);
             });

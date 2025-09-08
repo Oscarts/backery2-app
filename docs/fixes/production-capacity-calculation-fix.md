@@ -9,12 +9,14 @@
 The "What Can I Make" analysis endpoint (`/api/recipes/what-can-i-make`) was incorrectly hardcoding the `maxBatches` value to `1` for all recipes that could be made, regardless of the actual ingredient availability. This led to significant underestimation of production capacity.
 
 ### Symptoms
+
 - All available recipes showed `maxBatches: 1` in the API response
 - Production planning was limited to single-batch calculations
 - Total production capacity was severely underestimated
 - Frontend displayed incorrect batch possibilities
 
 ### Example of the Bug
+
 ```json
 // BEFORE (Incorrect)
 {
@@ -40,11 +42,13 @@ The "What Can I Make" analysis endpoint (`/api/recipes/what-can-i-make`) was inc
 ## Root Cause Analysis
 
 ### Location
+
 File: `/backend/src/controllers/recipeController.ts`  
 Function: `getWhatCanIMake`  
 Line: ~576 (before fix)
 
 ### Original Code (Problematic)
+
 ```typescript
 const recipeData = {
   // ... other fields
@@ -54,7 +58,9 @@ const recipeData = {
 ```
 
 ### Issue Details
+
 The code was using a simplistic approach that set `maxBatches` to `1` for any recipe that could be made, without considering:
+
 1. **Available ingredient quantities**
 2. **Required ingredient quantities per batch**
 3. **Limiting ingredients** (ingredients that run out first)
@@ -63,6 +69,7 @@ The code was using a simplistic approach that set `maxBatches` to `1` for any re
 ## Solution Implementation
 
 ### Algorithm Overview
+
 The fix implements a proper **limiting ingredient analysis** that:
 
 1. **Calculates batches per ingredient**: For each ingredient, determine how many batches are possible based on available quantity
@@ -70,6 +77,7 @@ The fix implements a proper **limiting ingredient analysis** that:
 3. **Returns realistic capacity**: The minimum value across all ingredients
 
 ### Fixed Code
+
 ```typescript
 // Calculate maximum batches based on ingredient availability
 let maxBatches = 0;
@@ -107,11 +115,13 @@ if (canMake) {
 ### Key Improvements
 
 1. **Accurate Batch Calculation**
+
    ```typescript
    const batchesForThisIngredient = Math.floor(availableQuantity / ingredient.quantity);
    ```
 
 2. **Limiting Ingredient Logic**
+
    ```typescript
    maxBatches = Math.min(maxBatches, batchesForThisIngredient);
    ```
@@ -125,12 +135,14 @@ if (canMake) {
 ## Real-World Impact
 
 ### Before Fix
+
 | Recipe | Available Ingredients | Reported Max Batches | Actual Capacity |
 |--------|----------------------|---------------------|-----------------|
 | Basic Bread Dough | 50kg flour (need 1kg) | 1 batch | 10kg |
 | Vanilla Pastry Cream | 10L cream (need 1L) | 1 batch | 5L |
 
 ### After Fix
+
 | Recipe | Available Ingredients | Reported Max Batches | Actual Capacity |
 |--------|----------------------|---------------------|-----------------|
 | Basic Bread Dough | 50kg flour (need 1kg) | 50 batches | 500kg |
@@ -141,9 +153,11 @@ if (canMake) {
 ## Test Coverage
 
 ### Unit Tests Created
+
 File: `/backend/src/tests/controllers/recipeController.test.ts`
 
 **Test Categories:**
+
 1. **Maximum Batches Calculation Logic**
    - Single ingredient recipes
    - Multiple ingredient recipes with limiting factors
@@ -164,6 +178,7 @@ File: `/backend/src/tests/controllers/recipeController.test.ts`
 **Test Results:** ✅ 11/11 tests passing
 
 ### Sample Test Cases
+
 ```typescript
 it('should find limiting ingredient for multiple ingredient recipe', () => {
   const ingredients = [
@@ -184,6 +199,7 @@ it('should find limiting ingredient for multiple ingredient recipe', () => {
 ## Verification Steps
 
 ### API Testing
+
 ```bash
 # Test the fixed endpoint
 curl -s http://localhost:8000/api/recipes/what-can-i-make | jq '.data.recipes[] | {name: .recipeName, maxBatches: .maxBatches, totalCapacity: (.maxBatches * .yieldQuantity)}'
@@ -202,7 +218,9 @@ curl -s http://localhost:8000/api/recipes/what-can-i-make | jq '.data.recipes[] 
 ```
 
 ### Frontend Integration
+
 The frontend automatically displays the corrected information:
+
 - Recipe cards show accurate batch counts: "(50 batches possible)"
 - Production planning reflects realistic capacity
 - Inventory utilization calculations are correct
@@ -210,17 +228,20 @@ The frontend automatically displays the corrected information:
 ## Prevention Measures
 
 ### 1. Comprehensive Unit Tests
+
 - Tests verify the exact calculation logic
 - Edge cases are covered
 - Real-world scenarios are validated
 - Prevents regression of the bug
 
 ### 2. Algorithm Documentation
+
 - Limiting ingredient logic is well-documented
 - Code comments explain the calculation steps
 - Clear variable naming (e.g., `batchesForThisIngredient`)
 
 ### 3. Integration Testing
+
 - API endpoint testing with real data
 - Frontend integration verification
 - Cross-validation with inventory data
@@ -228,12 +249,15 @@ The frontend automatically displays the corrected information:
 ## Related Components
 
 ### Files Modified
+
 - ✅ `/backend/src/controllers/recipeController.ts` - Core logic fix
 - ✅ `/frontend/src/components/Production/RecipeSelectionDialog.tsx` - Display improvements
 - ✅ `/backend/src/tests/controllers/recipeController.test.ts` - Test coverage
 
 ### Frontend Impact
+
 The frontend already had support for displaying `maxBatches` information, so the fix automatically improved the user experience:
+
 - Accurate batch counts in recipe selection
 - Better production capacity planning
 - Improved inventory utilization insights
@@ -241,12 +265,14 @@ The frontend already had support for displaying `maxBatches` information, so the
 ## Future Considerations
 
 ### Potential Enhancements
+
 1. **Reserved Quantity Integration**: Account for ingredients already reserved for other production runs
 2. **Batch Size Optimization**: Allow for fractional batches or batch size adjustments
 3. **Time-based Constraints**: Consider production time limits in capacity calculations
 4. **Multi-location Inventory**: Support for ingredient availability across multiple storage locations
 
 ### Monitoring
+
 - Monitor API response times to ensure calculation complexity doesn't impact performance
 - Track production planning accuracy improvements
 - Validate capacity calculations against actual production data
@@ -256,6 +282,7 @@ The frontend already had support for displaying `maxBatches` information, so the
 This fix resolves a critical bug in production capacity calculation that was severely limiting the accuracy of production planning. The implementation of proper limiting ingredient analysis ensures realistic capacity estimations and significantly improves the utility of the "What Can I Make" feature.
 
 **Key Metrics:**
+
 - ✅ **Accuracy**: 50x improvement in capacity calculations  
 - ✅ **Reliability**: Comprehensive test coverage prevents regression  
 - ✅ **Performance**: Efficient algorithm with O(n×m) complexity (n=recipes, m=ingredients)  

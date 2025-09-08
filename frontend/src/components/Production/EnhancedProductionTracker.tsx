@@ -67,7 +67,7 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
 }) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-    
+
     // State management
     const [steps, setSteps] = useState<ProductionStep[]>([]);
     const [loading, setLoading] = useState(false);
@@ -75,7 +75,7 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
     const [timer, setTimer] = useState(0);
     const [stepNotes, setStepNotes] = useState<{ [key: string]: string }>({});
     const [updatingSteps, setUpdatingSteps] = useState<Set<string>>(new Set());
-    
+
     // Quality tracking state
     const [qualityDialogOpen, setQualityDialogOpen] = useState(false);
     const [selectedStepForQuality, setSelectedStepForQuality] = useState<ProductionStep | null>(null);
@@ -100,7 +100,7 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
     // Timer for current step
     useEffect(() => {
         const currentStep = steps.find(s => s.status === ProductionStepStatus.IN_PROGRESS);
-        
+
         if (currentStep?.startedAt && production?.status === ProductionStatus.IN_PROGRESS) {
             const interval = setInterval(() => {
                 const startTime = new Date(currentStep.startedAt!).getTime();
@@ -114,7 +114,7 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
 
     const loadProductionSteps = async () => {
         if (!production?.id) return;
-        
+
         try {
             setLoading(true);
             setError(null);
@@ -134,7 +134,7 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
 
     const handleStartStep = async (step: ProductionStep) => {
         if (!step.id) return;
-        
+
         try {
             setUpdatingSteps(prev => new Set(prev).add(step.id));
             const response = await productionApi.startStep(step.id);
@@ -158,16 +158,16 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
 
     const handleCompleteStep = async (step: ProductionStep) => {
         if (!step.id) return;
-        
+
         const notes = stepNotes[step.id] || '';
-        
+
         try {
             setUpdatingSteps(prev => new Set(prev).add(step.id));
             const response = await productionApi.completeStep(step.id, {
                 notes: notes.trim() || undefined,
                 qualityCheckPassed: step.qualityCheckPassed,
             });
-            
+
             if (response.success) {
                 await loadProductionSteps();
                 setStepNotes({ ...stepNotes, [step.id]: '' });
@@ -194,13 +194,13 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
 
     const handleLogQualityCheckpoint = async () => {
         if (!selectedStepForQuality?.id) return;
-        
+
         try {
             const response = await productionApi.logQualityCheckpoint(
                 selectedStepForQuality.id,
                 qualityCheckData
             );
-            
+
             if (response.success) {
                 await loadProductionSteps();
                 setQualityDialogOpen(false);
@@ -237,16 +237,16 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
 
     const renderStepCard = (step: ProductionStep, index: number) => {
         const isUpdating = updatingSteps.has(step.id);
-        const canStart = step.status === ProductionStepStatus.PENDING && 
-                        (index === 0 || steps[index - 1]?.status === ProductionStepStatus.COMPLETED);
+        const canStart = step.status === ProductionStepStatus.PENDING &&
+            (index === 0 || steps[index - 1]?.status === ProductionStepStatus.COMPLETED);
         const canComplete = step.status === ProductionStepStatus.IN_PROGRESS;
         const isActive = step.status === ProductionStepStatus.IN_PROGRESS;
-        
+
         return (
-            <Card 
-                key={step.id} 
-                sx={{ 
-                    mb: 2, 
+            <Card
+                key={step.id}
+                sx={{
+                    mb: 2,
                     border: isActive ? `2px solid ${theme.palette.primary.main}` : 'none',
                     boxShadow: isActive ? theme.shadows[8] : theme.shadows[2]
                 }}
@@ -254,11 +254,11 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                 <CardContent>
                     <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Avatar 
-                                sx={{ 
+                            <Avatar
+                                sx={{
                                     bgcolor: isActive ? 'primary.main' : 'grey.300',
-                                    width: 32, 
-                                    height: 32 
+                                    width: 32,
+                                    height: 32
                                 }}
                             >
                                 {index + 1}
@@ -268,8 +268,8 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                                     {step.name}
                                 </Typography>
                                 <Stack direction="row" spacing={1} alignItems="center">
-                                    <Chip 
-                                        label={step.status.replace('_', ' ')} 
+                                    <Chip
+                                        label={step.status.replace('_', ' ')}
                                         size="small"
                                         color={getStepStatusColor(step.status)}
                                     />
@@ -282,7 +282,7 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                                 </Stack>
                             </Box>
                         </Box>
-                        
+
                         {isActive && (
                             <Box sx={{ textAlign: 'center' }}>
                                 <Typography variant="h4" color="primary">
@@ -340,7 +340,7 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                                 Start
                             </Button>
                         )}
-                        
+
                         {canComplete && (
                             <Button
                                 variant="contained"
@@ -353,7 +353,7 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                                 Complete
                             </Button>
                         )}
-                        
+
                         {isActive && (
                             <Button
                                 variant="outlined"
@@ -373,9 +373,9 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                             size="small"
                             placeholder="Add notes for this step..."
                             value={stepNotes[step.id] || ''}
-                            onChange={(e) => setStepNotes({ 
-                                ...stepNotes, 
-                                [step.id]: e.target.value 
+                            onChange={(e) => setStepNotes({
+                                ...stepNotes,
+                                [step.id]: e.target.value
                             })}
                             multiline
                             rows={2}
@@ -423,10 +423,10 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
             >
                 <DialogContent sx={{ p: 0 }}>
                     {/* Header */}
-                    <Box 
-                        sx={{ 
-                            p: 2, 
-                            bgcolor: 'primary.main', 
+                    <Box
+                        sx={{
+                            p: 2,
+                            bgcolor: 'primary.main',
                             color: 'white',
                             position: 'sticky',
                             top: 0,
@@ -480,7 +480,7 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                     <Typography variant="h6" gutterBottom>
                         Quality Checkpoint - {selectedStepForQuality?.name}
                     </Typography>
-                    
+
                     <Stack spacing={3} sx={{ mt: 2 }}>
                         {/* Checkpoint type */}
                         <FormControl fullWidth>
@@ -591,8 +591,8 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                             <Button onClick={() => setQualityDialogOpen(false)}>
                                 Cancel
                             </Button>
-                            <Button 
-                                variant="contained" 
+                            <Button
+                                variant="contained"
                                 onClick={handleLogQualityCheckpoint}
                                 startIcon={<QualityIcon />}
                             >

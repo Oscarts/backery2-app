@@ -11,14 +11,14 @@ async function setupStorageLocations() {
 
         const locations = await prisma.storageLocation.findMany();
         console.log(`📍 Current storage locations: ${locations.length}`);
-        
+
         locations.forEach(location => {
             console.log(`  - ${location.name} (${location.type || 'No type'})`);
         });
 
         if (locations.length === 0) {
             console.log('📦 Creating default storage locations...');
-            
+
             const warehouse = await prisma.storageLocation.create({
                 data: {
                     name: 'Main Warehouse',

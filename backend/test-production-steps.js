@@ -15,7 +15,7 @@ async function testProductionStepEndpoints() {
     const runsData = await runsResponse.json();
     const runs = runsData.data || runsData; // Handle both response formats
     console.log(`   Found ${runs.length} production runs`);
-    
+
     if (runs.length === 0) {
       console.log('❌ No production runs found. Please create some test data first.');
       return;
@@ -32,7 +32,7 @@ async function testProductionStepEndpoints() {
     }
     const steps = await stepsResponse.json();
     console.log(`   Found ${steps.length} steps for this run`);
-    
+
     if (steps.length === 0) {
       console.log('❌ No production steps found for this run.');
       return;
@@ -52,7 +52,7 @@ async function testProductionStepEndpoints() {
           notes: 'Test starting step via API'
         })
       });
-      
+
       if (startResponse.ok) {
         const startedStep = await startResponse.json();
         console.log(`   ✅ Step started successfully! Status: ${startedStep.status}`);

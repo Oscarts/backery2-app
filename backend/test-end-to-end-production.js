@@ -24,7 +24,7 @@ async function testEndToEndProductionWorkflow() {
 
         console.log(`📋 Found ${recipes.length} recipes`);
         const targetRecipe = recipes.find(r => r.ingredients.length > 0);
-        
+
         if (!targetRecipe) {
             console.log('❌ No recipe with ingredients found');
             return;
@@ -102,12 +102,12 @@ async function testEndToEndProductionWorkflow() {
 
         // 4. Simulate production step completion (using production step controller logic)
         console.log(`\n4️⃣ Simulating production step completion...`);
-        
+
         let currentStepIndex = 0;
         for (const step of productionRun.steps) {
             currentStepIndex++;
             console.log(`\n   Step ${currentStepIndex}: ${step.name}`);
-            
+
             // Start step
             console.log(`     🟡 Starting step...`);
             await prisma.productionStep.update({
@@ -154,12 +154,12 @@ async function testEndToEndProductionWorkflow() {
 
             if (remainingSteps === 0) {
                 console.log(`\n   🏁 All steps completed! Triggering production completion...`);
-                
+
                 // This is where the production completion service should be called
                 // Simulating the updated production step controller behavior
                 const { ProductionCompletionService } = require('./src/services/productionCompletionService.ts');
                 const completionService = new ProductionCompletionService();
-                
+
                 try {
                     const completionResult = await completionService.completeProductionRun(productionRun.id, 3);
                     console.log(`   ✅ Production completed successfully!`);
@@ -207,7 +207,7 @@ async function testEndToEndProductionWorkflow() {
         console.log(`🏭 Production Run Status: ${finalProductionRun.status}`);
         console.log(`📅 Completed At: ${finalProductionRun.completedAt?.toLocaleString() || 'Not completed'}`);
         console.log(`📊 Final Quantity: ${finalProductionRun.finalQuantity || 'Not set'}`);
-        
+
         const completedSteps = finalProductionRun.steps.filter(s => s.status === 'COMPLETED');
         console.log(`✅ Completed Steps: ${completedSteps.length}/${finalProductionRun.steps.length}`);
 
@@ -241,7 +241,7 @@ async function testEndToEndProductionWorkflow() {
             });
             console.log(`   ✅ Removed ${finalFinishedProducts.length} test finished products`);
         }
-        
+
         await prisma.productionStep.deleteMany({
             where: { productionRunId: productionRun.id }
         });

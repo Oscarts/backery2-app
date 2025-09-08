@@ -87,10 +87,10 @@ const RecipeSelectionDialog: React.FC<RecipeSelectionDialogProps> = ({
                     canMake: recipeAnalysis.canMake,
                     maxBatches: recipeAnalysis.maxBatches,
                     missingIngredients: recipeAnalysis.missingIngredients,
-                    shortage: recipeAnalysis.missingIngredients.length > 0 
-                        ? recipeAnalysis.missingIngredients.map(ing => 
+                    shortage: recipeAnalysis.missingIngredients.length > 0
+                        ? recipeAnalysis.missingIngredients.map(ing =>
                             `Missing ${ing.shortage} ${ing.name}`
-                          ).join(', ')
+                        ).join(', ')
                         : undefined,
                     // Add some default values
                     emoji: '🥖',

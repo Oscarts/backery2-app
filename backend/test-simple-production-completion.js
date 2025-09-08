@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 
 // Simplified completion service for testing
 class SimpleProductionCompletionService {
-    
+
     async completeProductionRun(productionRunId, actualQuantity) {
         try {
             console.log(`🏁 Completing production run: ${productionRunId}`);
@@ -68,7 +68,7 @@ class SimpleProductionCompletionService {
             // Generate batch number
             const batchNumber = `BATCH-${Date.now()}`;
             const productionDate = new Date();
-            
+
             // Calculate expiration date (default 7 days for bakery products)
             const expirationDate = new Date();
             expirationDate.setDate(expirationDate.getDate() + 7);
@@ -112,7 +112,7 @@ class SimpleProductionCompletionService {
 
     async getOrCreateDefaultStorageLocation() {
         let location = await prisma.storageLocation.findFirst({
-            where: { 
+            where: {
                 OR: [
                     { name: { contains: 'warehouse' } },
                     { name: { contains: 'storage' } },

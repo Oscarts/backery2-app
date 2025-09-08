@@ -18,9 +18,9 @@ async function testIngredientAvailabilityFix() {
         console.log('1. Testing "what can I make" API...');
         const whatCanIMakeResponse = await axios.get(`${BASE_URL}/api/recipes/what-can-i-make`);
         const { canMakeCount, totalRecipes, recipes } = whatCanIMakeResponse.data.data;
-        
+
         console.log(`   ✅ Can make ${canMakeCount} out of ${totalRecipes} recipes`);
-        
+
         // Find a recipe with ingredients
         const recipeWithIngredients = recipes.find(r => r.recipeName.includes('Artisan') || r.recipeName.includes('Test'));
         if (recipeWithIngredients) {
@@ -35,7 +35,7 @@ async function testIngredientAvailabilityFix() {
         if (recipeWithIngredients) {
             const recipeResponse = await axios.get(`${BASE_URL}/api/recipes/${recipeWithIngredients.recipeId}`);
             const recipe = recipeResponse.data.data;
-            
+
             console.log(`   📋 Recipe "${recipe.name}" has ${recipe.ingredients?.length || 0} ingredients`);
             if (recipe.ingredients) {
                 recipe.ingredients.forEach(ing => {
@@ -56,7 +56,7 @@ async function testIngredientAvailabilityFix() {
                     targetQuantity: 1,
                     targetUnit: availableRecipe.yieldUnit
                 });
-                
+
                 console.log(`   ✅ Successfully created production run for available recipe`);
                 console.log(`      Production ID: ${productionResponse.data.data.id}`);
             } catch (error) {
@@ -70,10 +70,10 @@ async function testIngredientAvailabilityFix() {
         console.log('\n4. Testing API consistency...');
         const regularRecipesResponse = await axios.get(`${BASE_URL}/api/recipes`);
         const regularRecipes = regularRecipesResponse.data.data;
-        
+
         console.log(`   📊 Regular recipes API returned ${regularRecipes.length} recipes`);
         console.log(`   📊 What-can-I-make API returned ${recipes.length} recipes`);
-        
+
         if (regularRecipes.length === recipes.length) {
             console.log('   ✅ Recipe count is consistent between APIs');
         } else {
@@ -83,10 +83,10 @@ async function testIngredientAvailabilityFix() {
         // Test 5: Check for availability data structure
         console.log('\n5. Testing availability data structure...');
         const recipeWithAvailability = recipes[0];
-        const hasRequiredFields = recipeWithAvailability.hasOwnProperty('canMake') && 
-                                 recipeWithAvailability.hasOwnProperty('maxBatches') &&
-                                 recipeWithAvailability.hasOwnProperty('missingIngredients');
-        
+        const hasRequiredFields = recipeWithAvailability.hasOwnProperty('canMake') &&
+            recipeWithAvailability.hasOwnProperty('maxBatches') &&
+            recipeWithAvailability.hasOwnProperty('missingIngredients');
+
         if (hasRequiredFields) {
             console.log('   ✅ Recipes include required availability fields');
         } else {
@@ -98,7 +98,7 @@ async function testIngredientAvailabilityFix() {
         console.log(`- Total recipes: ${totalRecipes}`);
         console.log(`- Available recipes: ${canMakeCount}`);
         console.log(`- Unavailable recipes: ${totalRecipes - canMakeCount}`);
-        
+
         if (totalRecipes - canMakeCount > 0) {
             console.log('\n⚠️  Some recipes are unavailable. Frontend should show "Cannot start production" message for these.');
         } else {

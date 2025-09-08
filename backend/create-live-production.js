@@ -99,13 +99,13 @@ async function createLiveProductionWorkflow() {
 
         // 3. Complete the production automatically
         console.log(`\n⚡ Auto-completing production for demonstration...`);
-        
+
         // Complete all steps
         for (let i = 0; i < productionRun.steps.length; i++) {
             const step = productionRun.steps[i];
-            
+
             console.log(`   Completing step ${i + 1}: ${step.name}...`);
-            
+
             // Start and complete step
             await prisma.productionStep.update({
                 where: { id: step.id },
@@ -122,7 +122,7 @@ async function createLiveProductionWorkflow() {
         // Complete production run and create finished product
         const { ProductionCompletionService } = require('./src/services/productionCompletionService.ts');
         const completionService = new ProductionCompletionService();
-        
+
         console.log(`\n🏁 Completing production and creating finished products...`);
         const completionResult = await completionService.completeProductionRun(productionRun.id, 5);
 
@@ -164,7 +164,7 @@ async function createLiveProductionWorkflow() {
         console.log(`4. ✅ Verify it shows: ${completionResult.finishedProduct.quantity} ${completionResult.finishedProduct.unit}`);
         console.log(`5. 🔍 Check the SKU: ${completionResult.finishedProduct.sku}`);
         console.log(`6. 📅 Verify production date: ${completionResult.finishedProduct.productionDate.toLocaleDateString()}`);
-        
+
         console.log(`\n🚀 PRODUCTION WORKFLOW IS NOW COMPLETE AND WORKING!`);
         console.log(`   ✅ Production runs can be created`);
         console.log(`   ✅ Steps can be tracked and completed`);

@@ -14,7 +14,7 @@ async function createEnhancedSeedData() {
         let flourSupplier = await prisma.supplier.findFirst({
             where: { name: 'Bakery Supplies Co' }
         });
-        
+
         if (!flourSupplier) {
             flourSupplier = await prisma.supplier.create({
                 data: {
@@ -30,7 +30,7 @@ async function createEnhancedSeedData() {
         let mainWarehouse = await prisma.storageLocation.findFirst({
             where: { name: 'Main Warehouse' }
         });
-        
+
         if (!mainWarehouse) {
             mainWarehouse = await prisma.storageLocation.create({
                 data: {
@@ -44,11 +44,11 @@ async function createEnhancedSeedData() {
 
         // 3. Create raw materials
         console.log('3️⃣ Creating raw materials...');
-        
+
         let flour = await prisma.rawMaterial.findFirst({
             where: { name: 'Premium Bread Flour' }
         });
-        
+
         if (!flour) {
             flour = await prisma.rawMaterial.create({
                 data: {
@@ -128,7 +128,7 @@ async function createEnhancedSeedData() {
 
         // 4. Create recipes with ingredients
         console.log('4️⃣ Creating recipes with ingredients...');
-        
+
         // Clean up existing recipe ingredients
         await prisma.recipeIngredient.deleteMany({
             where: {

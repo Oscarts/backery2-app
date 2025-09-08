@@ -10,7 +10,7 @@ async function testCompleteProductionWorkflow() {
     const runsResponse = await fetch(`${BASE_URL}/api/production/runs`);
     const runsData = await runsResponse.json();
     const runs = runsData.data || runsData;
-    
+
     if (runs.length === 0) {
       console.log('❌ No production runs found');
       return;
@@ -37,7 +37,7 @@ async function testCompleteProductionWorkflow() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ notes: `Started ${step.name} step` })
         });
-        
+
         if (startResponse.ok) {
           console.log('   ✅ Step started successfully');
         } else {
@@ -83,12 +83,12 @@ async function testCompleteProductionWorkflow() {
       if (completeResponse.ok) {
         const result = await completeResponse.json();
         console.log('   ✅ Step completed successfully');
-        
+
         // Check if this was the final step
         if (result.productionCompleted) {
           console.log('\n🎉 PRODUCTION COMPLETED! 🎉');
           console.log('   📦 Production run finished');
-          
+
           if (result.createdFinishedProduct) {
             console.log('   🍞 Finished product created:');
             console.log(`      Name: ${result.createdFinishedProduct.name}`);
@@ -112,7 +112,7 @@ async function testCompleteProductionWorkflow() {
     if (finishedProductsResponse.ok) {
       const finishedProductsData = await finishedProductsResponse.json();
       const finishedProducts = finishedProductsData.data || finishedProductsData;
-      
+
       console.log(`   Found ${finishedProducts.length} finished products in inventory:`);
       finishedProducts.forEach((product, idx) => {
         console.log(`   ${idx + 1}. ${product.name} - ${product.quantity} ${product.unit} (${product.status})`);
