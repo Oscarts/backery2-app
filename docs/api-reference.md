@@ -308,31 +308,58 @@ Create a new recipe.
 
 ### GET /recipes/what-can-i-make
 
-Get recipes that can be made with current inventory.
+Get recipes that can be made with current inventory, including detailed analysis.
 
 **Response:**
 
 ```json
 {
   "success": true,
-  "data": [
-    {
-      "recipe": { /* recipe object */ },
-      "canMake": true,
-      "maxServings": 5,
-      "missingIngredients": [],
-      "insufficientIngredients": [
-        {
-          "ingredient": "Flour",
-          "needed": 5.0,
-          "available": 3.0,
-          "shortage": 2.0
-        }
-      ]
-    }
-  ]
+  "data": {
+    "canMakeCount": 2,
+    "totalRecipes": 5,
+    "recipes": [
+      {
+        "recipeId": "recipe_123",
+        "recipeName": "Basic Bread",
+        "category": "Bread",
+        "yieldQuantity": 10,
+        "yieldUnit": "kg",
+        "canMake": true,
+        "maxBatches": 5,
+        "missingIngredients": []
+      },
+      {
+        "recipeId": "recipe_456", 
+        "recipeName": "Chocolate Cake",
+        "category": "Cakes",
+        "yieldQuantity": 2,
+        "yieldUnit": "kg",
+        "canMake": false,
+        "maxBatches": 0,
+        "missingIngredients": [
+          {
+            "name": "Dark Chocolate",
+            "needed": 500,
+            "available": 200,
+            "shortage": 300,
+            "reason": "insufficient"
+          }
+        ]
+      }
+    ]
+  }
 }
 ```
+
+**Response Fields:**
+- `canMakeCount`: Number of recipes that can be made with current inventory
+- `totalRecipes`: Total number of recipes analyzed
+- `recipes`: Array of recipe analysis objects
+- `canMake`: Boolean indicating if recipe can be produced
+- `maxBatches`: Maximum number of recipe batches possible with current inventory
+- `missingIngredients`: Array of ingredients that are missing or insufficient
+- `reason`: Reason for unavailability ("insufficient", "expired", "contaminated", "not_found")
 
 ## ⚙️ Settings APIs
 

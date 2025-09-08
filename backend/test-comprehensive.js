@@ -132,11 +132,12 @@ async function runComprehensiveTest() {
     testsTotal++;
     try {
         const whatCanIMake = await apiRequest('/recipes/what-can-i-make');
-        if (whatCanIMake.success && Array.isArray(whatCanIMake.data)) {
-            console.log(`✅ Test 8: What can I make API working (${whatCanIMake.data.length} recipes available)`);
+        if (whatCanIMake.success && whatCanIMake.data && Array.isArray(whatCanIMake.data.recipes)) {
+            console.log(`✅ Test 8: What can I make API working (${whatCanIMake.data.recipes.length} recipes available)`);
+            console.log(`   📊 Can make ${whatCanIMake.data.canMakeCount} out of ${whatCanIMake.data.totalRecipes} recipes`);
             testsPassed++;
         } else {
-            console.log('❌ Test 8: What can I make API failed');
+            console.log('❌ Test 8: What can I make API failed - invalid response structure');
         }
     } catch (error) {
         console.log('❌ Test 8: What can I make API failed -', error.message);
