@@ -278,72 +278,20 @@ export const completeProductionStep = async (req: Request, res: Response) => {
     let completedProductionRun = null;
     let createdFinishedProduct = null;
 
-    if (allStepsCompleted) {
-      console.log('🎉 All production steps completed! Finalizing production run...');
-
-      // Calculate total actual time and final yield
-      const totalActualMinutes = allSteps.reduce((total, step) => {
-        return total + (step.id === id ? actualDuration : (step.actualMinutes || step.estimatedMinutes || 0));
-      }, 0);
-
-      const finalYield = yieldQuantity || currentStep.productionRun.targetQuantity;
-
-      // Update production run to completed
-      completedProductionRun = await prisma.productionRun.update({
-        where: { id: currentStep.productionRunId },
-        data: {
-          status: 'COMPLETED' as any,
-          completedAt: completionTime,
-          finalQuantity: finalYield,
-          actualCost: calculateProductionCost(allSteps),
-          updatedAt: new Date()
-        },
-        include: {
-          recipe: true,
-          steps: true
-        }
-      });
-
-      // Create finished product
-      const recipe = currentStep.productionRun.recipe;
-      const batchNumber = `BATCH-${Date.now()}`;
-
-      try {
-        createdFinishedProduct = await prisma.finishedProduct.create({
-          data: {
-            name: recipe.name,
-            description: `Produced from recipe: ${recipe.name}`,
-            sku: `SKU-${recipe.name.replace(/\s+/g, '-').toUpperCase()}-${Date.now()}`,
-            batchNumber,
-            productionDate: completionTime,
-            expirationDate: expirationDate ? new Date(expirationDate) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Use provided date or default to 7 days
-            shelfLife: expirationDate ? Math.ceil((new Date(expirationDate).getTime() - completionTime.getTime()) / (1000 * 60 * 60 * 24)) : 7, // Calculate shelf life from expiration date
-            quantity: finalYield,
-            unit: currentStep.productionRun.targetUnit,
-            salePrice: 10.0, // Default price - should be configurable
-            costToProduce: calculateProductionCost(allSteps),
-            status: 'COMPLETED' as any,
-            isContaminated: qualityCheckPassed === false,
-            categoryId: recipe.categoryId
-          }
-        });
-
-        console.log(`✅ Created finished product: ${createdFinishedProduct.name} (${finalYield} ${currentStep.productionRun.targetUnit})`);
-      } catch (productError) {
-        console.error('Error creating finished product:', productError);
-        // Don't fail the step completion if finished product creation fails
-      }
-    }
+    // REMOVED AUTO-COMPLETION: Don't automatically complete production when all steps are done
+    // The production should only be completed when user explicitly clicks "Finish Production"
+    // This prevents the production card from disappearing before user confirms completion
 
     res.json({
       success: true,
       data: {
         step: updatedStep,
-        productionCompleted: allStepsCompleted,
+        productionCompleted: false, // Always false - only set to true via explicit finish action
+        allStepsCompleted: allStepsCompleted, // Still provide this info for UI logic
         completedProductionRun,
         createdFinishedProduct
       },
-      message: allStepsCompleted ? 'Production step completed and production run finished' : 'Production step completed successfully'
+      message: 'Production step completed successfully'
     });
   } catch (error) {
     console.error('Error completing production step:', error);

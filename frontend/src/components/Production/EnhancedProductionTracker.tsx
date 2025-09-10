@@ -261,30 +261,113 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
         if (open && production?.id) {
             loadProductionSteps();
 
-            // Enhanced initial scroll to current step when dialog opens
-            // Use multiple timeouts to ensure the UI is fully rendered
+            // Enhanced initial scroll logic when dialog opens
+            // Check if all steps are completed and scroll to finish button, otherwise current step
             setTimeout(() => {
-                scrollToCurrentStep();
+                const initialScrollLogic = () => {
+                    // First check if all steps are completed
+                    const allCompleted = steps.length > 0 && steps.every(step => step.status === ProductionStepStatus.COMPLETED);
+
+                    if (allCompleted && production?.status !== 'COMPLETED') {
+                        console.log('🎯 All steps completed on dialog open, scrolling to finish button...');
+                        const finishButton = document.querySelector('[data-testid="finish-production-button"]');
+                        if (finishButton) {
+                            console.log('🎯 Found finish button on dialog open, scrolling...');
+                            (finishButton as HTMLElement).style.animation = 'pulse 2s infinite';
+
+                            finishButton.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'center',
+                                inline: 'nearest'
+                            });
+
+                            setTimeout(() => {
+                                (finishButton as HTMLElement).style.animation = '';
+                            }, 6000);
+                        } else {
+                            console.log('🎯 Finish button not found on dialog open, will retry...');
+                            // Fallback: scroll to bottom
+                            const dialogContent = document.querySelector('[role="dialog"] .MuiDialogContent-root');
+                            if (dialogContent) {
+                                dialogContent.scrollTo({
+                                    top: dialogContent.scrollHeight,
+                                    behavior: 'smooth'
+                                });
+                            }
+                        }
+                    } else {
+                        // Normal case: scroll to current step
+                        scrollToCurrentStep();
+                    }
+                };
+
+                initialScrollLogic();
             }, 500);
 
             // Backup scroll attempt if the first one doesn't work
             setTimeout(() => {
-                scrollToCurrentStep();
+                const allCompleted = steps.length > 0 && steps.every(step => step.status === ProductionStepStatus.COMPLETED);
+
+                if (allCompleted && production?.status !== 'COMPLETED') {
+                    console.log('🎯 Backup attempt: All steps completed, scrolling to finish button...');
+                    const finishButton = document.querySelector('[data-testid="finish-production-button"]');
+                    if (finishButton) {
+                        finishButton.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center',
+                            inline: 'nearest'
+                        });
+                    }
+                } else {
+                    scrollToCurrentStep();
+                }
             }, 1500);
 
             // Set up auto-refresh for real-time monitoring
             const interval = setInterval(loadProductionSteps, 30000); // Refresh every 30 seconds
             return () => clearInterval(interval);
         }
-    }, [open, production?.id]);
-
-    // Auto-scroll to current step whenever steps data changes
+    }, [open, production?.id]);    // Auto-scroll to current step whenever steps data changes
     useEffect(() => {
         if (open && steps.length > 0) {
-            // Small delay to ensure DOM is updated
-            setTimeout(() => {
-                scrollToCurrentStep();
-            }, 200);
+            // Check if all steps are completed and scroll appropriately
+            const allCompleted = steps.every(step => step.status === ProductionStepStatus.COMPLETED);
+
+            if (allCompleted && production?.status !== 'COMPLETED') {
+                // All steps completed - scroll to finish button
+                console.log('🎯 Steps loaded: All completed, scrolling to finish button...');
+                setTimeout(() => {
+                    const finishButton = document.querySelector('[data-testid="finish-production-button"]');
+                    if (finishButton) {
+                        console.log('🎯 Finish button found after steps loaded, scrolling...');
+                        (finishButton as HTMLElement).style.animation = 'pulse 2s infinite';
+
+                        finishButton.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center',
+                            inline: 'nearest'
+                        });
+
+                        setTimeout(() => {
+                            (finishButton as HTMLElement).style.animation = '';
+                        }, 6000);
+                    } else {
+                        // Fallback: scroll to bottom
+                        const dialogContent = document.querySelector('[role="dialog"] .MuiDialogContent-root');
+                        if (dialogContent) {
+                            dialogContent.scrollTo({
+                                top: dialogContent.scrollHeight,
+                                behavior: 'smooth'
+                            });
+                        }
+                    }
+                }, 200);
+            } else {
+                // Normal case: scroll to current step
+                setTimeout(() => {
+                    scrollToCurrentStep();
+                }, 200);
+            }
         }
     }, [steps.map(s => s.status).join(','), open]); // Trigger when any step status changes
 
@@ -461,23 +544,13 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                 console.log('🔍 Complete API response:', response);
                 console.log('🔍 Response data:', response.data);
 
-                // Check if production is completed (from API response)
-                if (response.data && (response.data as any).productionCompleted === true) {
+                // REMOVED AUTO-COMPLETION: Production is no longer auto-completed when all steps finish
+                // The user must explicitly click "Finish Production" button
+                // This prevents the production card from disappearing unexpectedly
 
-                    console.log('🎉 Production auto-completed! Triggering celebration...');
-
-                    // Use completedProductionRun if available, otherwise use production data
-                    const productionData = (response.data as any).completedProductionRun || production;
-                    console.log('📊 Using production data for celebration:', productionData);
-
-                    // Trigger celebration immediately for automatic completion
-                    setCompletedProductionData(productionData);
-                    setShowCompletionCelebration(true);
-                } else {
-                    console.log('⏳ Production not completed yet, step finished successfully');
-                    console.log('   - productionCompleted:', (response.data as any)?.productionCompleted);
-                    console.log('   - completedProductionRun:', !!(response.data as any)?.completedProductionRun);
-                }
+                console.log('✅ Production step completed successfully');
+                console.log('   - allStepsCompleted:', (response.data as any)?.allStepsCompleted);
+                console.log('   - Production will remain active until user clicks Finish Production');
 
                 onProductionUpdated?.();
             } else {
