@@ -456,6 +456,31 @@ export const productionApi = {
     });
   },
 
+  // Dynamic Step Management
+  addStep: async (productionRunId: string, data: {
+    name: string;
+    description?: string;
+    estimatedMinutes: number;
+    insertAfterStepId?: string;
+  }): Promise<ApiResponse<{
+    newStep: ProductionStep;
+    allSteps: ProductionStep[];
+  }>> => {
+    return apiCall(`/production/runs/${productionRunId}/steps`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  removeStep: async (stepId: string): Promise<ApiResponse<{
+    removedStepId: string;
+    allSteps: ProductionStep[];
+  }>> => {
+    return apiCall(`/production/steps/${stepId}`, {
+      method: 'DELETE',
+    });
+  },
+
   // Production Step Templates
   getDefaultStepTemplates: async (): Promise<ApiResponse<any[]>> => {
     return apiCall<any[]>('/production/step-templates/default');

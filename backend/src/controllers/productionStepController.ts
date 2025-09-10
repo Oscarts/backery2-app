@@ -452,3 +452,225 @@ export const logQualityCheckpoint = async (req: Request, res: Response) => {
     });
   }
 };
+
+// Add a new production step to an existing production run
+export const addProductionStep = async (req: Request, res: Response) => {
+  try {
+    const { productionRunId } = req.params;
+    const { name, description, estimatedMinutes, insertAfterStepId } = req.body;
+
+    // Validate required fields
+    if (!name || !estimatedMinutes) {
+      return res.status(400).json({
+        success: false,
+        error: 'Name and estimated minutes are required'
+      });
+    }
+
+    // Check if production run exists and is still active
+    const productionRun = await prisma.productionRun.findUnique({
+      where: { id: productionRunId },
+      include: {
+        steps: {
+          orderBy: { stepOrder: 'asc' }
+        }
+      }
+    });
+
+    if (!productionRun) {
+      return res.status(404).json({
+        success: false,
+        error: 'Production run not found'
+      });
+    }
+
+    // Don't allow adding steps to completed production runs
+    if (productionRun.status === 'COMPLETED' || productionRun.status === 'CANCELLED') {
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot add steps to completed or cancelled production runs'
+      });
+    }
+
+    // Calculate the new step order
+    let newStepOrder: number;
+    
+    if (insertAfterStepId) {
+      // Insert after a specific step
+      const afterStep = productionRun.steps.find(step => step.id === insertAfterStepId);
+      if (!afterStep) {
+        return res.status(400).json({
+          success: false,
+          error: 'Step to insert after not found'
+        });
+      }
+      
+      newStepOrder = afterStep.stepOrder + 0.5; // Use decimal to insert between steps
+      
+      // We'll reorder all steps after insertion to maintain integer order
+    } else {
+      // Add at the end
+      const maxOrder = Math.max(...productionRun.steps.map(s => s.stepOrder), 0);
+      newStepOrder = maxOrder + 1;
+    }
+
+    // Create the new step
+    const newStep = await prisma.productionStep.create({
+      data: {
+        name,
+        description: description || '',
+        productionRunId,
+        stepOrder: newStepOrder,
+        estimatedMinutes: parseInt(estimatedMinutes),
+        status: ProductionStepStatus.PENDING
+      },
+      include: {
+        productionRun: {
+          include: {
+            recipe: true
+          }
+        }
+      }
+    });
+
+    // If we inserted in the middle, reorder all steps to have integer order
+    if (insertAfterStepId) {
+      const allSteps = await prisma.productionStep.findMany({
+        where: { productionRunId },
+        orderBy: { stepOrder: 'asc' }
+      });
+
+      // Update step orders to be sequential integers
+      for (let i = 0; i < allSteps.length; i++) {
+        await prisma.productionStep.update({
+          where: { id: allSteps[i].id },
+          data: { stepOrder: i + 1 }
+        });
+      }
+    }
+
+    // Get all updated steps
+    const updatedSteps = await prisma.productionStep.findMany({
+      where: { productionRunId },
+      orderBy: { stepOrder: 'asc' },
+      include: {
+        productionRun: {
+          include: {
+            recipe: true
+          }
+        }
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      data: {
+        newStep,
+        allSteps: updatedSteps
+      },
+      message: 'Production step added successfully'
+    });
+  } catch (error) {
+    console.error('Error adding production step:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to add production step'
+    });
+  }
+};
+
+// Remove a production step (only if it's PENDING)
+export const removeProductionStep = async (req: Request, res: Response) => {
+  try {
+    const { stepId } = req.params;
+
+    // Get the step to check its status
+    const step = await prisma.productionStep.findUnique({
+      where: { id: stepId },
+      include: {
+        productionRun: true
+      }
+    });
+
+    if (!step) {
+      return res.status(404).json({
+        success: false,
+        error: 'Production step not found'
+      });
+    }
+
+    // Only allow removal of PENDING steps
+    if (step.status !== ProductionStepStatus.PENDING) {
+      return res.status(400).json({
+        success: false,
+        error: 'Can only remove pending steps. This step has already been started or completed.'
+      });
+    }
+
+    // Don't allow removing from completed production runs
+    if (step.productionRun.status === 'COMPLETED' || step.productionRun.status === 'CANCELLED') {
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot remove steps from completed or cancelled production runs'
+      });
+    }
+
+    // Get all steps to check if this is the last one
+    const allSteps = await prisma.productionStep.findMany({
+      where: { productionRunId: step.productionRunId }
+    });
+
+    if (allSteps.length <= 1) {
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot remove the last remaining step'
+      });
+    }
+
+    // Remove the step
+    await prisma.productionStep.delete({
+      where: { id: stepId }
+    });
+
+    // Reorder remaining steps to have sequential order
+    const remainingSteps = await prisma.productionStep.findMany({
+      where: { productionRunId: step.productionRunId },
+      orderBy: { stepOrder: 'asc' }
+    });
+
+    for (let i = 0; i < remainingSteps.length; i++) {
+      await prisma.productionStep.update({
+        where: { id: remainingSteps[i].id },
+        data: { stepOrder: i + 1 }
+      });
+    }
+
+    // Get all updated steps
+    const updatedSteps = await prisma.productionStep.findMany({
+      where: { productionRunId: step.productionRunId },
+      orderBy: { stepOrder: 'asc' },
+      include: {
+        productionRun: {
+          include: {
+            recipe: true
+          }
+        }
+      }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        removedStepId: stepId,
+        allSteps: updatedSteps
+      },
+      message: 'Production step removed successfully'
+    });
+  } catch (error) {
+    console.error('Error removing production step:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to remove production step'
+    });
+  }
+};

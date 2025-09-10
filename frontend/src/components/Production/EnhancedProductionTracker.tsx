@@ -29,6 +29,8 @@ import {
     Check as CheckIcon,
     VerifiedUser as QualityIcon,
     Warning as WarningIcon,
+    Add as AddIcon,
+    Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { TransitionProps } from '@mui/material/transitions';
 import { ProductionRun, ProductionStep, ProductionStepStatus, ProductionStatus } from '../../types/index';
@@ -85,6 +87,15 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
         measurements: { temperature: 0, weight: 0, ph: 7 },
         notes: '',
         photos: []
+    });
+
+    // Step management state
+    const [addStepDialogOpen, setAddStepDialogOpen] = useState(false);
+    const [insertAfterStepId, setInsertAfterStepId] = useState<string | null>(null);
+    const [newStepData, setNewStepData] = useState({
+        name: '',
+        description: '',
+        estimatedMinutes: 30
     });
 
     // Load production steps when dialog opens or production changes
@@ -220,6 +231,68 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
             console.error('Error logging quality checkpoint:', error);
             setError('Failed to log quality checkpoint');
         }
+    };
+
+    // Step management functions
+    const handleAddStep = async () => {
+        if (!production?.id || !newStepData.name.trim()) return;
+
+        try {
+            setLoading(true);
+            const response = await productionApi.addStep(production.id, {
+                name: newStepData.name.trim(),
+                description: newStepData.description.trim(),
+                estimatedMinutes: newStepData.estimatedMinutes,
+                insertAfterStepId: insertAfterStepId || undefined
+            });
+
+            if (response.success && response.data) {
+                setSteps(response.data.allSteps);
+                setAddStepDialogOpen(false);
+                setNewStepData({ name: '', description: '', estimatedMinutes: 30 });
+                setInsertAfterStepId(null);
+                onProductionUpdated?.();
+            } else {
+                setError('Failed to add step');
+            }
+        } catch (error) {
+            console.error('Error adding step:', error);
+            setError('Failed to add step');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRemoveStep = async (stepId: string) => {
+        if (!stepId) return;
+
+        try {
+            setLoading(true);
+            const response = await productionApi.removeStep(stepId);
+
+            if (response.success && response.data) {
+                setSteps(response.data.allSteps);
+                onProductionUpdated?.();
+            } else {
+                setError('Failed to remove step');
+            }
+        } catch (error) {
+            console.error('Error removing step:', error);
+            setError('Failed to remove step');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const canRemoveStep = (step: ProductionStep) => {
+        return step.status === ProductionStepStatus.PENDING && 
+               production?.status !== 'COMPLETED' && 
+               production?.status !== 'CANCELLED';
+    };
+
+    const canAddSteps = () => {
+        return production?.status !== 'COMPLETED' && 
+               production?.status !== 'CANCELLED';
     };
 
     const getStepStatusColor = (status: ProductionStepStatus) => {
@@ -364,6 +437,34 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                                 Quality Check
                             </Button>
                         )}
+
+                        {/* Step Management Buttons */}
+                        {canAddSteps() && (
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<AddIcon />}
+                                onClick={() => {
+                                    setInsertAfterStepId(step.id);
+                                    setAddStepDialogOpen(true);
+                                }}
+                            >
+                                Add After
+                            </Button>
+                        )}
+
+                        {canRemoveStep(step) && (
+                            <Button
+                                variant="outlined"
+                                color="error"
+                                size="small"
+                                startIcon={<DeleteIcon />}
+                                onClick={() => handleRemoveStep(step.id)}
+                                disabled={loading}
+                            >
+                                Remove
+                            </Button>
+                        )}
                     </Stack>
 
                     {/* Notes input for active step */}
@@ -461,8 +562,38 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                                 <CircularProgress />
                             </Box>
                         ) : (
-                            <Box>
+                            <Box sx={{ position: 'relative' }}>
                                 {steps.map((step, index) => renderStepCard(step, index))}
+                                
+                                {/* Add Step at End Button */}
+                                {canAddSteps() && (
+                                    <Card 
+                                        sx={{ 
+                                            mt: 2, 
+                                            border: '2px dashed',
+                                            borderColor: 'primary.main',
+                                            bgcolor: 'action.hover',
+                                            cursor: 'pointer',
+                                            '&:hover': {
+                                                bgcolor: 'action.selected',
+                                            }
+                                        }}
+                                        onClick={() => {
+                                            setInsertAfterStepId(null);
+                                            setAddStepDialogOpen(true);
+                                        }}
+                                    >
+                                        <CardContent sx={{ textAlign: 'center', py: 3 }}>
+                                            <AddIcon sx={{ fontSize: 48, color: 'primary.main', mb: 1 }} />
+                                            <Typography variant="h6" color="primary">
+                                                Add New Step
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                Click to add a step at the end
+                                            </Typography>
+                                        </CardContent>
+                                    </Card>
+                                )}
                             </Box>
                         )}
                     </Box>
@@ -597,6 +728,82 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                                 startIcon={<QualityIcon />}
                             >
                                 Log Checkpoint
+                            </Button>
+                        </Stack>
+                    </Stack>
+                </DialogContent>
+            </Dialog>
+
+            {/* Add Step Dialog */}
+            <Dialog
+                open={addStepDialogOpen}
+                onClose={() => setAddStepDialogOpen(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogContent>
+                    <Typography variant="h6" gutterBottom>
+                        Add New Production Step
+                    </Typography>
+                    {insertAfterStepId && (
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                            This step will be inserted after: {steps.find(s => s.id === insertAfterStepId)?.name}
+                        </Typography>
+                    )}
+
+                    <Stack spacing={3} sx={{ mt: 2 }}>
+                        <TextField
+                            label="Step Name"
+                            value={newStepData.name}
+                            onChange={(e) => setNewStepData({
+                                ...newStepData,
+                                name: e.target.value
+                            })}
+                            fullWidth
+                            required
+                        />
+
+                        <TextField
+                            label="Description"
+                            value={newStepData.description}
+                            onChange={(e) => setNewStepData({
+                                ...newStepData,
+                                description: e.target.value
+                            })}
+                            multiline
+                            rows={2}
+                            fullWidth
+                        />
+
+                        <TextField
+                            label="Estimated Minutes"
+                            type="number"
+                            value={newStepData.estimatedMinutes}
+                            onChange={(e) => setNewStepData({
+                                ...newStepData,
+                                estimatedMinutes: parseInt(e.target.value) || 30
+                            })}
+                            fullWidth
+                            inputProps={{ min: 1, max: 999 }}
+                        />
+
+                        <Stack direction="row" spacing={2} justifyContent="flex-end">
+                            <Button 
+                                onClick={() => {
+                                    setAddStepDialogOpen(false);
+                                    setNewStepData({ name: '', description: '', estimatedMinutes: 30 });
+                                    setInsertAfterStepId(null);
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                variant="contained"
+                                onClick={handleAddStep}
+                                disabled={!newStepData.name.trim() || loading}
+                                startIcon={loading ? <CircularProgress size={16} /> : <AddIcon />}
+                            >
+                                Add Step
                             </Button>
                         </Stack>
                     </Stack>
