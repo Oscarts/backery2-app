@@ -12,30 +12,53 @@
 
 ## 🔧 Technology Stack
 
+## 🔧 Technology Stack
+
 ### Frontend Technologies
 
 | Technology | Version | Purpose |
 |------------|---------|---------|
 | React | 18.2.0 | UI library for component-based development |
-| TypeScript | 5.2.2 | Type-safe JavaScript |
-| Material-UI | 5.14.16 | Component library with professional design system |
-| React Query | 4.35.3 | Data fetching, caching, and state management |
-| Vite | 4.5.0 | Build tool and development server |
-| React Router | 6.18.0 | Client-side routing |
-| date-fns | 2.30.0 | Date formatting and manipulation |
-| Emotion | 11.11.0 | CSS-in-JS styling solution |
+| TypeScript | 5.0.2 | Type-safe JavaScript with strict typing |
+| Material-UI (MUI) | 5.14.5 | Professional component library with emotion styling |
+| TanStack React Query | 4.32.6 | Advanced data fetching, caching, and server state management |
+| Vite | 4.x | Fast build tool and development server |
+| React Router DOM | 6.15.0 | Client-side routing and navigation |
+| React Hook Form | 7.45.4 | Performant form management with Yup validation |
+| Zustand | 4.4.1 | Lightweight state management solution |
+| Axios | 1.5.0 | HTTP client for API communication |
+| Recharts | 2.8.0 | Data visualization and charting library |
+| date-fns | 2.30.0 | Date formatting and manipulation utilities |
+| React Confetti | 6.4.0 | Celebration animations and user engagement |
 
 ### Backend Technologies
 
 | Technology | Version | Purpose |
 |------------|---------|---------|
-| Node.js | 18.17.0 | JavaScript runtime |
-| Express.js | 4.18.2 | Web application framework |
-| TypeScript | 5.2.2 | Type-safe JavaScript |
-| Prisma | 5.4.2 | Database ORM and migration tool |
-| PostgreSQL | 15.0 | Relational database |
-| cors | 2.8.5 | Cross-origin resource sharing |
-| dotenv | 16.3.1 | Environment variable management |
+| Node.js | Latest LTS | JavaScript runtime environment |
+| Express.js | 4.18.2 | Web application framework with middleware support |
+| TypeScript | 5.1.6 | Type-safe JavaScript with advanced features |
+| Prisma | 5.2.0 | Next-generation ORM with type safety and migrations |
+| PostgreSQL | Latest | Robust relational database system |
+| JWT | 9.0.2 | JSON Web Token authentication |
+| bcryptjs | 2.4.3 | Password hashing and security |
+| Joi | 17.9.2 | Schema validation and data integrity |
+| Helmet | 7.0.0 | Security middleware for Express |
+| CORS | 2.8.5 | Cross-origin resource sharing configuration |
+| Morgan | 1.10.0 | HTTP request logging middleware |
+| Multer | 1.4.5 | File upload handling middleware |
+| Compression | 1.7.4 | Response compression for performance |
+
+### Development & Infrastructure
+
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| Docker Compose | Latest | Container orchestration for development |
+| tsx | 3.12.7 | TypeScript execution for development |
+| Jest | 30.x | Testing framework with coverage reporting |
+| ESLint | 8.45.0 | Code linting and style enforcement |
+| Concurrently | 8.2.2 | Run multiple development processes |
+| Supertest | 7.1.4 | HTTP assertion testing for APIs |
 
 ## 🗃️ Database Schema
 

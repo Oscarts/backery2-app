@@ -7,9 +7,32 @@
 
 > Machine-readable spec: see `docs/openapi.yaml` for a canonical, up-to-date contract.
 
+# API Reference
+
+## � Base URL
+
+**Development:** `http://localhost:8000/api`
+**Production:** TBD
+
+> Machine-readable spec: see `docs/openapi.yaml` for a canonical, up-to-date contract.
+
 ## 🔧 Authentication
 
-Currently using basic API without authentication. JWT authentication planned for future releases.
+The system includes JWT-based authentication with role-based access control:
+
+- **JWT Tokens:** Secure authentication using jsonwebtoken 9.0.2
+- **Password Security:** bcryptjs 2.4.3 for secure password hashing
+- **Role-based Access:** User roles (ADMIN, STAFF) control feature access
+- **Security Headers:** Helmet middleware for enhanced security
+
+### Authentication Endpoints
+
+```typescript
+POST /auth/login
+POST /auth/register
+POST /auth/logout
+GET /auth/profile
+```
 
 ## 📋 Common Response Format
 
@@ -37,13 +60,18 @@ Currently using basic API without authentication. JWT authentication planned for
 
 ### GET /health
 
-Check if the API server is running.
+Check if the API server is running and database connectivity.
 
 **Response:**
 
 ```json
 {
   "status": "OK",
+  "timestamp": "2025-09-10T12:00:00.000Z",
+  "database": "connected",
+  "environment": "development"
+}
+```
 
 ## 🥬 Raw Materials API
 
@@ -57,7 +85,6 @@ Get all raw materials with optional filtering and pagination.
 - `supplierId` (optional): Filter by supplier
 - `contaminated` (optional): Filter by contamination status
 
-  
   "success": true,
   "data": [
     {
@@ -87,6 +114,7 @@ Get all raw materials with optional filtering and pagination.
     }
   ]
 }
+
 ```
 
 ### POST /raw-materials

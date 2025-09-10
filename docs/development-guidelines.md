@@ -6,7 +6,25 @@ These guidelines are mandatory for all development work. Following them ensures 
 
 ## 🎯 Core Development Principles
 
-### 1. Project Setup
+## 🎯 Core Development Principles
+
+### 1. Project Architecture
+
+Our bakery inventory management system is built as a modern full-stack TypeScript application with the following key architectural decisions:
+
+**Monorepo Structure:**
+
+- `/frontend` - React TypeScript application with Material-UI
+- `/backend` - Express.js TypeScript API with Prisma ORM
+- `/docs` - Comprehensive project documentation
+- Root level contains shared scripts and configuration
+
+**Technology Alignment:**
+
+- Full TypeScript stack ensures type safety across frontend and backend
+- Prisma provides type-safe database operations with automatic migrations
+- Material-UI provides consistent, professional design system
+- React Query manages server state and caching efficiently
 
 #### Automated Setup (Recommended)
 
@@ -21,6 +39,9 @@ The project includes several setup scripts that automate the development environ
 
 # To check database status
 ./check-database.sh
+
+# Run project with development servers
+npm run dev
 ```
 
 These scripts will:
@@ -28,14 +49,15 @@ These scripts will:
 - Install all dependencies (root, backend, and frontend)
 - Set up environment configurations
 - Initialize and seed the database (or preserve existing data)
-- Start development servers
+- Start development servers on ports 3002 (frontend) and 8000 (backend)
 
 For detailed information on these scripts, see [Running with Data](./running-with-data.md).
 
 Requirements:
 
-- Node.js and npm
-- PostgreSQL (running)
+- Node.js 18+ and npm
+- PostgreSQL (running via Docker or local installation)
+- Docker Compose (for database containerization)
 
 The script includes error checking and will guide you through any missing requirements.
 

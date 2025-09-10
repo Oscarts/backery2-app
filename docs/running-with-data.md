@@ -1,53 +1,75 @@
 # Running the Application with Data
 
-This document outlines how to properly run the Bakery Inventory Management application with complete data seeding and configuration.
+This document provides comprehensive instructions for running the **Bakery Inventory Management System** with proper data setup and configuration.
 
-## Setup Scripts
+## 🚀 Quick Start
 
-The project includes several scripts to help you set up and run the application properly:
+The simplest way to run the application:
 
-### 1. `start-with-data.sh`
+```bash
+# Start development servers
+npm run dev
+
+# Access the application
+# Frontend: http://localhost:3002
+# Backend: http://localhost:8000
+# Health Check: http://localhost:8000/health
+```
+
+## 📋 Setup Scripts
+
+The project includes several automated scripts for different development scenarios:
+
+### 1. `start-with-data.sh` - Preserve Data Setup
 
 **Purpose**: Start the application while preserving existing database data.
 
 ```bash
-sh start-with-data.sh
+./start-with-data.sh
 ```
 
 **What it does:**
 
-- Installs all dependencies (root, backend, and frontend)
-- Sets up environment files if they don't exist
-- Checks database connection
-- Generates Prisma client
-- Applies any pending migrations (without resetting data)
-- Intelligently seeds the database only if it's empty
-- Starts both frontend and backend servers
+- ✅ Installs all dependencies (root, backend, and frontend workspaces)
+- ✅ Sets up environment files (.env) if they don't exist
+- ✅ Verifies PostgreSQL database connection
+- ✅ Generates latest Prisma client with TypeScript types
+- ✅ Applies any pending database migrations (without data loss)
+- ✅ Intelligently seeds the database only if empty
+- ✅ Starts both frontend (port 3002) and backend (port 8000) servers
+- ✅ Provides health check confirmation
 
 **Use this script for:**
 
 - Daily development work
-- When you want to preserve existing test data
-- After making changes that don't affect the database schema
+- When you want to preserve existing test data and production runs
+- After making code changes that don't affect database schema
+- Continuing work with existing inventory and production data
 
-### 2. `reset-and-start.sh`
+### 2. `reset-and-start.sh` - Fresh Start Setup
 
-**Purpose**: Reset the database and start fresh with clean seed data.
+**Purpose**: Reset the database completely and start fresh with clean seed data.
 
 ```bash
-sh reset-and-start.sh
+./reset-and-start.sh
 ```
 
 **What it does:**
 
-- Installs all dependencies
-- Sets up environment files if they don't exist
-- Checks database connection
-- Generates Prisma client
-- **Completely resets the database** (deletes all data)
-- Applies all migrations
-- Seeds the database with fresh data
-- Starts both frontend and backend servers
+- ✅ Installs all dependencies across workspaces
+- ✅ Sets up environment configuration files
+- ✅ Verifies database connectivity
+- ✅ Generates fresh Prisma client
+- ⚠️ **Completely resets the database** (deletes all existing data)
+- ✅ Applies all migrations from scratch
+- ✅ Seeds database with comprehensive test data including:
+  - Raw materials with suppliers and expiration dates
+  - Intermediate products with quality statuses
+  - Finished products with pricing and inventory
+  - Recipes with ingredients and instructions
+  - Production runs with step tracking
+  - Users and authentication data
+- ✅ Starts development servers
 
 **Use this script for:**
 
