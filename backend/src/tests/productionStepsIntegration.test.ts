@@ -124,10 +124,10 @@ describe('Production Steps Customization - End to End', () => {
 
             expect(response.body.success).toBe(true);
             const createdRun = response.body.data;
-            
+
             // Should have default steps
             expect(createdRun.steps.length).toBeGreaterThan(0);
-            
+
             // Check for default step names
             const stepNames = createdRun.steps.map((s: any) => s.name);
             expect(stepNames).toContain('Preparation');
@@ -160,10 +160,10 @@ describe('Production Steps Customization - End to End', () => {
 
             expect(response.body.success).toBe(true);
             const createdRun = response.body.data;
-            
+
             // Should have default steps
             expect(createdRun.steps.length).toBe(4); // Default steps count
-            
+
             const stepNames = createdRun.steps.map((s: any) => s.name);
             expect(stepNames).toEqual(['Preparation', 'Production', 'Quality Check', 'Packaging']);
 
@@ -249,10 +249,10 @@ describe('Production Steps Customization - End to End', () => {
 
             expect(response.body.success).toBe(true);
             const createdRun = response.body.data;
-            
+
             // Sort steps by stepOrder for verification
             const sortedSteps = createdRun.steps.sort((a: any, b: any) => a.stepOrder - b.stepOrder);
-            
+
             expect(sortedSteps[0].name).toBe('First Step');
             expect(sortedSteps[1].name).toBe('Second Step');
             expect(sortedSteps[2].name).toBe('Third Step');

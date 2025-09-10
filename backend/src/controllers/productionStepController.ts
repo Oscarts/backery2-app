@@ -494,7 +494,7 @@ export const addProductionStep = async (req: Request, res: Response) => {
 
     // Calculate the new step order
     let newStepOrder: number;
-    
+
     if (insertAfterStepId) {
       // Insert after a specific step
       const afterStep = productionRun.steps.find(step => step.id === insertAfterStepId);
@@ -504,9 +504,9 @@ export const addProductionStep = async (req: Request, res: Response) => {
           error: 'Step to insert after not found'
         });
       }
-      
+
       newStepOrder = afterStep.stepOrder + 0.5; // Use decimal to insert between steps
-      
+
       // We'll reorder all steps after insertion to maintain integer order
     } else {
       // Add at the end

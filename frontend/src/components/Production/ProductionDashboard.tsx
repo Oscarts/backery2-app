@@ -433,10 +433,10 @@ const ProductionDashboard: React.FC = () => {
 
                                                     <Box sx={{ flexGrow: 1 }} />
 
-                                                    <Typography 
-                                                        variant="body2" 
+                                                    <Typography
+                                                        variant="body2"
                                                         color="primary"
-                                                        sx={{ 
+                                                        sx={{
                                                             fontWeight: 'medium',
                                                             display: 'flex',
                                                             alignItems: 'center',

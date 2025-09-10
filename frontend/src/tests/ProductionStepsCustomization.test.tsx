@@ -143,7 +143,7 @@ describe('Production Steps Customization - Frontend Integration', () => {
             const customizeButton = screen.queryByText(/customize steps/i) || screen.queryByLabelText(/customize/i);
             if (customizeButton) {
                 fireEvent.click(customizeButton);
-                
+
                 // This would open ProductionStepsDialog, but for unit test we'll simulate setting custom steps
                 // In actual implementation, this would be handled by the ProductionStepsDialog onConfirm
             }
@@ -205,12 +205,12 @@ describe('Production Steps Customization - Frontend Integration', () => {
 
             // Should not have customSteps property
             expect(productionRunData.hasOwnProperty('customSteps')).toBe(false);
-            
+
             // This should work fine with backend that checks for customSteps existence
             expect(() => {
-                const hasCustomSteps = productionRunData.customSteps && 
-                                     Array.isArray(productionRunData.customSteps) && 
-                                     productionRunData.customSteps.length > 0;
+                const hasCustomSteps = productionRunData.customSteps &&
+                    Array.isArray(productionRunData.customSteps) &&
+                    productionRunData.customSteps.length > 0;
                 expect(hasCustomSteps).toBe(false);
             }).not.toThrow();
         });

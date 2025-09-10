@@ -190,20 +190,20 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
             if (response.success) {
                 await loadProductionSteps();
                 setStepNotes({ ...stepNotes, [step.id]: '' });
-                
+
                 // Debug: Log the complete response to understand the structure
                 console.log('🔍 Complete API response:', response);
                 console.log('🔍 Response data:', response.data);
-                
+
                 // Check if production is completed (from API response)
                 if (response.data && (response.data as any).productionCompleted === true) {
-                    
+
                     console.log('🎉 Production auto-completed! Triggering celebration...');
-                    
+
                     // Use completedProductionRun if available, otherwise use production data
                     const productionData = (response.data as any).completedProductionRun || production;
                     console.log('📊 Using production data for celebration:', productionData);
-                    
+
                     // Trigger celebration immediately for automatic completion
                     setCompletedProductionData(productionData);
                     setShowCompletionCelebration(true);
@@ -212,7 +212,7 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                     console.log('   - productionCompleted:', (response.data as any)?.productionCompleted);
                     console.log('   - completedProductionRun:', !!(response.data as any)?.completedProductionRun);
                 }
-                
+
                 onProductionUpdated?.();
             } else {
                 setError('Failed to complete step');
@@ -316,25 +316,25 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
     };
 
     const canRemoveStep = (step: ProductionStep) => {
-        return step.status === ProductionStepStatus.PENDING && 
-               production?.status !== 'COMPLETED' && 
-               production?.status !== 'CANCELLED';
+        return step.status === ProductionStepStatus.PENDING &&
+            production?.status !== 'COMPLETED' &&
+            production?.status !== 'CANCELLED';
     };
 
     const canAddSteps = () => {
-        return production?.status !== 'COMPLETED' && 
-               production?.status !== 'CANCELLED';
+        return production?.status !== 'COMPLETED' &&
+            production?.status !== 'CANCELLED';
     };
 
     // Check if we should show the finish production button
     // Show when: steps are nearly done OR all completed but production somehow not finished
     const allStepsCompleted = () => {
         if (steps.length === 0) return false;
-        
+
         const completedSteps = steps.filter(step => step.status === ProductionStepStatus.COMPLETED);
         const inProgressSteps = steps.filter(step => step.status === ProductionStepStatus.IN_PROGRESS);
         const pendingSteps = steps.filter(step => step.status === ProductionStepStatus.PENDING);
-        
+
         console.log('🔍 Button visibility check:', {
             totalSteps: steps.length,
             completed: completedSteps.length,
@@ -342,25 +342,25 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
             pending: pendingSteps.length,
             productionStatus: production?.status
         });
-        
+
         // Case 1: All steps are completed but production is not finished yet
         if (completedSteps.length === steps.length && production?.status !== 'COMPLETED') {
             console.log('🎯 All steps completed, production not finished - showing finish button');
             return true;
         }
-        
+
         // Case 2: Only one step remaining (give user option to finish early)
         if (pendingSteps.length === 1 && inProgressSteps.length === 0 && production?.status !== 'COMPLETED') {
             console.log('🎯 One step remaining - showing early finish option');
             return true;
         }
-        
+
         // Case 3: Last step is in progress (show finish option)
         if (pendingSteps.length === 0 && inProgressSteps.length === 1 && production?.status !== 'COMPLETED') {
             console.log('🎯 Last step in progress - showing finish option');
             return true;
         }
-        
+
         console.log('🔍 No finish button conditions met');
         return false;
     };
@@ -378,7 +378,7 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
 
         try {
             setLoading(true);
-            
+
             // Call API to manually finish the production
             const response = await productionApi.updateRun(production.id, {
                 status: 'COMPLETED' as any,
@@ -390,12 +390,12 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
 
             if (response.success && response.data) {
                 console.log('🎉 Production successfully completed via manual finish!');
-                
+
                 // Check if the backend indicates this is a completion
                 // Cast response.data to any to access productionCompleted flag from API
                 const responseData = response.data as any;
                 const isCompletion = responseData.productionCompleted || responseData.status === 'COMPLETED';
-                
+
                 if (isCompletion) {
                     console.log('🎊 Backend confirmed production completion - triggering celebration!');
                     setCompletedProductionData(response.data);
@@ -405,7 +405,7 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                     // Update production data normally without celebration
                     onProductionUpdated?.();
                 }
-                
+
             } else {
                 console.error('❌ Failed to complete production:', response);
                 setError('Failed to finish production. Please try again.');
@@ -426,11 +426,11 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
             console.log('🎊 Celebration timer finished, closing celebration and production tracker...');
             setShowCompletionCelebration(false);
             setCompletedProductionData(null);
-            
+
             // Update production data in the parent component
             console.log('🔄 Updating production data in parent...');
             onProductionUpdated?.();
-            
+
             // Close the production tracker after a short delay to allow celebration to fade
             setTimeout(() => {
                 console.log('🎊 Closing production tracker...');
@@ -441,9 +441,9 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
 
     // Trigger celebration effect when completion dialog opens
     useEffect(() => {
-        console.log('🎊 Celebration useEffect triggered:', { 
-            showCompletionCelebration, 
-            hasCompletedData: !!completedProductionData 
+        console.log('🎊 Celebration useEffect triggered:', {
+            showCompletionCelebration,
+            hasCompletedData: !!completedProductionData
         });
         if (showCompletionCelebration && completedProductionData) {
             console.log('🎊 Triggering celebration handler...');
@@ -720,12 +720,12 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                         ) : (
                             <Box sx={{ position: 'relative' }}>
                                 {steps.map((step, index) => renderStepCard(step, index))}
-                                
+
                                 {/* Finish Production Confirmation Button */}
                                 {allStepsCompleted() && (
-                                    <Card 
-                                        sx={{ 
-                                            mt: 2, 
+                                    <Card
+                                        sx={{
+                                            mt: 2,
                                             border: '3px solid',
                                             borderColor: 'success.main',
                                             bgcolor: 'success.light',
@@ -782,9 +782,9 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
 
                                 {/* Add Step at End Button */}
                                 {canAddSteps() && (
-                                    <Card 
-                                        sx={{ 
-                                            mt: 2, 
+                                    <Card
+                                        sx={{
+                                            mt: 2,
                                             border: '2px dashed',
                                             borderColor: 'primary.main',
                                             bgcolor: 'action.hover',
@@ -1003,7 +1003,7 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                         />
 
                         <Stack direction="row" spacing={2} justifyContent="flex-end">
-                            <Button 
+                            <Button
                                 onClick={() => {
                                     setAddStepDialogOpen(false);
                                     setNewStepData({ name: '', description: '', estimatedMinutes: 30 });
@@ -1061,7 +1061,7 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                         />
                     </Box>
                 )}
-                
+
                 <Box
                     sx={{
                         position: 'absolute',
@@ -1078,7 +1078,7 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                         }
                     }}
                 />
-                
+
                 <DialogContent sx={{ py: 6, px: 4, position: 'relative', zIndex: 1 }}>
                     <Box sx={{ mb: 3 }}>
                         <Box
@@ -1094,11 +1094,11 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                         >
                             🎉
                         </Box>
-                        
-                        <Typography 
-                            variant="h3" 
-                            sx={{ 
-                                fontWeight: 'bold', 
+
+                        <Typography
+                            variant="h3"
+                            sx={{
+                                fontWeight: 'bold',
                                 mb: 2,
                                 textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
                                 animation: 'fadeInUp 0.8s ease-out',
@@ -1110,29 +1110,29 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                         >
                             Production Complete!
                         </Typography>
-                        
+
                         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mb: 3 }}>
-                            <StarIcon sx={{ 
-                                fontSize: '2rem', 
-                                color: '#FFD700', 
+                            <StarIcon sx={{
+                                fontSize: '2rem',
+                                color: '#FFD700',
                                 animation: 'twinkle 1.5s ease-in-out infinite alternate',
                                 '@keyframes twinkle': {
                                     '0%': { transform: 'scale(1) rotate(0deg)', opacity: 0.7 },
                                     '100%': { transform: 'scale(1.2) rotate(180deg)', opacity: 1 }
                                 }
                             }} />
-                            <StarIcon sx={{ 
-                                fontSize: '2rem', 
-                                color: '#FFD700', 
+                            <StarIcon sx={{
+                                fontSize: '2rem',
+                                color: '#FFD700',
                                 animation: 'twinkle 1.5s ease-in-out infinite alternate 0.3s',
                                 '@keyframes twinkle': {
                                     '0%': { transform: 'scale(1) rotate(0deg)', opacity: 0.7 },
                                     '100%': { transform: 'scale(1.2) rotate(180deg)', opacity: 1 }
                                 }
                             }} />
-                            <StarIcon sx={{ 
-                                fontSize: '2rem', 
-                                color: '#FFD700', 
+                            <StarIcon sx={{
+                                fontSize: '2rem',
+                                color: '#FFD700',
                                 animation: 'twinkle 1.5s ease-in-out infinite alternate 0.6s',
                                 '@keyframes twinkle': {
                                     '0%': { transform: 'scale(1) rotate(0deg)', opacity: 0.7 },
@@ -1160,7 +1160,7 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                             <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 2 }}>
                                 🧁 {completedProductionData.name}
                             </Typography>
-                            
+
                             <Grid container spacing={2} sx={{ mb: 2 }}>
                                 <Grid item xs={6}>
                                     <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
@@ -1188,10 +1188,10 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                         </Box>
                     )}
 
-                    <Typography 
-                        variant="h6" 
-                        sx={{ 
-                            mt: 3, 
+                    <Typography
+                        variant="h6"
+                        sx={{
+                            mt: 3,
                             opacity: 0.9,
                             animation: 'fadeIn 1s ease-out 1s both',
                             '@keyframes fadeIn': {
@@ -1203,10 +1203,10 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                         Your delicious products are ready! 🍰
                     </Typography>
 
-                    <Typography 
-                        variant="body2" 
-                        sx={{ 
-                            mt: 2, 
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            mt: 2,
                             opacity: 0.7,
                             animation: 'fadeIn 1s ease-out 1.5s both'
                         }}

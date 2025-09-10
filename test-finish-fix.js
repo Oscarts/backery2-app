@@ -6,7 +6,7 @@ const BASE_URL = 'http://localhost:8000/api';
 async function testFinishButtonFix() {
     try {
         console.log('🧪 Creating simple test production for finish button fix...');
-        
+
         // Create a new production
         const productionResponse = await axios.post(`${BASE_URL}/production/runs`, {
             name: 'Quick Finish Test',
@@ -33,7 +33,7 @@ async function testFinishButtonFix() {
         for (let i = 0; i < steps.length; i++) {
             const step = steps[i];
             console.log(`⏳ Completing step ${i + 1}/${steps.length}: ${step.name}`);
-            
+
             // Start and complete the step
             await axios.post(`${BASE_URL}/production/steps/${step.id}/start`);
             await axios.post(`${BASE_URL}/production/steps/${step.id}/complete`, {

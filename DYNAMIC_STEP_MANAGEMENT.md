@@ -6,14 +6,14 @@ The Dynamic Production Step Management feature allows users to modify production
 
 ## ✨ New Capabilities
 
-### What You Can Do:
+### What You Can Do
 
 1. **Add New Steps During Production**: Insert custom steps at any point in the production workflow
 2. **Remove Pending Steps**: Delete steps that haven't been started yet
 3. **Insert Steps Between Existing Steps**: Add steps after specific existing steps
 4. **Real-time Step Management**: All changes are immediately reflected in the production tracker
 
-### Smart Restrictions:
+### Smart Restrictions
 
 - ✅ Can only remove **PENDING** steps (not started/completed ones)
 - ✅ Cannot modify **COMPLETED** or **CANCELLED** production runs
@@ -34,6 +34,7 @@ The Dynamic Production Step Management feature allows users to modify production
 ### Adding Steps
 
 #### Method 1: Add After Specific Step
+
 1. Click **"Add After"** button on any step card
 2. Fill in the step details:
    - **Step Name** (required)
@@ -43,6 +44,7 @@ The Dynamic Production Step Management feature allows users to modify production
 4. The new step will be inserted after the selected step
 
 #### Method 2: Add at End
+
 1. Click the **"Add New Step"** card at the bottom
 2. Fill in the step details
 3. Click **"Add Step"**
@@ -60,11 +62,13 @@ The Dynamic Production Step Management feature allows users to modify production
 ### Backend API Endpoints
 
 #### Add Production Step
+
 ```
 POST /api/production/runs/:productionRunId/steps
 ```
 
 **Request Body:**
+
 ```json
 {
   "name": "Custom Quality Check",
@@ -75,6 +79,7 @@ POST /api/production/runs/:productionRunId/steps
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -86,11 +91,13 @@ POST /api/production/runs/:productionRunId/steps
 ```
 
 #### Remove Production Step
+
 ```
 DELETE /api/production/steps/:stepId
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -104,6 +111,7 @@ DELETE /api/production/steps/:stepId
 ### Frontend Integration
 
 #### New API Methods
+
 ```typescript
 // Add step
 productionApi.addStep(productionRunId, {
@@ -119,7 +127,7 @@ productionApi.removeStep(stepId);
 
 #### Enhanced UI Components
 
-1. **Enhanced Production Tracker**: 
+1. **Enhanced Production Tracker**:
    - Step management buttons on each card
    - Add step dialog
    - Real-time updates
@@ -146,17 +154,20 @@ productionApi.removeStep(stepId);
 
 ## 🔒 Business Rules
 
-### When You Can Add Steps:
+### When You Can Add Steps
+
 - ✅ Production status is PLANNED, IN_PROGRESS, or ON_HOLD
 - ✅ User has appropriate permissions
 - ✅ Step name is provided and valid
 
-### When You Can Remove Steps:
+### When You Can Remove Steps
+
 - ✅ Step status is PENDING (not started)
 - ✅ Production is not COMPLETED or CANCELLED
 - ✅ At least one step will remain after removal
 
-### Automatic Behaviors:
+### Automatic Behaviors
+
 - **Step Reordering**: All steps maintain sequential integer order (1, 2, 3...)
 - **Real-time Sync**: All connected clients see changes immediately
 - **Data Validation**: Invalid requests are rejected with clear error messages
@@ -164,6 +175,7 @@ productionApi.removeStep(stepId);
 ## 📋 Use Cases
 
 ### Quality Control Scenarios
+
 ```
 Scenario: Quality issue detected during production
 Action: Add "Additional Quality Check" step after current step
@@ -171,6 +183,7 @@ Result: Production pauses for extra validation before continuing
 ```
 
 ### Process Optimization
+
 ```
 Scenario: Realize a step is unnecessary during production
 Action: Remove pending "Extra Packaging Check" step
@@ -178,6 +191,7 @@ Result: Production continues without the removed step
 ```
 
 ### Emergency Procedures
+
 ```
 Scenario: Equipment issue requires additional step
 Action: Add "Equipment Validation" step before next critical step
@@ -200,6 +214,7 @@ Result: Production safety is maintained with additional verification
 ### API Testing
 
 Use the provided test endpoints to verify:
+
 - Step addition with proper ordering
 - Step removal with validation
 - Error handling for invalid operations
@@ -207,17 +222,20 @@ Use the provided test endpoints to verify:
 
 ## 🎉 Benefits
 
-### For Production Managers:
+### For Production Managers
+
 - **Flexibility**: Adapt to changing requirements in real-time
 - **Quality Control**: Add validation steps when needed
 - **Efficiency**: Remove unnecessary steps to speed up production
 
-### For Operators:
+### For Operators
+
 - **Clear Workflow**: Always see current, up-to-date step sequence
 - **Intuitive Interface**: Simple buttons for step management
 - **Real-time Updates**: No confusion about current production state
 
-### For the Business:
+### For the Business
+
 - **Agility**: Respond quickly to production issues or opportunities
 - **Quality Assurance**: Dynamic quality checkpoints
 - **Process Improvement**: Learn and adapt workflows in real-time
