@@ -259,9 +259,21 @@ export const updateProductionRun = async (req: Request, res: Response) => {
             }
         });
 
+        // Check if this is a completion (status changed to COMPLETED)
+        const isCompletion = status === 'COMPLETED';
+        const productionCompleted = isCompletion;
+
+        if (isCompletion) {
+            console.log('🎉 Production run manually completed via finish button!');
+        }
+
         res.json({
             success: true,
-            data: updatedRun
+            data: {
+                ...updatedRun,
+                productionCompleted
+            },
+            message: isCompletion ? 'Production run completed successfully' : 'Production run updated successfully'
         });
     } catch (error) {
         console.error('Error updating production run:', error);

@@ -327,27 +327,41 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
     };
 
     // Check if we should show the finish production button
-    // Show when: all steps completed OR only one step remaining (to give user control)
+    // Show when: steps are nearly done OR all completed but production somehow not finished
     const allStepsCompleted = () => {
         if (steps.length === 0) return false;
-        if (production?.status === 'COMPLETED') return false;
         
         const completedSteps = steps.filter(step => step.status === ProductionStepStatus.COMPLETED);
         const inProgressSteps = steps.filter(step => step.status === ProductionStepStatus.IN_PROGRESS);
         const pendingSteps = steps.filter(step => step.status === ProductionStepStatus.PENDING);
         
-        // Show button if all steps are completed (manual finish needed)
-        if (completedSteps.length === steps.length) {
-            console.log('🎯 All steps completed - showing finish button');
+        console.log('🔍 Button visibility check:', {
+            totalSteps: steps.length,
+            completed: completedSteps.length,
+            inProgress: inProgressSteps.length,
+            pending: pendingSteps.length,
+            productionStatus: production?.status
+        });
+        
+        // Case 1: All steps are completed but production is not finished yet
+        if (completedSteps.length === steps.length && production?.status !== 'COMPLETED') {
+            console.log('🎯 All steps completed, production not finished - showing finish button');
             return true;
         }
         
-        // Show button if only one step remains (giving user control before auto-completion)
-        if (pendingSteps.length === 1 && inProgressSteps.length === 0) {
-            console.log('🎯 One step remaining - showing finish button for user control');
+        // Case 2: Only one step remaining (give user option to finish early)
+        if (pendingSteps.length === 1 && inProgressSteps.length === 0 && production?.status !== 'COMPLETED') {
+            console.log('🎯 One step remaining - showing early finish option');
             return true;
         }
         
+        // Case 3: Last step is in progress (show finish option)
+        if (pendingSteps.length === 0 && inProgressSteps.length === 1 && production?.status !== 'COMPLETED') {
+            console.log('🎯 Last step in progress - showing finish option');
+            return true;
+        }
+        
+        console.log('🔍 No finish button conditions met');
         return false;
     };
 
@@ -372,19 +386,26 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                 notes: 'Production manually completed by user'
             });
 
-            console.log('🔄 API response received:', response);
+            console.log('🔄 Manual finish API response received:', response);
 
             if (response.success && response.data) {
-                console.log('🎉 Production successfully completed, triggering celebration!');
+                console.log('🎉 Production successfully completed via manual finish!');
                 
-                // Trigger celebration with the completed production data
-                setCompletedProductionData(response.data);
-                setShowCompletionCelebration(true);
+                // Check if the backend indicates this is a completion
+                // Cast response.data to any to access productionCompleted flag from API
+                const responseData = response.data as any;
+                const isCompletion = responseData.productionCompleted || responseData.status === 'COMPLETED';
                 
-                // Refresh production data
-                onProductionUpdated?.();
+                if (isCompletion) {
+                    console.log('🎊 Backend confirmed production completion - triggering celebration!');
+                    setCompletedProductionData(response.data);
+                    setShowCompletionCelebration(true);
+                } else {
+                    console.log('🔄 Production updated but not completed yet');
+                    // Update production data normally without celebration
+                    onProductionUpdated?.();
+                }
                 
-                console.log('🎊 Celebration state activated');
             } else {
                 console.error('❌ Failed to complete production:', response);
                 setError('Failed to finish production. Please try again.');
@@ -402,11 +423,20 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
         console.log('🎊 Starting completion celebration timer...');
         // Auto-close after celebration
         setTimeout(() => {
-            console.log('🎊 Celebration timer finished, closing dialog...');
+            console.log('🎊 Celebration timer finished, closing celebration and production tracker...');
             setShowCompletionCelebration(false);
             setCompletedProductionData(null);
-            onClose(); // Close the production tracker
-        }, 3000); // Keep celebration open for 3 seconds
+            
+            // Update production data in the parent component
+            console.log('🔄 Updating production data in parent...');
+            onProductionUpdated?.();
+            
+            // Close the production tracker after a short delay to allow celebration to fade
+            setTimeout(() => {
+                console.log('🎊 Closing production tracker...');
+                onClose(); // Close the production tracker
+            }, 500);
+        }, 4000); // Keep celebration open for 4 seconds (increased for better UX)
     };
 
     // Trigger celebration effect when completion dialog opens
