@@ -31,10 +31,14 @@ import {
     Warning as WarningIcon,
     Add as AddIcon,
     Delete as DeleteIcon,
+    Celebration as CelebrationIcon,
+    CheckCircle as CheckCircleIcon,
+    Star as StarIcon,
 } from '@mui/icons-material';
 import { TransitionProps } from '@mui/material/transitions';
 import { ProductionRun, ProductionStep, ProductionStepStatus, ProductionStatus } from '../../types/index';
 import { productionApi } from '../../services/realApi';
+import Confetti from 'react-confetti';
 import { format } from 'date-fns';
 
 const Transition = React.forwardRef(function Transition(
@@ -97,6 +101,10 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
         description: '',
         estimatedMinutes: 30
     });
+
+    // Production completion celebration state
+    const [showCompletionCelebration, setShowCompletionCelebration] = useState(false);
+    const [completedProductionData, setCompletedProductionData] = useState<any>(null);
 
     // Load production steps when dialog opens or production changes
     useEffect(() => {
@@ -182,6 +190,29 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
             if (response.success) {
                 await loadProductionSteps();
                 setStepNotes({ ...stepNotes, [step.id]: '' });
+                
+                // Debug: Log the complete response to understand the structure
+                console.log('🔍 Complete API response:', response);
+                console.log('🔍 Response data:', response.data);
+                
+                // Check if production is completed (from API response)
+                if (response.data && (response.data as any).productionCompleted === true) {
+                    
+                    console.log('🎉 Production auto-completed! Triggering celebration...');
+                    
+                    // Use completedProductionRun if available, otherwise use production data
+                    const productionData = (response.data as any).completedProductionRun || production;
+                    console.log('📊 Using production data for celebration:', productionData);
+                    
+                    // Trigger celebration immediately for automatic completion
+                    setCompletedProductionData(productionData);
+                    setShowCompletionCelebration(true);
+                } else {
+                    console.log('⏳ Production not completed yet, step finished successfully');
+                    console.log('   - productionCompleted:', (response.data as any)?.productionCompleted);
+                    console.log('   - completedProductionRun:', !!(response.data as any)?.completedProductionRun);
+                }
+                
                 onProductionUpdated?.();
             } else {
                 setError('Failed to complete step');
@@ -294,6 +325,101 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
         return production?.status !== 'COMPLETED' && 
                production?.status !== 'CANCELLED';
     };
+
+    // Check if we should show the finish production button
+    // Show when: all steps completed OR only one step remaining (to give user control)
+    const allStepsCompleted = () => {
+        if (steps.length === 0) return false;
+        if (production?.status === 'COMPLETED') return false;
+        
+        const completedSteps = steps.filter(step => step.status === ProductionStepStatus.COMPLETED);
+        const inProgressSteps = steps.filter(step => step.status === ProductionStepStatus.IN_PROGRESS);
+        const pendingSteps = steps.filter(step => step.status === ProductionStepStatus.PENDING);
+        
+        // Show button if all steps are completed (manual finish needed)
+        if (completedSteps.length === steps.length) {
+            console.log('🎯 All steps completed - showing finish button');
+            return true;
+        }
+        
+        // Show button if only one step remains (giving user control before auto-completion)
+        if (pendingSteps.length === 1 && inProgressSteps.length === 0) {
+            console.log('🎯 One step remaining - showing finish button for user control');
+            return true;
+        }
+        
+        return false;
+    };
+
+    // Handle manual production completion with proper UX flow
+    const handleFinishProduction = async () => {
+        if (!production?.id) {
+            console.error('❌ No production ID available for finishing');
+            return;
+        }
+
+        console.log('🎯 User initiated production completion for:', production.id);
+        console.log('📊 Current production status:', production.status);
+        console.log('✅ All steps completed, proceeding with manual finish...');
+
+        try {
+            setLoading(true);
+            
+            // Call API to manually finish the production
+            const response = await productionApi.updateRun(production.id, {
+                status: 'COMPLETED' as any,
+                completedAt: new Date().toISOString(),
+                notes: 'Production manually completed by user'
+            });
+
+            console.log('🔄 API response received:', response);
+
+            if (response.success && response.data) {
+                console.log('🎉 Production successfully completed, triggering celebration!');
+                
+                // Trigger celebration with the completed production data
+                setCompletedProductionData(response.data);
+                setShowCompletionCelebration(true);
+                
+                // Refresh production data
+                onProductionUpdated?.();
+                
+                console.log('🎊 Celebration state activated');
+            } else {
+                console.error('❌ Failed to complete production:', response);
+                setError('Failed to finish production. Please try again.');
+            }
+        } catch (error) {
+            console.error('❌ Error finishing production:', error);
+            setError('Failed to finish production. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Handle completion celebration
+    const handleCompletionCelebration = () => {
+        console.log('🎊 Starting completion celebration timer...');
+        // Auto-close after celebration
+        setTimeout(() => {
+            console.log('🎊 Celebration timer finished, closing dialog...');
+            setShowCompletionCelebration(false);
+            setCompletedProductionData(null);
+            onClose(); // Close the production tracker
+        }, 3000); // Keep celebration open for 3 seconds
+    };
+
+    // Trigger celebration effect when completion dialog opens
+    useEffect(() => {
+        console.log('🎊 Celebration useEffect triggered:', { 
+            showCompletionCelebration, 
+            hasCompletedData: !!completedProductionData 
+        });
+        if (showCompletionCelebration && completedProductionData) {
+            console.log('🎊 Triggering celebration handler...');
+            handleCompletionCelebration();
+        }
+    }, [showCompletionCelebration, completedProductionData]);
 
     const getStepStatusColor = (status: ProductionStepStatus) => {
         switch (status) {
@@ -565,6 +691,65 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                             <Box sx={{ position: 'relative' }}>
                                 {steps.map((step, index) => renderStepCard(step, index))}
                                 
+                                {/* Finish Production Confirmation Button */}
+                                {allStepsCompleted() && (
+                                    <Card 
+                                        sx={{ 
+                                            mt: 2, 
+                                            border: '3px solid',
+                                            borderColor: 'success.main',
+                                            bgcolor: 'success.light',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.3s ease',
+                                            boxShadow: '0 4px 12px rgba(76, 175, 80, 0.3)',
+                                            '&:hover': {
+                                                bgcolor: 'success.main',
+                                                transform: 'translateY(-2px)',
+                                                boxShadow: '0 6px 20px rgba(76, 175, 80, 0.4)',
+                                                '& .MuiTypography-root': {
+                                                    color: 'white'
+                                                },
+                                                '& .MuiSvgIcon-root': {
+                                                    color: 'white'
+                                                }
+                                            }
+                                        }}
+                                        onClick={handleFinishProduction}
+                                    >
+                                        <CardContent sx={{ textAlign: 'center', py: 3 }}>
+                                            <CelebrationIcon sx={{ fontSize: 56, color: 'success.dark', mb: 1 }} />
+                                            {steps.every(step => step.status === ProductionStepStatus.COMPLETED) ? (
+                                                <>
+                                                    <Typography variant="h5" color="success.dark" sx={{ fontWeight: 'bold', mb: 1 }}>
+                                                        🎉 Finish Production
+                                                    </Typography>
+                                                    <Typography variant="body1" color="success.dark" sx={{ mb: 1, fontWeight: 500 }}>
+                                                        All steps completed successfully!
+                                                    </Typography>
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        Click to finish this production and celebrate 🎊
+                                                    </Typography>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Typography variant="h5" color="success.dark" sx={{ fontWeight: 'bold', mb: 1 }}>
+                                                        🚀 Ready to Finish
+                                                    </Typography>
+                                                    <Typography variant="body1" color="success.dark" sx={{ mb: 1, fontWeight: 500 }}>
+                                                        Production is almost complete!
+                                                    </Typography>
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        Finish now or add more steps as needed
+                                                    </Typography>
+                                                </>
+                                            )}
+                                            <Typography variant="caption" display="block" sx={{ mt: 1, fontStyle: 'italic' }}>
+                                                You can still add more steps if needed before finishing
+                                            </Typography>
+                                        </CardContent>
+                                    </Card>
+                                )}
+
                                 {/* Add Step at End Button */}
                                 {canAddSteps() && (
                                     <Card 
@@ -807,6 +992,197 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                             </Button>
                         </Stack>
                     </Stack>
+                </DialogContent>
+            </Dialog>
+
+            {/* Production Completion Celebration Dialog */}
+            <Dialog
+                open={showCompletionCelebration}
+                maxWidth="md"
+                fullWidth
+                disableEscapeKeyDown
+                PaperProps={{
+                    sx: {
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        color: 'white',
+                        textAlign: 'center',
+                        borderRadius: 3,
+                        overflow: 'visible',
+                        position: 'relative',
+                        minHeight: '400px'
+                    }
+                }}
+                sx={{
+                    zIndex: 10000,
+                    '& .MuiBackdrop-root': {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)'
+                    }
+                }}
+            >
+                {/* Confetti Effect */}
+                {showCompletionCelebration && (
+                    <Box sx={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 9999 }}>
+                        <Confetti
+                            width={typeof window !== 'undefined' ? window.innerWidth : 1000}
+                            height={typeof window !== 'undefined' ? window.innerHeight : 800}
+                            recycle={false}
+                            numberOfPieces={200}
+                            gravity={0.3}
+                        />
+                    </Box>
+                )}
+                
+                <Box
+                    sx={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%), linear-gradient(-45deg, rgba(255,255,255,0.1) 25%, transparent 25%)',
+                        backgroundSize: '20px 20px',
+                        animation: 'sparkle 2s linear infinite',
+                        '@keyframes sparkle': {
+                            '0%': { backgroundPosition: '0 0, 0 0' },
+                            '100%': { backgroundPosition: '20px 20px, -20px 20px' }
+                        }
+                    }}
+                />
+                
+                <DialogContent sx={{ py: 6, px: 4, position: 'relative', zIndex: 1 }}>
+                    <Box sx={{ mb: 3 }}>
+                        <Box
+                            sx={{
+                                fontSize: '6rem',
+                                mb: 2,
+                                animation: 'bounce 1s ease-in-out infinite alternate',
+                                '@keyframes bounce': {
+                                    '0%': { transform: 'translateY(0)' },
+                                    '100%': { transform: 'translateY(-10px)' }
+                                }
+                            }}
+                        >
+                            🎉
+                        </Box>
+                        
+                        <Typography 
+                            variant="h3" 
+                            sx={{ 
+                                fontWeight: 'bold', 
+                                mb: 2,
+                                textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
+                                animation: 'fadeInUp 0.8s ease-out',
+                                '@keyframes fadeInUp': {
+                                    '0%': { opacity: 0, transform: 'translateY(30px)' },
+                                    '100%': { opacity: 1, transform: 'translateY(0)' }
+                                }
+                            }}
+                        >
+                            Production Complete!
+                        </Typography>
+                        
+                        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mb: 3 }}>
+                            <StarIcon sx={{ 
+                                fontSize: '2rem', 
+                                color: '#FFD700', 
+                                animation: 'twinkle 1.5s ease-in-out infinite alternate',
+                                '@keyframes twinkle': {
+                                    '0%': { transform: 'scale(1) rotate(0deg)', opacity: 0.7 },
+                                    '100%': { transform: 'scale(1.2) rotate(180deg)', opacity: 1 }
+                                }
+                            }} />
+                            <StarIcon sx={{ 
+                                fontSize: '2rem', 
+                                color: '#FFD700', 
+                                animation: 'twinkle 1.5s ease-in-out infinite alternate 0.3s',
+                                '@keyframes twinkle': {
+                                    '0%': { transform: 'scale(1) rotate(0deg)', opacity: 0.7 },
+                                    '100%': { transform: 'scale(1.2) rotate(180deg)', opacity: 1 }
+                                }
+                            }} />
+                            <StarIcon sx={{ 
+                                fontSize: '2rem', 
+                                color: '#FFD700', 
+                                animation: 'twinkle 1.5s ease-in-out infinite alternate 0.6s',
+                                '@keyframes twinkle': {
+                                    '0%': { transform: 'scale(1) rotate(0deg)', opacity: 0.7 },
+                                    '100%': { transform: 'scale(1.2) rotate(180deg)', opacity: 1 }
+                                }
+                            }} />
+                        </Box>
+                    </Box>
+
+                    {completedProductionData && (
+                        <Box
+                            sx={{
+                                background: 'rgba(255,255,255,0.15)',
+                                borderRadius: 2,
+                                p: 3,
+                                backdropFilter: 'blur(10px)',
+                                border: '1px solid rgba(255,255,255,0.2)',
+                                animation: 'slideInUp 1s ease-out 0.5s both',
+                                '@keyframes slideInUp': {
+                                    '0%': { opacity: 0, transform: 'translateY(50px)' },
+                                    '100%': { opacity: 1, transform: 'translateY(0)' }
+                                }
+                            }}
+                        >
+                            <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 2 }}>
+                                🧁 {completedProductionData.name}
+                            </Typography>
+                            
+                            <Grid container spacing={2} sx={{ mb: 2 }}>
+                                <Grid item xs={6}>
+                                    <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+                                        Quantity Produced
+                                    </Typography>
+                                    <Typography variant="h6">
+                                        {completedProductionData.finalQuantity || completedProductionData.targetQuantity} {completedProductionData.targetUnit}
+                                    </Typography>
+                                </Grid>
+                                <Grid item xs={6}>
+                                    <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+                                        Total Time
+                                    </Typography>
+                                    <Typography variant="h6">
+                                        {completedProductionData.actualMinutes || 'N/A'} minutes
+                                    </Typography>
+                                </Grid>
+                            </Grid>
+
+                            {completedProductionData.actualCost && (
+                                <Typography variant="h6" sx={{ mt: 2 }}>
+                                    💰 Total Cost: ${completedProductionData.actualCost.toFixed(2)}
+                                </Typography>
+                            )}
+                        </Box>
+                    )}
+
+                    <Typography 
+                        variant="h6" 
+                        sx={{ 
+                            mt: 3, 
+                            opacity: 0.9,
+                            animation: 'fadeIn 1s ease-out 1s both',
+                            '@keyframes fadeIn': {
+                                '0%': { opacity: 0 },
+                                '100%': { opacity: 0.9 }
+                            }
+                        }}
+                    >
+                        Your delicious products are ready! 🍰
+                    </Typography>
+
+                    <Typography 
+                        variant="body2" 
+                        sx={{ 
+                            mt: 2, 
+                            opacity: 0.7,
+                            animation: 'fadeIn 1s ease-out 1.5s both'
+                        }}
+                    >
+                        Automatically closing in 3 seconds...
+                    </Typography>
                 </DialogContent>
             </Dialog>
         </>

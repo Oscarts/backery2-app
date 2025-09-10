@@ -288,6 +288,7 @@ const ProductionDashboard: React.FC = () => {
                                 return (
                                     <Grid item xs={12} md={6} lg={4} key={production.id}>
                                         <Card
+                                            onClick={() => handleViewProduction(production)}
                                             sx={{
                                                 height: '100%',
                                                 position: 'relative',
@@ -297,10 +298,16 @@ const ProductionDashboard: React.FC = () => {
                                                     : production.status === ProductionStatus.ON_HOLD
                                                         ? 'warning.light'
                                                         : 'divider',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.3s ease',
                                                 '&:hover': {
-                                                    boxShadow: 6,
-                                                    transform: 'translateY(-2px)',
-                                                    transition: 'all 0.3s ease'
+                                                    boxShadow: 8,
+                                                    transform: 'translateY(-4px)',
+                                                    borderColor: production.status === ProductionStatus.IN_PROGRESS
+                                                        ? 'primary.main'
+                                                        : production.status === ProductionStatus.ON_HOLD
+                                                            ? 'warning.main'
+                                                            : 'primary.light',
                                                 }
                                             }}
                                         >
@@ -426,14 +433,19 @@ const ProductionDashboard: React.FC = () => {
 
                                                     <Box sx={{ flexGrow: 1 }} />
 
-                                                    <Button
-                                                        variant="outlined"
-                                                        size="small"
-                                                        startIcon={<ViewIcon />}
-                                                        onClick={() => handleViewProduction(production)}
+                                                    <Typography 
+                                                        variant="body2" 
+                                                        color="primary"
+                                                        sx={{ 
+                                                            fontWeight: 'medium',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: 0.5
+                                                        }}
                                                     >
-                                                        Track
-                                                    </Button>
+                                                        <ViewIcon fontSize="small" />
+                                                        Click to track
+                                                    </Typography>
                                                 </Stack>
                                             </CardActions>
                                         </Card>
