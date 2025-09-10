@@ -172,7 +172,7 @@ export const getDashboardProductionRuns = async (req: Request, res: Response) =>
     try {
         const activeRuns = await prisma.productionRun.findMany({
             where: {
-                status: { in: [ProductionStatus.PLANNED, ProductionStatus.IN_PROGRESS] }
+                status: { in: [ProductionStatus.PLANNED, ProductionStatus.IN_PROGRESS, ProductionStatus.ON_HOLD] }
             },
             include: {
                 recipe: true,
@@ -196,6 +196,114 @@ export const getDashboardProductionRuns = async (req: Request, res: Response) =>
         res.status(500).json({
             success: false,
             error: 'Failed to fetch dashboard production runs'
+        });
+    }
+};
+
+// Get production statistics for dashboard indicators
+export const getProductionStats = async (req: Request, res: Response) => {
+    try {
+        const today = new Date();
+        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+
+        // Get counts for each status
+        const [activeCount, onHoldCount, plannedCount, completedTodayCount] = await Promise.all([
+            prisma.productionRun.count({
+                where: { status: ProductionStatus.IN_PROGRESS }
+            }),
+            prisma.productionRun.count({
+                where: { status: ProductionStatus.ON_HOLD }
+            }),
+            prisma.productionRun.count({
+                where: { status: ProductionStatus.PLANNED }
+            }),
+            prisma.productionRun.count({
+                where: {
+                    status: ProductionStatus.COMPLETED,
+                    completedAt: {
+                        gte: startOfDay,
+                        lte: endOfDay
+                    }
+                }
+            })
+        ]);
+
+        // Get total target quantity from active productions
+        const activeProductions = await prisma.productionRun.findMany({
+            where: {
+                status: { in: [ProductionStatus.PLANNED, ProductionStatus.IN_PROGRESS, ProductionStatus.ON_HOLD] }
+            },
+            select: {
+                targetQuantity: true
+            }
+        });
+
+        const totalTargetQuantity = activeProductions.reduce((sum, run) => sum + (run.targetQuantity || 0), 0);
+
+        res.json({
+            success: true,
+            data: {
+                active: activeCount,
+                onHold: onHoldCount,
+                planned: plannedCount,
+                completedToday: completedTodayCount,
+                totalTargetQuantity: totalTargetQuantity
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching production statistics:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch production statistics'
+        });
+    }
+};
+
+// Get completed production runs for history
+export const getCompletedProductionRuns = async (req: Request, res: Response) => {
+    try {
+        const { limit = '20', offset = '0' } = req.query;
+
+        const completedRuns = await prisma.productionRun.findMany({
+            where: {
+                status: ProductionStatus.COMPLETED
+            },
+            include: {
+                recipe: {
+                    include: {
+                        category: true
+                    }
+                },
+                steps: {
+                    orderBy: { stepOrder: 'asc' }
+                }
+            },
+            orderBy: {
+                completedAt: 'desc'
+            },
+            take: parseInt(limit as string),
+            skip: parseInt(offset as string)
+        });
+
+        const total = await prisma.productionRun.count({
+            where: { status: ProductionStatus.COMPLETED }
+        });
+
+        res.json({
+            success: true,
+            data: completedRuns,
+            meta: {
+                total,
+                limit: parseInt(limit as string),
+                offset: parseInt(offset as string)
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching completed production runs:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch completed production runs'
         });
     }
 };

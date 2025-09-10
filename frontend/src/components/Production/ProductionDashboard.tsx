@@ -25,6 +25,8 @@ import {
     Visibility as ViewIcon,
     Kitchen as KitchenIcon,
     Timer as TimerIcon,
+    History as HistoryIcon,
+    Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { formatDistanceToNow } from 'date-fns';
 import { ProductionRun, ProductionStatus, ProductionStepStatus } from '../../types';
@@ -33,6 +35,7 @@ import { CreateProductionStepData } from '../../types';
 import RecipeSelectionDialog from './RecipeSelectionDialog';
 import QuantitySelectionDialog from './QuantitySelectionDialog';
 import ProductionTracker from './EnhancedProductionTracker';
+import ProductionHistory from './ProductionHistory';
 
 const ProductionDashboard: React.FC = () => {
     const theme = useTheme();
@@ -40,28 +43,56 @@ const ProductionDashboard: React.FC = () => {
 
     // State management
     const [activeProductions, setActiveProductions] = useState<ProductionRun[]>([]);
+    const [productionStats, setProductionStats] = useState({
+        active: 0,
+        onHold: 0,
+        planned: 0,
+        completedToday: 0,
+        totalTargetQuantity: 0
+    });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [showRecipeSelection, setShowRecipeSelection] = useState(false);
     const [showQuantitySelection, setShowQuantitySelection] = useState(false);
     const [showProductionTracker, setShowProductionTracker] = useState(false);
+    const [showProductionHistory, setShowProductionHistory] = useState(false);
     const [selectedRecipe, setSelectedRecipe] = useState<any>(null);
     const [selectedProduction, setSelectedProduction] = useState<ProductionRun | null>(null);
 
-    // Load active production runs
+    // Load active production runs and stats
     useEffect(() => {
         loadActiveProductions();
+        loadProductionStats();
     }, []);
+
+    const loadProductionStats = async () => {
+        try {
+            const response = await productionApi.getStats();
+            if (response.success && response.data) {
+                setProductionStats(response.data);
+            }
+        } catch (error) {
+            console.error('Error loading production stats:', error);
+        }
+    };
 
     const loadActiveProductions = async () => {
         try {
             setLoading(true);
             setError(null);
-            const response = await productionApi.getDashboardRuns();
-            if (response.success && response.data) {
-                setActiveProductions(response.data);
+            const [productionsResponse, statsResponse] = await Promise.all([
+                productionApi.getDashboardRuns(),
+                productionApi.getStats()
+            ]);
+
+            if (productionsResponse.success && productionsResponse.data) {
+                setActiveProductions(productionsResponse.data);
             } else {
                 setError('Failed to load production runs');
+            }
+
+            if (statsResponse.success && statsResponse.data) {
+                setProductionStats(statsResponse.data);
             }
         } catch (error) {
             console.error('Error loading productions:', error);
@@ -133,6 +164,28 @@ const ProductionDashboard: React.FC = () => {
         ));
     };
 
+    const handleDeleteProduction = async (productionId: string) => {
+        if (!confirm('Are you sure you want to delete this production run? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            const response = await productionApi.deleteRun(productionId);
+            if (response.success) {
+                // Remove from active productions list
+                setActiveProductions(activeProductions.filter(p => p.id !== productionId));
+                // Reload production stats
+                await loadProductionStats();
+            } else {
+                console.error('Failed to delete production run:', response.error);
+                // You could show a toast notification here
+            }
+        } catch (error) {
+            console.error('Error deleting production run:', error);
+            // You could show a toast notification here
+        }
+    };
+
     const getStatusColor = (status: ProductionStatus) => {
         switch (status) {
             case ProductionStatus.IN_PROGRESS:
@@ -188,22 +241,58 @@ const ProductionDashboard: React.FC = () => {
                 <>
                     {/* Header */}
                     <Box sx={{ mb: 4 }}>
-                        <Typography
-                            variant={isMobile ? "h4" : "h3"}
-                            sx={{
-                                fontWeight: 'bold',
-                                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                                backgroundClip: 'text',
-                                WebkitBackgroundClip: 'text',
-                                color: 'transparent',
-                                mb: 1
-                            }}
-                        >
-                            🏭 Production Center
-                        </Typography>
-                        <Typography variant="subtitle1" color="text.secondary">
-                            Manage your bakery production runs in real-time
-                        </Typography>
+                        <Box display="flex" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={2}>
+                            <Box>
+                                <Typography
+                                    variant={isMobile ? "h4" : "h3"}
+                                    sx={{
+                                        fontWeight: 'bold',
+                                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                        backgroundClip: 'text',
+                                        WebkitBackgroundClip: 'text',
+                                        color: 'transparent',
+                                        mb: 1
+                                    }}
+                                >
+                                    🏭 Production Center
+                                </Typography>
+                                <Typography variant="subtitle1" color="text.secondary">
+                                    Manage your bakery production runs in real-time
+                                </Typography>
+                            </Box>
+
+                            <Stack direction="row" spacing={1}>
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<HistoryIcon />}
+                                    onClick={() => setShowProductionHistory(true)}
+                                    sx={{
+                                        borderColor: 'success.main',
+                                        color: 'success.main',
+                                        '&:hover': {
+                                            borderColor: 'success.dark',
+                                            bgcolor: 'success.light'
+                                        }
+                                    }}
+                                >
+                                    History
+                                </Button>
+                                <Button
+                                    variant="contained"
+                                    startIcon={<AddIcon />}
+                                    onClick={handleStartNewProduction}
+                                    size="large"
+                                    sx={{
+                                        background: 'linear-gradient(45deg, #667eea 30%, #764ba2 90%)',
+                                        '&:hover': {
+                                            background: 'linear-gradient(45deg, #5a6fd8 30%, #6a4190 90%)',
+                                        }
+                                    }}
+                                >
+                                    New Production
+                                </Button>
+                            </Stack>
+                        </Box>
                     </Box>
 
                     {/* Quick Stats */}
@@ -211,7 +300,7 @@ const ProductionDashboard: React.FC = () => {
                         <Grid item xs={6} md={3}>
                             <Card sx={{ textAlign: 'center', p: 2 }}>
                                 <Typography variant="h4" color="primary" sx={{ fontWeight: 'bold' }}>
-                                    {activeProductions.filter(p => p.status === ProductionStatus.IN_PROGRESS).length}
+                                    {productionStats.active}
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary">
                                     Active
@@ -221,7 +310,7 @@ const ProductionDashboard: React.FC = () => {
                         <Grid item xs={6} md={3}>
                             <Card sx={{ textAlign: 'center', p: 2 }}>
                                 <Typography variant="h4" color="warning.main" sx={{ fontWeight: 'bold' }}>
-                                    {activeProductions.filter(p => p.status === ProductionStatus.ON_HOLD).length}
+                                    {productionStats.onHold}
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary">
                                     On Hold
@@ -231,7 +320,7 @@ const ProductionDashboard: React.FC = () => {
                         <Grid item xs={6} md={3}>
                             <Card sx={{ textAlign: 'center', p: 2 }}>
                                 <Typography variant="h4" color="success.main" sx={{ fontWeight: 'bold' }}>
-                                    0
+                                    {productionStats.completedToday}
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary">
                                     Completed Today
@@ -241,7 +330,7 @@ const ProductionDashboard: React.FC = () => {
                         <Grid item xs={6} md={3}>
                             <Card sx={{ textAlign: 'center', p: 2 }}>
                                 <Typography variant="h4" color="text.primary" sx={{ fontWeight: 'bold' }}>
-                                    {activeProductions.reduce((acc, p) => acc + (p.targetQuantity || 0), 0)}
+                                    {productionStats.totalTargetQuantity}
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary">
                                     Total Items
@@ -431,6 +520,22 @@ const ProductionDashboard: React.FC = () => {
                                                         </Tooltip>
                                                     )}
 
+                                                    {/* Delete Button - Available for all statuses except completed */}
+                                                    {production.status !== ProductionStatus.COMPLETED && (
+                                                        <Tooltip title="Delete Production Run">
+                                                            <IconButton
+                                                                size="small"
+                                                                color="error"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleDeleteProduction(production.id);
+                                                                }}
+                                                            >
+                                                                <DeleteIcon />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    )}
+
                                                     <Box sx={{ flexGrow: 1 }} />
 
                                                     <Typography
@@ -500,6 +605,11 @@ const ProductionDashboard: React.FC = () => {
                             onProductionUpdated={loadActiveProductions}
                         />
                     )}
+
+                    <ProductionHistory
+                        open={showProductionHistory}
+                        onClose={() => setShowProductionHistory(false)}
+                    />
                 </>
             )}
         </Box>

@@ -455,6 +455,68 @@ Create a new production run with optional custom steps.
 - Custom steps must have unique `stepOrder` values
 - All steps start with `status: "PENDING"`
 
+#### GET /production/runs/stats
+
+Get production statistics for the dashboard.
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "active": 5,
+    "onHold": 2,
+    "planned": 8,
+    "completedToday": 3,
+    "totalTargetQuantity": 150
+  }
+}
+```
+
+#### GET /production/runs/completed
+
+Get completed production runs for history view with pagination.
+
+**Query Parameters:**
+
+- `page` (optional): Page number for pagination (default: 1)
+- `limit` (optional): Number of runs per page (default: 10)
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "prod_123",
+      "name": "Chocolate Cake Production",
+      "recipeId": "rec_123",
+      "targetQuantity": 12,
+      "actualQuantity": 12,
+      "status": "COMPLETED",
+      "completedAt": "2025-09-10T14:30:00Z",
+      "startedAt": "2025-09-10T12:00:00Z",
+      "totalDurationMinutes": 150
+    }
+  ]
+}
+```
+
+#### DELETE /production/runs/:id
+
+Delete a production run and all its associated steps.
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Production run deleted successfully"
+}
+```
+
 ### Production Step Templates
 
 #### GET /production/step-templates/default

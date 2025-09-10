@@ -385,6 +385,23 @@ export const productionApi = {
     return apiCall<ProductionRun[]>('/production/runs/dashboard');
   },
 
+  getStats: async (): Promise<ApiResponse<{
+    active: number;
+    onHold: number;
+    planned: number;
+    completedToday: number;
+    totalTargetQuantity: number;
+  }>> => {
+    return apiCall('/production/runs/stats');
+  },
+
+  getCompletedRuns: async (limit?: number, offset?: number): Promise<ApiResponse<ProductionRun[]>> => {
+    const params = new URLSearchParams();
+    if (limit) params.append('limit', limit.toString());
+    if (offset) params.append('offset', offset.toString());
+    return apiCall<ProductionRun[]>(`/production/runs/completed?${params.toString()}`);
+  },
+
   getRunById: async (id: string): Promise<ApiResponse<ProductionRun>> => {
     return apiCall<ProductionRun>(`/production/runs/${id}`);
   },

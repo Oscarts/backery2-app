@@ -285,6 +285,108 @@ Updated recipe selection dialogs now include:
 - Default to "In Production"
 - Use the same status set as Intermediate Products for consistency
 
+#### Production Workflow UX Improvements (September 2025)
+
+##### Enhanced Production Tracker
+
+The `EnhancedProductionTracker` component now includes:
+
+- **Smart Finish Button Logic**: Only displays when ALL steps are completed
+- **Smooth Scroll Management**: Automatically scrolls to current step without page jumping
+- **Step Reference System**: Uses React refs for precise step targeting and focus management
+- **Visual Step Indicators**: Clear progress visualization with step completion status
+
+```jsx
+// Smart finish button pattern
+{allStepsCompleted() && (
+  <Card
+    sx={{
+      mt: 2,
+      border: '3px solid',
+      borderColor: 'success.main',
+      bgcolor: 'success.light',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      boxShadow: '0 4px 12px rgba(76, 175, 80, 0.3)',
+      '&:hover': {
+        bgcolor: 'success.main',
+        transform: 'translateY(-2px)',
+        boxShadow: '0 6px 20px rgba(76, 175, 80, 0.4)'
+      }
+    }}
+    onClick={handleFinishProduction}
+  >
+    <CardContent sx={{ textAlign: 'center', py: 3 }}>
+      <CelebrationIcon sx={{ fontSize: 56, color: 'success.dark', mb: 1 }} />
+      <Typography variant="h5" color="success.dark" sx={{ fontWeight: 'bold', mb: 1 }}>
+        🎉 Finish Production
+      </Typography>
+    </CardContent>
+  </Card>
+)}
+```
+
+##### Production Dashboard Enhancements
+
+Updated dashboard with real-time functionality:
+
+- **Live Statistics**: Database-driven metrics instead of calculated values
+- **Delete Functionality**: Production run deletion with confirmation dialogs
+- **Action Button Layout**: Pause/Resume/Delete buttons with proper spacing and tooltips
+- **History Integration**: Button to access production history component
+
+```jsx
+// Delete button pattern
+<Tooltip title="Delete Production Run">
+  <IconButton
+    size="small"
+    color="error"
+    onClick={(e) => {
+      e.stopPropagation();
+      handleDeleteProduction(production.id);
+    }}
+  >
+    <DeleteIcon />
+  </IconButton>
+</Tooltip>
+```
+
+##### Production History Component
+
+New `ProductionHistory` component provides:
+
+- **Paginated History View**: Load-more functionality for large datasets
+- **Detailed Metrics Display**: Production duration, quantities, and completion status
+- **Card-based Layout**: Consistent with existing production card design
+- **Dialog Integration**: Modal view for detailed historical analysis
+
+```jsx
+// History component pattern
+<Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
+  <DialogTitle>
+    <Typography variant="h5">Production History</Typography>
+  </DialogTitle>
+  <DialogContent>
+    <Grid container spacing={2}>
+      {completedRuns.map((run) => (
+        <Grid item xs={12} md={6} key={run.id}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                {run.name}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Completed: {format(new Date(run.completedAt), 'PPP')}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      ))}
+    </Grid>
+  </DialogContent>
+</Dialog>
+```
+
 - Real-time validation feedback
 - Clear error messages
 - Required field indicators

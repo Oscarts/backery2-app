@@ -5,7 +5,9 @@ import {
     createProductionRun,
     updateProductionRun,
     deleteProductionRun,
-    getDashboardProductionRuns
+    getDashboardProductionRuns,
+    getProductionStats,
+    getCompletedProductionRuns
 } from '../controllers/productionRunController';
 import {
     getProductionSteps,
@@ -23,6 +25,8 @@ const router = Router();
 // Production Run routes
 router.get('/runs', getProductionRuns);
 router.get('/runs/dashboard', getDashboardProductionRuns);
+router.get('/runs/stats', getProductionStats);
+router.get('/runs/completed', getCompletedProductionRuns);
 router.get('/runs/:id', getProductionRunById);
 router.post('/runs', createProductionRun);
 router.put('/runs/:id', updateProductionRun);

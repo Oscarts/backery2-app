@@ -32,7 +32,6 @@ import {
     Add as AddIcon,
     Delete as DeleteIcon,
     Celebration as CelebrationIcon,
-    CheckCircle as CheckCircleIcon,
     Star as StarIcon,
 } from '@mui/icons-material';
 import { TransitionProps } from '@mui/material/transitions';
@@ -82,6 +81,10 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
     const [stepNotes, setStepNotes] = useState<{ [key: string]: string }>({});
     const [updatingSteps, setUpdatingSteps] = useState<Set<string>>(new Set());
 
+    // Focus management for steps
+    const stepRefs = useState<Record<string, React.RefObject<HTMLDivElement>>>(() => ({}))[0];
+    // Removed unused currentStepId state
+
     // Quality tracking state
     const [qualityDialogOpen, setQualityDialogOpen] = useState(false);
     const [selectedStepForQuality, setSelectedStepForQuality] = useState<ProductionStep | null>(null);
@@ -106,15 +109,247 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
     const [showCompletionCelebration, setShowCompletionCelebration] = useState(false);
     const [completedProductionData, setCompletedProductionData] = useState<any>(null);
 
+    // Helper function to get or create step ref
+    const getStepRef = (stepId: string) => {
+        if (!stepRefs[stepId]) {
+            stepRefs[stepId] = React.createRef<HTMLDivElement>();
+        }
+        return stepRefs[stepId];
+    };
+
+    // Helper function to scroll to current step with enhanced logic
+    const scrollToCurrentStep = () => {
+        const currentStep = steps.find(step =>
+            step.status === ProductionStepStatus.IN_PROGRESS ||
+            (step.status === ProductionStepStatus.PENDING && steps.filter(s => s.status === ProductionStepStatus.IN_PROGRESS).length === 0)
+        );
+
+        if (currentStep && stepRefs[currentStep.id]?.current) {
+            console.log('📍 Scrolling to current step:', currentStep.name);
+
+            // Add a subtle highlight animation to the current step
+            const stepElement = stepRefs[currentStep.id].current;
+            if (stepElement) {
+                stepElement.style.transition = 'all 0.3s ease';
+                stepElement.style.transform = 'scale(1.02)';
+
+                stepElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center',
+                    inline: 'nearest'
+                });
+
+                // Remove the highlight after animation
+                setTimeout(() => {
+                    stepElement.style.transform = 'scale(1)';
+                }, 1000);
+            }
+        }
+    };
+
+    // Helper function to scroll to next step after completion
+    const scrollToNextStep = (completedStepId: string) => {
+        // Find the completed step index
+        const completedIndex = steps.findIndex(step => step.id === completedStepId);
+
+        // Check if this was the last pending step before completion
+        const wasLastPendingStep = steps.filter(step =>
+            step.status === ProductionStepStatus.PENDING ||
+            step.status === ProductionStepStatus.IN_PROGRESS
+        ).length <= 1;
+
+        // Look for the next step that can be started
+        const nextStep = steps.find((step, index) =>
+            index > completedIndex &&
+            step.status === ProductionStepStatus.PENDING
+        );
+
+        if (nextStep && stepRefs[nextStep.id]?.current && !wasLastPendingStep) {
+            console.log('📍 Scrolling to next step:', nextStep.name);
+
+            // Add highlighting to the next step
+            const stepElement = stepRefs[nextStep.id].current;
+            if (stepElement) {
+                stepElement.style.transition = 'all 0.5s ease';
+                stepElement.style.transform = 'scale(1.03)';
+                stepElement.style.boxShadow = '0 4px 20px rgba(25, 118, 210, 0.3)';
+
+                stepElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center',
+                    inline: 'nearest'
+                });
+
+                // Remove highlighting after a moment
+                setTimeout(() => {
+                    stepElement.style.transform = 'scale(1)';
+                    stepElement.style.boxShadow = '';
+                }, 2000);
+            }
+
+        } else if (wasLastPendingStep) {
+            // If this was the last pending step, scroll to finish button after a delay to allow UI update
+            console.log('🎯 Last step completed, scrolling to finish button');
+            setTimeout(() => {
+                const finishButton = document.querySelector('[data-testid="finish-production-button"]');
+                if (finishButton) {
+                    console.log('🎯 Found finish button, scrolling...');
+                    // Add a pulsing animation to draw attention to the finish button
+                    (finishButton as HTMLElement).style.animation = 'pulse 2s infinite';
+
+                    finishButton.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                        inline: 'nearest'
+                    });
+
+                    // Stop the pulse after 6 seconds
+                    setTimeout(() => {
+                        (finishButton as HTMLElement).style.animation = '';
+                    }, 6000);
+                } else {
+                    console.log('🎯 Finish button not found, scrolling to bottom');
+                    // Fallback: scroll to bottom of dialog
+                    const dialogContent = document.querySelector('[role="dialog"] .MuiDialogContent-root');
+                    if (dialogContent) {
+                        dialogContent.scrollTo({
+                            top: dialogContent.scrollHeight,
+                            behavior: 'smooth'
+                        });
+                    }
+                }
+            }, 1500); // Longer delay to ensure UI is updated
+        } else {
+            // Check if all steps are completed and scroll to finish button
+            const allCompleted = steps.every(step => step.status === ProductionStepStatus.COMPLETED);
+            if (allCompleted) {
+                console.log('🎯 All steps completed, scrolling to finish button');
+                // Scroll to the bottom where the finish button is
+                setTimeout(() => {
+                    const finishButton = document.querySelector('[data-testid="finish-production-button"]');
+                    if (finishButton) {
+                        // Add a pulsing animation to draw attention to the finish button
+                        (finishButton as HTMLElement).style.animation = 'pulse 2s infinite';
+
+                        finishButton.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center',
+                            inline: 'nearest'
+                        });
+
+                        // Stop the pulse after 6 seconds
+                        setTimeout(() => {
+                            (finishButton as HTMLElement).style.animation = '';
+                        }, 6000);
+                    } else {
+                        // Fallback: scroll to bottom of dialog
+                        const dialogContent = document.querySelector('[role="dialog"] .MuiDialogContent-root');
+                        if (dialogContent) {
+                            dialogContent.scrollTo({
+                                top: dialogContent.scrollHeight,
+                                behavior: 'smooth'
+                            });
+                        }
+                    }
+                }, 1000); // Give time for UI to update
+            }
+        }
+    };
+
     // Load production steps when dialog opens or production changes
     useEffect(() => {
         if (open && production?.id) {
             loadProductionSteps();
+
+            // Enhanced initial scroll to current step when dialog opens
+            // Use multiple timeouts to ensure the UI is fully rendered
+            setTimeout(() => {
+                scrollToCurrentStep();
+            }, 500);
+
+            // Backup scroll attempt if the first one doesn't work
+            setTimeout(() => {
+                scrollToCurrentStep();
+            }, 1500);
+
             // Set up auto-refresh for real-time monitoring
             const interval = setInterval(loadProductionSteps, 30000); // Refresh every 30 seconds
             return () => clearInterval(interval);
         }
     }, [open, production?.id]);
+
+    // Auto-scroll to current step whenever steps data changes
+    useEffect(() => {
+        if (open && steps.length > 0) {
+            // Small delay to ensure DOM is updated
+            setTimeout(() => {
+                scrollToCurrentStep();
+            }, 200);
+        }
+    }, [steps.map(s => s.status).join(','), open]); // Trigger when any step status changes
+
+    // Auto-scroll to finish button when all steps are completed
+    useEffect(() => {
+        if (open && steps.length > 0) {
+            const allCompleted = steps.every(step => step.status === ProductionStepStatus.COMPLETED);
+            if (allCompleted && production?.status !== 'COMPLETED') {
+                console.log('🎯 All steps completed detected in useEffect, scrolling to finish button...');
+
+                // Function to scroll to finish button
+                const scrollToFinishButton = () => {
+                    const finishButton = document.querySelector('[data-testid="finish-production-button"]');
+                    if (finishButton) {
+                        console.log('🎯 Finish button found, scrolling...');
+                        (finishButton as HTMLElement).style.animation = 'pulse 2s infinite';
+
+                        finishButton.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center',
+                            inline: 'nearest'
+                        });
+
+                        setTimeout(() => {
+                            (finishButton as HTMLElement).style.animation = '';
+                        }, 6000);
+                        return true;
+                    }
+                    return false;
+                };
+
+                // Try scrolling immediately
+                if (!scrollToFinishButton()) {
+                    // If button not found, set up a mutation observer to wait for it
+                    console.log('🎯 Finish button not found, setting up observer...');
+                    const observer = new MutationObserver(() => {
+                        if (scrollToFinishButton()) {
+                            observer.disconnect();
+                        }
+                    });
+
+                    const dialogContent = document.querySelector('[role="dialog"]');
+                    if (dialogContent) {
+                        observer.observe(dialogContent, {
+                            childList: true,
+                            subtree: true
+                        });
+
+                        // Disconnect observer after 5 seconds to avoid memory leaks
+                        setTimeout(() => {
+                            observer.disconnect();
+                            // Final fallback: scroll to bottom
+                            const content = document.querySelector('[role="dialog"] .MuiDialogContent-root');
+                            if (content) {
+                                content.scrollTo({
+                                    top: content.scrollHeight,
+                                    behavior: 'smooth'
+                                });
+                            }
+                        }, 5000);
+                    }
+                }
+            }
+        }
+    }, [steps.every(step => step.status === ProductionStepStatus.COMPLETED), open, production?.status]);
 
     // Timer for current step
     useEffect(() => {
@@ -159,6 +394,12 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
             const response = await productionApi.startStep(step.id);
             if (response.success) {
                 await loadProductionSteps();
+
+                // Scroll to the started step
+                setTimeout(() => {
+                    scrollToCurrentStep();
+                }, 500);
+
                 onProductionUpdated?.();
             } else {
                 setError('Failed to start step');
@@ -190,6 +431,31 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
             if (response.success) {
                 await loadProductionSteps();
                 setStepNotes({ ...stepNotes, [step.id]: '' });
+
+                // Enhanced scroll logic: scroll to next step or finish button
+                // Use a longer delay to ensure steps are updated
+                setTimeout(() => {
+                    scrollToNextStep(step.id);
+                }, 1000);
+
+                // Also check for finish button after steps are reloaded
+                setTimeout(() => {
+                    const finishButton = document.querySelector('[data-testid="finish-production-button"]');
+                    if (finishButton) {
+                        console.log('🎯 Finish button is now available, scrolling to it...');
+                        (finishButton as HTMLElement).style.animation = 'pulse 2s infinite';
+
+                        finishButton.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center',
+                            inline: 'nearest'
+                        });
+
+                        setTimeout(() => {
+                            (finishButton as HTMLElement).style.animation = '';
+                        }, 6000);
+                    }
+                }, 2000); // Check for finish button after 2 seconds
 
                 // Debug: Log the complete response to understand the structure
                 console.log('🔍 Complete API response:', response);
@@ -327,9 +593,10 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
     };
 
     // Check if we should show the finish production button
-    // Show when: steps are nearly done OR all completed but production somehow not finished
+    // Fix: Show finish button ONLY when ALL steps are completed
     const allStepsCompleted = () => {
         if (steps.length === 0) return false;
+        if (production?.status === 'COMPLETED') return false;
 
         const completedSteps = steps.filter(step => step.status === ProductionStepStatus.COMPLETED);
         const inProgressSteps = steps.filter(step => step.status === ProductionStepStatus.IN_PROGRESS);
@@ -343,25 +610,17 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
             productionStatus: production?.status
         });
 
-        // Case 1: All steps are completed but production is not finished yet
-        if (completedSteps.length === steps.length && production?.status !== 'COMPLETED') {
+        // Only show when ALL steps are completed but production is not finished yet
+        const allCompleted = completedSteps.length === steps.length &&
+            inProgressSteps.length === 0 &&
+            pendingSteps.length === 0;
+
+        if (allCompleted) {
             console.log('🎯 All steps completed, production not finished - showing finish button');
             return true;
         }
 
-        // Case 2: Only one step remaining (give user option to finish early)
-        if (pendingSteps.length === 1 && inProgressSteps.length === 0 && production?.status !== 'COMPLETED') {
-            console.log('🎯 One step remaining - showing early finish option');
-            return true;
-        }
-
-        // Case 3: Last step is in progress (show finish option)
-        if (pendingSteps.length === 0 && inProgressSteps.length === 1 && production?.status !== 'COMPLETED') {
-            console.log('🎯 Last step in progress - showing finish option');
-            return true;
-        }
-
-        console.log('🔍 No finish button conditions met');
+        console.log('🔍 Not all steps completed yet, hiding finish button');
         return false;
     };
 
@@ -474,6 +733,7 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
         return (
             <Card
                 key={step.id}
+                ref={getStepRef(step.id)}
                 sx={{
                     mb: 2,
                     border: isActive ? `2px solid ${theme.palette.primary.main}` : 'none',
@@ -664,6 +924,24 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
 
     return (
         <>
+            {/* CSS for pulse animation */}
+            <style>{`
+                @keyframes pulse {
+                    0% {
+                        transform: scale(1);
+                        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+                    }
+                    50% {
+                        transform: scale(1.05);
+                        box-shadow: 0 8px 24px rgba(76, 175, 80, 0.6);
+                    }
+                    100% {
+                        transform: scale(1);
+                        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+                    }
+                }
+            `}</style>
+
             <Dialog
                 open={open}
                 onClose={onClose}
@@ -724,6 +1002,7 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                                 {/* Finish Production Confirmation Button */}
                                 {allStepsCompleted() && (
                                     <Card
+                                        data-testid="finish-production-button"
                                         sx={{
                                             mt: 2,
                                             border: '3px solid',
