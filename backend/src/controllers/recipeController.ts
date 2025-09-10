@@ -507,12 +507,12 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
     const rawMaterials = await prisma.rawMaterial.findMany();
     const rawMaterialInventory = new Map();
     const now = new Date();
-    
+
     rawMaterials.forEach(material => {
       // Only include materials that are not expired and not contaminated
       const isExpired = material.expirationDate && material.expirationDate <= now;
       const isContaminated = material.isContaminated;
-      
+
       if (!isExpired && !isContaminated) {
         rawMaterialInventory.set(material.id, {
           quantity: material.quantity,
@@ -534,12 +534,12 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
     // Step 3: Get current inventory of intermediate products (exclude expired and contaminated)
     const intermediateProducts = await prisma.intermediateProduct.findMany();
     const intermediateProductInventory = new Map();
-    
+
     intermediateProducts.forEach(product => {
       // Only include products that are not expired and not contaminated
       const isExpired = product.expirationDate && product.expirationDate <= now;
       const isContaminated = product.contaminated;
-      
+
       if (!isExpired && !isContaminated) {
         intermediateProductInventory.set(product.id, {
           quantity: product.quantity,

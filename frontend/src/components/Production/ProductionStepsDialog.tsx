@@ -26,6 +26,8 @@ import {
     Cancel as CancelIcon,
 } from '@mui/icons-material';
 
+import { CreateProductionStepData } from '../../types';
+
 interface ProductionStep {
     id: string;
     name: string;
@@ -40,7 +42,7 @@ interface ProductionStepsDialogProps {
     open: boolean;
     recipe: any;
     onClose: () => void;
-    onConfirm: (steps: ProductionStep[]) => void;
+    onConfirm: (steps: CreateProductionStepData[]) => void;
 }
 
 const ProductionStepsDialog: React.FC<ProductionStepsDialogProps> = ({
@@ -135,8 +137,8 @@ const ProductionStepsDialog: React.FC<ProductionStepsDialogProps> = ({
     };
 
     const handleEditStep = (stepId: string, field: string, value: any) => {
-        setSteps(steps.map(step => 
-            step.id === stepId 
+        setSteps(steps.map(step =>
+            step.id === stepId
                 ? { ...step, [field]: value }
                 : step
         ));
@@ -153,9 +155,9 @@ const ProductionStepsDialog: React.FC<ProductionStepsDialogProps> = ({
 
         const newSteps = [...steps];
         const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-        
+
         [newSteps[currentIndex], newSteps[targetIndex]] = [newSteps[targetIndex], newSteps[currentIndex]];
-        
+
         // Update step orders
         newSteps.forEach((step, index) => {
             step.stepOrder = index + 1;
@@ -178,7 +180,7 @@ const ProductionStepsDialog: React.FC<ProductionStepsDialogProps> = ({
                 sx: { borderRadius: 3, maxHeight: '90vh' }
             }}
         >
-            <DialogTitle sx={{ 
+            <DialogTitle sx={{
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 color: 'white',
                 position: 'relative'
@@ -212,22 +214,22 @@ const ProductionStepsDialog: React.FC<ProductionStepsDialogProps> = ({
                     <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
                         Production Steps
                     </Typography>
-                    
+
                     <Stack spacing={2}>
                         {steps.map((step, index) => (
                             <Card key={step.id} variant="outlined" sx={{ position: 'relative' }}>
                                 <CardContent sx={{ p: 2 }}>
                                     <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                            <IconButton 
-                                                size="small" 
+                                            <IconButton
+                                                size="small"
                                                 onClick={() => moveStep(step.id, 'up')}
                                                 disabled={index === 0}
                                             >
                                                 ↑
                                             </IconButton>
-                                            <IconButton 
-                                                size="small" 
+                                            <IconButton
+                                                size="small"
                                                 onClick={() => moveStep(step.id, 'down')}
                                                 disabled={index === steps.length - 1}
                                             >
@@ -237,10 +239,10 @@ const ProductionStepsDialog: React.FC<ProductionStepsDialogProps> = ({
 
                                         <Box sx={{ flexGrow: 1 }}>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                                <Chip 
-                                                    label={`Step ${step.stepOrder}`} 
-                                                    size="small" 
-                                                    color="primary" 
+                                                <Chip
+                                                    label={`Step ${step.stepOrder}`}
+                                                    size="small"
+                                                    color="primary"
                                                 />
                                                 {step.isDefault && (
                                                     <Chip label="Default" size="small" variant="outlined" />
@@ -315,15 +317,15 @@ const ProductionStepsDialog: React.FC<ProductionStepsDialogProps> = ({
 
                                         <Box sx={{ display: 'flex', gap: 1 }}>
                                             {editingStep !== step.id && (
-                                                <IconButton 
+                                                <IconButton
                                                     size="small"
                                                     onClick={() => setEditingStep(step.id)}
                                                 >
                                                     <EditIcon />
                                                 </IconButton>
                                             )}
-                                            <IconButton 
-                                                size="small" 
+                                            <IconButton
+                                                size="small"
                                                 color="error"
                                                 onClick={() => handleRemoveStep(step.id)}
                                                 disabled={step.isDefault && steps.filter(s => s.isDefault).length <= 2}
@@ -413,8 +415,16 @@ const ProductionStepsDialog: React.FC<ProductionStepsDialogProps> = ({
                 <Button onClick={onClose} color="secondary">
                     Cancel
                 </Button>
-                <Button 
-                    onClick={() => onConfirm(steps)} 
+                <Button
+                    onClick={() => {
+                        const convertedSteps: CreateProductionStepData[] = steps.map(step => ({
+                            name: step.name,
+                            description: step.description,
+                            stepOrder: step.stepOrder,
+                            estimatedMinutes: step.estimatedMinutes
+                        }));
+                        onConfirm(convertedSteps);
+                    }}
                     variant="contained"
                     disabled={steps.length === 0}
                 >

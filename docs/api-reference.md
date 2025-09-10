@@ -355,6 +355,78 @@ Get recipes that can be made with current inventory, including expiration date v
 
 ## 🏭 Production APIs
 
+### Production Runs
+
+#### POST /production/runs
+
+Create a new production run with optional custom steps.
+
+**Request Body:**
+
+```json
+{
+  "name": "Chocolate Cake Production",
+  "recipeId": "rec_123",
+  "targetQuantity": 12,
+  "targetUnit": "pieces",
+  "notes": "Production run notes",
+  "customSteps": [
+    {
+      "name": "Custom Prep",
+      "description": "Custom preparation step",
+      "stepOrder": 1,
+      "estimatedMinutes": 20
+    },
+    {
+      "name": "Baking",
+      "description": "Bake the cake",
+      "stepOrder": 2,
+      "estimatedMinutes": 45
+    }
+  ]
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "prod_123",
+    "name": "Chocolate Cake Production",
+    "recipeId": "rec_123",
+    "targetQuantity": 12,
+    "targetUnit": "pieces",
+    "status": "PLANNED",
+    "steps": [
+      {
+        "id": "step_1",
+        "name": "Custom Prep",
+        "description": "Custom preparation step",
+        "stepOrder": 1,
+        "estimatedMinutes": 20,
+        "status": "PENDING"
+      },
+      {
+        "id": "step_2",
+        "name": "Baking",
+        "description": "Bake the cake",
+        "stepOrder": 2,
+        "estimatedMinutes": 45,
+        "status": "PENDING"
+      }
+    ]
+  }
+}
+```
+
+**Notes:**
+
+- If `customSteps` is not provided or is empty, default steps will be created automatically
+- Custom steps must have unique `stepOrder` values
+- All steps start with `status: "PENDING"`
+
 ### Production Step Templates
 
 #### GET /production/step-templates/default

@@ -2,7 +2,7 @@ const request = require('supertest');
 const app = require('../index');
 
 describe('What Can I Make API', () => {
-  let server;
+  let server: any;
 
   beforeAll(async () => {
     // Start the server for testing
@@ -24,7 +24,7 @@ describe('What Can I Make API', () => {
 
       expect(response.body).toHaveProperty('success', true);
       expect(response.body).toHaveProperty('data');
-      
+
       const { data } = response.body;
       expect(data).toHaveProperty('canMakeCount');
       expect(data).toHaveProperty('totalRecipes');
@@ -63,18 +63,18 @@ describe('What Can I Make API', () => {
         .expect(200);
 
       const { data } = response.body;
-      
+
       // Find a recipe that cannot be made due to expired ingredients
-      const recipeWithExpiredIngredients = data.recipes.find(recipe => 
-        !recipe.canMake && 
-        recipe.missingIngredients.some(ing => ing.reason === 'expired')
+      const recipeWithExpiredIngredients = data.recipes.find((recipe: any) =>
+        !recipe.canMake &&
+        recipe.missingIngredients.some((ing: any) => ing.reason === 'expired')
       );
 
       if (recipeWithExpiredIngredients) {
         expect(recipeWithExpiredIngredients.maxBatches).toBe(0);
-        
+
         const expiredIngredient = recipeWithExpiredIngredients.missingIngredients.find(
-          ing => ing.reason === 'expired'
+          (ing: any) => ing.reason === 'expired'
         );
         expect(expiredIngredient).toBeDefined();
         expect(expiredIngredient.reason).toBe('expired');
@@ -87,18 +87,18 @@ describe('What Can I Make API', () => {
         .expect(200);
 
       const { data } = response.body;
-      
+
       // Find a recipe that cannot be made due to contaminated ingredients
-      const recipeWithContaminatedIngredients = data.recipes.find(recipe => 
-        !recipe.canMake && 
-        recipe.missingIngredients.some(ing => ing.reason === 'contaminated')
+      const recipeWithContaminatedIngredients = data.recipes.find((recipe: any) =>
+        !recipe.canMake &&
+        recipe.missingIngredients.some((ing: any) => ing.reason === 'contaminated')
       );
 
       if (recipeWithContaminatedIngredients) {
         expect(recipeWithContaminatedIngredients.maxBatches).toBe(0);
-        
+
         const contaminatedIngredient = recipeWithContaminatedIngredients.missingIngredients.find(
-          ing => ing.reason === 'contaminated'
+          (ing: any) => ing.reason === 'contaminated'
         );
         expect(contaminatedIngredient).toBeDefined();
         expect(contaminatedIngredient.reason).toBe('contaminated');
@@ -111,9 +111,9 @@ describe('What Can I Make API', () => {
         .expect(200);
 
       const { data } = response.body;
-      
+
       // Find a recipe that can be made
-      const availableRecipe = data.recipes.find(recipe => recipe.canMake);
+      const availableRecipe = data.recipes.find((recipe: any) => recipe.canMake);
 
       if (availableRecipe) {
         expect(availableRecipe.maxBatches).toBeGreaterThan(0);
@@ -130,7 +130,7 @@ describe('What Can I Make API', () => {
         .get('/api/recipes/what-can-i-make');
 
       expect([200, 500]).toContain(response.status);
-      
+
       if (response.status === 500) {
         expect(response.body).toHaveProperty('success', false);
         expect(response.body).toHaveProperty('error');
@@ -145,17 +145,17 @@ describe('What Can I Make API', () => {
         .expect(200);
 
       const { data } = analysisResponse.body;
-      
+
       if (data.recipes.length > 0) {
         const recipeAnalysis = data.recipes[0];
-        
+
         // Fetch the same recipe individually
         const recipeResponse = await request(app)
           .get(`/api/recipes/${recipeAnalysis.recipeId}`)
           .expect(200);
 
         const recipeDetails = recipeResponse.body.data;
-        
+
         // Verify basic information matches
         expect(recipeAnalysis.recipeName).toBe(recipeDetails.name);
         expect(recipeAnalysis.yieldQuantity).toBe(recipeDetails.yieldQuantity);

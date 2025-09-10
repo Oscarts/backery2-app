@@ -29,6 +29,7 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { ProductionRun, ProductionStatus, ProductionStepStatus } from '../../types';
 import { productionApi } from '../../services/realApi';
+import { CreateProductionStepData } from '../../types';
 import RecipeSelectionDialog from './RecipeSelectionDialog';
 import QuantitySelectionDialog from './QuantitySelectionDialog';
 import ProductionTracker from './EnhancedProductionTracker';
@@ -80,14 +81,15 @@ const ProductionDashboard: React.FC = () => {
         setShowQuantitySelection(true);
     };
 
-    const handleQuantityConfirmed = async (quantity: number) => {
+    const handleQuantityConfirmed = async (quantity: number, customSteps?: CreateProductionStepData[]) => {
         try {
             const newProductionData = {
                 name: `${quantity} ${selectedRecipe.name}`,
                 recipeId: selectedRecipe.id,
                 targetQuantity: quantity,
                 targetUnit: selectedRecipe.yieldUnit,
-                notes: `Production started from dashboard`
+                notes: `Production started from dashboard`,
+                customSteps: customSteps
             };
 
             const response = await productionApi.createRun(newProductionData);

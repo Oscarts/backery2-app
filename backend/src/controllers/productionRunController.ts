@@ -59,7 +59,8 @@ export const createProductionRun = async (req: Request, res: Response) => {
             recipeId,
             targetQuantity,
             targetUnit,
-            notes
+            notes,
+            customSteps
         } = req.body;
 
         // Validate required fields
@@ -82,7 +83,53 @@ export const createProductionRun = async (req: Request, res: Response) => {
             });
         }
 
-        // Create production run with basic steps
+        // Determine steps to create
+        let stepsToCreate;
+
+        if (customSteps && Array.isArray(customSteps) && customSteps.length > 0) {
+            // Use custom steps provided by frontend
+            stepsToCreate = customSteps.map((step: any, index: number) => ({
+                name: step.name,
+                description: step.description || '',
+                stepOrder: step.stepOrder || index + 1,
+                estimatedMinutes: step.estimatedMinutes || 30,
+                status: ProductionStepStatus.PENDING
+            }));
+        } else {
+            // Use default steps as fallback
+            stepsToCreate = [
+                {
+                    name: 'Preparation',
+                    description: 'Gather and prepare all ingredients and equipment',
+                    stepOrder: 1,
+                    estimatedMinutes: Math.ceil((recipe.prepTime || 30) * 0.3),
+                    status: ProductionStepStatus.PENDING
+                },
+                {
+                    name: 'Production',
+                    description: 'Execute recipe production steps',
+                    stepOrder: 2,
+                    estimatedMinutes: recipe.prepTime || 30,
+                    status: ProductionStepStatus.PENDING
+                },
+                {
+                    name: 'Quality Check',
+                    description: 'Perform quality control checks',
+                    stepOrder: 3,
+                    estimatedMinutes: 15,
+                    status: ProductionStepStatus.PENDING
+                },
+                {
+                    name: 'Packaging',
+                    description: 'Package finished products',
+                    stepOrder: 4,
+                    estimatedMinutes: Math.ceil((recipe.prepTime || 30) * 0.2),
+                    status: ProductionStepStatus.PENDING
+                }
+            ];
+        }
+
+        // Create production run with steps
         const productionRun = await prisma.productionRun.create({
             data: {
                 name,
@@ -92,36 +139,7 @@ export const createProductionRun = async (req: Request, res: Response) => {
                 notes,
                 status: ProductionStatus.PLANNED,
                 steps: {
-                    create: [
-                        {
-                            name: 'Preparation',
-                            description: 'Gather and prepare all ingredients and equipment',
-                            stepOrder: 1,
-                            estimatedMinutes: Math.ceil((recipe.prepTime || 30) * 0.3),
-                            status: 'PENDING'
-                        },
-                        {
-                            name: 'Production',
-                            description: 'Execute recipe production steps',
-                            stepOrder: 2,
-                            estimatedMinutes: recipe.prepTime || 30,
-                            status: 'PENDING'
-                        },
-                        {
-                            name: 'Quality Check',
-                            description: 'Perform quality control checks',
-                            stepOrder: 3,
-                            estimatedMinutes: 15,
-                            status: 'PENDING'
-                        },
-                        {
-                            name: 'Packaging',
-                            description: 'Package finished products',
-                            stepOrder: 4,
-                            estimatedMinutes: Math.ceil((recipe.prepTime || 30) * 0.2),
-                            status: 'PENDING'
-                        }
-                    ]
+                    create: stepsToCreate
                 }
             },
             include: {

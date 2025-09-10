@@ -468,6 +468,14 @@ export interface CreateProductionRunData {
   targetQuantity: number;
   targetUnit: string;
   notes?: string;
+  customSteps?: CreateProductionStepData[];
+}
+
+export interface CreateProductionStepData {
+  name: string;
+  description?: string;
+  stepOrder: number;
+  estimatedMinutes?: number;
 }
 
 export interface UpdateProductionRunData {

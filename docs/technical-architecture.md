@@ -340,6 +340,7 @@ prisma/
 As of September 2025, the backend includes specialized controllers for advanced production management:
 
 #### ProductionStepTemplateController
+
 - **Purpose**: Manages customizable production step templates
 - **Key Methods**:
   - `getDefaultStepTemplates()` - Returns standard production steps
@@ -348,6 +349,7 @@ As of September 2025, the backend includes specialized controllers for advanced 
 - **Integration**: Allows complete customization of production workflows
 
 #### Enhanced RecipeController
+
 - **New Features**: Expiration date validation in what-can-i-make analysis
 - **Key Enhancement**: `getWhatCanIMake()` now includes:
   - Expiration date filtering for all ingredients
@@ -356,6 +358,7 @@ As of September 2025, the backend includes specialized controllers for advanced 
   - Enhanced response format with emoji and difficulty data
 
 #### Enhanced ProductionStepController
+
 - **New Features**: Custom expiration date support in production completion
 - **Key Enhancement**: `completeProductionStep()` now accepts:
   - Custom expiration dates for final products
@@ -365,6 +368,7 @@ As of September 2025, the backend includes specialized controllers for advanced 
 ### Controller Design Pattern
 
 All controllers follow a consistent pattern:
+
 ```typescript
 export const controllerMethod = async (req: Request, res: Response) => {
   try {

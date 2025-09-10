@@ -28,6 +28,7 @@ import {
 } from '@mui/icons-material';
 import { TransitionProps } from '@mui/material/transitions';
 import ProductionStepsDialog from './ProductionStepsDialog';
+import { CreateProductionStepData } from '../../types';
 
 const Transition = React.forwardRef(function Transition(
     props: TransitionProps & {
@@ -42,7 +43,7 @@ interface QuantitySelectionDialogProps {
     open: boolean;
     recipe: any;
     onClose: () => void;
-    onConfirm: (quantity: number) => void;
+    onConfirm: (quantity: number, customSteps?: CreateProductionStepData[]) => void;
 }
 
 const QuantitySelectionDialog: React.FC<QuantitySelectionDialogProps> = ({
@@ -55,6 +56,7 @@ const QuantitySelectionDialog: React.FC<QuantitySelectionDialogProps> = ({
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const [quantity, setQuantity] = useState(recipe?.yieldQuantity || 12);
     const [showProductionStepsDialog, setShowProductionStepsDialog] = useState(false);
+    const [customSteps, setCustomSteps] = useState<CreateProductionStepData[] | undefined>(undefined);
 
     useEffect(() => {
         if (recipe) {
@@ -87,7 +89,7 @@ const QuantitySelectionDialog: React.FC<QuantitySelectionDialogProps> = ({
     ].filter(q => q <= maxQuantity);
 
     const handleConfirm = () => {
-        onConfirm(quantity);
+        onConfirm(quantity, customSteps);
     };
 
     const getProgressColor = () => {
@@ -364,7 +366,7 @@ const QuantitySelectionDialog: React.FC<QuantitySelectionDialogProps> = ({
                         >
                             Customize Production Steps
                         </Button>
-                        
+
                         <Stack direction="row" spacing={2}>
                             <Button
                                 variant="outlined"
@@ -386,14 +388,14 @@ const QuantitySelectionDialog: React.FC<QuantitySelectionDialogProps> = ({
                     </Stack>
                 </Box>
             </DialogContent>
-            
+
             {/* Production Steps Dialog */}
             <ProductionStepsDialog
                 open={showProductionStepsDialog}
                 recipe={recipe}
                 onClose={() => setShowProductionStepsDialog(false)}
-                onConfirm={(customSteps) => {
-                    console.log('Custom production steps:', customSteps);
+                onConfirm={(steps) => {
+                    setCustomSteps(steps);
                     setShowProductionStepsDialog(false);
                 }}
             />
