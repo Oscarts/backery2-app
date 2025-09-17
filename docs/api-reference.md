@@ -474,6 +474,56 @@ Get production statistics for the dashboard.
 }
 ```
 
+#### PUT /production/runs/:id
+
+Update a production run.
+
+**Request Body:**
+
+```json
+{
+  "name": "Updated Production Name",
+  "targetQuantity": 15,
+  "targetUnit": "pieces", 
+  "status": "COMPLETED",
+  "notes": "Production manually completed by user"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "prod_123",
+    "name": "Updated Production Name",
+    "status": "COMPLETED",
+    "completedAt": "2025-09-10T15:00:00Z",
+    "productionCompleted": true,
+    "finishedProduct": {
+      "id": "fp_456",
+      "name": "Chocolate Cake (BATCH-1725984000000)",
+      "sku": "CHOCOLATE-CAKE-BATCH-1725984000000", 
+      "quantity": 15,
+      "unit": "pieces",
+      "batchNumber": "BATCH-1725984000000",
+      "costToProduce": 12.50,
+      "salePrice": 10.0,
+      "status": "COMPLETED"
+    }
+  },
+  "message": "Production run completed successfully"
+}
+```
+
+**Notes:**
+
+- When `status` is changed to `"COMPLETED"`, the system automatically calls the `ProductionCompletionService`
+- This creates finished products in inventory with proper cost calculation and batch tracking
+- The `finishedProduct` field in the response contains details of the created inventory item
+- The `productionCompleted` flag indicates whether this update resulted in production completion
+
 #### GET /production/runs/completed
 
 Get completed production runs for history view with pagination.

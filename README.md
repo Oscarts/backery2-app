@@ -82,8 +82,8 @@ npm run dev
 - `frontend/` - React TypeScript frontend with Material UI
 - `backend/` - Express TypeScript backend with Prisma ORM
 - `docs/` - Project documentation
-- `*.sh` - Utility scripts for setup and maintenance
-
+- `*.sh` - Utility scripts for setup and maintenance ok
+  
 ## ✨ Features
 
 - Raw materials inventory tracking

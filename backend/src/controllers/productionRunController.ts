@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
 import { PrismaClient, ProductionStatus, ProductionStepStatus } from '@prisma/client';
+import { ProductionCompletionService } from '../services/productionCompletionService';
 
 const prisma = new PrismaClient();
+const productionCompletionService = new ProductionCompletionService();
 
 // Get all production runs with complete details
 export const getProductionRuns = async (req: Request, res: Response) => {
@@ -349,6 +351,91 @@ export const updateProductionRun = async (req: Request, res: Response) => {
         const { id } = req.params;
         const { name, targetQuantity, targetUnit, status, notes } = req.body;
 
+        // First, get the current production run to check its status
+        const currentRun = await prisma.productionRun.findUnique({
+            where: { id },
+            include: {
+                recipe: true,
+                steps: true
+            }
+        });
+
+        if (!currentRun) {
+            return res.status(404).json({
+                success: false,
+                message: 'Production run not found'
+            });
+        }
+
+        // Check if this is a completion (status changed to COMPLETED)
+        const isCompletion = status === 'COMPLETED' && currentRun.status !== 'COMPLETED';
+        let productionCompleted = isCompletion;
+        let finishedProduct = null;
+
+        console.log(`🔍 DEBUG: isCompletion=${isCompletion}, status=${status}, currentRun.status=${currentRun.status}`);
+        
+        // Write to debug file
+        const fs = require('fs');
+        fs.appendFileSync('/tmp/production-debug.log', 
+            `${new Date().toISOString()} DEBUG: isCompletion=${isCompletion}, status=${status}, currentRun.status=${currentRun.status}\n`
+        );
+
+        if (isCompletion) {
+            console.log('🎉 Production run manually completed via finish button!');
+            fs.appendFileSync('/tmp/production-debug.log', 
+                `${new Date().toISOString()} Production completion triggered!\n`
+            );
+            
+            try {
+                // Call the ProductionCompletionService BEFORE updating status
+                console.log(`📞 Calling productionCompletionService.completeProductionRun(${id}, ${targetQuantity || currentRun.targetQuantity})`);
+                fs.appendFileSync('/tmp/production-debug.log', 
+                    `${new Date().toISOString()} Calling ProductionCompletionService...\n`
+                );
+                const completionResult = await productionCompletionService.completeProductionRun(
+                    id, 
+                    targetQuantity || currentRun.targetQuantity
+                );
+                console.log('✅ ProductionCompletionService call succeeded:', completionResult);
+                fs.appendFileSync('/tmp/production-debug.log', 
+                    `${new Date().toISOString()} Service returned: ${JSON.stringify(completionResult)}\n`
+                );
+                finishedProduct = completionResult.finishedProduct;
+                if (finishedProduct) {
+                    console.log(`✅ Finished product created: ${finishedProduct.name}`);
+                    fs.appendFileSync('/tmp/production-debug.log', 
+                        `${new Date().toISOString()} SUCCESS: Finished product created: ${finishedProduct.name}\n`
+                    );
+                } else {
+                    fs.appendFileSync('/tmp/production-debug.log', 
+                        `${new Date().toISOString()} WARNING: finishedProduct is undefined\n`
+                    );
+                }
+                
+                // The service already updated the status to COMPLETED, so don't update it again
+                const updatedRun = completionResult.productionRun;
+                
+                res.json({
+                    success: true,
+                    data: {
+                        ...updatedRun,
+                        productionCompleted,
+                        finishedProduct
+                    },
+                    message: 'Production run completed successfully'
+                });
+                return;
+                
+            } catch (completionError) {
+                console.error('❌ Error creating finished product during manual completion:', completionError);
+                fs.appendFileSync('/tmp/production-debug.log', 
+                    `${new Date().toISOString()} ERROR: ${completionError.message}\n`
+                );
+                // Fall through to regular update if completion fails
+            }
+        }
+
+        // Regular update (not a completion or completion failed)
         const updatedRun = await prisma.productionRun.update({
             where: { id },
             data: {
@@ -367,21 +454,13 @@ export const updateProductionRun = async (req: Request, res: Response) => {
             }
         });
 
-        // Check if this is a completion (status changed to COMPLETED)
-        const isCompletion = status === 'COMPLETED';
-        const productionCompleted = isCompletion;
-
-        if (isCompletion) {
-            console.log('🎉 Production run manually completed via finish button!');
-        }
-
         res.json({
             success: true,
             data: {
                 ...updatedRun,
-                productionCompleted
+                productionCompleted: false
             },
-            message: isCompletion ? 'Production run completed successfully' : 'Production run updated successfully'
+            message: 'Production run updated successfully'
         });
     } catch (error) {
         console.error('Error updating production run:', error);

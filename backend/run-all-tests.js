@@ -12,7 +12,9 @@ const tests = [
   'test-api-fix.js',
   'test-finished-product-update.js',
   'test-intermediate-product-update.js',
-  'test-what-can-i-make.js' // Added new test for What Can I Make API
+  'test-what-can-i-make.js', // Added new test for What Can I Make API
+  'test-production-completion-fix.js', // Added test for production completion fix
+  'test-production-indicators.js' // Added test for production indicators
 ];
 
 async function runTests() {
