@@ -1,4 +1,11 @@
 import '@testing-library/jest-dom';
+import React from 'react';
+
+// Make React available globally in test environment with all its properties
+global.React = React;
+if (typeof React.forwardRef === 'undefined') {
+    React.forwardRef = (fn: any) => fn;
+}
 
 // Global setup for all tests
 global.ResizeObserver = jest.fn().mockImplementation(() => ({

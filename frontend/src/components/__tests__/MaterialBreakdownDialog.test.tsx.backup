@@ -1,0 +1,289 @@
+import { render, screen, fireEvent } from '@testing-library/react';
+import { ThemeProvider } from '@mui/material/styles';
+import { createTheme } from '@mui/material/styles';
+import MaterialBreakdownDialog from '../dialogs/MaterialBreakdownDialog';
+import { MaterialBreakdown } from '../../types';
+
+// Create a theme for testing
+const theme = createTheme();
+
+// Mock data for testing
+const mockMaterialBreakdown: MaterialBreakdown = {
+  finishedProduct: {
+    id: 'product-456',
+    name: 'Chocolate Croissant (BATCH-001)',
+    batchNumber: 'BATCH-001',
+    productionDate: '2025-09-18T10:00:00Z',
+    quantity: 12,
+    unit: 'pieces',
+    costToProduce: 5.25,
+    sku: 'CHOCO-CROISSANT-BATCH-001',
+  },
+  productionRun: {
+    id: 'prod-123',
+    name: '12 Chocolate Croissants',
+    recipe: {
+      id: 'recipe-1',
+      name: 'Chocolate Croissant',
+      description: 'Delicious chocolate-filled croissants',
+      categoryId: 'cat-1',
+      yieldQuantity: 12,
+      yieldUnit: 'pieces',
+      prepTime: 180,
+      cookTime: 25,
+      instructions: ['Mix dough', 'Add chocolate', 'Bake'],
+      version: 1,
+      isActive: true,
+      emoji: '🥐',
+      difficulty: 'MEDIUM',
+      estimatedTotalTime: 205,
+      estimatedCost: 5.00,
+      equipmentRequired: ['oven'],
+      createdAt: '2025-09-18T09:00:00Z',
+      updatedAt: '2025-09-18T09:00:00Z',
+    },
+    completedAt: '2025-09-18T10:30:00Z',
+  },
+  materials: [
+    {
+      id: 'alloc-1',
+      materialType: 'RAW_MATERIAL',
+      materialName: 'All-Purpose Flour',
+      materialSku: 'FLOUR-001',
+      materialBatchNumber: 'FLOUR-BATCH-001',
+      quantityAllocated: 500,
+      quantityConsumed: 475,
+      unit: 'g',
+      unitCost: 0.004,
+      totalCost: 2.00,
+      status: 'CONSUMED',
+      notes: null,
+      consumedAt: '2025-09-18T10:15:00Z',
+    },
+    {
+      id: 'alloc-2',
+      materialType: 'RAW_MATERIAL',
+      materialName: 'Dark Chocolate',
+      materialSku: 'CHOCO-001',
+      materialBatchNumber: 'CHOCO-BATCH-002',
+      quantityAllocated: 100,
+      quantityConsumed: 95,
+      unit: 'g',
+      unitCost: 0.035,
+      totalCost: 3.50,
+      status: 'CONSUMED',
+      notes: null,
+      consumedAt: '2025-09-18T10:20:00Z',
+    },
+  ],
+  costBreakdown: {
+    materialCost: 5.50,
+    totalCost: 6.60,
+    materials: [
+      {
+        id: 'alloc-1',
+        materialType: 'RAW_MATERIAL',
+        materialName: 'All-Purpose Flour',
+        materialSku: 'FLOUR-001',
+        materialBatchNumber: 'FLOUR-BATCH-001',
+        quantityAllocated: 500,
+        quantityConsumed: 475,
+        unit: 'g',
+        unitCost: 0.004,
+        totalCost: 2.00,
+        status: 'CONSUMED',
+        notes: null,
+        consumedAt: '2025-09-18T10:15:00Z',
+      },
+      {
+        id: 'alloc-2',
+        materialType: 'RAW_MATERIAL',
+        materialName: 'Dark Chocolate',
+        materialSku: 'CHOCO-001',
+        materialBatchNumber: 'CHOCO-BATCH-002',
+        quantityAllocated: 100,
+        quantityConsumed: 95,
+        unit: 'g',
+        unitCost: 0.035,
+        totalCost: 3.50,
+        status: 'CONSUMED',
+        notes: null,
+        consumedAt: '2025-09-18T10:20:00Z',
+      },
+    ],
+  },
+  summary: {
+    totalMaterialsUsed: 2,
+    totalMaterialCost: 5.50,
+    totalProductionCost: 6.60,
+    costPerUnit: 3.30,
+  },
+      materialId: 'mat-butter',
+      materialSku: 'BUTTER-001',
+      materialBatchNumber: 'BUTTER-BATCH-002',
+      allocatedQuantity: 200,
+      consumedQuantity: 190,
+      wasteQuantity: 10,
+      unitCost: 0.012,
+      totalCost: 2.40,
+      unit: 'g',
+      createdAt: '2025-09-18T10:00:00Z',
+      updatedAt: '2025-09-18T10:30:00Z',
+      material: {
+        id: 'mat-butter',
+        name: 'Organic Butter',
+        sku: 'BUTTER-001',
+        description: 'Premium organic butter',
+        category: {
+          id: 'cat-2',
+          name: 'Dairy Products'
+        }
+      }
+    }
+  ],
+  summary: {
+    totalMaterialCost: 4.40,
+    totalWasteQuantity: 35,
+    totalConsumedQuantity: 665,
+    wastePercentage: 5.0
+  }
+};
+
+const renderComponent = (props: any = {}) => {
+  return render(
+    <ThemeProvider theme={theme}>
+      <MaterialBreakdownDialog
+        open={true}
+        onClose={() => {}}
+        materialBreakdown={mockMaterialBreakdown}
+        loading={false}
+        error={undefined}
+        {...props}
+      />
+    </ThemeProvider>
+  );
+};
+
+describe('MaterialBreakdownDialog', () => {
+  test('renders dialog when open', () => {
+    renderComponent();
+    
+    expect(screen.getByText('Material Breakdown')).toBeInTheDocument();
+    expect(screen.getByText(/Chocolate Croissant/)).toBeInTheDocument();
+    expect(screen.getByText(/Batch #BATCH-001/)).toBeInTheDocument(); // More specific pattern
+  });
+
+  test('does not render when closed', () => {
+    renderComponent({ open: false });
+    
+    expect(screen.queryByText('Material Breakdown')).not.toBeInTheDocument();
+  });
+
+  test('displays loading state', () => {
+    renderComponent({ loading: true, materialBreakdown: null });
+    
+    // Check for skeleton loading indicators by class name
+    expect(document.querySelector('.MuiSkeleton-root')).toBeInTheDocument();
+    expect(screen.getByText('Material Breakdown')).toBeInTheDocument(); // Dialog title should still be there
+  });
+
+  test('displays error state', () => {
+    const errorMessage = 'Failed to load material data';
+    renderComponent({ error: errorMessage, materialBreakdown: null });
+    
+    expect(screen.getByText(errorMessage)).toBeInTheDocument();
+  });
+
+  test('displays no data state', () => {
+    renderComponent({ materialBreakdown: null });
+    
+    expect(screen.getByText('No material breakdown data available for this product.')).toBeInTheDocument();
+  });
+
+  test('displays material allocation data correctly', () => {
+    renderComponent();
+    
+    // Check material names
+    expect(screen.getByText('All-Purpose Flour')).toBeInTheDocument();
+    expect(screen.getByText('Organic Butter')).toBeInTheDocument();
+    
+    // Check SKUs
+    expect(screen.getByText('FLOUR-001')).toBeInTheDocument();
+    expect(screen.getByText('BUTTER-001')).toBeInTheDocument();
+    
+    // Check batch numbers
+    expect(screen.getByText('FLOUR-BATCH-001')).toBeInTheDocument();
+    expect(screen.getByText('BUTTER-BATCH-002')).toBeInTheDocument();
+    
+    // Check costs
+    expect(screen.getByText('$2.00')).toBeInTheDocument();
+    expect(screen.getByText('$2.40')).toBeInTheDocument();
+  });
+
+  test('displays cost summary correctly', () => {
+    renderComponent();
+    
+    expect(screen.getByText('$5.25')).toBeInTheDocument(); // Total cost
+    expect(screen.getByText('$4.40')).toBeInTheDocument(); // Material cost
+    expect(screen.getByText('5.0%')).toBeInTheDocument();  // Waste percentage
+  });
+
+  test('displays waste information when present', () => {
+    renderComponent();
+    
+    // Check for multiple waste references - there should be more than one
+    expect(screen.getAllByText(/waste/i)).toHaveLength(3); // "Total Waste" + 2 individual waste entries
+  });
+
+  test('calls onClose when close button is clicked', () => {
+    const onClose = jest.fn();
+    renderComponent({ onClose });
+    
+    const closeButton = screen.getByRole('button', { name: /close/i });
+    fireEvent.click(closeButton);
+    
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  test('displays category information', () => {
+    renderComponent();
+    
+    // Check that category information is displayed
+    // The actual structure may render categories as part of larger text blocks
+    expect(screen.getByText(/Flour/)).toBeInTheDocument();
+    expect(screen.getByText(/Butter/)).toBeInTheDocument();
+  });
+
+  test('displays unit cost information', () => {
+    renderComponent();
+    
+    // Check for currency formatting rather than specific values
+    expect(screen.getAllByText(/^\$/)).toHaveLength(4); // Should have multiple dollar amounts
+  });
+
+  test('handles empty material allocations', () => {
+    const emptyBreakdown = {
+      ...mockMaterialBreakdown,
+      materialAllocations: [],
+      summary: {
+        totalMaterialCost: 0,
+        totalWasteQuantity: 0,
+        totalConsumedQuantity: 0,
+        wastePercentage: 0
+      }
+    };
+    
+    renderComponent({ materialBreakdown: emptyBreakdown });
+    
+    // Check that it shows 0 materials
+    expect(screen.getByText('0')).toBeInTheDocument(); // Total materials count
+  });
+
+  test('displays quantity information', () => {
+    renderComponent();
+    
+    // Check that there are multiple quantity references with "g" unit
+    const quantityElements = screen.getAllByText(/\d+\.?\d* g/);
+    expect(quantityElements.length).toBeGreaterThan(0); // Should find at least one quantity with "g" unit
+  });
+});

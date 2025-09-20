@@ -503,3 +503,70 @@ export interface CompleteProductionStepData {
   qualityNotes?: string;
   qualityCheckPassed?: boolean;
 }
+
+// Material Allocation types for production tracking
+export interface MaterialAllocation {
+  id: string;
+  materialType: string;
+  materialName: string;
+  materialSku: string;
+  materialBatchNumber?: string;
+  quantityAllocated: number;
+  quantityConsumed?: number;
+  unit: string;
+  unitCost: number;
+  totalCost: number;
+  status: string;
+  notes?: string;
+  consumedAt?: string;
+}
+
+export interface MaterialBreakdown {
+  finishedProduct: {
+    id: string;
+    name: string;
+    batchNumber: string;
+    productionDate: string;
+    quantity: number;
+    unit: string;
+    costToProduce: number;
+    sku: string;
+  };
+  productionRun: {
+    id: string;
+    name: string;
+    recipe: {
+      id: string;
+      name: string;
+      description: string;
+      categoryId?: string;
+      yieldQuantity: number;
+      yieldUnit: string;
+      prepTime?: number;
+      cookTime?: number;
+      instructions?: string[];
+      version: number;
+      isActive: boolean;
+      emoji?: string;
+      difficulty?: string;
+      estimatedTotalTime?: number;
+      estimatedCost?: number;
+      equipmentRequired?: string[];
+      createdAt: string;
+      updatedAt: string;
+    };
+    completedAt: string;
+  };
+  materials: MaterialAllocation[];
+  costBreakdown: {
+    materialCost: number;
+    totalCost: number;
+    materials: MaterialAllocation[];
+  };
+  summary: {
+    totalMaterialsUsed: number;
+    totalMaterialCost: number;
+    totalProductionCost: number;
+    costPerUnit: number;
+  };
+}

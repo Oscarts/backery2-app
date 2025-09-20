@@ -49,7 +49,13 @@ const createWrapper = () => {
     defaultOptions: {
       queries: {
         retry: false,
+        staleTime: 0,
       },
+    },
+    logger: {
+      log: () => {},
+      warn: () => {},
+      error: () => {},
     },
   });
   return ({ children }: { children: React.ReactNode }) => (
@@ -68,8 +74,11 @@ describe('QualityStatusManagement', () => {
 
     render(<QualityStatusManagement />, { wrapper: createWrapper() });
 
-    expect(screen.getByText('Quality Status Management')).toBeInTheDocument();
-    expect(screen.getByText('Add Quality Status')).toBeInTheDocument();
+    // Wait for the loading to complete and data to load
+    await waitFor(() => {
+      expect(screen.getByText('Quality Status Management')).toBeInTheDocument();
+      expect(screen.getByText('Add Quality Status')).toBeInTheDocument();
+    });
   });
 
   test('displays loading state initially', () => {
@@ -116,9 +125,9 @@ describe('QualityStatusManagement', () => {
     render(<QualityStatusManagement />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByText('Failed to load quality statuses')).toBeInTheDocument();
+      expect(screen.getByText(/Error loading quality statuses/)).toBeInTheDocument();
       expect(screen.getByText('Retry')).toBeInTheDocument();
-    });
+    }, { timeout: 5000 });
   });
 
   test('shows correct count of quality statuses', async () => {

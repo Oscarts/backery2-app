@@ -164,6 +164,7 @@ model FinishedProduct {
   packagingInfo     String?
   storageLocationId String?
   qualityStatusId   String?
+  productionRunId   String?          @map("production_run_id")
   status            IntermediateProductStatus @default(IN_PRODUCTION)
   isContaminated    Boolean          @default(false)
   createdAt         DateTime         @default(now())
@@ -171,6 +172,7 @@ model FinishedProduct {
   category          Category?        @relation(fields: [categoryId], references: [id])
   storageLocation   StorageLocation? @relation(fields: [storageLocationId], references: [id])
   qualityStatus     QualityStatus?   @relation(fields: [qualityStatusId], references: [id])
+  productionRun     ProductionRun?   @relation(fields: [productionRunId], references: [id])
 
   @@map("finished_products")
 }
@@ -241,6 +243,7 @@ model ProductionRun {
   recipe            Recipe              @relation(fields: [recipeId], references: [id])
   steps             ProductionStep[]
   allocations       ProductionAllocation[]
+  finishedProducts  FinishedProduct[]
 
   @@map("production_runs")
 }
@@ -281,9 +284,15 @@ model ProductionAllocation {
   materialType      String              @map("material_type")
   materialId        String              @map("material_id")
   materialName      String              @map("material_name")
+  materialSku       String?             @map("material_sku")
+  materialBatchNumber String?           @map("material_batch_number")
   quantityAllocated Float               @map("quantity_allocated")
+  quantityConsumed  Float?              @map("quantity_consumed")
   unit              String
+  unitCost          Float?              @map("unit_cost")
+  totalCost         Float?              @map("total_cost")
   status            String              @default("ALLOCATED")
+  notes             String?
   allocatedAt       DateTime            @default(now()) @map("allocated_at")
   consumedAt        DateTime?           @map("consumed_at")
   releasedAt        DateTime?           @map("released_at")

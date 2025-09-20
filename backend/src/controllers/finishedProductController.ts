@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../index';
+import { prisma } from '../app';
 import Joi from 'joi';
 
 // Helper function to get the default quality status (first item by sortOrder)

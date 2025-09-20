@@ -7,7 +7,11 @@ import {
     deleteProductionRun,
     getDashboardProductionRuns,
     getProductionStats,
-    getCompletedProductionRuns
+    getCompletedProductionRuns,
+    allocateProductionMaterials,
+    getProductionMaterials,
+    recordMaterialConsumption,
+    getFinishedProductMaterials
 } from '../controllers/productionRunController';
 import {
     getProductionSteps,
@@ -43,6 +47,12 @@ router.post('/steps/:id/quality-check', logQualityCheckpoint);
 // Dynamic step management routes
 router.post('/runs/:productionRunId/steps', addProductionStep);
 router.delete('/steps/:stepId', removeProductionStep);
+
+// Material tracking routes
+router.post('/runs/:productionRunId/materials/allocate', allocateProductionMaterials);
+router.get('/runs/:productionRunId/materials', getProductionMaterials);
+router.post('/runs/:productionRunId/materials/consume', recordMaterialConsumption);
+router.get('/finished-products/:finishedProductId/materials', getFinishedProductMaterials);
 
 // Legacy route for backward compatibility
 router.post('/what-can-i-make', (req, res) => res.json({ message: 'Production planning API - to be implemented' }));

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Material Breakdown Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    </style>
+</head>
+<body>
+    <h1>🔬 Material Breakdown Dialog Test</h1>
+    <div id="test-results"></div>
+
+    <script>
+        const results = document.getElementById('test-results');
+
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = message;
+            results.appendChild(div);
+        }
+
+        async function testFrontendApp() {
+            addResult('🚀 Testing frontend application at http://localhost:3003');
+            
+            try {
+                // Test if frontend is accessible
+                const response = await fetch('http://localhost:3003');
+                if (response.ok) {
+                    addResult('✅ Frontend is running successfully', 'success');
+                } else {
+                    addResult('❌ Frontend returned status: ' + response.status, 'error');
+                }
+            } catch (error) {
+                addResult('❌ Frontend is not accessible: ' + error.message, 'error');
+            }
+        }
+
+        async function testBackendAPI() {
+            addResult('🔧 Testing backend API at http://localhost:8000');
+            
+            try {
+                // Test finished products endpoint
+                const response = await fetch('http://localhost:8000/api/finished-products');
+                const data = await response.json();
+                
+                if (data.success && data.data.length > 0) {
+                    addResult(`✅ Found ${data.data.length} finished products`, 'success');
+                    
+                    // Test material breakdown for the product with allocations
+                    const productWithMaterials = data.data.find(p => p.id === 'cmfpsm8tx000fl8rko0vt8bkg');
+                    if (productWithMaterials) {
+                        addResult(`🎯 Testing material breakdown for: ${productWithMaterials.name}`, 'info');
+                        
+                        const materialResponse = await fetch(`http://localhost:8000/api/production/finished-products/${productWithMaterials.id}/materials`);
+                        const materialData = await materialResponse.json();
+                        
+                        if (materialData.success && materialData.data.materials.length > 0) {
+                            addResult(`✅ Material breakdown working! Found ${materialData.data.materials.length} materials`, 'success');
+                            materialData.data.materials.forEach((material, index) => {
+                                addResult(`&nbsp;&nbsp;🥖 ${index + 1}. ${material.materialName} - ${material.quantityConsumed || material.quantityAllocated} ${material.unit} - $${material.totalCost.toFixed(2)}`, 'success');
+                            });
+                            addResult(`💰 Total Production Cost: $${materialData.data.summary.totalProductionCost.toFixed(2)}`, 'success');
+                        } else {
+                            addResult('⚠️ No materials found in breakdown', 'error');
+                        }
+                    } else {
+                        addResult('⚠️ Test product with materials not found', 'error');
+                    }
+                } else {
+                    addResult('❌ No finished products found', 'error');
+                }
+            } catch (error) {
+                addResult('❌ Backend API test failed: ' + error.message, 'error');
+            }
+        }
+
+        async function runTests() {
+            await testFrontendApp();
+            await testBackendAPI();
+            
+            addResult('<br><strong>📱 MANUAL TEST INSTRUCTIONS:</strong>', 'info');
+            addResult('1. Open <a href="http://localhost:3003/finished-products" target="_blank">http://localhost:3003/finished-products</a>', 'info');
+            addResult('2. Look for "Simple Artisan Bread (BATCH-1758223066650)"', 'info');
+            addResult('3. Click the "Material Breakdown" button (ingredients icon)', 'info');
+            addResult('4. Verify the dialog opens without black screen', 'info');
+            addResult('5. Check that material information displays correctly', 'info');
+        }
+
+        // Run tests when page loads
+        runTests();
+    </script>
+</body>
+</html>

@@ -567,6 +567,208 @@ Delete a production run and all its associated steps.
 }
 ```
 
+### Material Tracking
+
+The material tracking APIs provide comprehensive traceability for raw materials used in production runs, including quantities, costs, SKUs, and batch numbers.
+
+#### POST /production/runs/:productionRunId/materials/allocate
+
+Allocate materials for a production run based on recipe requirements. This must be done before starting production to ensure all required materials are reserved.
+
+**Request Body:**
+
+```json
+{
+  "productionMultiplier": 2.5
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "productionRunId": "prod_123",
+    "allocations": [
+      {
+        "materialType": "RAW_MATERIAL",
+        "materialId": "rm_456",
+        "materialName": "All-Purpose Flour",
+        "materialSku": "FLR-001",
+        "materialBatchNumber": "BATCH-2025-001",
+        "quantityNeeded": 5.0,
+        "quantityAllocated": 5.0,
+        "unit": "kg",
+        "unitCost": 2.50,
+        "totalCost": 12.50
+      }
+    ]
+  },
+  "message": "Successfully allocated 1 materials for production"
+}
+```
+
+#### GET /production/runs/:productionRunId/materials
+
+Retrieve detailed material usage information for a production run, including cost breakdown and consumption details.
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "productionRunId": "prod_123",
+    "materials": [
+      {
+        "id": "alloc_789",
+        "materialType": "RAW_MATERIAL",
+        "materialName": "All-Purpose Flour",
+        "materialSku": "FLR-001",
+        "materialBatchNumber": "BATCH-2025-001",
+        "quantityAllocated": 5.0,
+        "quantityConsumed": 4.8,
+        "unit": "kg",
+        "unitCost": 2.50,
+        "totalCost": 12.00,
+        "status": "CONSUMED",
+        "notes": "Minor waste during mixing",
+        "consumedAt": "2025-09-10T10:15:00Z"
+      }
+    ],
+    "costBreakdown": {
+      "materialCost": 12.00,
+      "totalCost": 14.40,
+      "materials": ["..."]
+    }
+  },
+  "message": "Material usage retrieved successfully"
+}
+```
+
+#### POST /production/runs/:productionRunId/materials/consume
+
+Record actual material consumption during production steps. This allows tracking of waste, variations from planned usage, and exact material traceability.
+
+**Request Body:**
+
+```json
+{
+  "consumptions": [
+    {
+      "allocationId": "alloc_789",
+      "quantityConsumed": 4.8,
+      "notes": "Minor waste during mixing process"
+    }
+  ]
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "productionRunId": "prod_123",
+    "materials": ["...updated materials list..."],
+    "costBreakdown": {
+      "materialCost": 12.00,
+      "totalCost": 14.40
+    }
+  },
+  "message": "Successfully recorded consumption for 1 materials"
+}
+```
+
+#### GET /production/finished-products/:finishedProductId/materials
+
+Get comprehensive material breakdown and traceability for a finished product, showing exactly which raw materials were used, their quantities, costs, and batch numbers.
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "productionRunId": "prod-123",
+    "productId": "product-456",
+    "productName": "Chocolate Croissant",
+    "productBatchNumber": "BATCH-001",
+    "totalCost": 5.25,
+    "materialAllocations": [
+      {
+        "id": "alloc-1",
+        "productionRunId": "prod-123",
+        "materialId": "mat-flour",
+        "materialSku": "FLOUR-001",
+        "materialBatchNumber": "FLOUR-BATCH-001",
+        "allocatedQuantity": 500,
+        "consumedQuantity": 475,
+        "wasteQuantity": 25,
+        "unitCost": 0.004,
+        "totalCost": 2.00,
+        "unit": "g",
+        "createdAt": "2025-09-18T10:00:00Z",
+        "updatedAt": "2025-09-18T10:30:00Z",
+        "material": {
+          "id": "mat-flour",
+          "name": "All-Purpose Flour",
+          "sku": "FLOUR-001",
+          "description": "Premium white flour",
+          "category": {
+            "id": "cat-1",
+            "name": "Flour & Grains"
+          }
+        }
+      },
+      {
+        "id": "alloc-2",
+        "productionRunId": "prod-123",
+        "materialId": "mat-butter",
+        "materialSku": "BUTTER-001",
+        "materialBatchNumber": "BUTTER-BATCH-002",
+        "allocatedQuantity": 200,
+        "consumedQuantity": 190,
+        "wasteQuantity": 10,
+        "unitCost": 0.012,
+        "totalCost": 2.40,
+        "unit": "g",
+        "createdAt": "2025-09-18T10:00:00Z",
+        "updatedAt": "2025-09-18T10:30:00Z",
+        "material": {
+          "id": "mat-butter",
+          "name": "Organic Butter",
+          "sku": "BUTTER-001",
+          "description": "Premium organic butter",
+          "category": {
+            "id": "cat-2",
+            "name": "Dairy Products"
+          }
+        }
+      }
+    ],
+    "summary": {
+      "totalMaterialCost": 4.40,
+      "totalWasteQuantity": 35,
+      "totalConsumedQuantity": 665,
+      "wastePercentage": 5.0
+    }
+  },
+  "message": "Material breakdown retrieved successfully"
+}
+```
+
+**Key Features:**
+
+- **Complete Material Traceability**: Track every raw material used with batch numbers and SKUs
+- **Waste Tracking**: Detailed tracking of allocated vs consumed quantities with waste calculation
+- **Cost Breakdown**: Real-time cost calculation based on actual material consumption and unit costs
+- **Batch Traceability**: Full batch number tracking for quality control and recalls
+- **Category Integration**: Material categories for better organization and reporting
+- **Production Integration**: Links materials directly to production runs and finished products
+
 ### Production Step Templates
 
 #### GET /production/step-templates/default

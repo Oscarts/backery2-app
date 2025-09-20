@@ -279,6 +279,69 @@ Updated recipe selection dialogs now include:
 - **Detailed Error States**: Comprehensive ingredient status reporting
 - **Step Customization Access**: Button to open production steps dialog
 
+##### Material Breakdown Dialog (New - September 2025)
+
+A comprehensive dialog component for displaying detailed material traceability and cost breakdown for finished products:
+
+**Key Design Features:**
+
+- **Responsive Design**: Full-width modal with adaptive card layouts
+- **Creative Information Display**: Smart use of icons, colors, and typography
+- **Cost Visualization**: Prominent cost summary with breakdown details
+- **Waste Indicators**: Visual waste tracking with percentage calculations
+- **Material Cards**: Individual cards for each material with comprehensive details
+
+```jsx
+// Material Breakdown Dialog Pattern
+<Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+  <DialogTitle>
+    <Box display="flex" alignItems="center" justifyContent="between">
+      <Box>
+        <Typography variant="h5" fontWeight="bold">Material Breakdown</Typography>
+        <Typography variant="body2" color="text.secondary">
+          {productName} - Batch #{batchNumber}
+        </Typography>
+      </Box>
+      <IconButton onClick={onClose} size="small">
+        <CloseIcon />
+      </IconButton>
+    </Box>
+  </DialogTitle>
+  <DialogContent>
+    {/* Cost Summary Card with Primary Color Theme */}
+    <Card sx={{ bgcolor: 'primary.light', color: 'primary.contrastText' }}>
+      <CardContent>
+        <Typography variant="h6">Production Cost Summary</Typography>
+        {/* Grid layout for cost metrics */}
+      </CardContent>
+    </Card>
+    
+    {/* Material Cards with Icons and Visual Indicators */}
+    {materials.map(material => (
+      <Card key={material.id} sx={{ mb: 2 }}>
+        <CardContent>
+          <Grid container spacing={2}>
+            {/* Material info with category icons */}
+            {/* Quantity display with unit formatting */}
+            {/* Cost breakdown with currency formatting */}
+            {/* Waste indicators with progress bars */}
+          </Grid>
+        </CardContent>
+      </Card>
+    ))}
+  </DialogContent>
+</Dialog>
+```
+
+**Design Patterns Used:**
+
+- **Icon Integration**: Material-UI icons for visual context (Inventory2, AttachMoney, Scale, Tag, Delete)
+- **Color Coding**: Primary theme for summaries, warning colors for waste indicators
+- **Typography Hierarchy**: Clear information hierarchy with captions, body text, and emphasis
+- **Loading States**: Skeleton loaders during data fetching
+- **Error Handling**: Alert components for error states
+- **Empty States**: Informative messages when no data is available
+
 #### Production Status Field (Finished Products)
 
 - Include a "Production Status" select when creating or editing Finished Products

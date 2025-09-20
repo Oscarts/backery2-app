@@ -1,9 +1,11 @@
 import { Request, Response } from 'express';
 import { PrismaClient, ProductionStatus, ProductionStepStatus } from '@prisma/client';
 import { ProductionCompletionService } from '../services/productionCompletionService';
+import { InventoryAllocationService } from '../services/inventoryAllocationService';
 
 const prisma = new PrismaClient();
 const productionCompletionService = new ProductionCompletionService();
+const inventoryAllocationService = new InventoryAllocationService();
 
 // Get all production runs with complete details
 export const getProductionRuns = async (req: Request, res: Response) => {
@@ -89,14 +91,53 @@ export const createProductionRun = async (req: Request, res: Response) => {
         let stepsToCreate;
 
         if (customSteps && Array.isArray(customSteps) && customSteps.length > 0) {
-            // Use custom steps provided by frontend
-            stepsToCreate = customSteps.map((step: any, index: number) => ({
-                name: step.name,
-                description: step.description || '',
-                stepOrder: step.stepOrder || index + 1,
-                estimatedMinutes: step.estimatedMinutes || 30,
-                status: ProductionStepStatus.PENDING
-            }));
+            // Validate custom steps and filter out invalid ones
+            const validCustomSteps = customSteps.filter((step: any) => {
+                return step.name && typeof step.name === 'string' && step.name.trim().length > 0;
+            });
+
+            if (validCustomSteps.length > 0) {
+                // Use valid custom steps provided by frontend
+                stepsToCreate = validCustomSteps.map((step: any, index: number) => ({
+                    name: step.name.trim(),
+                    description: step.description || '',
+                    stepOrder: step.stepOrder || index + 1,
+                    estimatedMinutes: step.estimatedMinutes || 30,
+                    status: ProductionStepStatus.PENDING
+                }));
+            } else {
+                // No valid custom steps, fall back to defaults
+                stepsToCreate = [
+                    {
+                        name: 'Preparation',
+                        description: 'Gather and prepare all ingredients and equipment',
+                        stepOrder: 1,
+                        estimatedMinutes: Math.ceil((recipe.prepTime || 30) * 0.3),
+                        status: ProductionStepStatus.PENDING
+                    },
+                    {
+                        name: 'Production',
+                        description: 'Execute recipe production steps',
+                        stepOrder: 2,
+                        estimatedMinutes: recipe.prepTime || 30,
+                        status: ProductionStepStatus.PENDING
+                    },
+                    {
+                        name: 'Quality Check',
+                        description: 'Perform quality control checks',
+                        stepOrder: 3,
+                        estimatedMinutes: 15,
+                        status: ProductionStepStatus.PENDING
+                    },
+                    {
+                        name: 'Packaging',
+                        description: 'Package finished products',
+                        stepOrder: 4,
+                        estimatedMinutes: Math.ceil((recipe.prepTime || 30) * 0.2),
+                        status: ProductionStepStatus.PENDING
+                    }
+                ];
+            }
         } else {
             // Use default steps as fallback
             stepsToCreate = [
@@ -400,7 +441,7 @@ export const updateProductionRun = async (req: Request, res: Response) => {
                 fs.appendFileSync('/tmp/production-debug.log', 
                     `${new Date().toISOString()} Service returned: ${JSON.stringify(completionResult)}\n`
                 );
-                finishedProduct = completionResult.finishedProduct;
+                finishedProduct = (completionResult as any).finishedProduct;
                 if (finishedProduct) {
                     console.log(`✅ Finished product created: ${finishedProduct.name}`);
                     fs.appendFileSync('/tmp/production-debug.log', 
@@ -413,7 +454,7 @@ export const updateProductionRun = async (req: Request, res: Response) => {
                 }
                 
                 // The service already updated the status to COMPLETED, so don't update it again
-                const updatedRun = completionResult.productionRun;
+                const updatedRun = (completionResult as any).productionRun;
                 
                 res.json({
                     success: true,
@@ -426,10 +467,10 @@ export const updateProductionRun = async (req: Request, res: Response) => {
                 });
                 return;
                 
-            } catch (completionError) {
+            } catch (completionError: any) {
                 console.error('❌ Error creating finished product during manual completion:', completionError);
                 fs.appendFileSync('/tmp/production-debug.log', 
-                    `${new Date().toISOString()} ERROR: ${completionError.message}\n`
+                    `${new Date().toISOString()} ERROR: ${completionError.message || completionError}\n`
                 );
                 // Fall through to regular update if completion fails
             }
@@ -495,6 +536,214 @@ export const deleteProductionRun = async (req: Request, res: Response) => {
         res.status(500).json({
             success: false,
             message: 'Internal server error'
+        });
+    }
+};
+
+// Allocate materials for production run
+export const allocateProductionMaterials = async (req: Request, res: Response) => {
+    try {
+        const { productionRunId } = req.params;
+        const { productionMultiplier = 1 } = req.body;
+
+        console.log(`🔄 Allocating materials for production run: ${productionRunId}`);
+
+        // Get production run details
+        const productionRun = await prisma.productionRun.findUnique({
+            where: { id: productionRunId },
+            include: { recipe: true }
+        });
+
+        if (!productionRun) {
+            return res.status(404).json({
+                success: false,
+                error: 'Production run not found'
+            });
+        }
+
+        // Check if already allocated
+        const existingAllocations = await prisma.productionAllocation.findMany({
+            where: { productionRunId }
+        });
+
+        if (existingAllocations.length > 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Materials already allocated for this production run'
+            });
+        }
+
+        // Allocate materials
+        const allocations = await inventoryAllocationService.allocateIngredients(
+            productionRunId,
+            productionRun.recipeId,
+            productionMultiplier
+        );
+
+        res.json({
+            success: true,
+            data: {
+                productionRunId,
+                allocations
+            },
+            message: `Successfully allocated ${allocations.length} materials for production`
+        });
+
+    } catch (error) {
+        console.error('Error allocating production materials:', error);
+        res.status(500).json({
+            success: false,
+            error: (error as any).message || 'Failed to allocate materials'
+        });
+    }
+};
+
+// Get material usage for a production run
+export const getProductionMaterials = async (req: Request, res: Response) => {
+    try {
+        const { productionRunId } = req.params;
+
+        console.log(`📊 Getting material usage for production run: ${productionRunId}`);
+
+        // Get material usage details
+        const materials = await inventoryAllocationService.getMaterialUsage(productionRunId);
+        
+        // Get cost breakdown
+        const costBreakdown = await inventoryAllocationService.calculateProductionCost(productionRunId);
+
+        res.json({
+            success: true,
+            data: {
+                productionRunId,
+                materials,
+                costBreakdown
+            },
+            message: 'Material usage retrieved successfully'
+        });
+
+    } catch (error) {
+        console.error('Error getting production materials:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to retrieve material usage'
+        });
+    }
+};
+
+// Record material consumption during production
+export const recordMaterialConsumption = async (req: Request, res: Response) => {
+    try {
+        const { productionRunId } = req.params;
+        const { consumptions } = req.body;
+
+        console.log(`📝 Recording material consumption for production run: ${productionRunId}`);
+
+        if (!consumptions || !Array.isArray(consumptions)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Consumptions array is required'
+            });
+        }
+
+        // Record the consumption
+        await inventoryAllocationService.recordMaterialConsumption(consumptions);
+
+        // Get updated material usage
+        const updatedMaterials = await inventoryAllocationService.getMaterialUsage(productionRunId);
+        const costBreakdown = await inventoryAllocationService.calculateProductionCost(productionRunId);
+
+        res.json({
+            success: true,
+            data: {
+                productionRunId,
+                materials: updatedMaterials,
+                costBreakdown
+            },
+            message: `Successfully recorded consumption for ${consumptions.length} materials`
+        });
+
+    } catch (error) {
+        console.error('Error recording material consumption:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to record material consumption'
+        });
+    }
+};
+
+// Get detailed material usage for finished product traceability
+export const getFinishedProductMaterials = async (req: Request, res: Response) => {
+    try {
+        const { finishedProductId } = req.params;
+
+        console.log(`🔍 Getting material traceability for finished product: ${finishedProductId}`);
+
+        // Get finished product with linked production run
+        const finishedProduct = await prisma.finishedProduct.findUnique({
+            where: { id: finishedProductId },
+            include: {
+                productionRun: {
+                    include: {
+                        recipe: true
+                    }
+                }
+            }
+        });
+
+        if (!finishedProduct) {
+            return res.status(404).json({
+                success: false,
+                error: 'Finished product not found'
+            });
+        }
+
+        if (!finishedProduct.productionRun) {
+            return res.status(404).json({
+                success: false,
+                error: 'No production run linked to this finished product'
+            });
+        }
+
+        // Get material usage
+        const materials = await inventoryAllocationService.getMaterialUsage(finishedProduct.productionRun.id);
+        const costBreakdown = await inventoryAllocationService.calculateProductionCost(finishedProduct.productionRun.id);
+
+        res.json({
+            success: true,
+            data: {
+                finishedProduct: {
+                    id: finishedProduct.id,
+                    name: finishedProduct.name,
+                    batchNumber: finishedProduct.batchNumber,
+                    productionDate: finishedProduct.productionDate,
+                    quantity: finishedProduct.quantity,
+                    unit: finishedProduct.unit,
+                    costToProduce: finishedProduct.costToProduce,
+                    sku: finishedProduct.sku
+                },
+                productionRun: {
+                    id: finishedProduct.productionRun.id,
+                    name: finishedProduct.productionRun.name,
+                    recipe: finishedProduct.productionRun.recipe,
+                    completedAt: finishedProduct.productionRun.completedAt
+                },
+                materials,
+                costBreakdown,
+                summary: {
+                    totalMaterialsUsed: materials.length,
+                    totalMaterialCost: costBreakdown.materialCost,
+                    totalProductionCost: costBreakdown.totalCost,
+                    costPerUnit: finishedProduct.quantity > 0 ? costBreakdown.totalCost / finishedProduct.quantity : 0
+                }
+            },
+            message: 'Material traceability retrieved successfully'
+        });
+
+    } catch (error) {
+        console.error('Error getting finished product materials:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to retrieve material traceability'
         });
     }
 };

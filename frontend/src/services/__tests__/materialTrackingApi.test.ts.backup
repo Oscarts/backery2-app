@@ -1,0 +1,194 @@
+import { finishedProductsApi } from '../realApi';
+import { MaterialBreakdown } from '../../types';
+
+// Mock fetch globally
+global.fetch = jest.fn();
+const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+
+// Mock API base URL (should match the actual API configuration)
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+
+describe('finishedProductsApi - Material Tracking', () => {
+  beforeEach(() => {
+    mockFetch.mockClear();
+  });
+
+  describe('getMaterialBreakdown', () => {
+    const mockMaterialBreakdown: MaterialBreakdown = {
+      productionRunId: 'prod-123',
+      productId: 'product-456',
+      productName: 'Chocolate Croissant',
+      productBatchNumber: 'BATCH-001',
+      totalCost: 5.25,
+      materialAllocations: [
+        {
+          id: 'alloc-1',
+          productionRunId: 'prod-123',
+          materialId: 'mat-flour',
+          materialSku: 'FLOUR-001',
+          materialBatchNumber: 'FLOUR-BATCH-001',
+          allocatedQuantity: 500,
+          consumedQuantity: 475,
+          wasteQuantity: 25,
+          unitCost: 0.004,
+          totalCost: 2.00,
+          unit: 'g',
+          createdAt: '2025-09-18T10:00:00Z',
+          updatedAt: '2025-09-18T10:30:00Z',
+          material: {
+            id: 'mat-flour',
+            name: 'All-Purpose Flour',
+            sku: 'FLOUR-001',
+            description: 'Premium white flour',
+            category: {
+              id: 'cat-1',
+              name: 'Flour & Grains'
+            }
+          }
+        }
+      ],
+      summary: {
+        totalMaterialsUsed: 1,
+        totalMaterialCost: 5.00,
+        totalProductionCost: 6.00,
+        costPerUnit: 3.00,
+      }
+    };
+
+    test('successfully fetches material breakdown data', async () => {
+      const productId = 'product-456';
+      const mockResponse = {
+        success: true,
+        data: mockMaterialBreakdown
+      };
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+      } as Response);
+
+      const result = await finishedProductsApi.getMaterialBreakdown(productId);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        `${API_BASE_URL}/production/finished-products/${productId}/materials`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      expect(result).toEqual(mockResponse);
+      expect(result.data?.finishedProduct.name).toBe('Chocolate Croissant (BATCH-001)');
+      expect(result.data?.summary.totalProductionCost).toBe(6.00);
+      expect(result.data?.materials).toHaveLength(1);
+    });
+
+    test('handles API error response', async () => {
+      const productId = 'product-456';
+      const errorMessage = 'Product not found';
+
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        json: async () => ({
+          success: false,
+          error: errorMessage
+        }),
+      } as Response);
+
+      // The apiCall function should handle the error and not throw
+      await expect(finishedProductsApi.getMaterialBreakdown(productId)).rejects.toThrow('Product not found');
+    });
+
+    test('handles network error', async () => {
+      const productId = 'product-456';
+      const networkError = new Error('Network error');
+
+      mockFetch.mockRejectedValueOnce(networkError);
+
+      await expect(finishedProductsApi.getMaterialBreakdown(productId)).rejects.toThrow('Network error');
+    });
+
+    test('handles empty material breakdown data', async () => {
+      const productId = 'product-456';
+      const emptyBreakdown = {
+        ...mockMaterialBreakdown,
+        materialAllocations: [],
+        summary: {
+          totalMaterialCost: 0,
+          totalWasteQuantity: 0,
+          totalConsumedQuantity: 0,
+          wastePercentage: 0
+        }
+      };
+
+      const mockResponse = {
+        success: true,
+        data: emptyBreakdown
+      };
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+      } as Response);
+
+      const result = await finishedProductsApi.getMaterialBreakdown(productId);
+
+      expect(result.success).toBe(true);
+      expect(result.data?.materials).toHaveLength(0);
+      expect(result.data?.summary.totalMaterialCost).toBe(0);
+    });
+
+    test('sends correct headers and method', async () => {
+      const productId = 'product-456';
+      
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true, data: mockMaterialBreakdown }),
+      } as Response);
+
+      await finishedProductsApi.getMaterialBreakdown(productId);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining(`/finished-products/${productId}/materials`),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'Content-Type': 'application/json',
+          }),
+        })
+      );
+    });
+
+    test('constructs correct URL with product ID', async () => {
+      const productIds = ['prod-1', 'prod-2', 'special-id-123'];
+
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ success: true, data: mockMaterialBreakdown }),
+      } as Response);
+
+      for (const productId of productIds) {
+        await finishedProductsApi.getMaterialBreakdown(productId);
+        
+        expect(mockFetch).toHaveBeenCalledWith(
+          `${API_BASE_URL}/production/finished-products/${productId}/materials`,
+          expect.any(Object)
+        );
+      }
+    });
+  });
+
+  test('API integration with existing finished products API', () => {
+    // Verify that the new method is added to the existing API object
+    expect(finishedProductsApi.getMaterialBreakdown).toBeDefined();
+    expect(typeof finishedProductsApi.getMaterialBreakdown).toBe('function');
+    
+    // Verify other existing methods still exist
+    expect(finishedProductsApi.getAll).toBeDefined();
+    expect(finishedProductsApi.getById).toBeDefined();
+    expect(finishedProductsApi.create).toBeDefined();
+    expect(finishedProductsApi.update).toBeDefined();
+    expect(finishedProductsApi.delete).toBeDefined();
+  });
+});

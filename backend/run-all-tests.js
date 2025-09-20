@@ -14,7 +14,9 @@ const tests = [
   'test-intermediate-product-update.js',
   'test-what-can-i-make.js', // Added new test for What Can I Make API
   'test-production-completion-fix.js', // Added test for production completion fix
-  'test-production-indicators.js' // Added test for production indicators
+  'test-production-indicators.js', // Added test for production indicators
+  'src/tests/materialTracking.test.ts', // Added material tracking service tests
+  'src/tests/materialTrackingAPI.test.ts' // Added material tracking API tests
 ];
 
 async function runTests() {

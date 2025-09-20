@@ -2,8 +2,10 @@
 // Handles creating finished products when production runs are completed
 
 import { PrismaClient } from '@prisma/client';
+import { InventoryAllocationService } from './inventoryAllocationService';
 
 const prisma = new PrismaClient();
+const inventoryAllocationService = new InventoryAllocationService();
 
 export class ProductionCompletionService {
 
@@ -124,7 +126,7 @@ export class ProductionCompletionService {
             // Create finished product
             const finishedProduct = await prisma.finishedProduct.create({
                 data: {
-                    name: `${productionRun.recipe.name} (${batchNumber})`,
+                    name: productionRun.recipe.name,
                     description: `Produced from recipe: ${productionRun.recipe.name}`,
                     sku,
                     batchNumber,
@@ -136,6 +138,7 @@ export class ProductionCompletionService {
                     salePrice: 10.0, // Default price - should be calculated based on recipe cost
                     costToProduce: await this.calculateProductionCost(productionRun),
                     storageLocationId: defaultLocation.id,
+                    productionRunId: productionRun.id, // Link to production run
                     status: 'COMPLETED',
                     packagingInfo: `Produced via ${productionRun.name}`,
                     isContaminated: false,
@@ -155,6 +158,18 @@ export class ProductionCompletionService {
     // Calculate production cost based on ingredients
     private async calculateProductionCost(productionRun: any): Promise<number> {
         try {
+            console.log(`💰 Calculating actual production cost for run: ${productionRun.id}`);
+
+            // First, try to get actual material costs from allocations
+            const costBreakdown = await inventoryAllocationService.calculateProductionCost(productionRun.id);
+            
+            if (costBreakdown.materials.length > 0) {
+                console.log(`✅ Using actual material costs: $${costBreakdown.totalCost.toFixed(2)}`);
+                return costBreakdown.totalCost;
+            }
+
+            // Fallback to estimated costs from recipe if no allocations exist
+            console.log('⚠️ No material allocations found, using estimated costs from recipe');
             const recipe = await prisma.recipe.findUnique({
                 where: { id: productionRun.recipeId },
                 include: {
@@ -179,13 +194,16 @@ export class ProductionCompletionService {
                 if (ingredient.rawMaterial) {
                     totalCost += requiredQuantity * (ingredient.rawMaterial.unitPrice || 0);
                 } else if (ingredient.intermediateProduct) {
-                    // For intermediate products, use a default cost calculation
-                    totalCost += requiredQuantity * 2.0; // Default $2 per unit
+                    // For intermediate products, use their cost per unit or default
+                    totalCost += requiredQuantity * (ingredient.intermediateProduct.costPerUnit || 2.0);
                 }
             }
 
             // Add 20% overhead for labor and utilities
-            return totalCost * 1.2;
+            const finalCost = totalCost * 1.2;
+            console.log(`📊 Estimated cost: $${finalCost.toFixed(2)} (materials: $${totalCost.toFixed(2)} + 20% overhead)`);
+            
+            return finalCost;
 
         } catch (error) {
             console.error('Error calculating production cost:', error);

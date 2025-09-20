@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../index';
+import { prisma } from '../app';
 
 interface DashboardSummary {
   totalInventoryValue: {

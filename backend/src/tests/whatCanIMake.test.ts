@@ -1,21 +1,9 @@
 const request = require('supertest');
-const app = require('../index');
+import createApp from '../app';
+
+const app = createApp();
 
 describe('What Can I Make API', () => {
-  let server: any;
-
-  beforeAll(async () => {
-    // Start the server for testing
-    server = app.listen(0); // Use port 0 to get a random available port
-  });
-
-  afterAll(async () => {
-    // Close the server after tests
-    if (server) {
-      server.close();
-    }
-  });
-
   describe('GET /api/recipes/what-can-i-make', () => {
     test('should return recipe analysis with correct structure', async () => {
       const response = await request(app)

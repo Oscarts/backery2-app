@@ -17,7 +17,8 @@ import {
   CreateProductionRunData,
   UpdateProductionRunData,
   UpdateProductionStepData,
-  CompleteProductionStepData
+  CompleteProductionStepData,
+  MaterialBreakdown
 } from '../types';
 
 const API_BASE_URL = 'http://localhost:8000/api';
@@ -283,6 +284,10 @@ export const finishedProductsApi = {
       method: 'PUT',
       body: JSON.stringify({ quantity, reason }),
     });
+  },
+
+  getMaterialBreakdown: async (id: string): Promise<ApiResponse<MaterialBreakdown>> => {
+    return apiCall<MaterialBreakdown>(`/production/finished-products/${id}/materials`);
   },
 };
 

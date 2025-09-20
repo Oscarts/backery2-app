@@ -1,20 +1,9 @@
 import request from 'supertest';
-import app from '../index';
+import createApp from '../app';
+
+const app = createApp();
 
 describe('Production Run Custom Steps API', () => {
-    let server: any;
-
-    beforeAll(async () => {
-        // Start the server for testing
-        server = app.listen(0); // Use port 0 to get a random available port
-    });
-
-    afterAll(async () => {
-        // Close the server after tests
-        if (server) {
-            server.close();
-        }
-    });
 
     describe('POST /api/production/runs with custom steps', () => {
         test('should create production run with custom steps', async () => {
