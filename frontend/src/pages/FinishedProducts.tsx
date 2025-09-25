@@ -215,6 +215,7 @@ const FinishedProducts: React.FC = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
+
   const handleOpenForm = (product?: FinishedProduct) => {
     setEditingProduct(product || null);
     if (product) {
@@ -223,6 +224,12 @@ const FinishedProducts: React.FC = () => {
       setSelectedProductId(null);
     }
     setOpenForm(true);
+  };
+
+  // Open material breakdown dialog for a product
+  const handleOpenMaterialDialog = (productId: string) => {
+    setSelectedProductId(productId);
+    setMaterialDialogOpen(true);
   };
 
   const handleCloseForm = () => {
@@ -533,7 +540,7 @@ const FinishedProducts: React.FC = () => {
                               Total Materials
                             </Typography>
                             <Typography variant="h6" fontWeight="bold">
-                              {materialBreakdownResponse.data.materials.length}
+                              {materialBreakdownResponse.data.summary?.totalMaterialsUsed ?? materialBreakdownResponse.data.materials?.length ?? materialBreakdownResponse.data.costBreakdown?.materials?.length ?? 0}
                             </Typography>
                           </Grid>
                           <Grid item xs={6} sm={3}>
@@ -541,7 +548,7 @@ const FinishedProducts: React.FC = () => {
                               Material Cost
                             </Typography>
                             <Typography variant="h6" fontWeight="bold">
-                              {formatCurrency(materialBreakdownResponse.data.summary.totalMaterialCost)}
+                              {formatCurrency(materialBreakdownResponse.data.summary?.totalMaterialCost ?? materialBreakdownResponse.data.costBreakdown?.materialCost ?? 0)}
                             </Typography>
                           </Grid>
                           <Grid item xs={6} sm={3}>
@@ -549,7 +556,7 @@ const FinishedProducts: React.FC = () => {
                               Cost Per Unit
                             </Typography>
                             <Typography variant="h6" fontWeight="bold">
-                              {formatCurrency(materialBreakdownResponse.data.summary.costPerUnit)}
+                              {formatCurrency(materialBreakdownResponse.data.summary?.costPerUnit ?? 0)}
                             </Typography>
                           </Grid>
                           <Grid item xs={6} sm={3}>
@@ -557,7 +564,7 @@ const FinishedProducts: React.FC = () => {
                               Total Cost
                             </Typography>
                             <Typography variant="h6" fontWeight="bold">
-                              {formatCurrency(materialBreakdownResponse.data.summary.totalProductionCost)}
+                              {formatCurrency(materialBreakdownResponse.data.summary?.totalProductionCost ?? materialBreakdownResponse.data.costBreakdown?.totalCost ?? 0)}
                             </Typography>
                           </Grid>
                         </Grid>
@@ -571,29 +578,28 @@ const FinishedProducts: React.FC = () => {
                     </Divider>
 
                     {/* Material Cards */}
-                    {materialBreakdownResponse.data.materials.map((allocation, index) => (
-                      <Card key={allocation.id} sx={{ mb: 2, position: 'relative', overflow: 'visible' }}>
-                        <CardContent sx={{ pb: 1 }}>
-                          {/* Material Header */}
-                          <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-                            <Box display="flex" alignItems="center" gap={1}>
-                              <IngredientsIcon color="primary" />
-                              <Typography variant="h6" fontWeight="bold">
-                                {allocation.materialName}
-                              </Typography>
-                            </Box>
-                            <Chip 
-                              label={`#${index + 1}`} 
-                              size="small" 
-                              variant="outlined" 
-                              color="primary" 
-                            />
-                          </Box>
-
-                          {/* Material Info Grid */}
-                          <Grid container spacing={2} mb={2}>
-                            <Grid item xs={6} sm={3}>
+                    {(materialBreakdownResponse.data.materials?.length ?? materialBreakdownResponse.data.costBreakdown?.materials?.length ?? 0) > 0 ? (
+                      (materialBreakdownResponse.data.materials ?? materialBreakdownResponse.data.costBreakdown?.materials ?? []).map((allocation, index) => (
+                        <Card key={allocation.id || index} sx={{ mb: 2, position: 'relative', overflow: 'visible' }}>
+                          <CardContent sx={{ pb: 1 }}>
+                            {/* Material Header */}
+                            <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
                               <Box display="flex" alignItems="center" gap={1}>
+                                <Typography variant="h6" fontWeight="bold">
+                                  {allocation.materialName}
+                                </Typography>
+                              </Box>
+                              <Chip 
+                                label={`#${index + 1}`} 
+                                size="small" 
+                                variant="outlined" 
+                                color="primary" 
+                              />
+                            </Box>
+
+                            {/* Material Info Grid */}
+                            <Grid container spacing={2} mb={2}>
+                              <Grid item xs={6} sm={3}>
                                 <Box>
                                   <Typography variant="caption" color="text.secondary">
                                     SKU
@@ -602,11 +608,8 @@ const FinishedProducts: React.FC = () => {
                                     {allocation.materialSku}
                                   </Typography>
                                 </Box>
-                              </Box>
-                            </Grid>
-                            
-                            <Grid item xs={6} sm={3}>
-                              <Box display="flex" alignItems="center" gap={1}>
+                              </Grid>
+                              <Grid item xs={6} sm={3}>
                                 <Box>
                                   <Typography variant="caption" color="text.secondary">
                                     Batch
@@ -615,24 +618,18 @@ const FinishedProducts: React.FC = () => {
                                     {allocation.materialBatchNumber || 'N/A'}
                                   </Typography>
                                 </Box>
-                              </Box>
-                            </Grid>
-
-                            <Grid item xs={6} sm={3}>
-                              <Box display="flex" alignItems="center" gap={1}>
+                              </Grid>
+                              <Grid item xs={6} sm={3}>
                                 <Box>
                                   <Typography variant="caption" color="text.secondary">
                                     Used Quantity
                                   </Typography>
                                   <Typography variant="body2" fontWeight="medium">
-                                    {(allocation.quantityConsumed || allocation.quantityAllocated).toFixed(2)} {allocation.unit}
+                                    {(allocation.quantityConsumed || allocation.quantityAllocated)?.toFixed(2)} {allocation.unit}
                                   </Typography>
                                 </Box>
-                              </Box>
-                            </Grid>
-
-                            <Grid item xs={6} sm={3}>
-                              <Box display="flex" alignItems="center" gap={1}>
+                              </Grid>
+                              <Grid item xs={6} sm={3}>
                                 <Box>
                                   <Typography variant="caption" color="text.secondary">
                                     Total Cost
@@ -641,19 +638,23 @@ const FinishedProducts: React.FC = () => {
                                     {formatCurrency(allocation.totalCost)}
                                   </Typography>
                                 </Box>
-                              </Box>
+                              </Grid>
                             </Grid>
-                          </Grid>
 
-                          {/* Unit Cost Info */}
-                          <Box mt={2} p={1} bgcolor="grey.50" borderRadius={1}>
-                            <Typography variant="caption" color="text.secondary">
-                              Unit Cost: {formatCurrency(allocation.unitCost)}/{allocation.unit}
-                            </Typography>
-                          </Box>
-                        </CardContent>
-                      </Card>
-                    ))}
+                            {/* Unit Cost Info */}
+                            <Box mt={2} p={1} bgcolor="grey.50" borderRadius={1}>
+                              <Typography variant="caption" color="text.secondary">
+                                Unit Cost: {formatCurrency(allocation.unitCost)}/{allocation.unit}
+                              </Typography>
+                            </Box>
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      <Alert severity="info">
+                        No material breakdown data available for this product.
+                      </Alert>
+                    )}
                   </Box>
                 ) : materialLoading ? (
                   <Box>
@@ -665,6 +666,11 @@ const FinishedProducts: React.FC = () => {
                       </Card>
                     ))}
                   </Box>
+                ) : materialError && String(materialError).includes('No production run linked') ? (
+                  <Alert severity="warning">
+                    No material breakdown available: This product does not have a linked production run.<br />
+                    Material traceability and cost breakdown require a production run to be associated with this product.
+                  </Alert>
                 ) : (
                   <Alert severity="info">
                     No material breakdown data available for this product.
@@ -1206,16 +1212,31 @@ const FinishedProducts: React.FC = () => {
                         </Box>
                       </TableCell>
                       <TableCell align="right">
-                        <IconButton
-                          size="small"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(product.id);
-                          }}
-                          color="error"
-                        >
-                          <DeleteIcon />
-                        </IconButton>
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <Tooltip title="Show Material Breakdown">
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              aria-label="Show material breakdown"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenMaterialDialog(product.id);
+                              }}
+                            >
+                              <IngredientsIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <IconButton
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(product.id);
+                            }}
+                            color="error"
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Box>
                       </TableCell>
                     </TableRow>
                   );
@@ -1237,17 +1258,16 @@ const FinishedProducts: React.FC = () => {
       )}
 
       {/* Card View for Mobile */}
+
       {viewMode === 'card' && (
         <Box sx={{ mt: 2 }}>
           <Grid container spacing={2}>
             {paginatedProducts.map((product) => {
               const isLowStock = product.quantity <= 10;
-
               return (
                 <Grid item xs={12} sm={6} md={4} key={product.id}>
                   <Card
                     elevation={2}
-                    onClick={() => handleOpenForm(product)}
                     sx={{
                       cursor: 'pointer',
                       '&:hover': { boxShadow: 6 },
@@ -1258,6 +1278,7 @@ const FinishedProducts: React.FC = () => {
                       position: 'relative',
                       borderRadius: 2
                     }}
+                    onClick={() => handleOpenForm(product)}
                   >
                     <CardHeader
                       avatar={
@@ -1292,7 +1313,21 @@ const FinishedProducts: React.FC = () => {
                           </Typography>
                         </Box>
                       }
-                      action={null}
+                      action={
+                        <Tooltip title="Show Material Breakdown">
+                          <IconButton
+                            size="small"
+                            color="primary"
+                            aria-label="Show material breakdown"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenMaterialDialog(product.id);
+                            }}
+                          >
+                            <IngredientsIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      }
                       sx={{ pb: 1 }}
                     />
 
@@ -1365,8 +1400,6 @@ const FinishedProducts: React.FC = () => {
                             {formatDate(product.productionDate)}
                           </Typography>
                         </Grid>
-
-
                       </Grid>
                     </CardContent>
 
