@@ -22,8 +22,8 @@ import {
   Refresh as RefreshIcon,
   Warning as WarningIcon
 } from '@mui/icons-material';
-import { intermediateProductsApi, categoriesApi, storageLocationsApi, unitsApi, rawMaterialsApi, suppliersApi, finishedProductsApi } from '../services/realApi';
-import { IntermediateProductStatus, CategoryType } from '../types';
+import { categoriesApi, storageLocationsApi, unitsApi, rawMaterialsApi, suppliersApi, finishedProductsApi } from '../services/realApi';
+import { CategoryType } from '../types';
 
 interface TestResult {
   name: string;
@@ -38,10 +38,6 @@ const ApiTestPage: React.FC = () => {
     { name: 'Storage Locations API', status: 'idle' },
     { name: 'Units API', status: 'idle' },
     { name: 'Suppliers API', status: 'idle' },
-    { name: 'Intermediate Products API', status: 'idle' },
-    { name: 'Create Intermediate Product', status: 'idle' },
-    { name: 'Update Intermediate Product', status: 'idle' },
-    { name: 'Delete Intermediate Product', status: 'idle' },
     { name: 'Raw Materials API', status: 'idle' },
     { name: 'Create Raw Material', status: 'idle' },
     { name: 'Update Raw Material', status: 'idle' },
@@ -149,123 +145,24 @@ const ApiTestPage: React.FC = () => {
       });
     }
 
-    // Test 5: Intermediate Products API
+    // Test 5: Raw Materials API
     updateTest(4, { status: 'testing' });
     try {
-      const productsResult = await intermediateProductsApi.getAll();
-      updateTest(4, {
-        status: 'success',
-        message: `Found ${productsResult.data?.length || 0} intermediate products`,
-        data: productsResult.data
-      });
-    } catch (error) {
-      updateTest(4, {
-        status: 'error',
-        message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-    }
-
-    // Test 6: Create Intermediate Product
-    updateTest(5, { status: 'testing' });
-    try {
-      // Ensure we have fresh data for the create test
-      const [categoriesResult, locationsResult, unitsResult] = await Promise.all([
-        categoriesApi.getAll(),
-        storageLocationsApi.getAll(),
-        unitsApi.getAll()
-      ]);
-
-      if (!categoriesResult.data?.[0]?.id) {
-        throw new Error('No categories available for testing');
-      }
-      if (!locationsResult.data?.[0]?.id) {
-        throw new Error('No storage locations available for testing');
-      }
-      if (!unitsResult.data?.[0]?.symbol) {
-        throw new Error('No units available for testing');
-      }
-
-      const createData = {
-        name: 'Test Intermediate Product',
-        description: 'A test intermediate product for API testing',
-        categoryId: categoriesResult.data[0].id,
-        storageLocationId: locationsResult.data[0].id,
-        batchNumber: `BATCH${Date.now()}`,
-        productionDate: new Date().toISOString().split('T')[0] + 'T00:00:00.000Z',
-        expirationDate: '2025-12-31T00:00:00.000Z',
-        quantity: 100,
-        unit: unitsResult.data[0].symbol,
-        status: IntermediateProductStatus.IN_PRODUCTION,
-        contaminated: false
-      };
-
-      const createResult = await intermediateProductsApi.create(createData);
-      updateTest(5, {
-        status: 'success',
-        message: `Created product with ID: ${createResult.data?.id}`,
-        data: createResult.data
-      });
-
-      // Test 7: Update the created product
-      if (createResult.data?.id) {
-        updateTest(6, { status: 'testing' });
-        try {
-          const updateResult = await intermediateProductsApi.update(createResult.data.id, {
-            quantity: 15,
-            status: IntermediateProductStatus.COMPLETED
-          });
-          updateTest(6, {
-            status: 'success',
-            message: `Updated product quantity to ${updateResult.data?.quantity}`,
-            data: updateResult.data
-          });
-
-          // Test 8: Delete the created product
-          updateTest(7, { status: 'testing' });
-          try {
-            await intermediateProductsApi.delete(createResult.data.id);
-            updateTest(7, {
-              status: 'success',
-              message: 'Product deleted successfully'
-            });
-          } catch (error) {
-            updateTest(7, {
-              status: 'error',
-              message: `Delete error: ${error instanceof Error ? error.message : 'Unknown error'}`
-            });
-          }
-        } catch (error) {
-          updateTest(6, {
-            status: 'error',
-            message: `Update error: ${error instanceof Error ? error.message : 'Unknown error'}`
-          });
-        }
-      }
-    } catch (error) {
-      updateTest(5, {
-        status: 'error',
-        message: `Create error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-    }
-
-    // Test 9: Raw Materials API
-    updateTest(8, { status: 'testing' });
-    try {
       const rawMaterialsResult = await rawMaterialsApi.getAll();
-      updateTest(8, {
+      updateTest(4, {
         status: 'success',
         message: `Found ${rawMaterialsResult.data?.length || 0} raw materials`,
         data: rawMaterialsResult.data
       });
     } catch (error) {
-      updateTest(8, {
+      updateTest(4, {
         status: 'error',
         message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
 
-    // Test 10: Create Raw Material
-    updateTest(9, { status: 'testing' });
+    // Test 6: Create Raw Material
+    updateTest(5, { status: 'testing' });
     try {
       // Ensure we have fresh data for the raw material create test
       const [categoriesResult, locationsResult, unitsResult, suppliersResult] = await Promise.all([
@@ -305,73 +202,73 @@ const ApiTestPage: React.FC = () => {
       };
 
       const createRawResult = await rawMaterialsApi.create(createRawMaterialData);
-      updateTest(9, {
+      updateTest(5, {
         status: 'success',
         message: `Created raw material with ID: ${createRawResult.data?.id}`,
         data: createRawResult.data
       });
 
-      // Test 11: Update the created raw material
+      // Test 7: Update the created raw material
       if (createRawResult.data?.id) {
-        updateTest(10, { status: 'testing' });
+        updateTest(6, { status: 'testing' });
         try {
           const updateRawResult = await rawMaterialsApi.update(createRawResult.data.id, {
             quantity: 75,
             costPerUnit: 3.00,
             contaminated: false
           });
-          updateTest(10, {
+          updateTest(6, {
             status: 'success',
             message: `Updated raw material quantity to ${updateRawResult.data?.quantity}`,
             data: updateRawResult.data
           });
 
-          // Test 12: Delete the created raw material
-          updateTest(11, { status: 'testing' });
+          // Test 8: Delete the created raw material
+          updateTest(7, { status: 'testing' });
           try {
             await rawMaterialsApi.delete(createRawResult.data.id);
-            updateTest(11, {
+            updateTest(7, {
               status: 'success',
               message: 'Raw material deleted successfully'
             });
           } catch (error) {
-            updateTest(11, {
+            updateTest(7, {
               status: 'error',
               message: `Delete error: ${error instanceof Error ? error.message : 'Unknown error'}`
             });
           }
         } catch (error) {
-          updateTest(10, {
+          updateTest(6, {
             status: 'error',
             message: `Update error: ${error instanceof Error ? error.message : 'Unknown error'}`
           });
         }
       }
     } catch (error) {
-      updateTest(9, {
+      updateTest(5, {
         status: 'error',
         message: `Create error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
 
-    // Test 13: Finished Products API
-    updateTest(12, { status: 'testing' });
+    // Test 9: Finished Products API
+    updateTest(8, { status: 'testing' });
     try {
       const finishedProductsResult = await finishedProductsApi.getAll();
-      updateTest(12, {
+      updateTest(8, {
         status: 'success',
         message: `Found ${finishedProductsResult.data?.length || 0} finished products`,
         data: finishedProductsResult.data
       });
     } catch (error) {
-      updateTest(12, {
+      updateTest(8, {
         status: 'error',
         message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
     }
 
-    // Test 14: Create Finished Product
-    updateTest(13, { status: 'testing' });
+    // Test 10: Create Finished Product
+    updateTest(9, { status: 'testing' });
     try {
       const categoriesResult = await categoriesApi.getAll();
       const finishedProductCategories = categoriesResult.data?.filter(c => c.type === 'FINISHED_PRODUCT');
