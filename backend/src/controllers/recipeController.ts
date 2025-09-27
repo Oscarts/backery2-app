@@ -16,15 +16,9 @@ export const getRecipes = async (req: Request, res: Response) => {
                 category: true,
                 supplier: true
               }
-            },
-            intermediateProduct: {
-              include: {
-                category: true
-              }
             }
           }
-        },
-        intermediateProducts: true
+        }
       },
       orderBy: {
         createdAt: 'desc'
@@ -60,15 +54,9 @@ export const getRecipeById = async (req: Request, res: Response) => {
                 category: true,
                 supplier: true
               }
-            },
-            intermediateProduct: {
-              include: {
-                category: true
-              }
             }
           }
-        },
-        intermediateProducts: true
+        }
       }
     });
 
@@ -167,11 +155,6 @@ export const createRecipe = async (req: Request, res: Response) => {
                 include: {
                   category: true,
                   supplier: true
-                }
-              },
-              intermediateProduct: {
-                include: {
-                  category: true
                 }
               }
             }
@@ -289,11 +272,6 @@ export const updateRecipe = async (req: Request, res: Response) => {
                   category: true,
                   supplier: true
                 }
-              },
-              intermediateProduct: {
-                include: {
-                  category: true
-                }
               }
             }
           }
@@ -319,15 +297,12 @@ export const deleteRecipe = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    // Check if recipe is being used by intermediate products
-    const usedByProducts = await prisma.intermediateProduct.findMany({
-      where: { recipeId: id }
-    });
-
-    if (usedByProducts.length > 0) {
-      return res.status(400).json({
+    // Check if recipe exists
+    const recipe = await prisma.recipe.findUnique({ where: { id } });
+    if (!recipe) {
+      return res.status(404).json({
         success: false,
-        error: 'Cannot delete recipe that is being used by intermediate products'
+        error: 'Recipe not found'
       });
     }
 
@@ -358,8 +333,7 @@ export const getRecipeCost = async (req: Request, res: Response) => {
       include: {
         ingredients: {
           include: {
-            rawMaterial: true,
-            intermediateProduct: true
+            rawMaterial: true
           }
         }
       }
@@ -389,13 +363,9 @@ export const getRecipeCost = async (req: Request, res: Response) => {
         ingredientName = ingredient.rawMaterial.name;
         availableQuantity = ingredient.rawMaterial.quantity;
         sourceUnit = ingredient.rawMaterial.unit;
-      } else if (ingredient.intermediateProduct) {
-        // For intermediate products, calculate a basic cost estimate 
-        // TODO: Implement proper cost tracking for intermediate products
-        unitCost = 0; // Placeholder until cost tracking is implemented
-        ingredientName = ingredient.intermediateProduct.name;
-        availableQuantity = ingredient.intermediateProduct.quantity;
-        sourceUnit = ingredient.intermediateProduct.unit;
+      } else {
+        // Skip invalid ingredients that don't have raw materials
+        continue;
       }
 
       // Check if units need conversion
