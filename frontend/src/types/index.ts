@@ -64,55 +64,12 @@ export interface Unit {
   updatedAt: string;
 }
 
-// Intermediate Product types
-export interface IntermediateProduct {
-  id: string;
-  name: string;
-  description: string;
-  categoryId: string;
-  storageLocationId: string;
-  recipeId?: string;
-  batchNumber: string;
-  productionDate: string;
-  expirationDate: string;
-  quantity: number;
-  unit: string;
-  status: IntermediateProductStatus;
-  contaminated: boolean;
-  qualityStatus?: QualityStatus;
-  qualityStatusId?: string;
-  createdAt: string;
-  updatedAt: string;
-
-  // Relations (optional for populated data)
-  category?: Category;
-  storageLocation?: StorageLocation;
-  recipe?: {
-    id: string;
-    name: string;
-    description?: string;
-    categoryId: string;
-    yieldQuantity: number;
-    yieldUnit: string;
-    prepTime?: number;
-    cookTime?: number;
-    instructions?: string[];
-    version: number;
-    isActive: boolean;
-    createdAt: string;
-    updatedAt: string;
-  };
-}
-
-export enum IntermediateProductStatus {
+export enum ProductStatus {
   IN_PRODUCTION = 'IN_PRODUCTION',
   COMPLETED = 'COMPLETED',
   ON_HOLD = 'ON_HOLD',
   DISCARDED = 'DISCARDED'
 }
-
-// Shared alias for use across product types
-export type ProductStatus = IntermediateProductStatus;
 
 // Raw Material types
 export interface RawMaterial {
@@ -321,7 +278,6 @@ export interface Recipe {
   createdAt: string;
   updatedAt: string;
   ingredients?: RecipeIngredient[];
-  intermediateProducts?: IntermediateProduct[];
 }
 
 export interface RecipeIngredient {
@@ -334,7 +290,6 @@ export interface RecipeIngredient {
   notes?: string;
   createdAt: string;
   rawMaterial?: RawMaterial;
-  intermediateProduct?: IntermediateProduct;
 }
 
 export interface RecipeCostAnalysis {

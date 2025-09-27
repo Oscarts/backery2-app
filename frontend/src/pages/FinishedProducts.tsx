@@ -59,14 +59,14 @@ import {
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { finishedProductsApi, categoriesApi, storageLocationsApi, unitsApi, qualityStatusApi } from '../services/realApi';
-import { FinishedProduct, CategoryType, CreateFinishedProductData, UpdateFinishedProductData, IntermediateProductStatus } from '../types';
+import { FinishedProduct, CategoryType, CreateFinishedProductData, UpdateFinishedProductData, ProductStatus } from '../types';
 import { formatDate, formatQuantity, isExpired, isExpiringSoon, getDaysUntilExpiration, formatCurrency } from '../utils/api';
 import MaterialBreakdownDialog from '../components/dialogs/MaterialBreakdownDialog';
 
 // Status display helper functions
 
 // Production status meta (color + labels) for subtle dot display
-const getProductionStatusMeta = (status?: typeof IntermediateProductStatus[keyof typeof IntermediateProductStatus]) => {
+const getProductionStatusMeta = (status?: typeof ProductStatus[keyof typeof ProductStatus]) => {
   if (!status) return null;
   const label = status.replace('_', ' ');
   const descriptionMap: Record<string, string> = {
@@ -270,7 +270,7 @@ const FinishedProducts: React.FC = () => {
       storageLocationId: editingProduct?.storageLocationId || '',
       isContaminated: editingProduct?.isContaminated || false, // Default is not contaminated
       qualityStatusId: editingProduct?.qualityStatusId || getDefaultQualityStatusId(),
-      status: (editingProduct as any)?.status || IntermediateProductStatus.IN_PRODUCTION,
+      status: (editingProduct as any)?.status || ProductStatus.IN_PRODUCTION,
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -490,10 +490,10 @@ const FinishedProducts: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
                     label="Production Status"
                   >
-                    <MenuItem value={IntermediateProductStatus.IN_PRODUCTION}>In Production</MenuItem>
-                    <MenuItem value={IntermediateProductStatus.COMPLETED}>Completed</MenuItem>
-                    <MenuItem value={IntermediateProductStatus.ON_HOLD}>On Hold</MenuItem>
-                    <MenuItem value={IntermediateProductStatus.DISCARDED}>Discarded</MenuItem>
+                    <MenuItem value={ProductStatus.IN_PRODUCTION}>In Production</MenuItem>
+                    <MenuItem value={ProductStatus.COMPLETED}>Completed</MenuItem>
+                    <MenuItem value={ProductStatus.ON_HOLD}>On Hold</MenuItem>
+                    <MenuItem value={ProductStatus.DISCARDED}>Discarded</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>
