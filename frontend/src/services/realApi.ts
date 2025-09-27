@@ -1,6 +1,5 @@
 // Real API service for backend communication
 import {
-  IntermediateProduct,
   Category,
   StorageLocation,
   Unit,
@@ -44,37 +43,6 @@ const apiCall = async <T>(endpoint: string, options?: RequestInit): Promise<ApiR
     console.error(`API call failed for ${endpoint}:`, error);
     throw error;
   }
-};
-
-// Intermediate Products API
-export const intermediateProductsApi = {
-  getAll: async (): Promise<ApiResponse<IntermediateProduct[]>> => {
-    return apiCall<IntermediateProduct[]>('/intermediate-products');
-  },
-
-  getById: async (id: string): Promise<ApiResponse<IntermediateProduct>> => {
-    return apiCall<IntermediateProduct>(`/intermediate-products/${id}`);
-  },
-
-  create: async (data: Omit<IntermediateProduct, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<IntermediateProduct>> => {
-    return apiCall<IntermediateProduct>('/intermediate-products', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  update: async (id: string, data: Partial<IntermediateProduct>): Promise<ApiResponse<IntermediateProduct>> => {
-    return apiCall<IntermediateProduct>(`/intermediate-products/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  },
-
-  delete: async (id: string): Promise<ApiResponse<void>> => {
-    return apiCall<void>(`/intermediate-products/${id}`, {
-      method: 'DELETE',
-    });
-  },
 };
 
 // Categories API
