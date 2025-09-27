@@ -456,7 +456,7 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
   try {
     console.log('📊 Starting What Can I Make analysis');
 
-    // Step 1: Get all recipes with ingredients
+    // Get all active recipes with only raw material ingredients
     const recipes = await prisma.recipe.findMany({
       where: {
         isActive: true
@@ -465,248 +465,101 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
         category: true,
         ingredients: {
           include: {
-            rawMaterial: {
-              include: {
-                category: true
-              }
-            },
-            intermediateProduct: {
-              include: {
-                category: true
-              }
-            }
+            rawMaterial: true
           }
         }
       }
     });
-
-    // Get all categories
-    const categoriesData = await prisma.category.findMany();
 
     console.log(`Found ${recipes.length} active recipes`);
 
-    // Quick validation of recipe ingredients
-    let hasInvalidIngredient = false;
-    for (const recipe of recipes) {
-      console.log(`Recipe: ${recipe.name} - Has ${recipe.ingredients.length} ingredients`);
-
-      // Check for ingredients with neither rawMaterialId nor intermediateProductId
-      for (const ingredient of recipe.ingredients) {
-        if (!ingredient.rawMaterialId && !ingredient.intermediateProductId) {
-          console.error(`❌ Invalid ingredient found in recipe ${recipe.name}: Neither rawMaterialId nor intermediateProductId is set`);
-          hasInvalidIngredient = true;
-        }
-      }
-    }
-
-    if (hasInvalidIngredient) {
-      console.warn('⚠️ Some recipes have invalid ingredients. This may affect results.');
-    }
-
-    // Step 2: Get current inventory of raw materials (exclude expired and contaminated)
+    // Get raw material inventory
     const rawMaterials = await prisma.rawMaterial.findMany();
-    const rawMaterialInventory = new Map();
+    const inventory = new Map();
     const now = new Date();
 
     rawMaterials.forEach(material => {
-      // Only include materials that are not expired and not contaminated
       const isExpired = material.expirationDate && material.expirationDate <= now;
       const isContaminated = material.isContaminated;
-
-      if (!isExpired && !isContaminated) {
-        rawMaterialInventory.set(material.id, {
-          quantity: material.quantity,
-          unit: material.unit
-        });
-      } else {
-        // Set quantity to 0 for expired or contaminated materials
-        rawMaterialInventory.set(material.id, {
-          quantity: 0,
-          unit: material.unit,
-          expired: isExpired,
-          contaminated: isContaminated
-        });
-      }
+      
+      inventory.set(material.id, {
+        quantity: (!isExpired && !isContaminated) ? material.quantity : 0,
+        unit: material.unit,
+        expired: isExpired,
+        contaminated: isContaminated
+      });
     });
 
-    console.log(`Found ${rawMaterials.length} raw materials in inventory`);
-
-    // Step 3: Get current inventory of intermediate products (exclude expired and contaminated)
-    const intermediateProducts = await prisma.intermediateProduct.findMany();
-    const intermediateProductInventory = new Map();
-
-    intermediateProducts.forEach(product => {
-      // Only include products that are not expired and not contaminated
-      const isExpired = product.expirationDate && product.expirationDate <= now;
-      const isContaminated = product.contaminated;
-
-      if (!isExpired && !isContaminated) {
-        intermediateProductInventory.set(product.id, {
-          quantity: product.quantity,
-          unit: product.unit
-        });
-      } else {
-        // Set quantity to 0 for expired or contaminated products
-        intermediateProductInventory.set(product.id, {
-          quantity: 0,
-          unit: product.unit,
-          expired: isExpired,
-          contaminated: isContaminated
-        });
-      }
-    });
-
-    console.log(`Found ${intermediateProducts.length} intermediate products in inventory`);
-
-    // Step 4: Check which recipes can be made based on inventory
-    const canMakeRecipes = [];
-    const cannotMakeRecipes = [];
-
+    // Analyze recipes
+    const results = [];
     for (const recipe of recipes) {
       let canMake = true;
+      let maxBatches = Number.MAX_SAFE_INTEGER;
       const missingIngredients = [];
 
       for (const ingredient of recipe.ingredients) {
-        // Skip invalid ingredients
-        if (!ingredient.rawMaterialId && !ingredient.intermediateProductId) {
-          console.warn(`⚠️ Skipping invalid ingredient in recipe ${recipe.name}`);
+        if (!ingredient.rawMaterialId) {
+          canMake = false;
           continue;
         }
 
-        if (ingredient.rawMaterialId) {
-          const material = rawMaterialInventory.get(ingredient.rawMaterialId);
+        const material = inventory.get(ingredient.rawMaterialId);
+        const available = material ? material.quantity : 0;
 
-          if (!material || material.quantity < ingredient.quantity) {
-            canMake = false;
-
-            const rawMaterial = await prisma.rawMaterial.findUnique({
-              where: { id: ingredient.rawMaterialId }
-            });
-
-            let reason = 'insufficient';
-            if (material?.expired) reason = 'expired';
-            if (material?.contaminated) reason = 'contaminated';
-
-            missingIngredients.push({
-              name: rawMaterial?.name || `Raw Material (${ingredient.rawMaterialId})`,
-              required: ingredient.quantity,
-              available: material ? material.quantity : 0,
-              unit: ingredient.unit,
-              reason: reason,
-              shortage: ingredient.quantity - (material ? material.quantity : 0)
-            });
-          }
-        } else if (ingredient.intermediateProductId) {
-          const product = intermediateProductInventory.get(ingredient.intermediateProductId);
-
-          if (!product || product.quantity < ingredient.quantity) {
-            canMake = false;
-
-            const intermediateProduct = await prisma.intermediateProduct.findUnique({
-              where: { id: ingredient.intermediateProductId }
-            });
-
-            let reason = 'insufficient';
-            if (product?.expired) reason = 'expired';
-            if (product?.contaminated) reason = 'contaminated';
-
-            missingIngredients.push({
-              name: intermediateProduct?.name || `Intermediate Product (${ingredient.intermediateProductId})`,
-              required: ingredient.quantity,
-              available: product ? product.quantity : 0,
-              unit: ingredient.unit,
-              reason: reason,
-              shortage: ingredient.quantity - (product ? product.quantity : 0)
-            });
-          }
+        if (available < ingredient.quantity) {
+          canMake = false;
+          missingIngredients.push({
+            name: ingredient.rawMaterial?.name || 'Unknown Material',
+            needed: ingredient.quantity,
+            available: available,
+            shortage: ingredient.quantity - available,
+            reason: material?.expired ? 'expired' : material?.contaminated ? 'contaminated' : 'insufficient'
+          });
+        } else {
+          const batchesForIngredient = Math.floor(available / ingredient.quantity);
+          maxBatches = Math.min(maxBatches, batchesForIngredient);
         }
       }
 
-      // Calculate maximum batches based on ingredient availability
-      let maxBatches = 0;
-      if (canMake) {
-        maxBatches = Number.MAX_SAFE_INTEGER; // Start with infinite, reduce based on limiting ingredient
-
-        for (const ingredient of recipe.ingredients) {
-          // Skip invalid ingredients
-          if (!ingredient.rawMaterialId && !ingredient.intermediateProductId) {
-            continue;
-          }
-
-          let availableQuantity = 0;
-
-          if (ingredient.rawMaterialId) {
-            const material = rawMaterialInventory.get(ingredient.rawMaterialId);
-            availableQuantity = material ? material.quantity : 0;
-          } else if (ingredient.intermediateProductId) {
-            const product = intermediateProductInventory.get(ingredient.intermediateProductId);
-            availableQuantity = product ? product.quantity : 0;
-          }
-
-          // Calculate how many batches this ingredient allows
-          const batchesForThisIngredient = Math.floor(availableQuantity / ingredient.quantity);
-          maxBatches = Math.min(maxBatches, batchesForThisIngredient);
-        }
-
-        // If we didn't find any ingredients or maxBatches is still infinite, set to 0
-        if (maxBatches === Number.MAX_SAFE_INTEGER || maxBatches < 0) {
-          maxBatches = 0;
-        }
+      if (maxBatches === Number.MAX_SAFE_INTEGER) {
+        maxBatches = 0;
       }
 
-      // Create a recipe analysis object that matches the frontend's expected structure
-      const recipeData = {
+      results.push({
         recipeId: recipe.id,
         recipeName: recipe.name,
         category: recipe.category?.name || 'Uncategorized',
         yieldQuantity: recipe.yieldQuantity || 0,
         yieldUnit: recipe.yieldUnit || '',
         canMake: canMake,
-        maxBatches: maxBatches,
-        emoji: recipe.emoji || '🍞', // Include emoji in response
+        maxBatches: canMake ? maxBatches : 0,
+        emoji: recipe.emoji || '🍞',
         difficulty: recipe.difficulty || 'MEDIUM',
         prepTime: recipe.prepTime,
         cookTime: recipe.cookTime,
         description: recipe.description,
-        missingIngredients: missingIngredients.map(ing => ({
-          name: ing.name,
-          needed: ing.required,
-          available: ing.available,
-          shortage: ing.shortage,
-          reason: ing.reason // Add reason field for frontend
-        }))
-      };
-
-      if (canMake) {
-        canMakeRecipes.push(recipeData);
-      } else {
-        cannotMakeRecipes.push(recipeData);
-      }
+        missingIngredients: missingIngredients
+      });
     }
 
-    // Combine the recipes into a single flat array as expected by the frontend
-    const allRecipes = [...canMakeRecipes, ...cannotMakeRecipes];
+    const canMakeCount = results.filter(r => r.canMake).length;
+    
+    console.log(`Analysis complete: Can make ${canMakeCount} out of ${recipes.length} recipes`);
 
-    console.log(`Analysis complete: Can make ${canMakeRecipes.length} out of ${recipes.length} recipes`);
-
-    // Return the analysis in the format expected by the frontend
     res.json({
       success: true,
       data: {
-        canMakeCount: canMakeRecipes.length,
+        canMakeCount: canMakeCount,
         totalRecipes: recipes.length,
-        recipes: allRecipes
+        recipes: results
       }
     });
   } catch (error: any) {
     console.error('❌ Error in "What can I make" analysis:', error);
-    console.error('Error details:', error.message);
-    if (error.stack) {
-      console.error('Stack trace:', error.stack);
-    }
     res.status(500).json({
       success: false,
-      error: 'Failed to analyze recipes'
+      message: 'Failed to analyze recipes',
+      error: error.message
     });
   }
 };
