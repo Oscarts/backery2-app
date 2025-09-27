@@ -17,8 +17,7 @@ async function testInventoryIntegration() {
             include: {
                 ingredients: {
                     include: {
-                        rawMaterial: true,
-                        intermediateProduct: true
+                        rawMaterial: true
                     }
                 }
             }

@@ -274,10 +274,12 @@ A comprehensive dialog for customizing production workflows with the following f
 
 Updated recipe selection dialogs now include:
 
-- **Expiration Warnings**: Clear visual indicators for expired ingredients
-- **Contamination Alerts**: Specific messaging for contaminated materials
-- **Detailed Error States**: Comprehensive ingredient status reporting
-- **Step Customization Access**: Button to open production steps dialog
+**Ingredient Selection:** Only raw materials and finished products can be selected as ingredients. Intermediate products are no longer supported.
+
+**Expiration Warnings**: Clear visual indicators for expired ingredients
+**Contamination Alerts**: Specific messaging for contaminated materials
+**Detailed Error States**: Comprehensive ingredient status reporting
+**Step Customization Access**: Button to open production steps dialog
 
 ##### Material Breakdown Dialog (New - September 2025)
 

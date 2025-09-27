@@ -39,7 +39,7 @@ async function testIngredientAvailabilityFix() {
             console.log(`   📋 Recipe "${recipe.name}" has ${recipe.ingredients?.length || 0} ingredients`);
             if (recipe.ingredients) {
                 recipe.ingredients.forEach(ing => {
-                    const materialName = ing.rawMaterial?.name || ing.intermediateProduct?.name || 'Unknown';
+                    const materialName = ing.rawMaterial?.name || ing.finishedProduct?.name || 'Unknown';
                     console.log(`      - ${ing.quantity} ${ing.unit} of ${materialName}`);
                 });
             }

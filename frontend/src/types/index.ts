@@ -27,7 +27,6 @@ export interface Category {
 
 export enum CategoryType {
   RAW_MATERIAL = 'RAW_MATERIAL',
-  INTERMEDIATE = 'INTERMEDIATE',
   FINISHED_PRODUCT = 'FINISHED_PRODUCT',
   RECIPE = 'RECIPE'
 }

@@ -75,7 +75,7 @@ const RecipeSelectionDialog: React.FC<RecipeSelectionDialogProps> = ({
                     category: {
                         id: 'unknown',
                         name: recipeAnalysis.category,
-                        type: 'INTERMEDIATE' as const,
+                        type: 'RECIPE' as const,
                         createdAt: new Date().toISOString()
                     },
                     yieldQuantity: recipeAnalysis.yieldQuantity,

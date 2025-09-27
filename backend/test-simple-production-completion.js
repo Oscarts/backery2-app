@@ -150,8 +150,7 @@ async function testSimpleProductionCompletion() {
             include: {
                 ingredients: {
                     include: {
-                        rawMaterial: true,
-                        intermediateProduct: true
+                        rawMaterial: true
                     }
                 }
             }

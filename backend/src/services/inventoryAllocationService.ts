@@ -11,7 +11,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 export interface MaterialAllocation {
-  materialType: 'RAW_MATERIAL' | 'INTERMEDIATE_PRODUCT';
+  materialType: 'RAW_MATERIAL' | 'FINISHED_PRODUCT';
   materialId: string;
   materialName: string;
   materialSku: string;
@@ -44,7 +44,7 @@ export class InventoryAllocationService {
           ingredients: {
             include: {
               rawMaterial: true,
-              intermediateProduct: true
+              finishedProduct: true
             }
           }
         }
@@ -68,10 +68,10 @@ export class InventoryAllocationService {
             ingredient.unit
           );
           allocations.push(allocation);
-        } else if (ingredient.intermediateProduct) {
-          const allocation = await this.allocateIntermediateProduct(
+        } else if (ingredient.finishedProduct) {
+          const allocation = await this.allocateFinishedProduct(
             productionRunId,
-            ingredient.intermediateProduct,
+            ingredient.finishedProduct,
             quantityNeeded,
             ingredient.unit
           );
@@ -147,9 +147,9 @@ export class InventoryAllocationService {
   }
 
   /**
-   * Allocate intermediate product for production
+   * Allocate finished product for production
    */
-  private async allocateIntermediateProduct(
+  private async allocateFinishedProduct(
     productionRunId: string,
     material: any,
     quantityNeeded: number,
@@ -161,24 +161,24 @@ export class InventoryAllocationService {
     }
 
     // Update reserved quantity
-    await prisma.intermediateProduct.update({
+    await prisma.finishedProduct.update({
       where: { id: material.id },
       data: {
         reservedQuantity: material.reservedQuantity + quantityNeeded
       }
     });
 
-    const unitCost = material.costPerUnit || 2.0; // Default cost for intermediate products
+    const unitCost = material.costToProduce || 2.0; // Use cost to produce for finished products
     const totalCost = quantityNeeded * unitCost;
 
     // Create allocation record
     const allocation = await prisma.productionAllocation.create({
       data: {
         productionRunId,
-        materialType: 'INTERMEDIATE_PRODUCT',
+        materialType: 'FINISHED_PRODUCT',
         materialId: material.id,
         materialName: material.name,
-        materialSku: `IP-${material.id.substring(0, 8)}`, // Generate SKU from ID if not available
+        materialSku: material.sku, // Use the finished product SKU
         materialBatchNumber: material.batchNumber || 'NO-BATCH',
         quantityAllocated: quantityNeeded,
         unit,
@@ -191,7 +191,7 @@ export class InventoryAllocationService {
     console.log(`🏭 Allocated ${quantityNeeded} ${unit} of ${material.name} (Batch: ${material.batchNumber})`);
 
     return {
-      materialType: 'INTERMEDIATE_PRODUCT',
+  materialType: 'FINISHED_PRODUCT',
       materialId: material.id,
       materialName: material.name,
       materialSku: allocation.materialSku || 'N/A',
@@ -236,8 +236,8 @@ export class InventoryAllocationService {
                 reservedQuantity: { decrement: Math.min(allocation.quantityAllocated, consumption.quantityConsumed) }
               }
             });
-          } else if (allocation.materialType === 'INTERMEDIATE_PRODUCT') {
-            await prisma.intermediateProduct.update({
+          } else if (allocation.materialType === 'FINISHED_PRODUCT') {
+            await prisma.finishedProduct.update({
               where: { id: allocation.materialId },
               data: {
                 quantity: { decrement: consumption.quantityConsumed },
@@ -325,8 +325,8 @@ export class InventoryAllocationService {
               reservedQuantity: { decrement: allocation.quantityAllocated }
             }
           });
-        } else if (allocation.materialType === 'INTERMEDIATE_PRODUCT') {
-          await prisma.intermediateProduct.update({
+        } else if (allocation.materialType === 'FINISHED_PRODUCT') {
+          await prisma.finishedProduct.update({
             where: { id: allocation.materialId },
             data: {
               reservedQuantity: { decrement: allocation.quantityAllocated }
@@ -334,12 +334,13 @@ export class InventoryAllocationService {
           });
         }
 
-        // Mark allocation as released
+        // Mark allocation as released and set quantityReleased
         await prisma.productionAllocation.update({
           where: { id: allocation.id },
           data: {
             status: 'RELEASED',
-            releasedAt: new Date()
+            releasedAt: new Date(),
+            quantityReleased: allocation.quantityAllocated
           }
         });
       }

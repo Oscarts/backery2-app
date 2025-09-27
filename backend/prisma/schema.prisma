@@ -27,7 +27,7 @@ model Category {
   description          String?
   createdAt            DateTime              @default(now())
   finishedProducts     FinishedProduct[]
-  intermediateProducts IntermediateProduct[]
+  // intermediateProducts removed
   rawMaterials         RawMaterial[]
   recipes              Recipe[]
 
@@ -55,7 +55,7 @@ model StorageLocation {
   capacity             String?
   createdAt            DateTime              @default(now())
   finishedProducts     FinishedProduct[]
-  intermediateProducts IntermediateProduct[]
+  // intermediateProducts removed
   rawMaterials         RawMaterial[]
 
   @@map("storage_locations")
@@ -71,7 +71,7 @@ model QualityStatus {
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
   rawMaterials         RawMaterial[]
-  intermediateProducts IntermediateProduct[]
+  // intermediateProducts removed
   finishedProducts     FinishedProduct[]
 
   @@map("quality_statuses")
@@ -118,33 +118,6 @@ model RawMaterial {
   @@map("raw_materials")
 }
 
-model IntermediateProduct {
-  id                String                    @id @default(cuid())
-  name              String
-  description       String
-  categoryId        String?
-  batchNumber       String                    @unique
-  productionDate    DateTime
-  expirationDate    DateTime
-  quantity          Float
-  unit              String
-  storageLocationId String
-  status            IntermediateProductStatus @default(IN_PRODUCTION)
-  contaminated      Boolean                   @default(false)
-  qualityStatusId   String?
-  recipeId          String?
-  costPerUnit       Float?                    // Cost per unit for calculations
-  reservedQuantity  Float                     @default(0) // Reserved quantity for production
-  createdAt         DateTime                  @default(now())
-  updatedAt         DateTime                  @updatedAt
-  category          Category?                 @relation(fields: [categoryId], references: [id])
-  recipe            Recipe?                   @relation(fields: [recipeId], references: [id])
-  storageLocation   StorageLocation           @relation(fields: [storageLocationId], references: [id])
-  qualityStatus     QualityStatus?            @relation(fields: [qualityStatusId], references: [id])
-  recipeIngredients RecipeIngredient[]
-
-  @@map("intermediate_products")
-}
 
 model FinishedProduct {
   id                String           @id @default(cuid())
@@ -165,7 +138,7 @@ model FinishedProduct {
   storageLocationId String?
   qualityStatusId   String?
   productionRunId   String?          @map("production_run_id")
-  status            IntermediateProductStatus @default(IN_PRODUCTION)
+  status            ProductionStatus @default(IN_PROGRESS)
   isContaminated    Boolean          @default(false)
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
@@ -173,6 +146,7 @@ model FinishedProduct {
   storageLocation   StorageLocation? @relation(fields: [storageLocationId], references: [id])
   qualityStatus     QualityStatus?   @relation(fields: [qualityStatusId], references: [id])
   productionRun     ProductionRun?   @relation(fields: [productionRunId], references: [id])
+  recipeIngredients RecipeIngredient[]
 
   @@map("finished_products")
 }
@@ -199,7 +173,7 @@ model Recipe {
   
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
-  intermediateProducts IntermediateProduct[]
+    // intermediateProducts removed
   category             Category?             @relation(fields: [categoryId], references: [id])
   ingredients          RecipeIngredient[]
   productionRuns       ProductionRun[]
@@ -211,14 +185,14 @@ model RecipeIngredient {
   id                    String               @id @default(cuid())
   recipeId              String
   rawMaterialId         String?
-  intermediateProductId String?
+    finishedProductId    String?
   quantity              Float
   unit                  String
   notes                 String?
   createdAt             DateTime             @default(now())
   recipe                Recipe               @relation(fields: [recipeId], references: [id], onDelete: Cascade)
   rawMaterial           RawMaterial?         @relation(fields: [rawMaterialId], references: [id])
-  intermediateProduct   IntermediateProduct? @relation(fields: [intermediateProductId], references: [id])
+    finishedProduct      FinishedProduct?     @relation(fields: [finishedProductId], references: [id])
 
   @@map("recipe_ingredients")
 }
@@ -287,6 +261,7 @@ model ProductionAllocation {
   materialSku       String?             @map("material_sku")
   materialBatchNumber String?           @map("material_batch_number")
   quantityAllocated Float               @map("quantity_allocated")
+  quantityReleased  Float?              @map("quantity_released")
   quantityConsumed  Float?              @map("quantity_consumed")
   unit              String
   unitCost          Float?              @map("unit_cost")
@@ -313,17 +288,12 @@ enum UserRole {
 
 enum CategoryType {
   RAW_MATERIAL
-  INTERMEDIATE
+  // INTERMEDIATE removed
   FINISHED_PRODUCT
   RECIPE
 }
 
-enum IntermediateProductStatus {
-  IN_PRODUCTION
-  COMPLETED
-  ON_HOLD
-  DISCARDED
-}
+// IntermediateProductStatus enum removed
 
 enum RecipeDifficulty {
   EASY

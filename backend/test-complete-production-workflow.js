@@ -21,7 +21,7 @@ async function testCompleteProductionWorkflow() {
                 ingredients: {
                     include: {
                         rawMaterial: true,
-                        intermediateProduct: true
+                        finishedProduct: true
                     }
                 }
             }
@@ -35,7 +35,7 @@ async function testCompleteProductionWorkflow() {
         console.log(`📋 Using recipe: ${recipe.name}`);
         console.log(`🥘 Ingredients: ${recipe.ingredients.length}`);
         recipe.ingredients.forEach(ing => {
-            const material = ing.rawMaterial || ing.intermediateProduct;
+            const material = ing.rawMaterial || ing.finishedProduct;
             console.log(`   - ${material?.name}: ${ing.quantity} ${ing.unit}`);
         });
 

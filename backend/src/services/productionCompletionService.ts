@@ -2,7 +2,7 @@
 // Handles creating finished products when production runs are completed
 
 import { PrismaClient } from '@prisma/client';
-import { InventoryAllocationService } from './inventoryAllocationService';
+import { InventoryAllocationService } from './inventoryAllocationService.js';
 
 const prisma = new PrismaClient();
 const inventoryAllocationService = new InventoryAllocationService();
@@ -176,7 +176,7 @@ export class ProductionCompletionService {
                     ingredients: {
                         include: {
                             rawMaterial: true,
-                            intermediateProduct: true
+                            finishedProduct: true
                         }
                     }
                 }
@@ -193,9 +193,9 @@ export class ProductionCompletionService {
 
                 if (ingredient.rawMaterial) {
                     totalCost += requiredQuantity * (ingredient.rawMaterial.unitPrice || 0);
-                } else if (ingredient.intermediateProduct) {
-                    // For intermediate products, use their cost per unit or default
-                    totalCost += requiredQuantity * (ingredient.intermediateProduct.costPerUnit || 2.0);
+                } else if (ingredient.finishedProduct) {
+                    // For finished products, use their cost to produce or default
+                    totalCost += requiredQuantity * (ingredient.finishedProduct.costToProduce || 2.0);
                 }
             }
 

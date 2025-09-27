@@ -4,7 +4,6 @@ import { Box } from '@mui/material';
 // Import pages
 import Dashboard from './pages/Dashboard';
 import RawMaterials from './pages/RawMaterials';
-import IntermediateProducts from './pages/IntermediateProducts';
 import FinishedProducts from './pages/FinishedProducts';
 import Recipes from './pages/Recipes';
 import Production from './pages/Production';
@@ -33,7 +32,6 @@ function App() {
         >
           <Route index element={<Dashboard />} />
           <Route path="raw-materials" element={<RawMaterials />} />
-          <Route path="intermediate-products" element={<IntermediateProducts />} />
           <Route path="finished-products" element={<FinishedProducts />} />
           <Route path="recipes" element={<Recipes />} />
           <Route path="production" element={<Production />} />

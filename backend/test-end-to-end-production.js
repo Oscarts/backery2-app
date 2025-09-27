@@ -15,8 +15,7 @@ async function testEndToEndProductionWorkflow() {
             include: {
                 ingredients: {
                     include: {
-                        rawMaterial: true,
-                        intermediateProduct: true
+                        rawMaterial: true
                     }
                 }
             }

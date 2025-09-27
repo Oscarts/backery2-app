@@ -157,8 +157,8 @@ interface MaterialAllocation {
 
 **Documentation Updates:**
 
-- `docs/api-reference.md` - Updated with MaterialBreakdown response format
-- `docs/ui-guidelines.md` - Added Material Breakdown Dialog pattern guidelines
+ - `docs/api-reference.md` - Updated with MaterialBreakdown response format and new recipe ingredient rules (raw materials and finished products only)
+ - `docs/ui-guidelines.md` - Updated Material Breakdown Dialog pattern guidelines to reflect new ingredient rules
 
 ### 🔧 Phase 8: Production Completion & Indicator Fixes (September 2025)
 

@@ -14,52 +14,75 @@ paths:
           description: OK
           content:
             application/json:
-              schema:
+              RawMaterial:
                 type: object
                 properties:
-                  status:
+                  id:
                     type: string
-                    example: OK
-                  timestamp:
+                  name:
+                    type: string
+                  sku:
+                    type: string
+                  categoryId:
+                    type: string
+                  supplierId:
+                    type: string
+                  unitId:
+                    type: string
+                  currentStock:
+                    type: number
+                    format: float
+                  minimumStock:
+                    type: number
+                    format: float
+                  maximumStock:
+                    type: number
+                    format: float
+                  costPerUnit:
+                    type: number
+                    format: float
+                  qualityStatus:
+                    type: string
+                  expirationDate:
                     type: string
                     format: date-time
-  /raw-materials:
-    get:
-      summary: List raw materials
-      parameters:
-        - in: query
-          name: categoryId
-          schema:
-            type: string
-        - in: query
-          name: supplierId
-          schema:
-            type: string
-        - in: query
-          name: contaminated
-          schema:
-            type: boolean
-      responses:
-        '200':
-          description: List of raw materials
-    post:
-      summary: Create raw material
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RawMaterialCreate'
-      responses:
-        '201':
-          description: Created
-  /raw-materials/{id}:
-    put:
-      summary: Update raw material
-      parameters:
-        - in: path
-          name: id
-          required: true
+                  storageLocationId:
+                    type: string
+                  isContaminated:
+                    type: boolean
+                  contaminationReason:
+                    type: string
+                  batchNumber:
+                    type: string
+                  createdAt:
+                    type: string
+                    format: date-time
+                  updatedAt:
+                    type: string
+                    format: date-time
+
+              RecipeIngredient:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  rawMaterialId:
+                    type: string
+                  rawMaterial:
+                    $ref: '#/components/schemas/RawMaterial'
+                  finishedProductId:
+                    type: string
+                  finishedProduct:
+                    $ref: '#/components/schemas/FinishedProduct'
+                  quantity:
+                    type: number
+                    format: float
+                  unitId:
+                    type: string
+                  unit:
+                    $ref: '#/components/schemas/Unit'
+                  notes:
+                    type: string
           schema:
             type: string
       requestBody:
@@ -84,38 +107,29 @@ paths:
           description: Deleted
 components:
   schemas:
-    RawMaterial:
+    RecipeIngredient:
       type: object
       properties:
         id:
           type: string
-        name:
+        rawMaterialId:
           type: string
-        sku:
+        rawMaterial:
+          $ref: '#/components/schemas/RawMaterial'
+        finishedProductId:
           type: string
-        categoryId:
-          type: string
-        supplierId:
-          type: string
+        finishedProduct:
+          $ref: '#/components/schemas/FinishedProduct'
+        quantity:
+          type: number
+          format: float
         unitId:
           type: string
-        currentStock:
-          type: number
-          format: float
-        minimumStock:
-          type: number
-          format: float
-        maximumStock:
-          type: number
-          format: float
-        costPerUnit:
-          type: number
-          format: float
-        qualityStatus:
+        unit:
+          $ref: '#/components/schemas/Unit'
+        notes:
           type: string
-        expirationDate:
-          type: string
-          format: date-time
+      # Duplicate RawMaterial schema removed
         storageLocationId:
           type: string
         isContaminated:

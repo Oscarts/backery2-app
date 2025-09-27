@@ -295,6 +295,8 @@ Get all recipes with ingredients.
           "id": "ing_123",
           "rawMaterialId": "rm_flour",
           "rawMaterial": { "name": "Flour" },
+          "finishedProductId": "fp_001",
+          "finishedProduct": { "name": "Chocolate Base" },
           "quantity": 2.5,
           "unitId": "unit_cup",
           "unit": { "name": "Cup", "symbol": "cup" },
@@ -329,6 +331,12 @@ Create a new recipe.
       "quantity": 2.0,
       "unitId": "unit_cup",
       "notes": "Cake flour preferred"
+    },
+    {
+      "finishedProductId": "fp_001",
+      "quantity": 1.0,
+      "unitId": "unit_piece",
+      "notes": "Use pre-made chocolate base"
     }
   ]
 }

@@ -57,7 +57,6 @@ import {
   Recipe,
   Category,
   RawMaterial,
-  IntermediateProduct,
   CreateRecipeData,
   WhatCanIMakeAnalysis,
   Unit
@@ -66,7 +65,6 @@ import {
   recipesApi,
   categoriesApi,
   rawMaterialsApi,
-  intermediateProductsApi,
   unitsApi
 } from '../services/realApi';
 // We removed the formatCurrency import since we're using toFixed instead
@@ -138,7 +136,7 @@ const Recipes: React.FC = () => {
     isActive: true
   });
   const [ingredientForm, setIngredientForm] = useState({
-    type: 'raw', // 'raw' or 'intermediate'
+    type: 'raw', // Only raw materials supported
     itemId: '',
     quantity: 0,
     unit: '',
@@ -161,11 +159,6 @@ const Recipes: React.FC = () => {
   const { data: rawMaterialsResponse } = useQuery({
     queryKey: ['raw-materials'],
     queryFn: () => rawMaterialsApi.getAll()
-  });
-
-  const { data: intermediateProductsResponse } = useQuery({
-    queryKey: ['intermediate-products'],
-    queryFn: () => intermediateProductsApi.getAll()
   });
 
   const { data: unitsResponse } = useQuery({
@@ -278,7 +271,6 @@ const Recipes: React.FC = () => {
   const recipes: Recipe[] = recipesResponse?.data || [];
   const categories: Category[] = categoriesResponse?.data || [];
   const rawMaterials: RawMaterial[] = rawMaterialsResponse?.data || [];
-  const intermediateProducts: IntermediateProduct[] = intermediateProductsResponse?.data || [];
   const units: Unit[] = unitsResponse?.data || [];
 
   // Handle special case responses
@@ -427,7 +419,7 @@ const Recipes: React.FC = () => {
     // Now we only check for itemId and quantity since unit is automatically set
     if (ingredientForm.itemId && ingredientForm.quantity > 0) {
       const newIngredient = {
-        [ingredientForm.type === 'raw' ? 'rawMaterialId' : 'intermediateProductId']: ingredientForm.itemId,
+        rawMaterialId: ingredientForm.itemId,
         quantity: ingredientForm.quantity,
         unit: ingredientForm.unit, // Unit is now automatically set when an item is selected
         notes: ingredientForm.notes
@@ -459,9 +451,6 @@ const Recipes: React.FC = () => {
     if (ingredient.rawMaterialId) {
       const rawMaterial = rawMaterials.find(rm => rm.id === ingredient.rawMaterialId);
       return rawMaterial?.name || 'Unknown Raw Material';
-    } else if (ingredient.intermediateProductId) {
-      const intermediate = intermediateProducts.find(ip => ip.id === ingredient.intermediateProductId);
-      return intermediate?.name || 'Unknown Intermediate Product';
     }
     return 'Unknown Ingredient';
   };
@@ -1303,47 +1292,21 @@ const Recipes: React.FC = () => {
                   Add New Ingredient
                 </Typography>
                 <Grid container spacing={2} sx={{ mb: 2 }}>
-                  <Grid item xs={3}>
+                  <Grid item xs={4}>
                     <FormControl fullWidth>
-                      <InputLabel>Type</InputLabel>
-                      <Select
-                        value={ingredientForm.type}
-                        label="Type"
-                        onChange={(e) => setIngredientForm(prev => ({
-                          ...prev,
-                          type: e.target.value,
-                          itemId: ''
-                        }))}
-                      >
-                        <MenuItem value="raw">Raw Material</MenuItem>
-                        <MenuItem value="intermediate">Intermediate Product</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={3}>
-                    <FormControl fullWidth>
-                      <InputLabel shrink={!ingredientForm.itemId ? true : undefined}>Item</InputLabel>
+                      <InputLabel shrink={!ingredientForm.itemId ? true : undefined}>Raw Material</InputLabel>
                       <Select
                         value={ingredientForm.itemId}
-                        label="Item"
+                        label="Raw Material"
                         onChange={(e) => {
                           const itemId = e.target.value;
                           let unit = '';
 
-                          // If an item is selected, automatically set the unit based on the item type
+                          // If an item is selected, automatically set the unit based on the raw material
                           if (itemId) {
-                            if (ingredientForm.type === 'raw') {
-                              // Find the selected raw material
-                              const selectedRawMaterial = rawMaterials.find(item => item.id === itemId);
-                              if (selectedRawMaterial) {
-                                unit = selectedRawMaterial.unit;
-                              }
-                            } else {
-                              // Find the selected intermediate product
-                              const selectedIntermediateProduct = intermediateProducts.find(item => item.id === itemId);
-                              if (selectedIntermediateProduct) {
-                                unit = selectedIntermediateProduct.unit;
-                              }
+                            const selectedRawMaterial = rawMaterials.find(item => item.id === itemId);
+                            if (selectedRawMaterial) {
+                              unit = selectedRawMaterial.unit;
                             }
                           }
 
@@ -1356,20 +1319,13 @@ const Recipes: React.FC = () => {
                         displayEmpty
                       >
                         <MenuItem value="">
-                          <em>Select an item</em>
+                          <em>Select raw material</em>
                         </MenuItem>
-                        {ingredientForm.type === 'raw'
-                          ? rawMaterials.map((item) => (
-                            <MenuItem key={item.id} value={item.id}>
-                              {item.name} ({item.unit})
-                            </MenuItem>
-                          ))
-                          : intermediateProducts.map((item) => (
-                            <MenuItem key={item.id} value={item.id}>
-                              {item.name} ({item.unit})
-                            </MenuItem>
-                          ))
-                        }
+                        {rawMaterials.map((item) => (
+                          <MenuItem key={item.id} value={item.id}>
+                            {item.name} ({item.unit})
+                          </MenuItem>
+                        ))}
                       </Select>
                     </FormControl>
                   </Grid>

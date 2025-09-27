@@ -22,9 +22,18 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
-    Grid,
-    Alert,
-    Snackbar,
+    Grid    const getCategoryTypeName = (type: CategoryType) => {
+        switch (type) {
+            case CategoryType.RAW_MATERIAL:
+                return 'Raw Material';
+            case CategoryType.FINISHED_PRODUCT:
+                return 'Finished Product';
+            case CategoryType.RECIPE:
+                return 'Recipe';
+            default:
+                return type;
+        }
+    };   Snackbar,
     Tooltip,
     Tabs,
     Tab,
@@ -380,6 +389,8 @@ const Settings: React.FC = () => {
         switch (type) {
             case CategoryType.RAW_MATERIAL:
                 return 'Raw Material';
+            case CategoryType.INTERMEDIATE:
+                return 'Intermediate Product';
             case CategoryType.FINISHED_PRODUCT:
                 return 'Finished Product';
             case CategoryType.RECIPE:
@@ -393,6 +404,8 @@ const Settings: React.FC = () => {
         switch (type) {
             case CategoryType.RAW_MATERIAL:
                 return 'primary';
+            case CategoryType.INTERMEDIATE:
+                return 'secondary';
             case CategoryType.FINISHED_PRODUCT:
                 return 'success';
             case CategoryType.RECIPE:

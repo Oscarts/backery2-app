@@ -19,7 +19,6 @@ async function testContaminationApiEndpoint() {
       if (data.success && data.data) {
         console.log('✅ Contamination status API returned valid data');
         console.log(`Raw Materials with contamination: ${data.data.rawMaterials}`);
-        console.log(`Intermediate Products with contamination: ${data.data.intermediateProducts}`);
         console.log(`Finished Products with contamination: ${data.data.finishedProducts}`);
         console.log(`Total contaminated items: ${data.data.total}`);
 

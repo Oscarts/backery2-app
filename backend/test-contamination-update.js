@@ -41,24 +41,6 @@ async function testContaminationUpdate() {
         const rawMaterialId = rawMaterialRes.data.data.id;
         console.log(`✅ Created raw material with ID: ${rawMaterialId}`);
 
-        // Create a test intermediate product with contamination set to false
-        const intermediateProductRes = await api.post('/intermediate-products', {
-            name: 'Test Dough Update',
-            description: 'Test dough for contamination update',
-            categoryId: 'cmf3qfokb0004t0jjieeil2ym',  // Dough category
-            batchNumber: 'TEST-IP-CONT-UPDATE-' + Date.now(),
-            productionDate: new Date().toISOString(),
-            expirationDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-            quantity: 5,
-            unit: 'kg',
-            storageLocationId: 'cmf3qfokk000et0jjs4a9nq62',  // Production Area
-            status: 'IN_PRODUCTION'
-            // By default, contaminated is false
-        });
-
-        const intermediateProductId = intermediateProductRes.data.data.id;
-        console.log(`✅ Created intermediate product with ID: ${intermediateProductId}`);
-
         // Create a test finished product with contamination set to false
         const finishedProductRes = await api.post('/finished-products', {
             name: 'Test Bread Update',
@@ -86,11 +68,6 @@ async function testContaminationUpdate() {
             contaminated: true
         });
 
-        // Update intermediate product
-        const updateIntermediateProductRes = await api.put(`/intermediate-products/${intermediateProductId}`, {
-            contaminated: true
-        });
-
         // Update finished product
         const updateFinishedProductRes = await api.put(`/finished-products/${finishedProductId}`, {
             isContaminated: true
@@ -106,16 +83,6 @@ async function testContaminationUpdate() {
             '❌ Raw material contamination status was not updated correctly'
         );
         console.log('✅ Raw material contamination status updated successfully');
-
-        // Verify intermediate product update
-        const intermediateProductVerifyRes = await api.get(`/intermediate-products/${intermediateProductId}`);
-        const updatedIntermediateProduct = intermediateProductVerifyRes.data.data;
-        console.log(`Intermediate Product contamination status: ${updatedIntermediateProduct.contaminated}`);
-        console.assert(
-            updatedIntermediateProduct.contaminated === true,
-            '❌ Intermediate product contamination status was not updated correctly'
-        );
-        console.log('✅ Intermediate product contamination status updated successfully');
 
         // Verify finished product update
         const finishedProductVerifyRes = await api.get(`/finished-products/${finishedProductId}`);
@@ -135,11 +102,6 @@ async function testContaminationUpdate() {
             contaminated: false
         });
 
-        // Update intermediate product
-        await api.put(`/intermediate-products/${intermediateProductId}`, {
-            contaminated: false
-        });
-
         // Update finished product
         await api.put(`/finished-products/${finishedProductId}`, {
             isContaminated: false
@@ -156,16 +118,6 @@ async function testContaminationUpdate() {
         );
         console.log('✅ Raw material contamination status updated successfully');
 
-        // Verify intermediate product update
-        const intermediateProductVerifyRes2 = await api.get(`/intermediate-products/${intermediateProductId}`);
-        const updatedIntermediateProduct2 = intermediateProductVerifyRes2.data.data;
-        console.log(`Intermediate Product contamination status: ${updatedIntermediateProduct2.contaminated}`);
-        console.assert(
-            updatedIntermediateProduct2.contaminated === false,
-            '❌ Intermediate product contamination status was not updated correctly'
-        );
-        console.log('✅ Intermediate product contamination status updated successfully');
-
         // Verify finished product update
         const finishedProductVerifyRes2 = await api.get(`/finished-products/${finishedProductId}`);
         const updatedFinishedProduct2 = finishedProductVerifyRes2.data.data;
@@ -179,7 +131,6 @@ async function testContaminationUpdate() {
         // Step 6: Clean up - delete test products
         console.log('\nCleaning up test data...');
         await api.delete(`/raw-materials/${rawMaterialId}`);
-        await api.delete(`/intermediate-products/${intermediateProductId}`);
         await api.delete(`/finished-products/${finishedProductId}`);
         console.log('✅ Test data cleaned up');
 

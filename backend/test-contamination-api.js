@@ -80,26 +80,7 @@ async function testContaminationApi() {
 
     console.log('✅ Created raw material with contamination status:', rawMaterial.isContaminated);
 
-    // Test 3: Create intermediate product with contamination status
-    const intermediateProduct = await prisma.intermediateProduct.create({
-      data: {
-        name: 'Contamination Test Intermediate Product',
-        description: 'Testing contamination status',
-        categoryId: categories[0].id,
-        storageLocationId: locations[0].id,
-        batchNumber: 'INT-CONT-' + Date.now(),
-        productionDate: new Date(),
-        expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        quantity: 25,
-        unit: units[0].symbol,
-        status: 'COMPLETED',
-        contaminated: true, // Set as contaminated
-      }
-    });
-
-    console.log('✅ Created intermediate product with contamination status:', intermediateProduct.contaminated);
-
-    // Test 4: Create finished product with contamination status
+    // Test 3: Create finished product with contamination status
     const finishedProduct = await prisma.finishedProduct.create({
       data: {
         name: 'Contamination Test Finished Product',
@@ -125,16 +106,11 @@ async function testContaminationApi() {
       where: { id: rawMaterial.id }
     });
 
-    const intermediateProductGet = await prisma.intermediateProduct.findUnique({
-      where: { id: intermediateProduct.id }
-    });
-
     const finishedProductGet = await prisma.finishedProduct.findUnique({
       where: { id: finishedProduct.id }
     });
 
     console.log('✅ Verified raw material contamination status:', rawMaterialGet.isContaminated);
-    console.log('✅ Verified intermediate product contamination status:', intermediateProductGet.contaminated);
     console.log('✅ Verified finished product contamination status:', finishedProductGet.isContaminated);
 
     // Test 6: Do not clean up test data for testing purposes

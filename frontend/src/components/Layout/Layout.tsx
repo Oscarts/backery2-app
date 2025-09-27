@@ -22,7 +22,6 @@ import {
   Menu as MenuIcon,
   Dashboard as DashboardIcon,
   Inventory as InventoryIcon,
-  Kitchen as KitchenIcon,
   LocalDining as LocalDiningIcon,
   MenuBook as MenuBookIcon,
   Factory as FactoryIcon,
@@ -43,7 +42,6 @@ const drawerCollapsedWidth = 65; // Reduced from 73, enough width to show just i
 const menuItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
   { text: 'Raw Materials', icon: <InventoryIcon />, path: '/raw-materials' },
-  { text: 'Intermediate Products', icon: <KitchenIcon />, path: '/intermediate-products' },
   { text: 'Finished Products', icon: <LocalDiningIcon />, path: '/finished-products' },
   { text: 'Recipes', icon: <MenuBookIcon />, path: '/recipes' },
   { text: 'Production', icon: <FactoryIcon />, path: '/production' },
