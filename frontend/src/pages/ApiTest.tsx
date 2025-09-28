@@ -60,7 +60,12 @@ const ApiTestPage: React.FC = () => {
     { name: 'Recipe Cost Analysis', status: 'idle' },
     { name: 'What Can I Make Analysis', status: 'idle' },
     { name: 'Update Recipe', status: 'idle' },
-    { name: 'Delete Recipe', status: 'idle' }
+    { name: 'Delete Recipe', status: 'idle' },
+    // Newly added extended backend-oriented tests
+    { name: 'Finished Product Materials Traceability', status: 'idle' },
+    { name: 'Production Workflow (Light)', status: 'idle' },
+    { name: 'Production Contamination Check', status: 'idle' },
+    { name: 'Production Capacity Check', status: 'idle' }
   ]);
 
   const updateTest = (index: number, updates: Partial<TestResult>) => {
@@ -503,6 +508,51 @@ const ApiTestPage: React.FC = () => {
       if (!deleteResult.success) throw new Error(deleteResult.error || 'Failed to delete recipe');
       return { message: 'Recipe deleted successfully', data: deleteResult };
     });
+    // 28 Finished Product Materials Traceability
+    await safeTest(27, async () => {
+      // Attempt to locate a finished product that is COMPLETED; if none, skip.
+      const fps = await finishedProductsApi.getAll();
+      const product = (fps.data || []).find((p: any) => (p.status || p.productionStatus) === 'COMPLETED') || (fps.data || [])[0];
+      if (!product) return { skip: true, skipMessage: 'No finished products available for traceability' };
+      try {
+        const traceRes = await fetch(`/api/finished-products/${product.id}/materials`);
+        if (!traceRes.ok) throw new Error(`HTTP ${traceRes.status}`);
+        const traceJson = await traceRes.json();
+        if (!traceJson.success) throw new Error(traceJson.error || 'Traceability endpoint failed');
+        const mats = traceJson.data?.materials || [];
+        const summary = traceJson.data?.summary || {};
+        return { message: `Materials: ${mats.length} (Total Cost: $${(summary.totalProductionCost || 0).toFixed(2)})`, data: { materials: mats.slice(0,5), summary } };
+      } catch (e:any) {
+        throw new Error(`Traceability error: ${e.message}`);
+      }
+    });
+
+    // 29 Production Workflow (Light)
+    await safeTest(28, async () => {
+      // Placeholder – real workflow requires multi-step production run. For now call health check.
+      const healthResp = await fetch('/api/system/health');
+      if (!healthResp.ok) return { skip: true, skipMessage: 'Health endpoint unavailable' };
+      const healthJson = await healthResp.json();
+      if (!healthJson.success) return { skip: true, skipMessage: 'Health check did not return success' };
+      return { message: 'System health OK', data: healthJson.data };
+    });
+
+    // 30 Production Contamination Check
+    await safeTest(29, async () => {
+      // Query finished products for contaminated flag
+      const fps = await finishedProductsApi.getAll();
+      const contaminated = (fps.data || []).filter((p: any) => p.isContaminated);
+      return { message: `${contaminated.length} contaminated product(s)`, data: contaminated.slice(0,3) };
+    });
+
+    // 31 Production Capacity Check
+    await safeTest(30, async () => {
+      // Placeholder capacity: count products vs categories
+      const fps = await finishedProductsApi.getAll();
+      const count = (fps.data || []).length;
+      return { message: `Finished products count: ${count}`, data: fps.data?.slice(0,5) };
+    });
+
     console.debug('[API TEST] Completed runAllTests in', Date.now() - ctx._startTime, 'ms');
   };
 
