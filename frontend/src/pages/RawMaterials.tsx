@@ -58,11 +58,23 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { rawMaterialsApi, categoriesApi, storageLocationsApi, unitsApi, suppliersApi, qualityStatusApi } from '../services/realApi';
 import { RawMaterial, CategoryType, CreateRawMaterialData, UpdateRawMaterialData } from '../types';
-import { formatDate, formatQuantity, isExpired, isExpiringSoon, getDaysUntilExpiration } from '../utils/api';
+import { formatDate, isExpired, isExpiringSoon, getDaysUntilExpiration } from '../utils/api';
 
 const RawMaterials: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  // Prevent accidental display of SKU-like or timestamp-suffixed strings as units in quantity column
+  const cleanUnit = (unit: string | undefined | null, sku?: string | null): string => {
+    if (!unit) return '';
+    if (sku && unit === sku) return '';
+    // If contains a long digit sequence (likely timestamp) trim it off
+    if (/\d{10,}/.test(unit)) {
+      const trimmed = unit.replace(/[-_]?\d{10,}.*/, '');
+      return trimmed;
+    }
+    return unit;
+  };
 
   // View state
   const [viewMode, setViewMode] = useState<'list' | 'card'>(isMobile ? 'card' : 'list');
@@ -85,7 +97,7 @@ const RawMaterials: React.FC = () => {
 
   // Filter state
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchAttribute, setSearchAttribute] = useState<'all' | 'material' | 'batch' | 'supplier'>('all');
+  const [searchAttribute, setSearchAttribute] = useState<'all' | 'material' | 'sku' | 'batch' | 'supplier'>('all');
   const [expirationFilter, setExpirationFilter] = useState('');
   const [indicatorFilter, setIndicatorFilter] = useState<'all' | 'expiring_soon' | 'low_stock' | 'contaminated'>('all');
 
@@ -159,6 +171,9 @@ const RawMaterials: React.FC = () => {
       switch (searchAttribute) {
         case 'material':
           matchesSearch = material.name.toLowerCase().includes(term);
+          break;
+        case 'sku':
+          matchesSearch = (material as any).sku?.toLowerCase().includes(term);
           break;
         case 'batch':
           matchesSearch = material.batchNumber.toLowerCase().includes(term);
@@ -470,6 +485,7 @@ const RawMaterials: React.FC = () => {
                 >
                   <MenuItem value="all">All Attributes</MenuItem>
                   <MenuItem value="material">Material</MenuItem>
+                  <MenuItem value="sku">SKU</MenuItem>
                   <MenuItem value="batch">Batch</MenuItem>
                   <MenuItem value="supplier">Supplier</MenuItem>
                 </Select>
@@ -528,6 +544,7 @@ const RawMaterials: React.FC = () => {
                 >
                   <MenuItem value="all">All Attributes</MenuItem>
                   <MenuItem value="material">Material</MenuItem>
+                  <MenuItem value="sku">SKU</MenuItem>
                   <MenuItem value="batch">Batch</MenuItem>
                   <MenuItem value="supplier">Supplier</MenuItem>
                 </Select>
@@ -583,7 +600,7 @@ const RawMaterials: React.FC = () => {
               <TableHead>
                 <TableRow>
                   <TableCell width="20%">Material</TableCell>
-                  {!isMobile && <TableCell width="10%">Batch Number</TableCell>}
+                  {!isMobile && <TableCell width="12%">SKU/Batch</TableCell>}
                   {!isMobile && <TableCell width="15%">Supplier</TableCell>}
                   <TableCell width="10%" align="center">Quantity</TableCell>
                   {!isMobile && <TableCell width="10%" align="center">Price</TableCell>}
@@ -627,7 +644,14 @@ const RawMaterials: React.FC = () => {
                             </Typography>
                           </Box>
                         </TableCell>
-                        {!isMobile && <TableCell>{material.batchNumber}</TableCell>}
+                        {!isMobile && (
+                          <TableCell>
+                            <Box>
+                              <Typography variant="body2">{material.sku || '-'}</Typography>
+                              <Typography variant="caption" color="text.secondary">{material.batchNumber}</Typography>
+                            </Box>
+                          </TableCell>
+                        )}
                         {!isMobile && <TableCell>{material.supplier?.name || 'Unknown'}</TableCell>}
                         <TableCell align="center">
                           <Typography
@@ -637,13 +661,8 @@ const RawMaterials: React.FC = () => {
                               fontWeight: isLowStock ? 'medium' : 'regular',
                             }}
                           >
-                            {formatQuantity(material.quantity, material.unit)}
+                            {material.quantity.toLocaleString()} {cleanUnit((material as any).unitDetails?.symbol || material.unit, material.sku)}
                           </Typography>
-                          {!isMobile && (
-                            <Typography variant="caption" color="text.secondary">
-                              Reorder: {formatQuantity(material.reorderLevel, material.unit)}
-                            </Typography>
-                          )}
                         </TableCell>
                         {!isMobile && (
                           <TableCell align="center">
@@ -811,7 +830,7 @@ const RawMaterials: React.FC = () => {
                                 gap: 0.5
                               }}
                             >
-                              {formatQuantity(material.quantity, material.unit)}
+                              {material.quantity.toLocaleString()} {cleanUnit((material as any).unitDetails?.symbol || material.unit, material.sku)}
                               {isLowStock && (
                                 <Tooltip title="Low stock">
                                   <WarningIcon color="error" fontSize="small" sx={{ fontSize: '1rem' }} />
@@ -1085,6 +1104,15 @@ const RawMaterialForm: React.FC<RawMaterialFormProps> = ({
       ...prev,
       [field]: ['quantity', 'costPerUnit', 'reorderLevel'].includes(field) ? parseFloat(value) || 0 : value,
     }));
+    // Auto-suggest SKU when name changes and user hasn't manually edited SKU yet
+    if (field === 'name' && !material) {
+      const suggested = value
+        .trim()
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      setFormData(prev => ({ ...prev, sku: prev.sku ? prev.sku : suggested }));
+    }
   };
 
   return (
@@ -1102,6 +1130,15 @@ const RawMaterialForm: React.FC<RawMaterialFormProps> = ({
                 label="Name"
                 value={formData.name}
                 onChange={handleChange('name')}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="SKU"
+                helperText="Editable – defaults from name; must remain consistent for same name"
+                value={formData.sku || ''}
+                onChange={handleChange('sku')}
               />
             </Grid>
             <Grid item xs={12} sm={6}>

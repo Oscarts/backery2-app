@@ -2,13 +2,13 @@
 
 ## 🏗️ System Overview
 
-```
+```text
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Frontend      │    │    Backend      │    │   Database      │
 │   (React TS)    │◄──►│  (Express TS)   │◄──►│  (PostgreSQL)   │
 │   Material-UI   │    │   Prisma ORM    │    │   with Prisma   │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
-```
+```text
 
 ## 🔧 Technology Stack
 
@@ -86,7 +86,7 @@ RawMaterial {
   id: String (Primary Key)
   name: String
   description: String?
-  sku: String (Unique)
+  sku: String (Stable, reused for all raw materials sharing the same name; not globally unique)
   categoryId: String (Foreign Key)
   supplierId: String (Foreign Key)
   unitId: String (Foreign Key)
@@ -105,33 +105,6 @@ RawMaterial {
 }
 ```
 
-#### Intermediate Products
-
-```sql
-IntermediateProduct {
-  id: String (Primary Key)
-  name: String
-  description: String?
-  sku: String (Unique)
-  categoryId: String (Foreign Key)
-  unitId: String (Foreign Key)
-  currentStock: Decimal
-  minimumStock: Decimal
-  maximumStock: Decimal
-  costPerUnit: Decimal
-  qualityStatus: String
-  productionDate: DateTime?
-  expirationDate: DateTime?
-  storageLocationId: String (Foreign Key)
-  isContaminated: Boolean
-  contaminationReason: String?
-  batchNumber: String?
-  recipeId: String? (Foreign Key)
-  createdAt: DateTime
-  updatedAt: DateTime
-}
-```
-
 #### Finished Products
 
 ```sql
@@ -139,7 +112,7 @@ FinishedProduct {
   id: String (Primary Key)
   name: String
   description: String?
-  sku: String (Unique)
+  sku: String (Stable, reused for all finished products sharing the same name; legacy uniqueness constraint may exist in older DBs)
   categoryId: String (Foreign Key)
   unitId: String (Foreign Key)
   currentStock: Decimal
@@ -267,34 +240,35 @@ QualityStatus {
 ```mermaid
 erDiagram
     User ||--o{ RawMaterial : "manages"
-    User ||--o{ IntermediateProduct : "manages"
+  %% IntermediateProduct deprecated
+  User ||--o{ IntermediateProduct : "manages (deprecated)"
     User ||--o{ FinishedProduct : "manages"
     User ||--o{ Recipe : "creates"
     
     Category ||--o{ RawMaterial : "categorizes"
-    Category ||--o{ IntermediateProduct : "categorizes"
+  Category ||--o{ IntermediateProduct : "categorizes (deprecated)"
     Category ||--o{ FinishedProduct : "categorizes"
     Category ||--o{ Recipe : "categorizes"
     
     Supplier ||--o{ RawMaterial : "supplies"
     
     StorageLocation ||--o{ RawMaterial : "stores"
-    StorageLocation ||--o{ IntermediateProduct : "stores"
+  StorageLocation ||--o{ IntermediateProduct : "stores (deprecated)"
     StorageLocation ||--o{ FinishedProduct : "stores"
     
     Unit ||--o{ RawMaterial : "measured_in"
-    Unit ||--o{ IntermediateProduct : "measured_in"
+  Unit ||--o{ IntermediateProduct : "measured_in (deprecated)"
     Unit ||--o{ FinishedProduct : "measured_in"
     Unit ||--o{ RecipeIngredient : "measured_in"
     
-    Recipe ||--o{ IntermediateProduct : "produces"
+  Recipe ||--o{ IntermediateProduct : "produces (deprecated)"
     Recipe ||--o{ FinishedProduct : "produces"
     Recipe ||--o{ RecipeIngredient : "contains"
     
     RawMaterial ||--o{ RecipeIngredient : "used_in"
     
     QualityStatus ||--o{ RawMaterial : "has_quality"
-    QualityStatus ||--o{ IntermediateProduct : "has_quality"
+  QualityStatus ||--o{ IntermediateProduct : "has_quality (deprecated)"
     QualityStatus ||--o{ FinishedProduct : "has_quality"
 ```
 

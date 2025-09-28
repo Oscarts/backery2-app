@@ -1132,7 +1132,7 @@ curl -X POST http://localhost:8000/api/raw-materials \
 - All IDs must be valid UUIDs or reference existing records
 - Stock values must be non-negative decimals
 - Dates must be valid ISO 8601 format
-- SKUs must be unique across their entity type
+- SKUs are stable per name: a raw material or finished product with the same name reuses the same SKU; uniqueness is not enforced globally.
 
 ### Specific Validations
 

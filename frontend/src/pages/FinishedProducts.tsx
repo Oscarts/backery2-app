@@ -61,7 +61,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { finishedProductsApi, categoriesApi, storageLocationsApi, unitsApi, qualityStatusApi } from '../services/realApi';
 import { FinishedProduct, CategoryType, CreateFinishedProductData, UpdateFinishedProductData, ProductStatus, MaterialBreakdown, MaterialAllocation, ApiResponse } from '../types';
-import { formatDate, formatQuantity, isExpired, isExpiringSoon, getDaysUntilExpiration, formatCurrency } from '../utils/api';
+import { formatDate, isExpired, isExpiringSoon, getDaysUntilExpiration, formatCurrency } from '../utils/api';
 
 // Status display helper functions
 
@@ -102,6 +102,16 @@ const getExpirationBadge = (expirationDate: string) => {
 const FinishedProducts: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  // Sanitize unit to avoid accidental SKU/timestamp strings leaking into quantity display
+  const cleanUnit = (unit: string | undefined | null, sku?: string | null): string => {
+    if (!unit) return '';
+    if (sku && unit === sku) return '';
+    if (/\d{10,}/.test(unit)) {
+      return unit.replace(/[-_]?\d{10,}.*/, '');
+    }
+    return unit;
+  };
 
   // View state
   const [viewMode, setViewMode] = useState<'list' | 'card'>(isMobile ? 'card' : 'list');
@@ -1100,7 +1110,7 @@ const FinishedProducts: React.FC = () => {
                                 borderColor: 'warning.main'
                               }}
                             >
-                              {formatQuantity(product.quantity, product.unit)}
+                              {product.quantity.toLocaleString()} {cleanUnit(product.unit, product.sku)}
                             </Typography>
                           )}
                         </Box>
@@ -1266,10 +1276,7 @@ const FinishedProducts: React.FC = () => {
                       subheader={
                         <Box sx={{ mt: 0.5 }}>
                           <Typography variant="caption" color="text.secondary" display="block">
-                            SKU: {product.sku}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary" display="block">
-                            Batch: {product.batchNumber}
+                            SKU: {product.sku} • Batch: {product.batchNumber}
                           </Typography>
                         </Box>
                       }
@@ -1309,7 +1316,7 @@ const FinishedProducts: React.FC = () => {
                               gap: 0.5
                             }}
                           >
-                            {formatQuantity(product.quantity, product.unit)}
+                            {product.quantity.toLocaleString()} {cleanUnit(product.unit, product.sku)}
                             {isLowStock && (
                               <Tooltip title="Low stock">
                                 <WarningIcon color="error" fontSize="small" sx={{ fontSize: '1rem' }} />

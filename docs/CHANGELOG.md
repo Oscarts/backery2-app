@@ -308,3 +308,29 @@ All notable changes to the Bakery Inventory Management System are documented her
 - Created detailed API testing troubleshooting guide
 - Added code guidelines compliance documentation
 - Updated deployment instructions
+
+## Unreleased (2025-09-28)
+
+### SKU & Inventory Consistency
+
+- Removed legacy uniqueness requirement for `finished_products.sku`; added migration to safely drop any existing unique index/constraint.
+- Implemented stable SKU reuse: raw materials and finished products sharing the same name inherit the same SKU (no per-batch suffix).
+- Added fallback logic in production completion to gracefully reuse an existing finished product when a residual uniqueness constraint is still present (pre-migration environments).
+
+### UI Adjustments
+
+- Consolidated SKU and Batch into a single `SKU/Batch` column for both Raw Materials and Finished Products list views.
+- Removed redundant SKU display beside material names and quantity cells (prevented visual duplication).
+- Sanitized quantity unit rendering to avoid accidental display of SKU/timestamp strings when a corrupted unit value is received.
+
+### Code & Docs
+
+- Added `cleanUnit` helper in Raw & Finished product pages to strip timestamp/sku-like artifacts from unit labels.
+- Updated `technical-architecture.md` to mark IntermediateProduct as deprecated and clarify SKU stability (non-unique globally, reused per name).
+- Updated `api-reference.md` validation rules to reflect the new SKU policy.
+- Added migration script: `20250928_drop_finished_product_sku_unique` for database alignment.
+
+### Follow-Up Recommendations
+
+- Consider backend unit whitelist validation to prevent malformed units reaching the UI.
+- Optional: Centralize `cleanUnit` in a shared util to reduce duplication.
