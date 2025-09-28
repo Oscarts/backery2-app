@@ -368,7 +368,7 @@ const ApiTestPage: React.FC = () => {
         }
       }
 
-      // Ensure a raw material exists
+      // Ensure at least one raw material exists
       let rawMaterials = (await rawMaterialsApi.getAll()).data || [];
       if (!rawMaterials.length) {
         const rmCategory = ctx.categories.find((c: any) => c.type === CategoryType.RAW_MATERIAL) || ctx.categories[0];
@@ -389,31 +389,69 @@ const ApiTestPage: React.FC = () => {
             reorderLevel: 2,
             storageLocationId: location.id
           });
-          if (tempRaw.data) {
-            rawMaterials = [tempRaw.data];
-          }
+          if (tempRaw.data) rawMaterials = [tempRaw.data];
         }
       }
       const rawMaterial = rawMaterials[0];
       if (!rawMaterial) return { skip: true, skipMessage: 'Unable to ensure raw material for recipe' };
 
+      // Ensure a finished product exists to allow mixed ingredient recipes (previous test may have deleted one)
+      let finishedList = (await finishedProductsApi.getAll()).data || [];
+      const FINISHED_KEY = (CategoryType as any)?.FINISHED_PRODUCT || 'FINISHED_PRODUCT';
+      if (!finishedList.length) {
+        let finishedCat = ctx.categories.find((c: any) => c.type === FINISHED_KEY);
+        if (!finishedCat) {
+          try {
+            const catRes = await categoriesApi.create({ name: 'Test Finished Auto', type: FINISHED_KEY, description: 'Auto-created for mixed recipe test' } as any);
+            if (catRes.data) {
+              finishedCat = catRes.data;
+              ctx.categories.push(catRes.data);
+            }
+          } catch (e) {
+            // ignore inability to create category
+          }
+        }
+        const unit = (ctx.units || []).find((u: any) => u.symbol === 'pcs') || (ctx.units || [])[0];
+        if (finishedCat && unit) {
+          const fpRes = await finishedProductsApi.create({
+            name: `Test FP Ingredient ${Date.now()}`,
+            sku: `FP-ING-${Date.now()}`,
+            categoryId: finishedCat.id,
+            batchNumber: `FPB-${Date.now()}`,
+            productionDate: new Date().toISOString().split('T')[0],
+            expirationDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            shelfLife: 14,
+            quantity: 25,
+            unit: unit.symbol || 'pcs',
+            salePrice: 9.99,
+            costToProduce: 4.5,
+            packagingInfo: 'Bag'
+          });
+          if (fpRes.data) finishedList = [fpRes.data];
+        }
+      }
+      const finishedProduct = finishedList[0];
+
+      const mixed = !!finishedProduct; // fallback to raw-only if no finished product available
       const testRecipe = {
-        name: `Test Recipe ${Date.now()}`,
-        description: 'Test recipe for API validation',
+        name: `Test ${mixed ? 'Mixed' : 'Raw'} Recipe ${Date.now()}`,
+        description: 'Test recipe for API validation (mixed ingredients)',
         yieldQuantity: 1,
         yieldUnit: 'kg',
         prepTime: 30,
         cookTime: 20,
         instructions: ['Mix ingredients', 'Bake until golden'],
         ingredients: [
-          { rawMaterialId: rawMaterial.id, quantity: 0.5, unit: rawMaterial.unit, notes: 'Test ingredient' }
+          { ingredientType: 'RAW', rawMaterialId: rawMaterial.id, quantity: 0.5, unit: rawMaterial.unit, notes: 'Raw ingredient' },
+          ...(mixed ? [{ ingredientType: 'FINISHED', finishedProductId: finishedProduct.id, quantity: 2, unit: finishedProduct.unit, notes: 'Finished product ingredient' }] : [])
         ]
-      };
+      } as any;
       const createResponse = await fetch('/api/recipes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(testRecipe) });
       const createResult = await createResponse.json();
       if (!createResult.success) throw new Error(createResult.error || 'Failed to create recipe');
       ctx.createdRecipeId = createResult.data.id;
-      return { message: `Recipe created ${createResult.data.name}`, data: createResult.data };
+      ctx.mixedRecipe = mixed;
+      return { message: `Recipe created ${createResult.data.name} (${mixed ? 'mixed' : 'raw-only'})`, data: createResult.data };
     });
 
     // 24 Recipe Cost Analysis
@@ -429,7 +467,10 @@ const ApiTestPage: React.FC = () => {
       if (!costResponse.ok) throw new Error(`API error: ${costResponse.status}`);
       const costResult = await costResponse.json();
       if (!costResult.success) throw new Error(costResult.error || 'Cost analysis failed');
-      return { message: `Cost: $${costResult.data?.totalCost?.toFixed(2) || '0.00'}`, data: costResult.data };
+      const ingredientCosts = costResult.data?.ingredientCosts || [];
+      const rawCount = ingredientCosts.filter((i: any) => i.rawMaterialId).length;
+      const finishedCount = ingredientCosts.filter((i: any) => i.finishedProductId).length;
+      return { message: `Cost: $${costResult.data?.totalCost?.toFixed(2) || '0.00'} (${rawCount} raw, ${finishedCount} finished)`, data: costResult.data };
     });
 
     // 25 What Can I Make
