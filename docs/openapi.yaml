@@ -1,8 +1,9 @@
 openapi: 3.0.3
 info:
   title: Bakery Inventory API
-  version: 0.1.0
-  description: Core endpoints for the bakery inventory system.
+  version: 0.2.0
+  description: >-
+    Core endpoints for the bakery inventory system. Intermediate Products feature removed; recipes now accept both raw materials and finished products as ingredients.
 servers:
   - url: http://localhost:8000/api
 paths:
@@ -14,88 +15,51 @@ paths:
           description: OK
           content:
             application/json:
-              RawMaterial:
+              schema:
                 type: object
                 properties:
-                  id:
+                  status:
                     type: string
-                  name:
-                    type: string
-                  sku:
-                    type: string
-                  categoryId:
-                    type: string
-                  supplierId:
-                    type: string
-                  unitId:
-                    type: string
-                  currentStock:
-                    type: number
-                    format: float
-                  minimumStock:
-                    type: number
-                    format: float
-                  maximumStock:
-                    type: number
-                    format: float
-                  costPerUnit:
-                    type: number
-                    format: float
-                  qualityStatus:
-                    type: string
-                  expirationDate:
+                  timestamp:
                     type: string
                     format: date-time
-                  storageLocationId:
+                  database:
                     type: string
-                  isContaminated:
+  /recipes:
+    get:
+      summary: List recipes
+      responses:
+        '200':
+          description: List of recipes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
                     type: boolean
-                  contaminationReason:
-                    type: string
-                  batchNumber:
-                    type: string
-                  createdAt:
-                    type: string
-                    format: date-time
-                  updatedAt:
-                    type: string
-                    format: date-time
-
-              RecipeIngredient:
-                type: object
-                properties:
-                  id:
-                    type: string
-                  rawMaterialId:
-                    type: string
-                  rawMaterial:
-                    $ref: '#/components/schemas/RawMaterial'
-                  finishedProductId:
-                    type: string
-                  finishedProduct:
-                    $ref: '#/components/schemas/FinishedProduct'
-                  quantity:
-                    type: number
-                    format: float
-                  unitId:
-                    type: string
-                  unit:
-                    $ref: '#/components/schemas/Unit'
-                  notes:
-                    type: string
-          schema:
-            type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Recipe'
+    post:
+      summary: Create recipe (raw and/or finished product ingredients)
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RawMaterialUpdate'
+              $ref: '#/components/schemas/RecipeCreate'
       responses:
-        '200':
-          description: Updated
-    delete:
-      summary: Delete raw material
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeResponse'
+  /recipes/{id}:
+    get:
+      summary: Get recipe by id
       parameters:
         - in: path
           name: id
@@ -103,73 +67,184 @@ paths:
           schema:
             type: string
       responses:
-        '204':
-          description: Deleted
+        '200':
+          description: Recipe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeResponse'
+        '404': { description: Not found }
+    put:
+      summary: Update recipe
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeUpdate'
+      responses:
+        '200': { description: Updated }
+    delete:
+      summary: Delete recipe
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200': { description: Deleted }
+  /recipes/{id}/cost:
+    get:
+      summary: Get recipe cost breakdown
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cost analysis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeCostResponse'
+        '404': { description: Not found }
+  /recipes/what-can-i-make:
+    get:
+      summary: Analyze producible recipes with current inventory
+      responses:
+        '200':
+          description: Production capability summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhatCanIMakeResponse'
 components:
   schemas:
+    Recipe:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        yieldQuantity: { type: number }
+        yieldUnit: { type: string }
+        prepTime: { type: integer, nullable: true }
+        cookTime: { type: integer, nullable: true }
+        instructions:
+          type: array
+          items: { type: string }
+        emoji: { type: string, nullable: true }
+        difficulty: { type: string, enum: [EASY, MEDIUM, HARD] }
+        estimatedTotalTime: { type: integer, nullable: true }
+        ingredients:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeIngredient'
     RecipeIngredient:
       type: object
+      description: One ingredient sourced from either a raw material OR a finished product (mutually exclusive IDs).
       properties:
-        id:
-          type: string
-        rawMaterialId:
-          type: string
-        rawMaterial:
-          $ref: '#/components/schemas/RawMaterial'
-        finishedProductId:
-          type: string
-        finishedProduct:
-          $ref: '#/components/schemas/FinishedProduct'
-        quantity:
-          type: number
-          format: float
-        unitId:
-          type: string
-        unit:
-          $ref: '#/components/schemas/Unit'
-        notes:
-          type: string
-      # Duplicate RawMaterial schema removed
-        storageLocationId:
-          type: string
-        isContaminated:
-          type: boolean
-        contaminationReason:
-          type: string
-        batchNumber:
-          type: string
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-    RawMaterialCreate:
+        id: { type: string }
+        rawMaterialId: { type: string, nullable: true }
+        finishedProductId: { type: string, nullable: true }
+        quantity: { type: number }
+        unit: { type: string }
+        notes: { type: string, nullable: true }
+      required: [quantity, unit]
+    RecipeIngredientInput:
       allOf:
-        - $ref: '#/components/schemas/RawMaterial'
-      required:
-        - name
-        - sku
-        - categoryId
-        - unitId
-        - currentStock
-        - costPerUnit
-    RawMaterialUpdate:
+        - $ref: '#/components/schemas/RecipeIngredient'
+      required: [quantity, unit]
+    RecipeCreate:
       type: object
       properties:
-        name:
-          type: string
-        description:
-          type: string
-        currentStock:
-          type: number
-          format: float
-        minimumStock:
-          type: number
-          format: float
-        maximumStock:
-          type: number
-          format: float
-        costPerUnit:
-          type: number
-          format: float
+        name: { type: string }
+        description: { type: string }
+        yieldQuantity: { type: number }
+        yieldUnit: { type: string }
+        prepTime: { type: integer, nullable: true }
+        cookTime: { type: integer, nullable: true }
+        instructions:
+          type: array
+          items: { type: string }
+        ingredients:
+          type: array
+          items: { $ref: '#/components/schemas/RecipeIngredientInput' }
+      required: [name, yieldQuantity, yieldUnit, ingredients]
+    RecipeUpdate:
+      allOf:
+        - $ref: '#/components/schemas/RecipeCreate'
+    RecipeResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          $ref: '#/components/schemas/Recipe'
+    IngredientCost:
+      type: object
+      properties:
+        ingredientId: { type: string }
+        name: { type: string }
+        quantity: { type: number }
+        unit: { type: string }
+        unitCost: { type: number }
+        totalCost: { type: number }
+        availableQuantity: { type: number }
+        canMake: { type: boolean }
+        type: { type: string, enum: [RAW, FINISHED] }
+    RecipeCostData:
+      type: object
+      properties:
+        recipeId: { type: string }
+        recipeName: { type: string }
+        yieldQuantity: { type: number }
+        yieldUnit: { type: string }
+        totalCost: { type: number }
+        costPerUnit: { type: number }
+        ingredientCosts:
+          type: array
+          items: { $ref: '#/components/schemas/IngredientCost' }
+        canMakeRecipe: { type: boolean }
+    RecipeCostResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        data: { $ref: '#/components/schemas/RecipeCostData' }
+    WhatCanIMakeItem:
+      type: object
+      properties:
+        recipeId: { type: string }
+        recipeName: { type: string }
+        canMake: { type: boolean }
+        maxBatches: { type: number }
+        missingIngredients:
+          type: array
+          items: { type: string }
+        limitingIngredient:
+          type: object
+          nullable: true
+          properties:
+            name: { type: string }
+            type: { type: string, enum: [RAW, FINISHED] }
+            available: { type: number }
+            perBatchRequired: { type: number }
+    WhatCanIMakeResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        data:
+          type: object
+          properties:
+            recipes:
+              type: array
+              items: { $ref: '#/components/schemas/WhatCanIMakeItem' }
+            totalRecipes: { type: number }
