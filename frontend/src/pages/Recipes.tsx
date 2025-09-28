@@ -450,139 +450,8 @@ const Recipes: React.FC = () => {
   };
 
   // Helper lists for ingredient selection (used later in form rendering)
-  const selectableRawMaterials = rawMaterials.map(r => ({ id: r.id, name: r.name, unit: r.unit }));
-  const selectableFinishedProducts = finishedProducts.map((f: any) => ({ id: f.id, name: f.name, unit: f.unit }));
-
-  // ...existing code...
-
-  // Insert simplified ingredient selector UI (progressively enhancing existing form) just before return
-  // NOTE: Full refactor may be needed for styling, but this keeps diff minimal.
-
-  const renderIngredientSelector = () => (
-    <Box sx={{ mt: 2 }}>
-      <Typography variant="subtitle1" gutterBottom>Ingredients</Typography>
-      <Grid container spacing={2} alignItems="flex-end">
-        <Grid item xs={12} sm={2}>
-          <FormControl fullWidth size="small">
-            <InputLabel id="ingredient-type-label">Type</InputLabel>
-            <Select
-              labelId="ingredient-type-label"
-              value={ingredientForm.type}
-              label="Type"
-              onChange={(e) => {
-                const nextType = e.target.value as any;
-                setIngredientForm(prev => ({ ...prev, type: nextType, itemId: '', unit: '' }));
-              }}
-            >
-              <MenuItem value="RAW">Raw</MenuItem>
-              <MenuItem value="FINISHED">Finished</MenuItem>
-            </Select>
-          </FormControl>
-        </Grid>
-            <Grid item xs={12}>
-              {renderIngredientSelector()}
-            </Grid>
-        <Grid item xs={12} sm={4}>
-          <FormControl fullWidth size="small">
-            <InputLabel id="ingredient-item-label">Item</InputLabel>
-            <Select
-              labelId="ingredient-item-label"
-              value={ingredientForm.itemId}
-              label="Item"
-              onChange={(e) => {
-                const id = e.target.value;
-                let unit = '';
-                if (ingredientForm.type === 'RAW') {
-                  const found = selectableRawMaterials.find(r => r.id === id);
-                  unit = found?.unit || '';
-                } else {
-                  const found = selectableFinishedProducts.find(f => f.id === id);
-                  unit = found?.unit || '';
-                }
-                setIngredientForm(prev => ({ ...prev, itemId: id, unit }));
-              }}
-            >
-              {(ingredientForm.type === 'RAW' ? selectableRawMaterials : selectableFinishedProducts).map(item => (
-                <MenuItem key={item.id} value={item.id}>{item.name}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-        <Grid item xs={12} sm={2}>
-          <TextField
-            label="Quantity"
-            type="number"
-            size="small"
-            fullWidth
-            value={ingredientForm.quantity}
-            onChange={(e) => setIngredientForm(prev => ({ ...prev, quantity: parseFloat(e.target.value) || 0 }))}
-          />
-        </Grid>
-        <Grid item xs={12} sm={2}>
-          <TextField
-            label="Unit"
-            size="small"
-            fullWidth
-            value={ingredientForm.unit}
-            onChange={(e) => setIngredientForm(prev => ({ ...prev, unit: e.target.value }))}
-          />
-        </Grid>
-        <Grid item xs={12} sm={2}>
-          <Button variant="contained" fullWidth onClick={addIngredient} disabled={!ingredientForm.itemId || ingredientForm.quantity <= 0}>Add</Button>
-        </Grid>
-        <Grid item xs={12}>
-          {formData.ingredients && formData.ingredients.length > 0 && (
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Type</TableCell>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Qty</TableCell>
-                  <TableCell>Unit</TableCell>
-                  <TableCell>Notes</TableCell>
-                  <TableCell align="right">Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {formData.ingredients.map((ing, idx) => {
-                  const isRaw = ing.ingredientType === 'RAW';
-                  let name = 'Unknown';
-                  if (isRaw) {
-                    const found = selectableRawMaterials.find(r => r.id === ing.rawMaterialId);
-                    name = found?.name || name;
-                  } else {
-                    const found = selectableFinishedProducts.find(f => f.id === (ing as any).finishedProductId);
-                    name = found?.name || name;
-                  }
-                  return (
-                    <TableRow key={idx}>
-                      <TableCell>{isRaw ? 'Raw' : 'Finished'}</TableCell>
-                      <TableCell>{name}</TableCell>
-                      <TableCell>{ing.quantity}</TableCell>
-                      <TableCell>{ing.unit}</TableCell>
-                      <TableCell>{ing.notes || ''}</TableCell>
-                      <TableCell align="right">
-                        <IconButton size="small" onClick={() => {
-                          setFormData(prev => ({
-                            ...prev,
-                            ingredients: prev.ingredients?.filter((_, i) => i !== idx) || []
-                          }));
-                        }}>
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          )}
-        </Grid>
-      </Grid>
-    </Box>
-  );
-
-  // Later in JSX we inject {renderIngredientSelector()} inside the recipe dialog content.
+  // (Removed old selectableX arrays; using rawMaterials/finishedProducts directly in new ingredient form)
+  // Removed obsolete recursive renderIngredientSelector (was causing inability to select finished products)
 
 
   const removeIngredient = (index: number) => {
@@ -596,6 +465,10 @@ const Recipes: React.FC = () => {
     if (ingredient.rawMaterialId) {
       const rawMaterial = rawMaterials.find(rm => rm.id === ingredient.rawMaterialId);
       return rawMaterial?.name || 'Unknown Raw Material';
+    }
+    if (ingredient.finishedProductId) {
+      const finished = finishedProducts.find((fp: any) => fp.id === ingredient.finishedProductId);
+      return finished?.name || 'Unknown Finished Product';
     }
     return 'Unknown Ingredient';
   };
@@ -1437,36 +1310,48 @@ const Recipes: React.FC = () => {
                   Add New Ingredient
                 </Typography>
                 <Grid container spacing={2} sx={{ mb: 2 }}>
-                  <Grid item xs={4}>
+                  <Grid item xs={12} sm={3}>
                     <FormControl fullWidth>
-                      <InputLabel shrink={!ingredientForm.itemId ? true : undefined}>Raw Material</InputLabel>
+                      <InputLabel>Type</InputLabel>
+                      <Select
+                        value={ingredientForm.type}
+                        label="Type"
+                        onChange={(e) => {
+                          const nextType = e.target.value as RecipeIngredientType;
+                          setIngredientForm(prev => ({ ...prev, type: nextType, itemId: '', unit: '', quantity: 0 }));
+                        }}
+                      >
+                        <MenuItem value="RAW">Raw Material</MenuItem>
+                        <MenuItem value="FINISHED">Finished Product</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <FormControl fullWidth>
+                      <InputLabel>Item</InputLabel>
                       <Select
                         value={ingredientForm.itemId}
-                        label="Raw Material"
+                        label="Item"
                         onChange={(e) => {
-                          const itemId = e.target.value;
+                          const id = e.target.value;
                           let unit = '';
-
-                          // If an item is selected, automatically set the unit based on the raw material
-                          if (itemId) {
-                            const selectedRawMaterial = rawMaterials.find(item => item.id === itemId);
-                            if (selectedRawMaterial) {
-                              unit = selectedRawMaterial.unit;
+                          if (id) {
+                            if (ingredientForm.type === 'RAW') {
+                              const rm = rawMaterials.find(r => r.id === id);
+                              unit = rm?.unit || '';
+                            } else {
+                              const fp = finishedProducts.find((f: any) => f.id === id);
+                              unit = fp?.unit || '';
                             }
                           }
-
-                          setIngredientForm(prev => ({
-                            ...prev,
-                            itemId: itemId,
-                            unit: unit // Automatically set the unit
-                          }));
+                          setIngredientForm(prev => ({ ...prev, itemId: id, unit }));
                         }}
                         displayEmpty
                       >
                         <MenuItem value="">
-                          <em>Select raw material</em>
+                          <em>Select item</em>
                         </MenuItem>
-                        {rawMaterials.map((item) => (
+                        {(ingredientForm.type === 'RAW' ? rawMaterials : finishedProducts).map((item: any) => (
                           <MenuItem key={item.id} value={item.id}>
                             {item.name} ({item.unit})
                           </MenuItem>
@@ -1474,7 +1359,7 @@ const Recipes: React.FC = () => {
                       </Select>
                     </FormControl>
                   </Grid>
-                  <Grid item xs={2}>
+                  <Grid item xs={6} sm={2}>
                     <TextField
                       fullWidth
                       label="Quantity"
@@ -1483,20 +1368,30 @@ const Recipes: React.FC = () => {
                       onChange={(e) => setIngredientForm(prev => ({ ...prev, quantity: Number(e.target.value) }))}
                     />
                   </Grid>
-                  <Grid item xs={2}>
+                  <Grid item xs={6} sm={2}>
                     <TextField
                       fullWidth
                       label="Unit"
                       value={ingredientForm.unit}
-                      InputProps={{
-                        readOnly: !!ingredientForm.itemId, // Make read-only when an item is selected
-                      }}
-                      disabled={!!ingredientForm.itemId} // Disable when an item is selected
-                      helperText={ingredientForm.itemId ? "Unit is determined by selected item" : ""}
+                      InputProps={{ readOnly: true }}
+                      helperText={ingredientForm.itemId ? "Auto" : ""}
                     />
                   </Grid>
-                  <Grid item xs={2}>
-                    <Button onClick={addIngredient} variant="outlined" fullWidth>
+                  <Grid item xs={12} sm={6} md={8}>
+                    <TextField
+                      fullWidth
+                      label="Notes"
+                      value={ingredientForm.notes}
+                      onChange={(e) => setIngredientForm(prev => ({ ...prev, notes: e.target.value }))}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={2} md={2}>
+                    <Button
+                      onClick={addIngredient}
+                      variant="outlined"
+                      fullWidth
+                      disabled={!ingredientForm.itemId || ingredientForm.quantity <= 0}
+                    >
                       Add
                     </Button>
                   </Grid>
