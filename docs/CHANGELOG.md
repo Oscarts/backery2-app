@@ -2,6 +2,55 @@
 
 All notable changes to the Bakery Inventory Management System are documented here.
 
+## Post-Production Updates (September 25–28, 2025)
+
+### ⚠️ Breaking / Removed
+
+- Complete removal of the Intermediate Products feature and all related domain references (`3405dce`).
+  - Backend: Eliminated intermediate product types, controller logic branches, and ingredient linkage fields.
+  - Frontend: Removed intermediate product service endpoints and UI references (`bf08f87`, `bffa9a9`).
+  - Tests: Purged intermediate product test suites and harness references (`3698a2e`).
+  - Recipe & capacity logic refactored to operate solely on raw materials + finished products (`a5079c4`, `d8b1073`).
+
+### ✨ Functional & UI Fixes
+
+- Restored material breakdown rendering and re-enabled clickable card view in Finished Products (`ed35e68`).
+  - Added more robust null/edge-case handling when backend returns partial ingredient or cost data.
+
+### 🔧 Backend Logic Adjustments
+
+- Refactored recipe controller functions to remove obsolete intermediate product relations (`a5079c4`).
+- Updated "What Can I Make" capacity calculation to ignore removed entities and prevent stale joins (`d8b1073`).
+
+### 🧪 Testing & Tooling Improvements (Sept 28)
+
+- Added comprehensive API test helper / diagnostic scripts (`d530b66`, `acc3ffd`):
+  - `api-test-final-report.js` – Summarized pass/fail aggregation & exit codes.
+  - `comprehensive-api-test.js` – Full-sequence integration verification.
+  - `test-api-functionality.js` / `test-fixed-api-indices.js` – Targeted regression suites.
+  - `verify-run-all-tests.js` – Ensures UI harness triggers every registered test.
+  - `check-runtime-errors.js` – Scans for uncaught promise rejections & console error patterns.
+
+### 📦 Migration / Operational Notes
+
+- Database schema: No new columns added; feature removal is a subtractive change. Stale intermediate product rows (if any) should be archived or deleted manually.
+- Recommended cleanup: Run a one-off script (not included) to remove orphaned ingredient records referencing removed intermediate product IDs.
+- CI/CD: Update any pipeline steps that invoked intermediate product seed data to avoid failing seeds.
+
+### 🚨 Developer Action Items
+
+- Remove any local seed scripts or fixtures that still reference `intermediateProductId`.
+- Re-run full API test harness to confirm no latent references (use new helper scripts).
+- Update any external tooling or BI dashboards that expected intermediate product metrics.
+
+### ✅ Verification Summary
+
+- All recipe controller unit tests pass (post-removal path validation).
+- Frontend API test harness updated to skip no longer applicable scenarios and proceed through recipe CRUD successfully.
+- No remaining TypeScript references to deprecated intermediate product symbols after search/cleanup.
+
+---
+
 ## Version 1.0.0 - Production Ready (September 10, 2025)
 
 ### 🎉 Production Release - Complete System
@@ -117,7 +166,7 @@ All notable changes to the Bakery Inventory Management System are documented her
   - Clear shortage information display
   - Accurate batch count display: "(50 batches possible)" instead of hardcoded values
 
-### Documentation
+### Additional Documentation
 
 - Added comprehensive API response validation guidelines
 - Updated data persistence documentation with best practices
