@@ -253,6 +253,58 @@ async function createEnhancedSeedData() {
         });
 
         console.log('✅ Enhanced seed data created successfully!');
+        // Create a finished product to demonstrate mixed recipe ingredients
+        let frostingBase = await prisma.finishedProduct.findFirst({ where: { name: 'Simple Frosting Base' } });
+        if (!frostingBase) {
+            frostingBase = await prisma.finishedProduct.create({
+                data: {
+                    name: 'Simple Frosting Base',
+                    sku: `FROST-${Date.now()}`,
+                    batchNumber: 'FROST-BASE-001',
+                    productionDate: new Date(),
+                    expirationDate: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000),
+                    shelfLife: 21,
+                    quantity: 50,
+                    unit: 'kg',
+                    salePrice: 0,
+                    costToProduce: 75,
+                    status: 'IN_PROGRESS'
+                }
+            });
+        }
+
+        // Mixed recipe using both raw materials and a finished product as ingredient
+        const mixedRecipeName = 'Decorated Bread Loaf';
+        await prisma.recipe.deleteMany({ where: { name: mixedRecipeName } });
+        const mixedRecipe = await prisma.recipe.create({
+            data: {
+                name: mixedRecipeName,
+                description: 'White bread loaf with frosting decoration (demonstrates mixed ingredients)',
+                yieldQuantity: 1,
+                yieldUnit: 'loaf',
+                prepTime: 190,
+                cookTime: 35,
+                difficulty: 'EASY',
+                instructions: [
+                    'Prepare dough base',
+                    'Bake loaf',
+                    'Cool and apply frosting decoration'
+                ],
+                emoji: '🎂',
+                category: 'Decorated Products'
+            }
+        });
+
+        await prisma.recipeIngredient.createMany({
+            data: [
+                { recipeId: mixedRecipe.id, rawMaterialId: flour.id, quantity: 0.5, unit: 'kg' },
+                { recipeId: mixedRecipe.id, rawMaterialId: water.id, quantity: 0.3, unit: 'liters' },
+                { recipeId: mixedRecipe.id, rawMaterialId: yeast.id, quantity: 0.005, unit: 'kg' },
+                { recipeId: mixedRecipe.id, finishedProductId: frostingBase.id, quantity: 0.75, unit: 'kg' }
+            ]
+        });
+
+        console.log('   - Mixed Recipe: 1 (Decorated Bread Loaf with frosting base)');
         console.log(`\n📋 Summary:`);
         console.log(`   - Suppliers: 1 (${flourSupplier.name})`);
         console.log(`   - Storage Locations: 1 (${mainWarehouse.name})`);
