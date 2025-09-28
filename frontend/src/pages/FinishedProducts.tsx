@@ -537,6 +537,25 @@ const FinishedProducts: React.FC = () => {
             {/* Tab Panel 1: Materials (inline minimal table) */}
             {editingProduct && (
               <Box hidden={currentTab !== 1} sx={{ mt: 2 }}>
+                {(formData.status as any) === (ProductStatus.IN_PRODUCTION as any) && (
+                  <Alert severity="warning" sx={{ mb:2 }} action={
+                    <Button
+                      color="inherit"
+                      size="small"
+                      onClick={() => {
+                        // Quick mark as completed then trigger update
+                        const updated = { ...formData, status: ProductStatus.COMPLETED as any } as unknown as UpdateFinishedProductData;
+                        if (editingProduct) {
+                          updateMutation.mutate({ id: editingProduct.id, data: updated });
+                        }
+                      }}
+                    >
+                      Mark Completed
+                    </Button>
+                  }>
+                    Production is still in progress. Complete the run to ensure costs and material consumption are final.
+                  </Alert>
+                )}
                 {materialLoading && (
                   <Alert severity="info">Loading material breakdown...</Alert>
                 )}
