@@ -58,6 +58,7 @@ import {
   Insights as IngredientsIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { finishedProductsApi, categoriesApi, storageLocationsApi, unitsApi, qualityStatusApi } from '../services/realApi';
 import { FinishedProduct, CategoryType, CreateFinishedProductData, UpdateFinishedProductData, ProductStatus, MaterialBreakdown, MaterialAllocation, ApiResponse } from '../types';
 import { formatDate, formatQuantity, isExpired, isExpiringSoon, getDaysUntilExpiration, formatCurrency } from '../utils/api';
@@ -179,8 +180,12 @@ const FinishedProducts: React.FC = () => {
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateFinishedProductData }) =>
       finishedProductsApi.update(id, data),
-    onSuccess: () => {
+    onSuccess: (_data, vars) => {
       queryClient.invalidateQueries(['finishedProducts']);
+      // If status became COMPLETED, invalidate material breakdown so cost can refresh
+  if ((vars.data.status as any) === (ProductStatus.COMPLETED as any) && vars.id === selectedProductId) {
+        queryClient.invalidateQueries(['materialBreakdown', vars.id]);
+      }
       handleCloseForm();
       showSnackbar('Finished product updated successfully', 'success');
     },
@@ -544,7 +549,21 @@ const FinishedProducts: React.FC = () => {
                   <Box>
                     <Card sx={{ mb:2 }}>
                       <CardContent>
-                        <Typography variant="subtitle1" gutterBottom>Cost Summary</Typography>
+                        <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+                          <Typography variant="subtitle1" gutterBottom sx={{ mb: 0 }}>Cost Summary</Typography>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<RefreshIcon fontSize="small" />}
+                            onClick={() => {
+                              if (selectedProductId) {
+                                queryClient.invalidateQueries(['materialBreakdown', selectedProductId]);
+                              }
+                            }}
+                          >
+                            Refresh
+                          </Button>
+                        </Box>
                         <Grid container spacing={2}>
                           <Grid item xs={6} sm={3}>
                             <Typography variant="caption" color="text.secondary">Materials</Typography>
