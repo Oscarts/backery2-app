@@ -7,8 +7,6 @@
 
 > Machine-readable spec: see `docs/openapi.yaml` for a canonical, up-to-date contract.
 
-# API Reference
-
 ## � Base URL
 
 **Development:** `http://localhost:8000/api`
@@ -32,7 +30,7 @@ POST /auth/login
 POST /auth/register
 POST /auth/logout
 GET /auth/profile
-```
+```json
 
 ## 📋 Common Response Format
 
@@ -44,7 +42,7 @@ GET /auth/profile
   "data": {"...": "..."},
   "message": "Operation completed successfully"
 }
-```
+```json
 
 ### Error Response
 
@@ -151,33 +149,22 @@ Update an existing raw material.
 
 Delete a raw material.
 
-## 🔄 Intermediate Products API
+<!-- Intermediate Products feature removed: replaced by ability for recipes to reference finished products directly as ingredients -->
+## ❌ Intermediate Products (Removed)
 
-### GET /intermediate-products
+The previous Intermediate Products subsystem has been fully removed. Recipes can now directly include both raw materials and finished products as ingredients. This reduces duplication and simplifies production flows.
 
-Get all intermediate products.
+Key changes:
 
-**Response:** Similar structure to raw materials with additional fields:
+- `intermediate-products` endpoints removed
+- `intermediateProductId` references eliminated from schema & codebase
+- Recipe ingredients now allow either `rawMaterialId` OR `finishedProductId` (mutually exclusive)
+- Cost and capacity analysis updated to aggregate mixed ingredient sources
 
-```json
-{
-  "productionDate": "2025-08-30T00:00:00.000Z",
-  "recipeId": "rec_123",
-  "recipe": { "name": "Chocolate Ganache" }
-}
-```
+Migration guidance:
 
-### POST /intermediate-products
-
-Create a new intermediate product.
-
-### PUT /intermediate-products/:id
-
-Update an existing intermediate product.
-
-### DELETE /intermediate-products/:id
-
-Delete an intermediate product.
+- No new columns were added. If legacy intermediate product rows exist, archive or remove them manually.
+- Update any external integrations expecting intermediate product metrics to use finished product based recipes instead.
 
 ## 🍰 Finished Products API
 
@@ -318,29 +305,36 @@ Create a new recipe.
 
 ```json
 {
-  "name": "Vanilla Cake",
+  "name": "Vanilla Layer Cake",
   "description": "Moist vanilla sponge cake",
   "categoryId": "cat_456",
-  "instructions": "1. Cream butter and sugar...",
+  "yieldQuantity": 1,
+  "yieldUnit": "cake",
   "prepTime": 20,
   "cookTime": 25,
-  "servings": 8,
+  "instructions": ["Cream butter and sugar", "Add eggs", "Bake"],
   "ingredients": [
     {
       "rawMaterialId": "rm_flour",
       "quantity": 2.0,
-      "unitId": "unit_cup",
+      "unit": "cup",
       "notes": "Cake flour preferred"
     },
     {
-      "finishedProductId": "fp_001",
+      "finishedProductId": "fp_frosting_base",
       "quantity": 1.0,
-      "unitId": "unit_piece",
-      "notes": "Use pre-made chocolate base"
+      "unit": "kg",
+      "notes": "Use prepared frosting base"
     }
   ]
 }
 ```
+
+Ingredient validation rules:
+
+- Each ingredient must have exactly one of `rawMaterialId` or `finishedProductId`.
+- Units must be compatible with source inventory units (conversion applied where possible).
+- Duplicate references (same material/product twice) should be consolidated at the client layer for clarity.
 
 ### GET /recipes/what-can-i-make
 
@@ -360,16 +354,15 @@ Get recipes that can be made with current inventory, including expiration date v
         "difficulty": "medium"
       },
       "canMake": true,
-      "maxServings": 5,
+  "maxBatches": 5,
       "missingIngredients": [],
-      "insufficientIngredients": [
-        {
-          "ingredient": "Flour",
-          "needed": 5.0,
-          "available": 3.0,
-          "shortage": 2.0
-        }
-      ],
+      "limitingIngredient": {
+        "name": "Frosting Base",
+        "type": "FINISHED",
+        "available": 2,
+        "perBatchRequired": 0.75
+      },
+      "insufficientIngredients": [],
       "expiredIngredients": [
         {
           "ingredient": "Milk",
@@ -383,7 +376,7 @@ Get recipes that can be made with current inventory, including expiration date v
           "contaminationReason": "Cross-contamination detected"
         }
       ],
-      "shortage": "Some ingredients are expired or contaminated"
+      "shortage": null
     }
   ]
 }
