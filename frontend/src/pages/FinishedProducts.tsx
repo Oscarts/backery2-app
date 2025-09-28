@@ -61,7 +61,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { finishedProductsApi, categoriesApi, storageLocationsApi, unitsApi, qualityStatusApi } from '../services/realApi';
 import { FinishedProduct, CategoryType, CreateFinishedProductData, UpdateFinishedProductData, ProductStatus } from '../types';
 import { formatDate, formatQuantity, isExpired, isExpiringSoon, getDaysUntilExpiration, formatCurrency } from '../utils/api';
-import MaterialBreakdownDialog from '../components/dialogs/MaterialBreakdownDialog';
 
 // Status display helper functions
 
@@ -134,8 +133,7 @@ const FinishedProducts: React.FC = () => {
     severity: 'success'
   });
 
-  // Material breakdown state
-  const [materialDialogOpen, setMaterialDialogOpen] = useState(false);
+  // Material breakdown query state (selected product for inline tab)
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
@@ -148,7 +146,7 @@ const FinishedProducts: React.FC = () => {
   const { data: qualityStatusResponse } = useQuery(['qualityStatuses'], qualityStatusApi.getAll);
 
   // Fetch material breakdown for selected product
-  const { data: materialBreakdownResponse, isLoading: materialLoading, error: materialError } = useQuery(
+  const { data: materialBreakdownResponse, isLoading: materialLoading, error: materialError } = useQuery<any, Error>(
     ['materialBreakdown', selectedProductId],
     () => selectedProductId ? finishedProductsApi.getMaterialBreakdown(selectedProductId) : Promise.resolve(null),
     {
@@ -226,10 +224,17 @@ const FinishedProducts: React.FC = () => {
     setOpenForm(true);
   };
 
-  // Open material breakdown dialog for a product
-  const handleOpenMaterialDialog = (productId: string) => {
-    setSelectedProductId(productId);
-    setMaterialDialogOpen(true);
+  // Open material breakdown inline tab for a product (navigates to Materials tab inside form)
+  const handleOpenMaterialTab = (product: FinishedProduct) => {
+    setEditingProduct(product);
+    setSelectedProductId(product.id);
+    setOpenForm(true);
+    // Defer tab switch until after dialog open (setTimeout to ensure state applied)
+    setTimeout(() => {
+      // no direct ref to child tab state; child component will read editingProduct & we trigger custom event
+      const event = new CustomEvent('open-materials-tab');
+      window.dispatchEvent(event);
+    }, 0);
   };
 
   const handleCloseForm = () => {
@@ -244,16 +249,20 @@ const FinishedProducts: React.FC = () => {
     }
   };
 
-  const handleCloseMaterialDialog = () => {
-    setMaterialDialogOpen(false);
-    setSelectedProductId(null);
-  };
+  // Clear selection when closing form
 
 
 
   // Form component
   const ProductForm: React.FC = () => {
     const [currentTab, setCurrentTab] = useState(0);
+
+    // Listen for external request to jump to materials tab
+    useEffect(() => {
+      const handler = () => setCurrentTab(1);
+      window.addEventListener('open-materials-tab', handler);
+      return () => window.removeEventListener('open-materials-tab', handler);
+    }, []);
     const [formData, setFormData] = useState<CreateFinishedProductData>({
       name: editingProduct?.name || '',
       sku: editingProduct?.sku || '',
@@ -304,8 +313,8 @@ const FinishedProducts: React.FC = () => {
           {editingProduct && (
             <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
               <Tabs value={currentTab} onChange={(_, newValue) => setCurrentTab(newValue)} aria-label="product form tabs">
-                <Tab label="Product Details" />
-                <Tab label="Material Breakdown" />
+                <Tab label="Details" />
+                <Tab label="Materials" />
               </Tabs>
             </Box>
           )}
@@ -523,158 +532,74 @@ const FinishedProducts: React.FC = () => {
               </Grid>
             </Box>
             
-            {/* Tab Panel 1: Material Breakdown (only for editing existing products) */}
+            {/* Tab Panel 1: Materials (inline minimal table) */}
             {editingProduct && (
               <Box hidden={currentTab !== 1} sx={{ mt: 2 }}>
-                {materialBreakdownResponse?.data ? (
+                {materialLoading && (
+                  <Alert severity="info">Loading material breakdown...</Alert>
+                )}
+                {materialError && !materialLoading && (
+                  <Alert severity={materialError.message.includes('No production run linked') ? 'warning' : 'error'}>
+                    {materialError.message}
+                  </Alert>
+                )}
+                {!materialLoading && !materialError && materialBreakdownResponse?.data && (
                   <Box>
-                    {/* Summary Card */}
-                    <Card sx={{ mb: 3, bgcolor: 'primary.light', color: 'primary.contrastText' }}>
+                    <Card sx={{ mb:2 }}>
                       <CardContent>
-                        <Typography variant="h6" gutterBottom>
-                          Production Cost Summary
-                        </Typography>
-                        <Grid container spacing={3}>
+                        <Typography variant="subtitle1" gutterBottom>Cost Summary</Typography>
+                        <Grid container spacing={2}>
                           <Grid item xs={6} sm={3}>
-                            <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                              Total Materials
-                            </Typography>
-                            <Typography variant="h6" fontWeight="bold">
-                              {materialBreakdownResponse.data.summary?.totalMaterialsUsed ?? materialBreakdownResponse.data.materials?.length ?? materialBreakdownResponse.data.costBreakdown?.materials?.length ?? 0}
+                            <Typography variant="caption" color="text.secondary">Materials</Typography>
+                            <Typography variant="body1" fontWeight="bold">
+                              {materialBreakdownResponse.data.summary?.totalMaterialsUsed}
                             </Typography>
                           </Grid>
                           <Grid item xs={6} sm={3}>
-                            <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                              Material Cost
-                            </Typography>
-                            <Typography variant="h6" fontWeight="bold">
-                              {formatCurrency(materialBreakdownResponse.data.summary?.totalMaterialCost ?? materialBreakdownResponse.data.costBreakdown?.materialCost ?? 0)}
-                            </Typography>
+                            <Typography variant="caption" color="text.secondary">Material Cost</Typography>
+                            <Typography variant="body1" fontWeight="bold">{formatCurrency(materialBreakdownResponse.data.summary?.totalMaterialCost || 0)}</Typography>
                           </Grid>
                           <Grid item xs={6} sm={3}>
-                            <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                              Cost Per Unit
-                            </Typography>
-                            <Typography variant="h6" fontWeight="bold">
-                              {formatCurrency(materialBreakdownResponse.data.summary?.costPerUnit ?? 0)}
-                            </Typography>
+                            <Typography variant="caption" color="text.secondary">Cost / Unit</Typography>
+                            <Typography variant="body1" fontWeight="bold">{formatCurrency(materialBreakdownResponse.data.summary?.costPerUnit || 0)}</Typography>
                           </Grid>
                           <Grid item xs={6} sm={3}>
-                            <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                              Total Cost
-                            </Typography>
-                            <Typography variant="h6" fontWeight="bold">
-                              {formatCurrency(materialBreakdownResponse.data.summary?.totalProductionCost ?? materialBreakdownResponse.data.costBreakdown?.totalCost ?? 0)}
-                            </Typography>
+                            <Typography variant="caption" color="text.secondary">Total Cost</Typography>
+                            <Typography variant="body1" fontWeight="bold">{formatCurrency(materialBreakdownResponse.data.summary?.totalProductionCost || 0)}</Typography>
                           </Grid>
                         </Grid>
                       </CardContent>
                     </Card>
-
-                    <Divider sx={{ my: 2 }}>
-                      <Typography variant="overline" color="text.secondary">
-                        Ingredient Details
-                      </Typography>
-                    </Divider>
-
-                    {/* Material Cards */}
-                    {(materialBreakdownResponse.data.materials?.length ?? materialBreakdownResponse.data.costBreakdown?.materials?.length ?? 0) > 0 ? (
-                      (materialBreakdownResponse.data.materials ?? materialBreakdownResponse.data.costBreakdown?.materials ?? []).map((allocation, index) => (
-                        <Card key={allocation.id || index} sx={{ mb: 2, position: 'relative', overflow: 'visible' }}>
-                          <CardContent sx={{ pb: 1 }}>
-                            {/* Material Header */}
-                            <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-                              <Box display="flex" alignItems="center" gap={1}>
-                                <Typography variant="h6" fontWeight="bold">
-                                  {allocation.materialName}
-                                </Typography>
-                              </Box>
-                              <Chip 
-                                label={`#${index + 1}`} 
-                                size="small" 
-                                variant="outlined" 
-                                color="primary" 
-                              />
-                            </Box>
-
-                            {/* Material Info Grid */}
-                            <Grid container spacing={2} mb={2}>
-                              <Grid item xs={6} sm={3}>
-                                <Box>
-                                  <Typography variant="caption" color="text.secondary">
-                                    SKU
-                                  </Typography>
-                                  <Typography variant="body2" fontWeight="medium">
-                                    {allocation.materialSku}
-                                  </Typography>
-                                </Box>
-                              </Grid>
-                              <Grid item xs={6} sm={3}>
-                                <Box>
-                                  <Typography variant="caption" color="text.secondary">
-                                    Batch
-                                  </Typography>
-                                  <Typography variant="body2" fontWeight="medium">
-                                    {allocation.materialBatchNumber || 'N/A'}
-                                  </Typography>
-                                </Box>
-                              </Grid>
-                              <Grid item xs={6} sm={3}>
-                                <Box>
-                                  <Typography variant="caption" color="text.secondary">
-                                    Used Quantity
-                                  </Typography>
-                                  <Typography variant="body2" fontWeight="medium">
-                                    {(allocation.quantityConsumed || allocation.quantityAllocated)?.toFixed(2)} {allocation.unit}
-                                  </Typography>
-                                </Box>
-                              </Grid>
-                              <Grid item xs={6} sm={3}>
-                                <Box>
-                                  <Typography variant="caption" color="text.secondary">
-                                    Total Cost
-                                  </Typography>
-                                  <Typography variant="body2" fontWeight="bold" color="primary">
-                                    {formatCurrency(allocation.totalCost)}
-                                  </Typography>
-                                </Box>
-                              </Grid>
-                            </Grid>
-
-                            {/* Unit Cost Info */}
-                            <Box mt={2} p={1} bgcolor="grey.50" borderRadius={1}>
-                              <Typography variant="caption" color="text.secondary">
-                                Unit Cost: {formatCurrency(allocation.unitCost)}/{allocation.unit}
-                              </Typography>
-                            </Box>
-                          </CardContent>
-                        </Card>
-                      ))
-                    ) : (
-                      <Alert severity="info">
-                        No material breakdown data available for this product.
-                      </Alert>
-                    )}
+                    <TableContainer component={Paper} variant="outlined">
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Name</TableCell>
+                            <TableCell>SKU</TableCell>
+                            <TableCell>Batch</TableCell>
+                            <TableCell align="right">Qty Used</TableCell>
+                            <TableCell align="right">Unit Cost</TableCell>
+                            <TableCell align="right">Total Cost</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {(materialBreakdownResponse.data.materials || []).map((m: any) => (
+                            <TableRow key={m.id}>
+                              <TableCell>{m.materialName}</TableCell>
+                              <TableCell>{m.materialSku}</TableCell>
+                              <TableCell>{m.materialBatchNumber || '—'}</TableCell>
+                              <TableCell align="right">{(m.quantityConsumed || m.quantityAllocated).toFixed(2)} {m.unit}</TableCell>
+                              <TableCell align="right">{formatCurrency(m.unitCost)}</TableCell>
+                              <TableCell align="right">{formatCurrency(m.totalCost)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
                   </Box>
-                ) : materialLoading ? (
-                  <Box>
-                    {[1, 2, 3].map((i) => (
-                      <Card key={i} sx={{ mb: 2 }}>
-                        <CardContent>
-                          <Box>Loading material breakdown...</Box>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </Box>
-                ) : materialError && String(materialError).includes('No production run linked') ? (
-                  <Alert severity="warning">
-                    No material breakdown available: This product does not have a linked production run.<br />
-                    Material traceability and cost breakdown require a production run to be associated with this product.
-                  </Alert>
-                ) : (
-                  <Alert severity="info">
-                    No material breakdown data available for this product.
-                  </Alert>
+                )}
+                {!materialLoading && !materialError && !materialBreakdownResponse?.data && (
+                  <Alert severity="info">No material breakdown data available.</Alert>
                 )}
               </Box>
             )}
@@ -1220,7 +1145,7 @@ const FinishedProducts: React.FC = () => {
                               aria-label="Show material breakdown"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleOpenMaterialDialog(product.id);
+                                handleOpenMaterialTab(product);
                               }}
                             >
                               <IngredientsIcon fontSize="small" />
@@ -1321,7 +1246,7 @@ const FinishedProducts: React.FC = () => {
                             aria-label="Show material breakdown"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleOpenMaterialDialog(product.id);
+                              handleOpenMaterialTab(product);
                             }}
                           >
                             <IngredientsIcon fontSize="small" />
@@ -1506,14 +1431,7 @@ const FinishedProducts: React.FC = () => {
         </Alert>
       </Snackbar>
 
-      {/* Material Breakdown Dialog */}
-      <MaterialBreakdownDialog
-        open={materialDialogOpen}
-        onClose={handleCloseMaterialDialog}
-        materialBreakdown={materialBreakdownResponse?.data || null}
-        loading={materialLoading}
-        error={materialError ? String(materialError) : undefined}
-      />
+      {/* Legacy MaterialBreakdownDialog removed; using inline Materials tab */}
     </Container>
   );
 };
