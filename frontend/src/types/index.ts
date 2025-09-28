@@ -351,9 +351,12 @@ export interface CreateRecipeData {
   isActive?: boolean;
 }
 
+export type RecipeIngredientType = 'RAW' | 'FINISHED';
+
 export interface CreateRecipeIngredientData {
-  rawMaterialId?: string;
-  intermediateProductId?: string;
+  rawMaterialId?: string; // present when ingredientType === 'RAW'
+  finishedProductId?: string; // present when ingredientType === 'FINISHED'
+  ingredientType: RecipeIngredientType;
   quantity: number;
   unit: string;
   notes?: string;

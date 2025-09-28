@@ -210,5 +210,57 @@ describe('Recipe Production Capacity Calculation', () => {
       expect(breadRecipe.maxBatches * breadRecipe.yieldQuantity).toBe(500); // 50 × 10 = 500kg
       expect(creamRecipe.maxBatches * creamRecipe.yieldQuantity).toBe(50);  // 10 × 5 = 50L
     });
+
+    it('should correctly integrate finished product ingredients limiting capacity', () => {
+      // Mixed ingredient recipe: uses 2kg flour (raw) + 1 unit of packaged icing (finished)
+      const ingredients = [
+        { type: 'RAW', rawMaterialId: 'flour', quantity: 2 },
+        { type: 'FINISHED', finishedProductId: 'icing', quantity: 1 }
+      ];
+
+      // Inventory map keyed like controller logic: RAW:ID / FINISHED:ID
+      const inventory = new Map([
+        ['RAW:flour', { quantity: 40 }], // 40kg flour => 20 batches if only flour considered
+        ['FINISHED:icing', { quantity: 5 }] // 5 icing units => 5 batches limiting
+      ]);
+
+      let maxBatches = Number.MAX_SAFE_INTEGER;
+      for (const ing of ingredients) {
+        const idKey = ing.type === 'RAW' ? `RAW:${ing.rawMaterialId}` : `FINISHED:${ing.finishedProductId}`;
+        const record = inventory.get(idKey) || { quantity: 0 };
+        const available = record.quantity;
+        const neededPerBatch = ing.quantity;
+        const batchesForIngredient = Math.floor(available / neededPerBatch);
+        maxBatches = Math.min(maxBatches, batchesForIngredient);
+      }
+      if (maxBatches === Number.MAX_SAFE_INTEGER) maxBatches = 0;
+
+      expect(maxBatches).toBe(5); // Limited by icing finished product
+    });
+
+    it('should calculate cost including finished product unit cost derived from costToProduce', () => {
+      // Simulate cost aggregation logic: finished product cost derived from totalCost / quantity
+      const rawFlour = { unitPrice: 2.0, unit: 'kg', quantity: 100, name: 'Flour' };
+      const finishedIcing = { costToProduce: 30, quantity: 10, unit: 'unit', name: 'Icing Batch' }; // $3 per unit
+
+      const recipeIngredients = [
+        { rawMaterial: rawFlour, finishedProduct: null, quantity: 2, unit: 'kg' }, // 2kg flour => $4
+        { rawMaterial: null, finishedProduct: finishedIcing, quantity: 1, unit: 'unit' } // 1 icing unit => $3
+      ];
+
+      let totalCost = 0;
+      for (const ing of recipeIngredients) {
+        let unitCost = 0;
+        if (ing.rawMaterial) {
+          unitCost = ing.rawMaterial.unitPrice;
+        } else if (ing.finishedProduct) {
+          const fp = ing.finishedProduct;
+            unitCost = fp.quantity > 0 ? fp.costToProduce / fp.quantity : 0;
+        }
+        totalCost += unitCost * ing.quantity;
+      }
+
+      expect(totalCost).toBeCloseTo(7); // 4 + 3
+    });
   });
 });

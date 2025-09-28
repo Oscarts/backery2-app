@@ -16,7 +16,8 @@ export const getRecipes = async (req: Request, res: Response) => {
                 category: true,
                 supplier: true
               }
-            }
+            },
+            finishedProduct: true
           }
         }
       },
@@ -54,7 +55,8 @@ export const getRecipeById = async (req: Request, res: Response) => {
                 category: true,
                 supplier: true
               }
-            }
+            },
+            finishedProduct: true
           }
         }
       }
@@ -132,10 +134,17 @@ export const createRecipe = async (req: Request, res: Response) => {
 
       // Create ingredients if provided
       if (ingredients && ingredients.length > 0) {
+        // Validate each ingredient - exactly one of rawMaterialId or finishedProductId
+        for (const ing of ingredients) {
+          if ((!ing.rawMaterialId && !ing.finishedProductId) || (ing.rawMaterialId && ing.finishedProductId)) {
+            throw new Error('Each ingredient must have exactly one of rawMaterialId or finishedProductId');
+          }
+        }
         await tx.recipeIngredient.createMany({
           data: ingredients.map((ingredient: any) => ({
             recipeId: newRecipe.id,
             rawMaterialId: ingredient.rawMaterialId || null,
+            finishedProductId: ingredient.finishedProductId || null,
             quantity: ingredient.quantity,
             unit: ingredient.unit,
             notes: ingredient.notes || null
@@ -155,7 +164,8 @@ export const createRecipe = async (req: Request, res: Response) => {
                   category: true,
                   supplier: true
                 }
-              }
+              },
+              finishedProduct: true
             }
           }
         }
@@ -244,12 +254,17 @@ export const updateRecipe = async (req: Request, res: Response) => {
           where: { recipeId: id }
         });
 
-        // Create new ingredients
         if (ingredients.length > 0) {
+          for (const ing of ingredients) {
+            if ((!ing.rawMaterialId && !ing.finishedProductId) || (ing.rawMaterialId && ing.finishedProductId)) {
+              throw new Error('Each ingredient must have exactly one of rawMaterialId or finishedProductId');
+            }
+          }
           await tx.recipeIngredient.createMany({
             data: ingredients.map((ingredient: any) => ({
               recipeId: id,
               rawMaterialId: ingredient.rawMaterialId || null,
+              finishedProductId: ingredient.finishedProductId || null,
               quantity: ingredient.quantity,
               unit: ingredient.unit,
               notes: ingredient.notes || null
@@ -270,7 +285,8 @@ export const updateRecipe = async (req: Request, res: Response) => {
                   category: true,
                   supplier: true
                 }
-              }
+              },
+              finishedProduct: true
             }
           }
         }
@@ -331,7 +347,8 @@ export const getRecipeCost = async (req: Request, res: Response) => {
       include: {
         ingredients: {
           include: {
-            rawMaterial: true
+            rawMaterial: true,
+            finishedProduct: true
           }
         }
       }
@@ -355,15 +372,25 @@ export const getRecipeCost = async (req: Request, res: Response) => {
       let ingredientName = '';
       let availableQuantity = 0;
       let sourceUnit = '';
+      let ingredientType: 'RAW' | 'FINISHED' = 'RAW';
 
       if (ingredient.rawMaterial) {
+        ingredientType = 'RAW';
         unitCost = ingredient.rawMaterial.unitPrice;
         ingredientName = ingredient.rawMaterial.name;
         availableQuantity = ingredient.rawMaterial.quantity;
         sourceUnit = ingredient.rawMaterial.unit;
+      } else if (ingredient.finishedProduct) {
+        ingredientType = 'FINISHED';
+        ingredientName = ingredient.finishedProduct.name;
+        // Derive unit cost from costToProduce / quantity (fallback 0)
+        const fpQty = ingredient.finishedProduct.quantity || 0;
+        const fpCost = ingredient.finishedProduct.costToProduce || 0;
+        unitCost = fpQty > 0 ? fpCost / fpQty : 0;
+        availableQuantity = ingredient.finishedProduct.quantity || 0;
+        sourceUnit = ingredient.finishedProduct.unit;
       } else {
-        // Skip invalid ingredients that don't have raw materials
-        continue;
+        continue; // skip invalid
       }
 
       // Check if units need conversion
@@ -391,7 +418,8 @@ export const getRecipeCost = async (req: Request, res: Response) => {
         unitCost,
         totalCost: ingredientTotalCost,
         availableQuantity: convertedQuantity,
-        canMake: convertedQuantity >= ingredient.quantity
+        canMake: convertedQuantity >= ingredient.quantity,
+        type: ingredientType
       });
     }
 
@@ -426,14 +454,13 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
 
     // Get all active recipes with only raw material ingredients
     const recipes = await prisma.recipe.findMany({
-      where: {
-        isActive: true
-      },
+      where: { isActive: true },
       include: {
         category: true,
         ingredients: {
           include: {
-            rawMaterial: true
+            rawMaterial: true,
+            finishedProduct: true
           }
         }
       }
@@ -442,19 +469,32 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
     console.log(`Found ${recipes.length} active recipes`);
 
     // Get raw material inventory
-    const rawMaterials = await prisma.rawMaterial.findMany();
-    const inventory = new Map();
+  const rawMaterials = await prisma.rawMaterial.findMany();
+  const finishedProducts = await prisma.finishedProduct.findMany();
+  const inventory = new Map();
     const now = new Date();
 
     rawMaterials.forEach(material => {
       const isExpired = material.expirationDate && material.expirationDate <= now;
       const isContaminated = material.isContaminated;
-      
-      inventory.set(material.id, {
+      inventory.set(`RAW:${material.id}`, {
         quantity: (!isExpired && !isContaminated) ? material.quantity : 0,
         unit: material.unit,
         expired: isExpired,
-        contaminated: isContaminated
+        contaminated: isContaminated,
+        type: 'RAW'
+      });
+    });
+
+    finishedProducts.forEach(fp => {
+      const isExpired = fp.expirationDate && fp.expirationDate <= now;
+      const isContaminated = fp.isContaminated;
+      inventory.set(`FINISHED:${fp.id}`, {
+        quantity: (!isExpired && !isContaminated) ? fp.quantity : 0,
+        unit: fp.unit,
+        expired: isExpired,
+        contaminated: isContaminated,
+        type: 'FINISHED'
       });
     });
 
@@ -466,18 +506,24 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
       const missingIngredients = [];
 
       for (const ingredient of recipe.ingredients) {
-        if (!ingredient.rawMaterialId) {
+        let invKey: string | null = null;
+        let name = 'Unknown';
+        if (ingredient.rawMaterialId) {
+          invKey = `RAW:${ingredient.rawMaterialId}`;
+          name = ingredient.rawMaterial?.name || 'Unknown Material';
+        } else if (ingredient.finishedProductId) {
+          invKey = `FINISHED:${ingredient.finishedProductId}`;
+          name = ingredient.finishedProduct?.name || 'Unknown Finished Product';
+        } else {
           canMake = false;
           continue;
         }
-
-        const material = inventory.get(ingredient.rawMaterialId);
+        const material = inventory.get(invKey);
         const available = material ? material.quantity : 0;
-
         if (available < ingredient.quantity) {
           canMake = false;
           missingIngredients.push({
-            name: ingredient.rawMaterial?.name || 'Unknown Material',
+            name,
             needed: ingredient.quantity,
             available: available,
             shortage: ingredient.quantity - available,
