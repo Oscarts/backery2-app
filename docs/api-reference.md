@@ -254,6 +254,42 @@ Responses:
 - 404: Product not found
 - 409: Insufficient reserved quantity
 
+### GET /finished-products/{id}/materials
+
+Retrieve material traceability and production cost breakdown for a specific finished product.
+
+Path Parameters:
+
+- `id` Finished product ID
+
+Response 200 Example:
+
+```json
+{
+  "success": true,
+  "data": {
+    "finishedProduct": { "id": "fp_123", "name": "Artisan Bread", "batchNumber": "BATCH-1734", "productionDate": "2025-09-28T18:45:00.000Z", "quantity": 10, "unit": "pcs", "costToProduce": 32.4, "sku": "ARTISAN-BREAD-BATCH-1734" },
+    "productionRun": { "id": "pr_456", "name": "Run 2025-09-28", "recipe": { "id": "r_789", "name": "Artisan Bread" }, "completedAt": "2025-09-28T19:05:00.000Z" },
+    "materials": [
+      { "id": "alloc_1", "materialType": "RAW_MATERIAL", "materialName": "Flour", "materialSku": "RM-12345", "materialBatchNumber": "BATCH-FLR-01", "quantityAllocated": 2, "quantityConsumed": 2, "unit": "kg", "unitCost": 1.5, "totalCost": 3.0, "status": "CONSUMED", "consumedAt": "2025-09-28T18:50:00.000Z" },
+      { "id": "alloc_2", "materialType": "FINISHED_PRODUCT", "materialName": "Base Dough", "materialSku": "DOUGH-BATCH-123", "materialBatchNumber": "BATCH-DO-02", "quantityAllocated": 5, "quantityConsumed": 5, "unit": "pcs", "unitCost": 2.0, "totalCost": 10.0, "status": "CONSUMED", "consumedAt": "2025-09-28T18:52:00.000Z" }
+    ],
+    "costBreakdown": { "materialCost": 13.0, "totalCost": 15.6, "materials": [] },
+    "summary": { "totalMaterialsUsed": 2, "totalMaterialCost": 13.0, "totalProductionCost": 15.6, "costPerUnit": 1.56 }
+  },
+  "message": "Material traceability retrieved successfully"
+}
+```
+
+Errors:
+
+- 404 if finished product or linked production run not found
+
+Notes:
+
+- Includes both raw and finished product ingredient allocations for mixed recipes.
+- `totalCost` includes a 20% overhead added to raw material cost for labor/utilities.
+
 ## 📖 Recipes API
 
 ### GET /recipes

@@ -127,6 +127,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WhatCanIMakeResponse'
+  /finished-products/{id}/materials:
+    get:
+      summary: Get material traceability & cost breakdown for a finished product
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Traceability details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    $ref: '#/components/schemas/FinishedProductMaterials'
+                  message: { type: string }
+        '404': { description: Not found }
 components:
   schemas:
     Recipe:
@@ -198,6 +219,66 @@ components:
         unit: { type: string }
         unitCost: { type: number }
         totalCost: { type: number }
+    MaterialAllocation:
+      type: object
+      properties:
+        id: { type: string }
+        materialType: { type: string, enum: [RAW_MATERIAL, FINISHED_PRODUCT] }
+        materialName: { type: string }
+        materialSku: { type: string }
+        materialBatchNumber: { type: string }
+        quantityAllocated: { type: number }
+        quantityConsumed: { type: number }
+        unit: { type: string }
+        unitCost: { type: number }
+        totalCost: { type: number }
+        status: { type: string }
+        consumedAt: { type: string, format: date-time, nullable: true }
+    ProductionCostBreakdown:
+      type: object
+      properties:
+        materialCost: { type: number }
+        totalCost: { type: number }
+        materials:
+          type: array
+          items: { $ref: '#/components/schemas/MaterialAllocation' }
+    FinishedProductMaterials:
+      type: object
+      properties:
+        finishedProduct:
+          type: object
+          properties:
+            id: { type: string }
+            name: { type: string }
+            batchNumber: { type: string }
+            productionDate: { type: string, format: date-time }
+            quantity: { type: number }
+            unit: { type: string }
+            costToProduce: { type: number, nullable: true }
+            sku: { type: string }
+        productionRun:
+          type: object
+          properties:
+            id: { type: string }
+            name: { type: string }
+            completedAt: { type: string, format: date-time, nullable: true }
+            recipe:
+              type: object
+              properties:
+                id: { type: string }
+                name: { type: string }
+        materials:
+          type: array
+          items: { $ref: '#/components/schemas/MaterialAllocation' }
+        costBreakdown:
+          $ref: '#/components/schemas/ProductionCostBreakdown'
+        summary:
+          type: object
+          properties:
+            totalMaterialsUsed: { type: number }
+            totalMaterialCost: { type: number }
+            totalProductionCost: { type: number }
+            costPerUnit: { type: number }
         availableQuantity: { type: number }
         canMake: { type: boolean }
         type: { type: string, enum: [RAW, FINISHED] }
