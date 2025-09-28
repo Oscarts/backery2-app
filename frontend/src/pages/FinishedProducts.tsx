@@ -59,7 +59,7 @@ import {
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { finishedProductsApi, categoriesApi, storageLocationsApi, unitsApi, qualityStatusApi } from '../services/realApi';
-import { FinishedProduct, CategoryType, CreateFinishedProductData, UpdateFinishedProductData, ProductStatus } from '../types';
+import { FinishedProduct, CategoryType, CreateFinishedProductData, UpdateFinishedProductData, ProductStatus, MaterialBreakdown, MaterialAllocation, ApiResponse } from '../types';
 import { formatDate, formatQuantity, isExpired, isExpiringSoon, getDaysUntilExpiration, formatCurrency } from '../utils/api';
 
 // Status display helper functions
@@ -146,13 +146,10 @@ const FinishedProducts: React.FC = () => {
   const { data: qualityStatusResponse } = useQuery(['qualityStatuses'], qualityStatusApi.getAll);
 
   // Fetch material breakdown for selected product
-  const { data: materialBreakdownResponse, isLoading: materialLoading, error: materialError } = useQuery<any, Error>(
+  const { data: materialBreakdownResponse, isLoading: materialLoading, error: materialError } = useQuery<ApiResponse<MaterialBreakdown> | null, Error>(
     ['materialBreakdown', selectedProductId],
     () => selectedProductId ? finishedProductsApi.getMaterialBreakdown(selectedProductId) : Promise.resolve(null),
-    {
-      enabled: !!selectedProductId,
-      retry: false
-    }
+    { enabled: !!selectedProductId, retry: false }
   );
 
   const categories = categoriesResponse?.data?.filter(c => c.type === CategoryType.FINISHED_PRODUCT);
@@ -583,7 +580,7 @@ const FinishedProducts: React.FC = () => {
                           </TableRow>
                         </TableHead>
                         <TableBody>
-                          {(materialBreakdownResponse.data.materials || []).map((m: any) => (
+                          {(materialBreakdownResponse.data.materials || []).map((m: MaterialAllocation) => (
                             <TableRow key={m.id}>
                               <TableCell>{m.materialName}</TableCell>
                               <TableCell>{m.materialSku}</TableCell>
