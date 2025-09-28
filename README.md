@@ -89,6 +89,9 @@ npm run dev
 - Raw materials inventory tracking
 - Intermediate products management
 - Finished products catalog
+  - Inline Materials tab with real-time cost & traceability summary
+  - Refresh button to re-fetch material/cost breakdown
+  - In-production warning prompting completion before trusting costs
 - Recipe management
 - Quality status monitoring
 - Storage location management
@@ -109,6 +112,28 @@ npm run dev
 - Frontend uses `realApi.ts` - never `mockApi.ts`
 - All features require unit tests before marking as complete
 - Update development progress tracking after every completed feature
+- When viewing a Finished Product's Materials tab while status is IN_PRODUCTION, costs may be provisional; complete production to finalize.
+- Use the Refresh button in the Materials tab after completing production to pull definitive cost breakdown.
+- API Testing Dashboard now includes traceability and production health checks—run regularly after backend changes.
+
+## 🧪 API Testing Dashboard Enhancements
+
+The `ApiTest` page provides rapid, in-browser validation of key backend flows.
+
+Recently added tests:
+
+- Finished Product Materials Traceability: Verifies `/finished-products/:id/materials` returns materials, summary, and costs.
+- Production Workflow (Light): Placeholder system health probe (extendable to full run lifecycle).
+- Production Contamination Check: Lists contaminated finished products (if any).
+- Production Capacity Check: Quick count of finished products for capacity sanity.
+
+Traceability Test Tips:
+
+1. Create or complete a finished product so it has a production run.
+2. Run tests; if skipped, ensure at least one COMPLETED product exists.
+3. After allocating & completing a production run elsewhere, hit Refresh within the product Materials tab and re-run the traceability test for updated costs.
+
+Planned (optional future): deeper production workflow simulation and per-test execution controls.
 
 ## 🛠️ Development Requirements
 
