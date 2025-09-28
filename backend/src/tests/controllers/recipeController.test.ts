@@ -67,19 +67,7 @@ describe('Recipe Production Capacity Calculation', () => {
       expect(batchesForThisIngredient).toBe(0); // 5kg ÷ 10kg = 0 batches (floor of 0.5)
     });
 
-    it('should handle intermediate products in calculation', () => {
-      const ingredient = {
-        intermediateProductId: 'dough-1',
-        quantity: 2, // 2kg dough per batch
-        unit: 'kg'
-      };
-
-      const availableQuantity = 20; // 20kg dough available
-
-      const batchesForThisIngredient = Math.floor(availableQuantity / ingredient.quantity);
-
-      expect(batchesForThisIngredient).toBe(10); // 20kg ÷ 2kg = 10 batches
-    });
+    // Removed intermediate product support test (intermediate products feature deprecated)
 
     it('should handle edge case of zero quantity ingredients', () => {
       const ingredient = {

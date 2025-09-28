@@ -136,7 +136,6 @@ export const createRecipe = async (req: Request, res: Response) => {
           data: ingredients.map((ingredient: any) => ({
             recipeId: newRecipe.id,
             rawMaterialId: ingredient.rawMaterialId || null,
-            intermediateProductId: ingredient.intermediateProductId || null,
             quantity: ingredient.quantity,
             unit: ingredient.unit,
             notes: ingredient.notes || null
@@ -251,7 +250,6 @@ export const updateRecipe = async (req: Request, res: Response) => {
             data: ingredients.map((ingredient: any) => ({
               recipeId: id,
               rawMaterialId: ingredient.rawMaterialId || null,
-              intermediateProductId: ingredient.intermediateProductId || null,
               quantity: ingredient.quantity,
               unit: ingredient.unit,
               notes: ingredient.notes || null

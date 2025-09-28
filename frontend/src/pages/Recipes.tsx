@@ -1436,11 +1436,8 @@ const Recipes: React.FC = () => {
                   </TableHead>
                   <TableBody>
                     {selectedRecipeDetails.ingredients?.map((ingredient) => {
-                      const isRawMaterial = !!ingredient.rawMaterialId;
-                      const ingredientItem = isRawMaterial
-                        ? ingredient.rawMaterial
-                        : ingredient.intermediateProduct;
-
+                      // Since intermediate products are removed, all ingredients are raw materials
+                      const ingredientItem = ingredient.rawMaterial;
                       const availableQuantity = ingredientItem?.quantity || 0;
                       const hasEnough = availableQuantity >= ingredient.quantity;
 
@@ -1450,7 +1447,7 @@ const Recipes: React.FC = () => {
                             {getIngredientName(ingredient)}
                           </TableCell>
                           <TableCell>
-                            {isRawMaterial ? 'Raw Material' : 'Intermediate Product'}
+                            Raw Material
                           </TableCell>
                           <TableCell>
                             {ingredient.quantity} {ingredient.unit}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Container,
   Typography,
@@ -27,7 +27,7 @@ import { CategoryType } from '../types';
 
 interface TestResult {
   name: string;
-  status: 'idle' | 'testing' | 'success' | 'error';
+  status: 'idle' | 'testing' | 'success' | 'error' | 'skipped';
   message?: string;
   data?: any;
 }
@@ -67,6 +67,30 @@ const ApiTestPage: React.FC = () => {
     setTests(prev => prev.map((test, i) => i === index ? { ...test, ...updates } : test));
   };
 
+  // Shared context across tests for chaining created entity IDs, etc.
+  const testContextRef = useRef<Record<string, any>>({});
+
+  // Helper to run a single test safely and standardize result handling
+  const safeTest = async (
+    index: number,
+    fn: () => Promise<{ message?: string; data?: any; skip?: boolean; skipMessage?: string } | void>
+  ) => {
+    updateTest(index, { status: 'testing', message: undefined, data: undefined });
+    try {
+      const result = await fn();
+      if (result && result.skip) {
+        updateTest(index, { status: 'skipped', message: result.skipMessage || 'Skipped', data: undefined });
+      } else {
+        updateTest(index, { status: 'success', message: result?.message || 'OK', data: result?.data });
+      }
+    } catch (error) {
+      updateTest(index, {
+        status: 'error',
+        message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+  };
+
   // Calculate test statistics
   const getTestStats = () => {
     const total = tests.length;
@@ -74,474 +98,304 @@ const ApiTestPage: React.FC = () => {
     const failed = tests.filter(test => test.status === 'error').length;
     const running = tests.filter(test => test.status === 'testing').length;
     const idle = tests.filter(test => test.status === 'idle').length;
+    const skipped = tests.filter(test => test.status === 'skipped').length;
 
-    return { total, passed, failed, running, idle };
+    return { total, passed, failed, running, idle, skipped };
   };
 
   const stats = getTestStats();
 
   const runAllTests = async () => {
-    // Test 1: Categories API
-    updateTest(0, { status: 'testing' });
-    try {
+    console.debug('[API TEST] Starting runAllTests');
+    const ctx = testContextRef.current;
+    ctx._startTime = Date.now();
+
+    // 1 Categories
+    await safeTest(0, async () => {
+      console.debug('[API TEST] Test 1: Fetch categories');
       const categoriesResult = await categoriesApi.getAll();
-      updateTest(0, {
-        status: 'success',
-        message: `Found ${categoriesResult.data?.length || 0} categories`,
-        data: categoriesResult.data
-      });
-    } catch (error) {
-      updateTest(0, {
-        status: 'error',
-        message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-    }
+      ctx.categories = categoriesResult.data || [];
+      return { message: `Found ${ctx.categories.length} categories`, data: categoriesResult.data };
+    });
 
-    // Test 2: Storage Locations API
-    updateTest(1, { status: 'testing' });
-    try {
+    // 2 Storage Locations
+    await safeTest(1, async () => {
       const locationsResult = await storageLocationsApi.getAll();
-      updateTest(1, {
-        status: 'success',
-        message: `Found ${locationsResult.data?.length || 0} storage locations`,
-        data: locationsResult.data
-      });
-    } catch (error) {
-      updateTest(1, {
-        status: 'error',
-        message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-    }
+      ctx.locations = locationsResult.data || [];
+      return { message: `Found ${ctx.locations.length} storage locations`, data: locationsResult.data };
+    });
 
-    // Test 3: Units API
-    updateTest(2, { status: 'testing' });
-    try {
+    // 3 Units
+    await safeTest(2, async () => {
       const unitsResult = await unitsApi.getAll();
-      updateTest(2, {
-        status: 'success',
-        message: `Found ${unitsResult.data?.length || 0} units`,
-        data: unitsResult.data
-      });
-    } catch (error) {
-      updateTest(2, {
-        status: 'error',
-        message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-    }
+      ctx.units = unitsResult.data || [];
+      return { message: `Found ${ctx.units.length} units`, data: unitsResult.data };
+    });
 
-    // Test 4: Suppliers API
-    updateTest(3, { status: 'testing' });
-    try {
+    // 4 Suppliers
+    await safeTest(3, async () => {
       const suppliersResult = await suppliersApi.getAll();
-      updateTest(3, {
-        status: 'success',
-        message: `Found ${suppliersResult.data?.length || 0} suppliers`,
-        data: suppliersResult.data
-      });
-    } catch (error) {
-      updateTest(3, {
-        status: 'error',
-        message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-    }
+      ctx.suppliers = suppliersResult.data || [];
+      return { message: `Found ${ctx.suppliers.length} suppliers`, data: suppliersResult.data };
+    });
 
-    // Test 5: Raw Materials API
-    updateTest(4, { status: 'testing' });
-    try {
+    // 5 Raw Materials list
+    await safeTest(4, async () => {
       const rawMaterialsResult = await rawMaterialsApi.getAll();
-      updateTest(4, {
-        status: 'success',
-        message: `Found ${rawMaterialsResult.data?.length || 0} raw materials`,
-        data: rawMaterialsResult.data
-      });
-    } catch (error) {
-      updateTest(4, {
-        status: 'error',
-        message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-    }
+      ctx.rawMaterials = rawMaterialsResult.data || [];
+      return { message: `Found ${ctx.rawMaterials.length} raw materials`, data: rawMaterialsResult.data };
+    });
 
-    // Test 6: Create Raw Material
-    updateTest(5, { status: 'testing' });
-    try {
-      // Ensure we have fresh data for the raw material create test
-      const [categoriesResult, locationsResult, unitsResult, suppliersResult] = await Promise.all([
-        categoriesApi.getAll(),
-        storageLocationsApi.getAll(),
-        unitsApi.getAll(),
-        suppliersApi.getAll()
-      ]);
+    // 6 Create Raw Material
+    await safeTest(5, async () => {
+      const category = (ctx.categories || []).find((c: any) => c.type === CategoryType.RAW_MATERIAL);
+      const supplier = (ctx.suppliers || [])[0];
+      const location = (ctx.locations || [])[0];
+      const unit = (ctx.units || [])[0];
 
-      // Find a raw material category
-      const rawMaterialCategory = categoriesResult.data?.find(c => c.type === CategoryType.RAW_MATERIAL);
-      if (!rawMaterialCategory?.id) {
-        throw new Error('No raw material categories available for testing');
-      }
-      if (!locationsResult.data?.[0]?.id) {
-        throw new Error('No storage locations available for testing');
-      }
-      if (!unitsResult.data?.[0]?.symbol) {
-        throw new Error('No units available for testing');
-      }
-      if (!suppliersResult.data?.[0]?.id) {
-        throw new Error('No suppliers available for testing');
+      if (!category || !supplier || !location || !unit) {
+        return { skip: true, skipMessage: 'Missing prerequisite (category/supplier/location/unit)' };
       }
 
       const createRawMaterialData = {
-        name: 'Test Raw Material',
-        categoryId: rawMaterialCategory.id,
-        supplierId: suppliersResult.data[0].id,
-        batchNumber: `RAW-BATCH-${Date.now()}`,
+        name: `Test Raw Material ${Date.now()}`,
+        categoryId: category.id,
+        supplierId: supplier.id,
+        batchNumber: `RAW-${Date.now()}`,
         purchaseDate: new Date().toISOString().split('T')[0],
         expirationDate: '2025-12-31',
         quantity: 50,
-        unit: unitsResult.data[0].symbol,
-        costPerUnit: 2.50,
+        unit: unit.symbol,
+        costPerUnit: 2.5,
         reorderLevel: 10,
-        storageLocationId: locationsResult.data[0].id
+        storageLocationId: location.id
       };
 
       const createRawResult = await rawMaterialsApi.create(createRawMaterialData);
-      updateTest(5, {
-        status: 'success',
-        message: `Created raw material with ID: ${createRawResult.data?.id}`,
-        data: createRawResult.data
+      ctx.createdRawMaterialId = createRawResult.data?.id;
+      return { message: `Created raw material ${createRawResult.data?.id}`, data: createRawResult.data };
+    });
+
+    // 7 Update Raw Material
+    await safeTest(6, async () => {
+      if (!ctx.createdRawMaterialId) {
+        return { skip: true, skipMessage: 'No created raw material to update' };
+      }
+      const updateRawResult = await rawMaterialsApi.update(ctx.createdRawMaterialId, {
+        quantity: 75,
+        costPerUnit: 3.0,
+        contaminated: false
       });
+      return { message: `Updated raw material quantity to ${updateRawResult.data?.quantity}`, data: updateRawResult.data };
+    });
 
-      // Test 7: Update the created raw material
-      if (createRawResult.data?.id) {
-        updateTest(6, { status: 'testing' });
-        try {
-          const updateRawResult = await rawMaterialsApi.update(createRawResult.data.id, {
-            quantity: 75,
-            costPerUnit: 3.00,
-            contaminated: false
-          });
-          updateTest(6, {
-            status: 'success',
-            message: `Updated raw material quantity to ${updateRawResult.data?.quantity}`,
-            data: updateRawResult.data
-          });
+    // 8 Delete Raw Material
+    await safeTest(7, async () => {
+      if (!ctx.createdRawMaterialId) {
+        return { skip: true, skipMessage: 'No created raw material to delete' };
+      }
+      // Ensure we keep at least one raw material for recipe ingredient tests
+      const existing = await rawMaterialsApi.getAll();
+      if ((existing.data?.length || 0) <= 1) {
+        return { skip: true, skipMessage: 'Preserving lone raw material for recipe tests' };
+      }
+      await rawMaterialsApi.delete(ctx.createdRawMaterialId);
+      return { message: 'Raw material deleted (others remain)' };
+    });
 
-          // Test 8: Delete the created raw material
-          updateTest(7, { status: 'testing' });
-          try {
-            await rawMaterialsApi.delete(createRawResult.data.id);
-            updateTest(7, {
-              status: 'success',
-              message: 'Raw material deleted successfully'
-            });
-          } catch (error) {
-            updateTest(7, {
-              status: 'error',
-              message: `Delete error: ${error instanceof Error ? error.message : 'Unknown error'}`
-            });
-          }
-        } catch (error) {
-          updateTest(6, {
-            status: 'error',
-            message: `Update error: ${error instanceof Error ? error.message : 'Unknown error'}`
-          });
+    // 9 Finished Products list
+    await safeTest(8, async () => {
+      const finishedProductsResult = await finishedProductsApi.getAll();
+      ctx.finishedProducts = finishedProductsResult.data || [];
+      return { message: `Found ${ctx.finishedProducts.length} finished products`, data: finishedProductsResult.data };
+    });
+
+    // 10 Create Finished Product
+    await safeTest(9, async () => {
+      console.debug('[API TEST] Test 10: Create Finished Product');
+      // Refresh categories for potential new category creation
+      const categoriesResult = await categoriesApi.getAll();
+      ctx.categories = categoriesResult.data || [];
+      // Some environments may not yet include FINISHED_PRODUCT in the enum; fall back to string literal
+      const FINISHED_KEY = (CategoryType as any)?.FINISHED_PRODUCT || 'FINISHED_PRODUCT';
+      let finishedCategories = ctx.categories.filter((c: any) => c.type === FINISHED_KEY);
+
+      if (!finishedCategories.length) {
+        // Attempt to create one
+        const createCatResult = await categoriesApi.create({
+          name: 'Test Finished Products',
+          type: FINISHED_KEY,
+          description: 'Auto-created for tests'
+        } as any);
+        if (createCatResult?.data) {
+          finishedCategories = [createCatResult.data];
+          ctx.categories.push(createCatResult.data);
+        } else {
+          return { skip: true, skipMessage: 'Unable to create finished product category' };
         }
       }
-    } catch (error) {
-      updateTest(5, {
-        status: 'error',
-        message: `Create error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-    }
 
-    // Test 9: Finished Products API
-    updateTest(8, { status: 'testing' });
-    try {
-      const finishedProductsResult = await finishedProductsApi.getAll();
-      updateTest(8, {
-        status: 'success',
-        message: `Found ${finishedProductsResult.data?.length || 0} finished products`,
-        data: finishedProductsResult.data
-      });
-    } catch (error) {
-      updateTest(8, {
-        status: 'error',
-        message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-    }
-
-    // Test 10: Create Finished Product
-    updateTest(9, { status: 'testing' });
-    try {
-      const categoriesResult = await categoriesApi.getAll();
-      const finishedProductCategories = categoriesResult.data?.filter(c => c.type === 'FINISHED_PRODUCT');
-
-      if (!finishedProductCategories || finishedProductCategories.length === 0) {
-        updateTest(13, {
-          status: 'error',
-          message: 'No finished product categories found for testing'
-        });
-        return;
-      }
+      const unit = (ctx.units || []).find((u: any) => u.symbol === 'pcs') || (ctx.units || [])[0];
+      if (!unit) return { skip: true, skipMessage: 'No units available' };
 
       const createFinishedData = {
-        name: 'Test Finished Product',
+        name: `Test Finished Product ${Date.now()}`,
         sku: `TEST-FP-${Date.now()}`,
-        categoryId: finishedProductCategories[0].id,
+        categoryId: finishedCategories[0].id,
         batchNumber: `BATCH-${Date.now()}`,
         productionDate: new Date().toISOString().split('T')[0],
-        expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+        expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         shelfLife: 30,
         quantity: 100,
-        unit: 'pcs',
+        unit: unit.symbol || 'pcs',
         salePrice: 15.99,
-        costToProduce: 10.50,
+        costToProduce: 10.5,
         packagingInfo: 'Individual packaging'
       };
-
       const createFinishedResult = await finishedProductsApi.create(createFinishedData);
-      updateTest(13, {
-        status: 'success',
-        message: `Created finished product: ${createFinishedResult.data?.name}`,
-        data: createFinishedResult.data
+      ctx.createdFinishedProductId = createFinishedResult.data?.id;
+      return { message: `Created finished product ${createFinishedResult.data?.id}`, data: createFinishedResult.data };
+    });
+
+    // 11 Update Finished Product
+    await safeTest(10, async () => {
+      if (!ctx.createdFinishedProductId) return { skip: true, skipMessage: 'No created finished product to update' };
+      const updateFinishedResult = await finishedProductsApi.update(ctx.createdFinishedProductId, {
+        quantity: 150,
+        salePrice: 17.99
       });
+      return { message: `Updated finished product quantity to ${updateFinishedResult.data?.quantity}`, data: updateFinishedResult.data };
+    });
 
-      if (createFinishedResult.data) {
-        // Test 15: Update the created finished product
-        updateTest(14, { status: 'testing' });
-        try {
-          const updateFinishedData = {
-            quantity: 150,
-            salePrice: 17.99
-          };
+    // 12 Delete Finished Product
+    await safeTest(11, async () => {
+      if (!ctx.createdFinishedProductId) return { skip: true, skipMessage: 'No created finished product to delete' };
+      await finishedProductsApi.delete(ctx.createdFinishedProductId);
+      return { message: 'Finished product deleted successfully' };
+    });
 
-          const updateFinishedResult = await finishedProductsApi.update(createFinishedResult.data.id, updateFinishedData);
-          updateTest(14, {
-            status: 'success',
-            message: `Updated finished product quantity to ${updateFinishedResult.data?.quantity}`,
-            data: updateFinishedResult.data
-          });
-
-          // Test 16: Delete the created finished product
-          updateTest(15, { status: 'testing' });
-          try {
-            await finishedProductsApi.delete(createFinishedResult.data.id);
-            updateTest(15, {
-              status: 'success',
-              message: 'Finished product deleted successfully'
-            });
-          } catch (error) {
-            updateTest(15, {
-              status: 'error',
-              message: `Delete error: ${error instanceof Error ? error.message : 'Unknown error'}`
-            });
-          }
-        } catch (error) {
-          updateTest(14, {
-            status: 'error',
-            message: `Update error: ${error instanceof Error ? error.message : 'Unknown error'}`
-          });
-        }
-      }
-    } catch (error) {
-      updateTest(13, {
-        status: 'error',
-        message: `Create error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-    }
-
-    // Test 17: Get Expiring Products
-    updateTest(16, { status: 'testing' });
-    try {
+    // 13 Expiring
+    await safeTest(12, async () => {
       const expiringResult = await finishedProductsApi.getExpiring(7);
-      updateTest(16, {
-        status: 'success',
-        message: `Found ${expiringResult.data?.length || 0} products expiring in 7 days`,
-        data: expiringResult.data
-      });
-    } catch (error) {
-      updateTest(16, {
-        status: 'error',
-        message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-    }
+      return { message: `Found ${expiringResult.data?.length || 0} products expiring in 7 days`, data: expiringResult.data };
+    });
 
-    // Test 18: Get Low Stock Products
-    updateTest(17, { status: 'testing' });
-    try {
+    // 14 Low Stock
+    await safeTest(13, async () => {
       const lowStockResult = await finishedProductsApi.getLowStock(10);
-      updateTest(17, {
-        status: 'success',
-        message: `Found ${lowStockResult.data?.length || 0} low stock products`,
-        data: lowStockResult.data
-      });
-    } catch (error) {
-      updateTest(17, {
-        status: 'error',
-        message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-    }
+      return { message: `Found ${lowStockResult.data?.length || 0} low stock products`, data: lowStockResult.data };
+    });
 
-    // Test 19: Reserve Product Quantity
-    updateTest(18, { status: 'testing' });
-    try {
+    // 15 Reserve Product
+    await safeTest(14, async () => {
       const allProducts = await finishedProductsApi.getAll();
       const availableProduct = allProducts.data?.find(p => p.quantity > p.reservedQuantity);
+      if (!availableProduct) return { skip: true, skipMessage: 'No product with available quantity to reserve' };
+      const reserveResult = await finishedProductsApi.reserveQuantity(availableProduct.id, 5);
+      ctx.reservationProductId = availableProduct.id;
+      return { message: `Reserved 5 units of ${availableProduct.name}`, data: reserveResult.data };
+    });
 
-      if (availableProduct) {
-        const reserveResult = await finishedProductsApi.reserveQuantity(availableProduct.id, 5);
-        updateTest(18, {
-          status: 'success',
-          message: `Reserved 5 units of ${availableProduct.name}`,
-          data: reserveResult.data
-        });
+    // 16 Release Reservation
+    await safeTest(15, async () => {
+      if (!ctx.reservationProductId) return { skip: true, skipMessage: 'No reservation product to release' };
+      const releaseResult = await finishedProductsApi.releaseReservation(ctx.reservationProductId, 5);
+      return { message: 'Released 5 units reservation', data: releaseResult.data };
+    });
 
-        // Test 20: Release Product Reservation
-        updateTest(19, { status: 'testing' });
-        try {
-          const releaseResult = await finishedProductsApi.releaseReservation(availableProduct.id, 5);
-          updateTest(19, {
-            status: 'success',
-            message: `Released 5 units reservation for ${availableProduct.name}`,
-            data: releaseResult.data
-          });
-        } catch (error) {
-          updateTest(19, {
-            status: 'error',
-            message: `Release error: ${error instanceof Error ? error.message : 'Unknown error'}`
-          });
-        }
-      } else {
-        updateTest(18, {
-          status: 'error',
-          message: 'No available products found for reservation testing'
-        });
-        updateTest(19, { status: 'idle' });
-      }
-    } catch (error) {
-      updateTest(18, {
-        status: 'error',
-        message: `Reserve error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-      updateTest(19, { status: 'idle' });
-    }
-
-    // Test 21: Dashboard Summary
-    updateTest(20, { status: 'testing' });
-    try {
+    // 17 Dashboard Summary
+    await safeTest(16, async () => {
       const summaryResponse = await fetch('/api/dashboard/summary');
       const summaryResult = await summaryResponse.json();
-      updateTest(20, {
-        status: 'success',
-        message: `Dashboard summary loaded - Total items: ${summaryResult.data?.inventoryCounts?.total || 0}`,
-        data: summaryResult.data
-      });
-    } catch (error) {
-      updateTest(20, {
-        status: 'error',
-        message: `Summary error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-    }
+      return { message: `Dashboard total items: ${summaryResult.data?.inventoryCounts?.total || 0}`, data: summaryResult.data };
+    });
 
-    // Test 22: Dashboard Alerts
-    updateTest(21, { status: 'testing' });
-    try {
+    // 18 Dashboard Alerts
+    await safeTest(17, async () => {
       const alertsResponse = await fetch('/api/dashboard/alerts');
       const alertsResult = await alertsResponse.json();
-      updateTest(21, {
-        status: 'success',
-        message: `Found ${alertsResult.data?.length || 0} alerts`,
-        data: alertsResult.data
-      });
-    } catch (error) {
-      updateTest(21, {
-        status: 'error',
-        message: `Alerts error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-    }
+      return { message: `Found ${alertsResult.data?.length || 0} alerts`, data: alertsResult.data };
+    });
 
-    // Test 23: Dashboard Trends
-    updateTest(22, { status: 'testing' });
-    try {
+    // 19 Dashboard Trends
+    await safeTest(18, async () => {
       const trendsResponse = await fetch('/api/dashboard/trends?days=7');
       const trendsResult = await trendsResponse.json();
-      updateTest(22, {
-        status: 'success',
-        message: `Trends loaded for 7 days`,
-        data: trendsResult.data
-      });
-    } catch (error) {
-      updateTest(22, {
-        status: 'error',
-        message: `Trends error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-    }
+      return { message: 'Trends loaded for 7 days', data: trendsResult.data };
+    });
 
-    // Test 24: Dashboard Categories
-    updateTest(23, { status: 'testing' });
-    try {
+    // 20 Dashboard Categories
+    await safeTest(19, async () => {
       const categoriesResponse = await fetch('/api/dashboard/categories');
       const categoriesResult = await categoriesResponse.json();
-      updateTest(23, {
-        status: 'success',
-        message: `Categories breakdown loaded`,
-        data: categoriesResult.data
-      });
-    } catch (error) {
-      updateTest(23, {
-        status: 'error',
-        message: `Categories error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-    }
+      return { message: 'Categories breakdown loaded', data: categoriesResult.data };
+    });
 
-    // Test 25: Dashboard Value Analysis
-    updateTest(24, { status: 'testing' });
-    try {
+    // 21 Dashboard Value
+    await safeTest(20, async () => {
       const valueResponse = await fetch('/api/dashboard/value');
       const valueResult = await valueResponse.json();
-      updateTest(24, {
-        status: 'success',
-        message: `Value analysis loaded`,
-        data: valueResult.data
-      });
-    } catch (error) {
-      updateTest(24, {
-        status: 'error',
-        message: `Value error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-    }
+      return { message: 'Value analysis loaded', data: valueResult.data };
+    });
 
-    // Test 26: Recipes API
-    updateTest(25, { status: 'testing' });
-    try {
+    // 22 Recipes list
+    await safeTest(21, async () => {
       const recipesResponse = await fetch('/api/recipes');
       const recipesResult = await recipesResponse.json();
-      updateTest(25, {
-        status: 'success',
-        message: `Found ${recipesResult.data?.length || 0} recipes`,
-        data: recipesResult.data
-      });
-    } catch (error) {
-      updateTest(25, {
-        status: 'error',
-        message: `Recipes error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-    }
+      ctx.recipes = recipesResult.data || [];
+      return { message: `Found ${ctx.recipes.length} recipes`, data: recipesResult.data };
+    });
 
-    // Test 27: Create Recipe
-    updateTest(26, { status: 'testing' });
-    try {
-      // First get categories and raw materials to use valid IDs
-      const categoriesResult = await categoriesApi.getAll();
-      const rawMaterialsResult = await rawMaterialsApi.getAll();
-
-      // Find a category for recipes (or use the first one if no specific type found)
-      const recipeCategory = categoriesResult.data?.find(c => c.type === CategoryType.RECIPE) ||
-        categoriesResult.data?.[0];
-
-      // Get first raw material
-      const rawMaterial = rawMaterialsResult.data?.[0];
-
-      if (!recipeCategory || !rawMaterial) {
-        throw new Error('Missing required categories or raw materials for test');
+    // 23 Create Recipe (guarantee prerequisites: recipe category + raw material)
+    await safeTest(22, async () => {
+      console.debug('[API TEST] Test 23: Create Recipe');
+      // Ensure categories cached
+      if (!ctx.categories) {
+        const cats = await categoriesApi.getAll();
+        ctx.categories = cats.data || [];
       }
+      const RECIPE_KEY = (CategoryType as any)?.RECIPE || 'RECIPE';
+      let recipeCategory = ctx.categories.find((c: any) => c.type === RECIPE_KEY);
+      if (!recipeCategory) {
+        try {
+          const catCreate = await categoriesApi.create({ name: 'Test Recipes', type: RECIPE_KEY, description: 'Auto-created for tests' } as any);
+          if (catCreate.data) {
+            recipeCategory = catCreate.data;
+            ctx.categories.push(catCreate.data);
+          }
+        } catch (e) {
+          // proceed without dedicated recipe category if backend doesn't enforce
+        }
+      }
+
+      // Ensure a raw material exists
+      let rawMaterials = (await rawMaterialsApi.getAll()).data || [];
+      if (!rawMaterials.length) {
+        const rmCategory = ctx.categories.find((c: any) => c.type === CategoryType.RAW_MATERIAL) || ctx.categories[0];
+        const supplier = (ctx.suppliers || [])[0];
+        const location = (ctx.locations || [])[0];
+        const unit = (ctx.units || [])[0];
+        if (rmCategory && supplier && location && unit) {
+          const tempRaw = await rawMaterialsApi.create({
+            name: `Temp Raw ${Date.now()}`,
+            categoryId: rmCategory.id,
+            supplierId: supplier.id,
+            batchNumber: `TMP-${Date.now()}`,
+            purchaseDate: new Date().toISOString().split('T')[0],
+            expirationDate: '2025-12-31',
+            quantity: 10,
+            unit: unit.symbol,
+            costPerUnit: 1,
+            reorderLevel: 2,
+            storageLocationId: location.id
+          });
+          if (tempRaw.data) {
+            rawMaterials = [tempRaw.data];
+          }
+        }
+      }
+      const rawMaterial = rawMaterials[0];
+      if (!rawMaterial) return { skip: true, skipMessage: 'Unable to ensure raw material for recipe' };
 
       const testRecipe = {
         name: `Test Recipe ${Date.now()}`,
@@ -552,178 +406,73 @@ const ApiTestPage: React.FC = () => {
         cookTime: 20,
         instructions: ['Mix ingredients', 'Bake until golden'],
         ingredients: [
-          {
-            rawMaterialId: rawMaterial.id,
-            quantity: 0.5,
-            unit: rawMaterial.unit, // Use the raw material's unit
-            notes: 'Test ingredient'
-          }
+          { rawMaterialId: rawMaterial.id, quantity: 0.5, unit: rawMaterial.unit, notes: 'Test ingredient' }
         ]
       };
-
-      const createResponse = await fetch('/api/recipes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(testRecipe)
-      });
+      const createResponse = await fetch('/api/recipes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(testRecipe) });
       const createResult = await createResponse.json();
+      if (!createResult.success) throw new Error(createResult.error || 'Failed to create recipe');
+      ctx.createdRecipeId = createResult.data.id;
+      return { message: `Recipe created ${createResult.data.name}`, data: createResult.data };
+    });
 
-      if (createResult.success) {
-        updateTest(26, {
-          status: 'success',
-          message: `Recipe created: ${createResult.data.name}`,
-          data: createResult.data
-        });
-
-        // Store recipe ID for subsequent tests
-        (window as any).testRecipeId = createResult.data.id;
-      } else {
-        throw new Error(createResult.error || 'Failed to create recipe');
-      }
-    } catch (error) {
-      updateTest(26, {
-        status: 'error',
-        message: `Create recipe error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-    }
-
-    // Test 28: Recipe Cost Analysis
-    updateTest(27, { status: 'testing' });
-    try {
-      // Get test recipe ID or fetch an existing recipe
-      let recipeId = (window as any).testRecipeId;
-
-      // If no test recipe was created, get one from the API
+    // 24 Recipe Cost Analysis
+    await safeTest(23, async () => {
+      let recipeId = ctx.createdRecipeId;
       if (!recipeId) {
+        // fallback: fetch one
         const recipesResponse = await fetch('/api/recipes');
         const recipesResult = await recipesResponse.json();
-
-        if (recipesResult.success && recipesResult.data && recipesResult.data.length > 0) {
-          recipeId = recipesResult.data[0].id;
-        } else {
-          throw new Error('No recipes available for cost analysis test');
-        }
+        if (recipesResult.success && recipesResult.data?.length) recipeId = recipesResult.data[0].id; else return { skip: true, skipMessage: 'No recipe available for cost analysis' };
       }
-
       const costResponse = await fetch(`/api/recipes/${recipeId}/cost`);
-      if (!costResponse.ok) {
-        throw new Error(`API error: ${costResponse.status} ${costResponse.statusText}`);
-      }
-
+      if (!costResponse.ok) throw new Error(`API error: ${costResponse.status}`);
       const costResult = await costResponse.json();
+      if (!costResult.success) throw new Error(costResult.error || 'Cost analysis failed');
+      return { message: `Cost: $${costResult.data?.totalCost?.toFixed(2) || '0.00'}`, data: costResult.data };
+    });
 
-      updateTest(27, {
-        status: costResult.success ? 'success' : 'error',
-        message: costResult.success
-          ? `Cost analysis: $${costResult.data?.totalCost?.toFixed(2) || '0.00'}`
-          : `Error: ${costResult.error || 'Unknown error'}`,
-        data: costResult.data
-      });
-    } catch (error) {
-      updateTest(27, {
-        status: 'error',
-        message: `Cost analysis error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-    }
-
-    // Test 29: What Can I Make Analysis
-    updateTest(28, { status: 'testing' });
-    try {
+    // 25 What Can I Make
+    await safeTest(24, async () => {
       const whatCanMakeResponse = await fetch('/api/recipes/what-can-i-make');
+      if (!whatCanMakeResponse.ok) throw new Error(`API error: ${whatCanMakeResponse.status}`);
+      const result = await whatCanMakeResponse.json();
+      const canMakeCount = result.data?.canMakeCount || result.data?.recipes?.canMake?.length || 0;
+      const totalRecipes = result.data?.totalRecipes || result.data?.recipes?.total || 0;
+      if (!result.success) throw new Error(result.error || 'Unknown error');
+      return { message: `Can make ${canMakeCount} of ${totalRecipes} recipes`, data: result.data };
+    });
 
-      if (!whatCanMakeResponse.ok) {
-        throw new Error(`API error: ${whatCanMakeResponse.status} ${whatCanMakeResponse.statusText}`);
-      }
-
-      const whatCanMakeResult = await whatCanMakeResponse.json();
-
-      // Check for different possible response structures
-      const canMakeCount = whatCanMakeResult.data?.canMakeCount ||
-        whatCanMakeResult.data?.recipes?.canMake?.length || 0;
-      const totalRecipes = whatCanMakeResult.data?.totalRecipes ||
-        whatCanMakeResult.data?.recipes?.total || 0;
-
-      updateTest(28, {
-        status: whatCanMakeResult.success ? 'success' : 'error',
-        message: whatCanMakeResult.success
-          ? `Can make ${canMakeCount} of ${totalRecipes} recipes`
-          : `Error: ${whatCanMakeResult.error || 'Unknown error'}`,
-        data: whatCanMakeResult.data
-      });
-    } catch (error) {
-      updateTest(28, {
-        status: 'error',
-        message: `What can I make error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-    }
-
-    // Test 30: Update Recipe
-    updateTest(29, { status: 'testing' });
-    try {
-      const recipeId = (window as any).testRecipeId;
-      if (!recipeId) {
-        throw new Error('No test recipe ID available');
-      }
-
-      const updateData = {
-        name: `Updated Test Recipe ${Date.now()}`,
-        description: 'Updated test recipe description',
-        prepTime: 45
-      };
-
-      const updateResponse = await fetch(`/api/recipes/${recipeId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updateData)
-      });
+    // 26 Update Recipe
+    await safeTest(25, async () => {
+      if (!ctx.createdRecipeId) return { skip: true, skipMessage: 'No created recipe to update' };
+      const updateData = { name: `Updated Test Recipe ${Date.now()}`, description: 'Updated test recipe description', prepTime: 45 };
+      const updateResponse = await fetch(`/api/recipes/${ctx.createdRecipeId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updateData) });
       const updateResult = await updateResponse.json();
+      if (!updateResult.success) throw new Error(updateResult.error || 'Failed to update recipe');
+      return { message: `Recipe updated ${updateResult.data.name}`, data: updateResult.data };
+    });
 
-      if (updateResult.success) {
-        updateTest(29, {
-          status: 'success',
-          message: `Recipe updated: ${updateResult.data.name}`,
-          data: updateResult.data
-        });
-      } else {
-        throw new Error(updateResult.error || 'Failed to update recipe');
-      }
-    } catch (error) {
-      updateTest(29, {
-        status: 'error',
-        message: `Update recipe error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-    }
-
-    // Test 31: Delete Recipe
-    updateTest(30, { status: 'testing' });
-    try {
-      const recipeId = (window as any).testRecipeId;
-      if (!recipeId) {
-        throw new Error('No test recipe ID available');
-      }
-
-      const deleteResponse = await fetch(`/api/recipes/${recipeId}`, {
-        method: 'DELETE'
-      });
+    // 27 Delete Recipe
+    await safeTest(26, async () => {
+      console.debug('[API TEST] Test 27: Delete Recipe');
+      if (!ctx.createdRecipeId) return { skip: true, skipMessage: 'No created recipe to delete' };
+      const deleteResponse = await fetch(`/api/recipes/${ctx.createdRecipeId}`, { method: 'DELETE' });
       const deleteResult = await deleteResponse.json();
-
-      if (deleteResult.success) {
-        updateTest(30, {
-          status: 'success',
-          message: `Recipe deleted successfully`,
-          data: deleteResult
-        });
-        delete (window as any).testRecipeId;
-      } else {
-        throw new Error(deleteResult.error || 'Failed to delete recipe');
-      }
-    } catch (error) {
-      updateTest(30, {
-        status: 'error',
-        message: `Delete recipe error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      });
-    }
+      if (!deleteResult.success) throw new Error(deleteResult.error || 'Failed to delete recipe');
+      return { message: 'Recipe deleted successfully', data: deleteResult };
+    });
+    console.debug('[API TEST] Completed runAllTests in', Date.now() - ctx._startTime, 'ms');
   };
+
+  // Optional auto-run support: append ?autoRun=1 to the URL to trigger automatically
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('autoRun') === '1' && tests.every(t => t.status === 'idle')) {
+      runAllTests();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const resetTests = () => {
     setTests(prev => prev.map(test => ({ ...test, status: 'idle' as const, message: undefined, data: undefined })));
@@ -734,6 +483,7 @@ const ApiTestPage: React.FC = () => {
       case 'success': return 'success';
       case 'error': return 'error';
       case 'testing': return 'info';
+      case 'skipped': return 'warning';
       default: return 'default';
     }
   };
@@ -743,6 +493,7 @@ const ApiTestPage: React.FC = () => {
       case 'success': return <SuccessIcon />;
       case 'error': return <ErrorIcon />;
       case 'testing': return <CircularProgress size={20} />;
+      case 'skipped': return <WarningIcon />;
       default: return null;
     }
   };
@@ -758,7 +509,7 @@ const ApiTestPage: React.FC = () => {
       </Typography>
 
       {/* Test Status Indicator */}
-      <Paper sx={{ p: 2, mb: 3, backgroundColor: stats.failed > 0 ? '#ffebee' : stats.passed === stats.total && stats.total > 0 ? '#e8f5e8' : '#f5f5f5' }}>
+  <Paper sx={{ p: 2, mb: 3, backgroundColor: stats.failed > 0 ? '#ffebee' : (stats.passed + stats.skipped === stats.total && stats.total > 0) ? '#e8f5e8' : '#f5f5f5' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
           <Typography variant="h6" component="div" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             {stats.failed > 0 ? (
@@ -786,6 +537,7 @@ const ApiTestPage: React.FC = () => {
 
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
             <Chip label={`${stats.passed}/${stats.total} Passed`} color="success" variant={stats.passed > 0 ? "filled" : "outlined"} size="small" />
+            {stats.skipped > 0 && <Chip label={`${stats.skipped} Skipped`} color="warning" size="small" />}
             {stats.failed > 0 && <Chip label={`${stats.failed} Failed`} color="error" size="small" />}
             {stats.running > 0 && <Chip label={`${stats.running} Running`} color="info" size="small" />}
             {stats.idle > 0 && <Chip label={`${stats.idle} Pending`} color="default" variant="outlined" size="small" />}
