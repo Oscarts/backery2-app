@@ -319,17 +319,53 @@ export const deleteRecipe = async (req: Request, res: Response) => {
         error: 'Recipe not found'
       });
     }
+    // Perform a safe cascading style cleanup inside a transaction to handle legacy data
+    const result = await prisma.$transaction(async (tx) => {
+      // Gather production runs referencing this recipe
+      const productionRuns = await tx.productionRun.findMany({
+        where: { recipeId: id },
+        select: { id: true }
+      });
 
-    await prisma.recipe.delete({
-      where: { id }
+      let removedRuns = 0;
+      if (productionRuns.length > 0) {
+        const runIds = productionRuns.map(r => r.id);
+
+        // Null out finished products tied to these runs (since relation is restrictive by default)
+        await tx.finishedProduct.updateMany({
+          where: { productionRunId: { in: runIds } },
+          data: { productionRunId: null }
+        });
+
+        // Delete production runs (steps & allocations cascade via schema onDelete)
+        await tx.productionRun.deleteMany({ where: { id: { in: runIds } } });
+        removedRuns = runIds.length;
+      }
+
+      // Explicitly remove recipe ingredients (even though relation has cascade, this is defensive for older schema states)
+      await tx.recipeIngredient.deleteMany({ where: { recipeId: id } });
+
+      // Finally delete the recipe
+      await tx.recipe.delete({ where: { id } });
+
+      return { removedRuns };
     });
 
     res.json({
       success: true,
-      message: 'Recipe deleted successfully'
+      message: 'Recipe deleted successfully',
+      meta: {
+        removedProductionRuns: result.removedRuns
+      }
     });
   } catch (error) {
     console.error('Error deleting recipe:', error);
+    if ((error as any).code === 'P2003') {
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot delete recipe due to existing references (foreign key constraint)'
+      });
+    }
     res.status(500).json({
       success: false,
       error: 'Failed to delete recipe'
