@@ -157,8 +157,63 @@ interface MaterialAllocation {
 
 **Documentation Updates:**
 
- - `docs/api-reference.md` - Updated with MaterialBreakdown response format and new recipe ingredient rules (raw materials and finished products only)
- - `docs/ui-guidelines.md` - Updated Material Breakdown Dialog pattern guidelines to reflect new ingredient rules
+- `docs/api-reference.md` - Updated with MaterialBreakdown response format and new recipe ingredient rules (raw materials and finished products only)
+- `docs/ui-guidelines.md` - Updated Material Breakdown Dialog pattern guidelines to reflect new ingredient rules
+
+### 🍰 Mixed Recipe Ingredients (Raw + Finished Products) (September 28, 2025)
+
+**Completed:** September 28, 2025
+
+**Feature:** Allow recipes to include both raw materials and finished products directly as ingredients (deprecates/ removes intermediate products feature).
+
+**Business Value:**
+
+- Simplifies production modeling by reusing finished products in composite recipes
+- Eliminates maintenance overhead of a separate intermediate product tier
+- Enables modular product construction (e.g., base + decoration) with accurate costing
+- Improves capacity planning by treating finished product inventory as consumable inputs
+
+**Implementation Details:**
+
+1. **Backend Controller Enhancements**
+   - Updated `recipeController` CRUD to validate exactly one of `rawMaterialId` or `finishedProductId` per ingredient
+   - Added mixed-source cost calculation (finished product unit cost = `costToProduce / quantity`)
+   - Extended "What Can I Make" analysis to merge raw + finished inventories with limiting ingredient detection
+
+2. **Schema & Data Model**
+   - Leveraged existing `finishedProductId` field in `RecipeIngredient` (no migration required)
+   - Removed lingering references to deprecated intermediate product relationships
+
+3. **Frontend UI & Types**
+   - Added `ingredientType: 'RAW' | 'FINISHED'` client-side helper for selection logic
+   - Updated recipe creation dialog with ingredient type selector and dynamic item list
+   - Adjusted API test harness to create and validate mixed recipes
+
+4. **Seed Data**
+   - Added `Decorated Bread Loaf` mixed recipe using a `Simple Frosting Base` finished product ingredient
+
+5. **Testing**
+   - Extended `recipeController.test.ts` with mixed ingredient cost & capacity tests (12 total passing)
+   - API harness now verifies cost breakdown includes raw + finished counts
+
+6. **Documentation**
+   - Updated `docs/api-reference.md` removing intermediate products section, adding mixed recipe examples
+   - Updated `docs/openapi.yaml` with mixed ingredient schemas, cost & what-can-i-make response objects
+
+**Files Modified:**
+
+- `backend/src/controllers/recipeController.ts`
+- `backend/src/tests/controllers/recipeController.test.ts`
+- `frontend/src/types/index.ts`
+- `frontend/src/pages/Recipes.tsx`
+- `frontend/src/pages/ApiTest.tsx`
+- `backend/create-enhanced-seed-data.js`
+- `docs/api-reference.md`
+- `docs/openapi.yaml`
+
+**Testing Status:** ✅ All updated tests pass (12 recipe controller tests). Harness run validates mixed recipe creation and cost analysis.
+
+**Deprecation:** Intermediate Products feature fully removed; no public API endpoints remain. Any legacy data should be archived manually.
 
 ### 🔧 Phase 8: Production Completion & Indicator Fixes (September 2025)
 
