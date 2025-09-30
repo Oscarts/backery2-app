@@ -75,6 +75,7 @@ export enum ProductStatus {
 export interface RawMaterial {
   id: string;
   name: string;
+  sku?: string; // Unified SKU shared with finished products by name
   description?: string;
   categoryId: string;
   supplierId: string;
@@ -100,6 +101,7 @@ export interface RawMaterial {
 
 export interface CreateRawMaterialData {
   name: string;
+  sku?: string;
   categoryId: string;
   supplierId: string;
   batchNumber: string;
@@ -272,9 +274,12 @@ export interface Recipe {
   version: number;
   isActive: boolean;
   emoji?: string; // Added for production module
-  difficulty?: string; // Added for production module
+  difficulty?: 'EASY' | 'MEDIUM' | 'HARD'; // Added for production module
   estimatedTotalTime?: number; // Added for production module
   equipmentRequired?: string[]; // Added for production module
+  estimatedCost?: number; // Added for cost calculation
+  imageUrl?: string; // Added for recipe images/avatars
+  overheadPercentage?: number; // Added for custom overhead
   createdAt: string;
   updatedAt: string;
   ingredients?: RecipeIngredient[];
@@ -284,12 +289,14 @@ export interface RecipeIngredient {
   id: string;
   recipeId: string;
   rawMaterialId?: string;
+  finishedProductId?: string;
   intermediateProductId?: string;
   quantity: number;
   unit: string;
   notes?: string;
   createdAt: string;
   rawMaterial?: RawMaterial;
+  finishedProduct?: FinishedProduct;
 }
 
 export interface RecipeCostAnalysis {
@@ -297,21 +304,22 @@ export interface RecipeCostAnalysis {
   recipeName: string;
   yieldQuantity: number;
   yieldUnit: string;
-  totalCost: number;
+  ingredients: IngredientCost[];
+  totalMaterialCost: number;
+  overheadCost: number;
+  totalProductionCost: number;
   costPerUnit: number;
-  ingredientCosts: IngredientCost[];
-  canMakeRecipe: boolean;
+  lastUpdated: string;
 }
 
 export interface IngredientCost {
-  ingredientId: string;
+  type: 'RAW_MATERIAL' | 'FINISHED_PRODUCT';
+  id: string;
   name: string;
   quantity: number;
   unit: string;
   unitCost: number;
   totalCost: number;
-  availableQuantity: number;
-  canMake: boolean;
 }
 
 export interface WhatCanIMakeAnalysis {
@@ -349,6 +357,7 @@ export interface CreateRecipeData {
   instructions?: string[];
   ingredients?: CreateRecipeIngredientData[];
   isActive?: boolean;
+  imageUrl?: string;
 }
 
 export type RecipeIngredientType = 'RAW' | 'FINISHED';

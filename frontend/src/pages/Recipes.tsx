@@ -60,7 +60,8 @@ import {
   CreateRecipeData,
   WhatCanIMakeAnalysis,
   Unit,
-  RecipeIngredientType
+  RecipeIngredientType,
+  IngredientCost
 } from '../types';
 import {
   recipesApi,
@@ -134,7 +135,8 @@ const Recipes: React.FC = () => {
     cookTime: 0,
     instructions: [],
     ingredients: [],
-    isActive: true
+    isActive: true,
+    imageUrl: ''
   });
   const [ingredientForm, setIngredientForm] = useState({
     type: 'RAW' as RecipeIngredientType,
@@ -144,6 +146,8 @@ const Recipes: React.FC = () => {
     notes: ''
   });
   const [instructionText, setInstructionText] = useState('');
+  // Ingredient selection search (by name or SKU)
+  const [ingredientSearchTerm, setIngredientSearchTerm] = useState('');
 
   // Fetch data
   const { data: recipesResponse, isLoading: recipesLoading, refetch: refetchRecipes } = useQuery({
@@ -335,7 +339,8 @@ const Recipes: React.FC = () => {
           unit: ing.unit,
           notes: ing.notes
         })) || [],
-        isActive: recipe.isActive
+        isActive: recipe.isActive,
+        imageUrl: recipe.imageUrl || ''
       });
     } else {
       setEditingRecipe(null);
@@ -349,7 +354,8 @@ const Recipes: React.FC = () => {
         cookTime: 0,
         instructions: [],
         ingredients: [],
-        isActive: true
+        isActive: true,
+        imageUrl: ''
       });
     }
     setOpenDialog(true);
@@ -464,11 +470,15 @@ const Recipes: React.FC = () => {
   const getIngredientName = (ingredient: any) => {
     if (ingredient.rawMaterialId) {
       const rawMaterial = rawMaterials.find(rm => rm.id === ingredient.rawMaterialId);
-      return rawMaterial?.name || 'Unknown Raw Material';
+      if (!rawMaterial) return 'Unknown Raw Material';
+      const skuPart = (rawMaterial as any).sku ? `${(rawMaterial as any).sku} – ` : '';
+      return `${skuPart}${rawMaterial.name}`;
     }
     if (ingredient.finishedProductId) {
       const finished = finishedProducts.find((fp: any) => fp.id === ingredient.finishedProductId);
-      return finished?.name || 'Unknown Finished Product';
+      if (!finished) return 'Unknown Finished Product';
+      const skuPart = finished.sku ? `${finished.sku} – ` : '';
+      return `${skuPart}${finished.name}`;
     }
     return 'Unknown Ingredient';
   };
@@ -616,6 +626,7 @@ const Recipes: React.FC = () => {
                         <TableCell>Category</TableCell>
                         <TableCell>Yield</TableCell>
                         <TableCell>Time</TableCell>
+                        <TableCell>Estimated Cost</TableCell>
                         <TableCell>Ingredients</TableCell>
                         <TableCell>Actions</TableCell>
                       </TableRow>
@@ -659,6 +670,17 @@ const Recipes: React.FC = () => {
                               </Box>
                             ) : (
                               'Not specified'
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {recipe.estimatedCost !== undefined ? (
+                              <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
+                                ${recipe.estimatedCost.toFixed(2)}
+                              </Typography>
+                            ) : (
+                              <Typography variant="body2" color="text.secondary">
+                                Not calculated
+                              </Typography>
                             )}
                           </TableCell>
                           <TableCell>
@@ -741,9 +763,17 @@ const Recipes: React.FC = () => {
                       >
                         <CardHeader
                           avatar={
-                            <Avatar sx={{ bgcolor: theme.palette.primary.main, width: 40, height: 40 }}>
-                              <MenuBookIcon fontSize="small" />
-                            </Avatar>
+                            recipe.imageUrl ? (
+                              <Avatar 
+                                src={recipe.imageUrl} 
+                                sx={{ width: 40, height: 40 }}
+                                alt={recipe.name}
+                              />
+                            ) : (
+                              <Avatar sx={{ bgcolor: theme.palette.primary.main, width: 40, height: 40 }}>
+                                <MenuBookIcon fontSize="small" />
+                              </Avatar>
+                            )
                           }
                           title={
                             <Typography
@@ -1053,7 +1083,7 @@ const Recipes: React.FC = () => {
                         Total Cost
                       </Typography>
                       <Typography variant="h6">
-                        {formatCurrency(recipeCost.totalCost)}
+                        {formatCurrency(recipeCost.totalProductionCost)}
                       </Typography>
                     </Grid>
                     <Grid item xs={6} md={3}>
@@ -1077,8 +1107,8 @@ const Recipes: React.FC = () => {
                         Can Make
                       </Typography>
                       <Chip
-                        label={recipeCost.canMakeRecipe ? 'Yes' : 'No'}
-                        color={recipeCost.canMakeRecipe ? 'success' : 'error'}
+                        label="Check ingredients separately"
+                        color="info"
                       />
                     </Grid>
                   </Grid>
@@ -1099,8 +1129,8 @@ const Recipes: React.FC = () => {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {recipeCost.ingredientCosts.map((ingredient) => (
-                          <TableRow key={ingredient.ingredientId}>
+                        {recipeCost.ingredients.map((ingredient: IngredientCost) => (
+                          <TableRow key={ingredient.id}>
                             <TableCell>{ingredient.name}</TableCell>
                             <TableCell>
                               {ingredient.quantity} {ingredient.unit}
@@ -1112,13 +1142,13 @@ const Recipes: React.FC = () => {
                               {formatCurrency(ingredient.totalCost)}
                             </TableCell>
                             <TableCell>
-                              {ingredient.availableQuantity} {ingredient.unit}
+                              {ingredient.quantity} {ingredient.unit} needed
                             </TableCell>
                             <TableCell>
                               <Chip
                                 size="small"
-                                label={ingredient.canMake ? 'Available' : 'Insufficient'}
-                                color={ingredient.canMake ? 'success' : 'error'}
+                                label={ingredient.type === 'RAW_MATERIAL' ? 'Raw Material' : 'Finished Product'}
+                                color={ingredient.type === 'RAW_MATERIAL' ? 'primary' : 'secondary'}
                               />
                             </TableCell>
                           </TableRow>
@@ -1237,6 +1267,62 @@ const Recipes: React.FC = () => {
               />
             </Grid>
 
+            {/* Image Upload Section */}
+            <Grid item xs={12}>
+              <Typography variant="h6" gutterBottom>Recipe Image</Typography>
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+                <Box>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                          const result = e.target?.result as string;
+                          setFormData(prev => ({ ...prev, imageUrl: result }));
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    style={{ display: 'none' }}
+                    id="recipe-image-upload"
+                  />
+                  <label htmlFor="recipe-image-upload">
+                    <Button variant="outlined" component="span">
+                      Upload Image
+                    </Button>
+                  </label>
+                  {formData.imageUrl && (
+                    <Button 
+                      variant="text" 
+                      color="error" 
+                      onClick={() => setFormData(prev => ({ ...prev, imageUrl: '' }))}
+                      sx={{ ml: 1 }}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </Box>
+                {formData.imageUrl && (
+                  <Box sx={{ ml: 2 }}>
+                    <img 
+                      src={formData.imageUrl} 
+                      alt="Recipe preview" 
+                      style={{ 
+                        width: 100, 
+                        height: 100, 
+                        objectFit: 'cover', 
+                        borderRadius: 8,
+                        border: '1px solid #ddd'
+                      }} 
+                    />
+                  </Box>
+                )}
+              </Box>
+            </Grid>
+
             {/* Instructions Section */}
             <Grid item xs={12}>
               <Typography variant="h6" gutterBottom>Instructions</Typography>
@@ -1309,6 +1395,19 @@ const Recipes: React.FC = () => {
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>
                   Add New Ingredient
                 </Typography>
+                {/* Filter field for ingredients by name or SKU */}
+                <Grid container spacing={2} sx={{ mb: 1 }}>
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      label="Filter Items (name or SKU)"
+                      value={ingredientSearchTerm}
+                      onChange={(e) => setIngredientSearchTerm(e.target.value)}
+                      placeholder="Type to filter by name or SKU"
+                      size="small"
+                    />
+                  </Grid>
+                </Grid>
                 <Grid container spacing={2} sx={{ mb: 2 }}>
                   <Grid item xs={12} sm={3}>
                     <FormControl fullWidth>
@@ -1351,11 +1450,20 @@ const Recipes: React.FC = () => {
                         <MenuItem value="">
                           <em>Select item</em>
                         </MenuItem>
-                        {(ingredientForm.type === 'RAW' ? rawMaterials : finishedProducts).map((item: any) => (
-                          <MenuItem key={item.id} value={item.id}>
-                            {item.name} ({item.unit})
-                          </MenuItem>
-                        ))}
+                        {(() => {
+                          const items = ingredientForm.type === 'RAW' ? rawMaterials : finishedProducts;
+                          const term = ingredientSearchTerm.trim().toLowerCase();
+                          const filtered = items.filter((item: any) => {
+                            if (!term) return true;
+                            const sku = (item.sku || (item as any).sku || '').toLowerCase();
+                            return item.name.toLowerCase().includes(term) || sku.includes(term);
+                          });
+                          return filtered.map((item: any) => (
+                            <MenuItem key={item.id} value={item.id}>
+                              {(item.sku || (item as any).sku) ? `${(item.sku || (item as any).sku)} – ${item.name} (${item.unit})` : `${item.name} (${item.unit})`}
+                            </MenuItem>
+                          ));
+                        })()}
                       </Select>
                     </FormControl>
                   </Grid>
@@ -1373,8 +1481,17 @@ const Recipes: React.FC = () => {
                       fullWidth
                       label="Unit"
                       value={ingredientForm.unit}
-                      InputProps={{ readOnly: true }}
-                      helperText={ingredientForm.itemId ? "Auto" : ""}
+                      InputProps={{ 
+                        readOnly: true,
+                        style: { backgroundColor: '#f5f5f5', cursor: 'not-allowed' }
+                      }}
+                      disabled
+                      helperText={ingredientForm.itemId ? "Auto-filled from ingredient" : "Select an ingredient first"}
+                      sx={{
+                        '& .MuiInputBase-input': {
+                          cursor: 'not-allowed !important'
+                        }
+                      }}
                     />
                   </Grid>
                   <Grid item xs={12} sm={6} md={8}>
@@ -1579,7 +1696,7 @@ const Recipes: React.FC = () => {
                     Total Cost
                   </Typography>
                   <Typography variant="h6">
-                    ${recipeCost.totalCost.toFixed(2)}
+                    ${recipeCost.totalProductionCost.toFixed(2)}
                   </Typography>
                 </Grid>
                 <Grid item xs={6} md={3}>
@@ -1603,8 +1720,8 @@ const Recipes: React.FC = () => {
                     Can Make
                   </Typography>
                   <Chip
-                    label={recipeCost.canMakeRecipe ? 'Yes' : 'No'}
-                    color={recipeCost.canMakeRecipe ? 'success' : 'error'}
+                    label="Check ingredients separately"
+                    color="info"
                   />
                 </Grid>
               </Grid>
@@ -1625,8 +1742,8 @@ const Recipes: React.FC = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {recipeCost.ingredientCosts.map((ingredient) => (
-                      <TableRow key={ingredient.ingredientId}>
+                    {recipeCost.ingredients.map((ingredient: IngredientCost) => (
+                      <TableRow key={ingredient.id}>
                         <TableCell>{ingredient.name}</TableCell>
                         <TableCell>
                           {ingredient.quantity} {ingredient.unit}
@@ -1634,17 +1751,13 @@ const Recipes: React.FC = () => {
                         <TableCell>${ingredient.unitCost.toFixed(2)}</TableCell>
                         <TableCell>${ingredient.totalCost.toFixed(2)}</TableCell>
                         <TableCell>
-                          {ingredient.availableQuantity || 0} {ingredient.unit}
+                          {ingredient.quantity} {ingredient.unit} needed
                         </TableCell>
                         <TableCell>
                           <Chip
                             size="small"
-                            label={
-                              ingredient.availableQuantity >= ingredient.quantity
-                                ? "Available"
-                                : "Insufficient"
-                            }
-                            color={ingredient.availableQuantity >= ingredient.quantity ? "success" : "error"}
+                            label={ingredient.type === 'RAW_MATERIAL' ? 'Raw Material' : 'Finished Product'}
+                            color={ingredient.type === 'RAW_MATERIAL' ? 'primary' : 'secondary'}
                             variant="outlined"
                           />
                         </TableCell>
