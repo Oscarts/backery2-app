@@ -32,6 +32,8 @@ import {
   ChevronRight as ChevronRightIcon,
   Science as ScienceIcon,
   BakeryDining as BakeryIcon,
+  People as PeopleIcon,
+  ShoppingCart as OrderIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -46,6 +48,8 @@ const menuItems = [
   { text: 'Recipes', icon: <MenuBookIcon />, path: '/recipes' },
   { text: 'Production', icon: <FactoryIcon />, path: '/production' },
   { text: 'Contamination', icon: <WarningIcon />, path: '/contamination' },
+  { text: 'Customers', icon: <PeopleIcon />, path: '/customers' },
+  { text: 'Orders', icon: <OrderIcon />, path: '/customer-orders' },
   { text: 'Reports', icon: <AssessmentIcon />, path: '/reports' },
   { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
   { text: 'API Test', icon: <ScienceIcon />, path: '/api-test' }, // Updated to use ScienceIcon for API Test

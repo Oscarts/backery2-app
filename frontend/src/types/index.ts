@@ -536,3 +536,94 @@ export interface MaterialBreakdown {
     costPerUnit: number;
   };
 }
+
+// Customer Orders types
+export interface Customer {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  isActive: boolean;
+  orderCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateCustomerData {
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  isActive?: boolean;
+}
+
+export enum OrderStatus {
+  DRAFT = 'DRAFT',
+  CONFIRMED = 'CONFIRMED',
+  FULFILLED = 'FULFILLED'
+}
+
+export interface OrderItem {
+  id: string;
+  orderId: string;
+  productId: string;
+  productName: string;
+  productSku?: string;
+  quantity: number;
+  unitProductionCost: number;
+  unitPrice: number;
+  lineProductionCost: number;
+  linePrice: number;
+  createdAt: string;
+}
+
+export interface CustomerOrder {
+  id: string;
+  orderNumber: string;
+  customerId: string;
+  expectedDeliveryDate: string;
+  status: OrderStatus;
+  totalProductionCost: number;
+  totalPrice: number;
+  priceMarkupPercentage: number;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  
+  // Relations
+  customer?: Customer;
+  items?: OrderItem[];
+}
+
+export interface CreateOrderData {
+  customerId: string;
+  expectedDeliveryDate: string;
+  priceMarkupPercentage?: number;
+  notes?: string;
+  items: CreateOrderItemData[];
+}
+
+export interface CreateOrderItemData {
+  productId: string;
+  quantity: number;
+  unitPrice: number;
+}
+
+export interface OrderInventoryCheck {
+  available: boolean;
+  insufficientProducts: Array<{
+    productId: string;
+    productName: string;
+    requiredQuantity: number;
+    availableQuantity: number;
+    shortage: number;
+  }>;
+}
+
+export interface OrderExportFilters {
+  startDate?: string;
+  endDate?: string;
+  customerIds?: string[];
+  statuses?: OrderStatus[];
+}

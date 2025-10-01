@@ -17,7 +17,13 @@ import {
   UpdateProductionRunData,
   UpdateProductionStepData,
   CompleteProductionStepData,
-  MaterialBreakdown
+  MaterialBreakdown,
+  Customer,
+  CreateCustomerData,
+  CustomerOrder,
+  CreateOrderData,
+  OrderInventoryCheck,
+  OrderExportFilters
 } from '../types';
 
 const API_BASE_URL = 'http://localhost:8000/api';
@@ -493,4 +499,136 @@ export const productionApi = {
       body: JSON.stringify(data),
     });
   }
+};
+
+// Customers API
+export const customersApi = {
+  getAll: async (search?: string): Promise<ApiResponse<Customer[]>> => {
+    const queryParams = search ? `?search=${encodeURIComponent(search)}` : '';
+    return apiCall<Customer[]>(`/customers${queryParams}`);
+  },
+
+  getById: async (id: string): Promise<ApiResponse<Customer>> => {
+    return apiCall<Customer>(`/customers/${id}`);
+  },
+
+  create: async (data: CreateCustomerData): Promise<ApiResponse<Customer>> => {
+    return apiCall<Customer>('/customers', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  update: async (id: string, data: Partial<CreateCustomerData>): Promise<ApiResponse<Customer>> => {
+    return apiCall<Customer>(`/customers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  delete: async (id: string): Promise<ApiResponse<void>> => {
+    return apiCall<void>(`/customers/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Customer Orders API
+export const customerOrdersApi = {
+  getAll: async (filters?: {
+    status?: string;
+    customerId?: string;
+    startDate?: string;
+    endDate?: string;
+    search?: string;
+  }): Promise<ApiResponse<CustomerOrder[]>> => {
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.customerId) params.append('customerId', filters.customerId);
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.search) params.append('search', filters.search);
+    
+    const queryString = params.toString();
+    return apiCall<CustomerOrder[]>(`/customer-orders${queryString ? `?${queryString}` : ''}`);
+  },
+
+  getById: async (id: string): Promise<ApiResponse<CustomerOrder>> => {
+    return apiCall<CustomerOrder>(`/customer-orders/${id}`);
+  },
+
+  create: async (data: CreateOrderData): Promise<ApiResponse<CustomerOrder>> => {
+    return apiCall<CustomerOrder>('/customer-orders', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  update: async (id: string, data: Partial<CreateOrderData>): Promise<ApiResponse<CustomerOrder>> => {
+    return apiCall<CustomerOrder>(`/customer-orders/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  delete: async (id: string): Promise<ApiResponse<void>> => {
+    return apiCall<void>(`/customer-orders/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Status transitions
+  confirmOrder: async (id: string): Promise<ApiResponse<CustomerOrder>> => {
+    return apiCall<CustomerOrder>(`/customer-orders/${id}/confirm`, {
+      method: 'POST',
+    });
+  },
+
+  revertToDraft: async (id: string): Promise<ApiResponse<CustomerOrder>> => {
+    return apiCall<CustomerOrder>(`/customer-orders/${id}/revert-draft`, {
+      method: 'POST',
+    });
+  },
+
+  fulfillOrder: async (id: string): Promise<ApiResponse<CustomerOrder>> => {
+    return apiCall<CustomerOrder>(`/customer-orders/${id}/fulfill`, {
+      method: 'POST',
+    });
+  },
+
+  // Inventory check
+  checkInventory: async (id: string): Promise<ApiResponse<OrderInventoryCheck>> => {
+    return apiCall<OrderInventoryCheck>(`/customer-orders/${id}/inventory-check`);
+  },
+
+  // Export functions
+  exportPDF: async (id: string): Promise<Blob> => {
+    const response = await fetch(`${API_BASE_URL}/customer-orders/${id}/export/pdf`);
+    if (!response.ok) {
+      throw new Error(`Failed to export PDF: ${response.statusText}`);
+    }
+    return response.blob();
+  },
+
+  exportExcel: async (id: string): Promise<Blob> => {
+    const response = await fetch(`${API_BASE_URL}/customer-orders/${id}/export/excel`);
+    if (!response.ok) {
+      throw new Error(`Failed to export Excel: ${response.statusText}`);
+    }
+    return response.blob();
+  },
+
+  exportBulkExcel: async (filters: OrderExportFilters): Promise<Blob> => {
+    const response = await fetch(`${API_BASE_URL}/customer-orders/export/excel`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(filters),
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to export bulk Excel: ${response.statusText}`);
+    }
+    return response.blob();
+  },
 };

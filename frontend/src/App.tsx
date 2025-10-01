@@ -6,12 +6,17 @@ import Dashboard from './pages/Dashboard';
 import RawMaterials from './pages/RawMaterials';
 import FinishedProducts from './pages/FinishedProducts';
 import Recipes from './pages/Recipes';
+import EnhancedRecipes from './pages/EnhancedRecipes';
 import Production from './pages/Production';
 import Contamination from './pages/Contamination';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import ApiTest from './pages/ApiTest';
 import Login from './pages/Login';
+import Customers from './pages/Customers';
+import CustomerOrders from './pages/CustomerOrders';
+import OrderForm from './pages/OrderForm';
+import OrderDetails from './pages/OrderDetails';
 
 // Import components
 import Layout from './components/Layout/Layout';
@@ -33,9 +38,15 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="raw-materials" element={<RawMaterials />} />
           <Route path="finished-products" element={<FinishedProducts />} />
-          <Route path="recipes" element={<Recipes />} />
+          <Route path="recipes" element={<EnhancedRecipes />} />
+          <Route path="recipes-old" element={<Recipes />} />
           <Route path="production" element={<Production />} />
           <Route path="contamination" element={<Contamination />} />
+          <Route path="customers" element={<Customers />} />
+          <Route path="customer-orders" element={<CustomerOrders />} />
+          <Route path="customer-orders/new" element={<OrderForm />} />
+          <Route path="customer-orders/:id" element={<OrderDetails />} />
+          <Route path="customer-orders/:id/edit" element={<OrderForm />} />
           <Route path="reports" element={<Reports />} />
           <Route path="settings" element={<Settings />} />
           <Route path="api-test" element={<ApiTest />} />

@@ -10,7 +10,6 @@ import { errorHandler } from './middleware/errorHandler';
 // Routes  
 import categoryRoutes from './routes/categories';
 import rawMaterialRoutes from './routes/rawMaterials';
-import intermediateProductRoutes from './routes/intermediateProducts';
 import finishedProductRoutes from './routes/finishedProducts';
 import recipeRoutes from './routes/recipes';
 import productionRoutes from './routes/production';
@@ -23,6 +22,8 @@ import storageLocationRoutes from './routes/storageLocations';
 import unitRoutes from './routes/units';
 import qualityStatusRoutes from './routes/qualityStatuses';
 import productionStepTemplateRoutes from './routes/productionStepTemplates';
+import customerRoutes from './routes/customers';
+import customerOrderRoutes from './routes/customer-orders';
 
 // Initialize Prisma Client
 export const prisma = new PrismaClient({
@@ -35,8 +36,8 @@ const createApp = (): Application => {
 
   // Middleware
   app.use(cors());
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+  app.use(express.json({ limit: '10mb' })); // Increased limit for image uploads
+  app.use(express.urlencoded({ extended: true, limit: '10mb' })); // Increased limit for image uploads
   
   // Only use morgan in development to avoid cluttering test output
   if (process.env.NODE_ENV !== 'test') {
@@ -55,7 +56,6 @@ const createApp = (): Application => {
   app.use('/api/auth', authRoutes);
   app.use('/api/categories', categoryRoutes);
   app.use('/api/raw-materials', rawMaterialRoutes);
-  app.use('/api/intermediate-products', intermediateProductRoutes);
   app.use('/api/finished-products', finishedProductRoutes);
   app.use('/api/recipes', recipeRoutes);
   app.use('/api/production', productionRoutes);
@@ -67,6 +67,8 @@ const createApp = (): Application => {
   app.use('/api/units', unitRoutes);
   app.use('/api/quality-statuses', qualityStatusRoutes);
   app.use('/api/production/step-templates', productionStepTemplateRoutes);
+  app.use('/api/customers', customerRoutes);
+  app.use('/api/customer-orders', customerOrderRoutes);
 
   // Error handling middleware
   app.use(notFound);

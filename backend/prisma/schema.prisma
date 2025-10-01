@@ -22,7 +22,7 @@ model User {
 
 model Category {
   id                   String                @id @default(cuid())
-  name                 String
+  name                 String                @unique
   type                 CategoryType
   description          String?
   createdAt            DateTime              @default(now())
@@ -36,7 +36,7 @@ model Category {
 
 model Supplier {
   id           String        @id @default(cuid())
-  name         String
+  name         String        @unique
   contactInfo  Json?
   address      String?
   isActive     Boolean       @default(true)
@@ -49,7 +49,7 @@ model Supplier {
 
 model StorageLocation {
   id                   String                @id @default(cuid())
-  name                 String
+  name                 String                @unique
   type                 String?
   description          String?
   capacity             String?
@@ -93,6 +93,8 @@ model Unit {
 model RawMaterial {
   id                String             @id @default(cuid())
   name              String
+  // Shared SKU logic: materials with the same name share the same SKU as finished products
+  sku               String?
   description       String?
   categoryId        String?
   supplierId        String
@@ -123,7 +125,7 @@ model FinishedProduct {
   id                String           @id @default(cuid())
   name              String
   description       String?
-  sku               String           @unique
+  sku               String           // No longer unique: multiple batches of same product share SKU
   categoryId        String?
   batchNumber       String
   productionDate    DateTime
@@ -170,6 +172,10 @@ model Recipe {
   estimatedTotalTime   Int?                  // minutes
   estimatedCost        Float?                // Estimated cost to produce
   equipmentRequired    String[]              @default([])
+  
+  // UI Enhancement fields
+  imageUrl             String?               @map("image_url")
+  overheadPercentage   Float?                @default(20) @map("overhead_percentage")
   
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
@@ -314,4 +320,65 @@ enum ProductionStepStatus {
   IN_PROGRESS
   COMPLETED
   SKIPPED
+}
+
+enum OrderStatus {
+  DRAFT
+  CONFIRMED
+  FULFILLED
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  address   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  orders    CustomerOrder[]
+
+  @@map("customers")
+}
+
+model CustomerOrder {
+  id                      String      @id @default(cuid())
+  orderNumber             String      @unique
+  customerId              String      @map("customer_id")
+  expectedDeliveryDate    DateTime    @map("expected_delivery_date")
+  status                  OrderStatus @default(DRAFT)
+  totalProductionCost     Float       @default(0) @map("total_production_cost")
+  totalPrice              Float       @default(0) @map("total_price")
+  priceMarkupPercentage   Float       @default(30) @map("price_markup_percentage")
+  notes                   String?
+  createdAt               DateTime    @default(now()) @map("created_at")
+  updatedAt               DateTime    @updatedAt @map("updated_at")
+  
+  customer                Customer    @relation(fields: [customerId], references: [id])
+  items                   OrderItem[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([expectedDeliveryDate])
+  @@map("customer_orders")
+}
+
+model OrderItem {
+  id                  String        @id @default(cuid())
+  orderId             String        @map("order_id")
+  productId           String        @map("product_id")
+  productName         String        @map("product_name")
+  productSku          String?       @map("product_sku")
+  quantity            Int
+  unitProductionCost  Float         @map("unit_production_cost")
+  unitPrice           Float         @map("unit_price")
+  lineProductionCost  Float         @map("line_production_cost")
+  linePrice           Float         @map("line_price")
+  createdAt           DateTime      @default(now()) @map("created_at")
+  
+  order               CustomerOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_items")
 }
