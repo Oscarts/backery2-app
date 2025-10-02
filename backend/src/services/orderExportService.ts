@@ -44,7 +44,7 @@ export const generateOrderPDF = async (orderId: string): Promise<Buffer> => {
       doc.moveDown();
 
       // Order Information
-      doc.fontSize(12).text(`Order Number: ${order.orderNumber}`, { bold: true });
+      doc.fontSize(12).text(`Order Number: ${order.orderNumber}`);
       doc.fontSize(10);
       doc.text(`Status: ${order.status}`);
       doc.text(`Expected Delivery: ${order.expectedDeliveryDate.toLocaleDateString()}`);
@@ -72,7 +72,7 @@ export const generateOrderPDF = async (orderId: string): Promise<Buffer> => {
       const unitPriceX = 340;
       const totalX = 450;
 
-      doc.text('Product', itemX, tableTop, { bold: true });
+      doc.text('Product', itemX, tableTop);
       doc.text('SKU', skuX, tableTop);
       doc.text('Qty', qtyX, tableTop);
       doc.text('Unit Price', unitPriceX, tableTop);
@@ -99,7 +99,7 @@ export const generateOrderPDF = async (orderId: string): Promise<Buffer> => {
       doc.fontSize(10);
       doc.text(`Total Production Cost: $${order.totalProductionCost.toFixed(2)}`, totalX - 100, doc.y, { align: 'right' });
       doc.text(`Markup: ${order.priceMarkupPercentage.toFixed(1)}%`, totalX - 100, doc.y, { align: 'right' });
-      doc.fontSize(12).text(`Total Price: $${order.totalPrice.toFixed(2)}`, totalX - 100, doc.y, { align: 'right', bold: true });
+      doc.fontSize(12).text(`Total Price: $${order.totalPrice.toFixed(2)}`, totalX - 100, doc.y, { align: 'right' });
 
       // Notes
       if (order.notes) {
