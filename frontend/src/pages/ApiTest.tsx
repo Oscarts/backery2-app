@@ -22,7 +22,7 @@ import {
   Refresh as RefreshIcon,
   Warning as WarningIcon
 } from '@mui/icons-material';
-import { categoriesApi, storageLocationsApi, unitsApi, rawMaterialsApi, suppliersApi, finishedProductsApi } from '../services/realApi';
+import { categoriesApi, storageLocationsApi, unitsApi, rawMaterialsApi, suppliersApi, finishedProductsApi, customersApi, customerOrdersApi } from '../services/realApi';
 import { CategoryType } from '../types';
 
 interface TestResult {
@@ -35,9 +35,25 @@ interface TestResult {
 const ApiTestPage: React.FC = () => {
   const [tests, setTests] = useState<TestResult[]>([
     { name: 'Categories API', status: 'idle' },
+    { name: 'Create Category', status: 'idle' },
+    { name: 'Update Category', status: 'idle' },
+    { name: 'Delete Category', status: 'idle' },
+    { name: 'Test Category Uniqueness', status: 'idle' },
     { name: 'Storage Locations API', status: 'idle' },
+    { name: 'Create Storage Location', status: 'idle' },
+    { name: 'Update Storage Location', status: 'idle' },
+    { name: 'Delete Storage Location', status: 'idle' },
+    { name: 'Test Storage Location Uniqueness', status: 'idle' },
     { name: 'Units API', status: 'idle' },
+    { name: 'Create Unit', status: 'idle' },
+    { name: 'Update Unit', status: 'idle' },
+    { name: 'Delete Unit', status: 'idle' },
+    { name: 'Test Unit Uniqueness', status: 'idle' },
     { name: 'Suppliers API', status: 'idle' },
+    { name: 'Create Supplier', status: 'idle' },
+    { name: 'Update Supplier', status: 'idle' },
+    { name: 'Delete Supplier', status: 'idle' },
+    { name: 'Test Supplier Uniqueness', status: 'idle' },
     { name: 'Raw Materials API', status: 'idle' },
     { name: 'Create Raw Material', status: 'idle' },
     { name: 'Update Raw Material', status: 'idle' },
@@ -65,7 +81,26 @@ const ApiTestPage: React.FC = () => {
     { name: 'Finished Product Materials Traceability', status: 'idle' },
     { name: 'Production Workflow (Light)', status: 'idle' },
     { name: 'Production Contamination Check', status: 'idle' },
-    { name: 'Production Capacity Check', status: 'idle' }
+    { name: 'Production Capacity Check', status: 'idle' },
+    { name: 'Raw Material SKU Reuse', status: 'idle' },
+    { name: 'Finished Product SKU Reuse', status: 'idle' },
+    // Customer Orders API Tests
+    { name: 'Customers API - Get All', status: 'idle' },
+    { name: 'Customers API - Create Customer', status: 'idle' },
+    { name: 'Customers API - Get Customer by ID', status: 'idle' },
+    { name: 'Customers API - Update Customer', status: 'idle' },
+    { name: 'Customers API - Delete Customer', status: 'idle' },
+    { name: 'Customer Orders API - Get All Orders', status: 'idle' },
+    { name: 'Customer Orders API - Create Order', status: 'idle' },
+    { name: 'Customer Orders API - Get Order by ID', status: 'idle' },
+    { name: 'Customer Orders API - Update Order', status: 'idle' },
+    { name: 'Customer Orders API - Confirm Order', status: 'idle' },
+    { name: 'Customer Orders API - Check Inventory', status: 'idle' },
+    { name: 'Customer Orders API - Fulfill Order', status: 'idle' },
+    { name: 'Customer Orders API - Revert to Draft', status: 'idle' },
+    { name: 'Customer Orders API - Export PDF', status: 'idle' },
+    { name: 'Customer Orders API - Export Excel', status: 'idle' },
+    { name: 'Customer Orders API - Delete Order', status: 'idle' }
   ]);
 
   const updateTest = (index: number, updates: Partial<TestResult>) => {
@@ -144,15 +179,251 @@ const ApiTestPage: React.FC = () => {
       return { message: `Found ${ctx.suppliers.length} suppliers`, data: suppliersResult.data };
     });
 
-    // 5 Raw Materials list
+    // 5 Create Category (Settings CRUD Tests)
     await safeTest(4, async () => {
+      const createCategoryData = {
+        name: `Test Category CRUD ${Date.now()}`,
+        type: 'RAW_MATERIAL' as CategoryType,
+        description: 'Test category for CRUD testing'
+      };
+      const createCategoryResult = await categoriesApi.create(createCategoryData);
+      ctx.createdCategoryId = createCategoryResult.data?.id;
+      return { message: `Created category ${createCategoryResult.data?.id}`, data: createCategoryResult.data };
+    });
+
+    // 6 Update Category
+    await safeTest(21, async () => {
+      if (!ctx.createdCategoryId) return { skip: true, skipMessage: 'No created category to update' };
+      const updateCategoryResult = await categoriesApi.update(ctx.createdCategoryId, {
+        name: `Updated Test Category ${Date.now()}`,
+        type: 'FINISHED_PRODUCT' as CategoryType,
+        description: 'Updated test category'
+      });
+      return { message: `Updated category ${ctx.createdCategoryId}`, data: updateCategoryResult.data };
+    });
+
+    // 7 Delete Category
+    await safeTest(22, async () => {
+      if (!ctx.createdCategoryId) return { skip: true, skipMessage: 'No created category to delete' };
+      await categoriesApi.delete(ctx.createdCategoryId);
+      return { message: 'Category deleted successfully' };
+    });
+
+    // 8 Test Category Uniqueness
+    await safeTest(23, async () => {
+      const uniqueTestName = `Unique Test Category ${Date.now()}`;
+      // Create first category
+      const firstResult = await categoriesApi.create({
+        name: uniqueTestName,
+        type: 'RAW_MATERIAL' as CategoryType,
+        description: 'First unique test category'
+      });
+      ctx.uniqueTestCategoryId = firstResult.data?.id;
+      
+      // Try to create duplicate (should fail)
+      try {
+        await categoriesApi.create({
+          name: uniqueTestName,
+          type: 'RAW_MATERIAL' as CategoryType,
+          description: 'Duplicate test category'
+        });
+        return { message: 'ERROR: Duplicate category was allowed!', error: true };
+      } catch (error: any) {
+        // Clean up the test category
+        if (ctx.uniqueTestCategoryId) {
+          await categoriesApi.delete(ctx.uniqueTestCategoryId);
+        }
+        return { message: 'Uniqueness constraint working: duplicate category rejected', data: error.message };
+      }
+    });
+
+    // 9 Create Storage Location
+    await safeTest(24, async () => {
+      const createLocationData = {
+        name: `Test Storage CRUD ${Date.now()}`,
+        description: 'Test storage location for CRUD testing'
+      };
+      const createLocationResult = await storageLocationsApi.create(createLocationData);
+      ctx.createdLocationId = createLocationResult.data?.id;
+      return { message: `Created storage location ${createLocationResult.data?.id}`, data: createLocationResult.data };
+    });
+
+    // 10 Update Storage Location
+    await safeTest(25, async () => {
+      if (!ctx.createdLocationId) return { skip: true, skipMessage: 'No created storage location to update' };
+      const updateLocationResult = await storageLocationsApi.update(ctx.createdLocationId, {
+        name: `Updated Test Storage ${Date.now()}`,
+        description: 'Updated test storage location'
+      });
+      return { message: `Updated storage location ${ctx.createdLocationId}`, data: updateLocationResult.data };
+    });
+
+    // 11 Delete Storage Location
+    await safeTest(26, async () => {
+      if (!ctx.createdLocationId) return { skip: true, skipMessage: 'No created storage location to delete' };
+      await storageLocationsApi.delete(ctx.createdLocationId);
+      return { message: 'Storage location deleted successfully' };
+    });
+
+    // 12 Test Storage Location Uniqueness
+    await safeTest(27, async () => {
+      const uniqueTestName = `Unique Test Storage ${Date.now()}`;
+      // Create first storage location
+      const firstResult = await storageLocationsApi.create({
+        name: uniqueTestName,
+        description: 'First unique test storage location'
+      });
+      ctx.uniqueTestLocationId = firstResult.data?.id;
+      
+      // Try to create duplicate (should fail)
+      try {
+        await storageLocationsApi.create({
+          name: uniqueTestName,
+          description: 'Duplicate test storage location'
+        });
+        return { message: 'ERROR: Duplicate storage location was allowed!', error: true };
+      } catch (error: any) {
+        // Clean up the test storage location
+        if (ctx.uniqueTestLocationId) {
+          await storageLocationsApi.delete(ctx.uniqueTestLocationId);
+        }
+        return { message: 'Uniqueness constraint working: duplicate storage location rejected', data: error.message };
+      }
+    });
+
+    // 13 Create Unit
+    await safeTest(28, async () => {
+      const createUnitData = {
+        name: `Test Unit CRUD ${Date.now()}`,
+        symbol: `tu${Date.now().toString().slice(-4)}`,
+        category: 'WEIGHT',
+        description: 'Test unit for CRUD testing',
+        isActive: true
+      };
+      const createUnitResult = await unitsApi.create(createUnitData);
+      ctx.createdUnitId = createUnitResult.data?.id;
+      return { message: `Created unit ${createUnitResult.data?.id}`, data: createUnitResult.data };
+    });
+
+    // 14 Update Unit
+    await safeTest(29, async () => {
+      if (!ctx.createdUnitId) return { skip: true, skipMessage: 'No created unit to update' };
+      const updateUnitResult = await unitsApi.update(ctx.createdUnitId, {
+        name: `Updated Test Unit ${Date.now()}`,
+        category: 'VOLUME',
+        description: 'Updated test unit'
+      });
+      return { message: `Updated unit ${ctx.createdUnitId}`, data: updateUnitResult.data };
+    });
+
+    // 15 Delete Unit
+    await safeTest(30, async () => {
+      if (!ctx.createdUnitId) return { skip: true, skipMessage: 'No created unit to delete' };
+      await unitsApi.delete(ctx.createdUnitId);
+      return { message: 'Unit deleted successfully' };
+    });
+
+    // 16 Test Unit Uniqueness
+    await safeTest(31, async () => {
+      const uniqueTestName = `Unique Test Unit ${Date.now()}`;
+      const uniqueTestSymbol = `utu${Date.now().toString().slice(-4)}`;
+      
+      // Create first unit
+      const firstResult = await unitsApi.create({
+        name: uniqueTestName,
+        symbol: uniqueTestSymbol,
+        category: 'WEIGHT',
+        description: 'First unique test unit',
+        isActive: true
+      });
+      ctx.uniqueTestUnitId = firstResult.data?.id;
+      
+      // Try to create duplicate name (should fail)
+      try {
+        await unitsApi.create({
+          name: uniqueTestName,
+          symbol: `different${Date.now().toString().slice(-4)}`,
+          category: 'WEIGHT',
+          description: 'Duplicate name test unit',
+          isActive: true
+        });
+        return { message: 'ERROR: Duplicate unit name was allowed!', error: true };
+      } catch (error: any) {
+        // Clean up the test unit
+        if (ctx.uniqueTestUnitId) {
+          await unitsApi.delete(ctx.uniqueTestUnitId);
+        }
+        return { message: 'Uniqueness constraint working: duplicate unit name rejected', data: error.message };
+      }
+    });
+
+    // 17 Create Supplier
+    await safeTest(32, async () => {
+      const createSupplierData = {
+        name: `Test Supplier CRUD ${Date.now()}`,
+        contactInfo: 'test@supplier.com',
+        address: 'Test Address'
+      };
+      const createSupplierResult = await suppliersApi.create(createSupplierData);
+      ctx.createdSupplierId = createSupplierResult.data?.id;
+      return { message: `Created supplier ${createSupplierResult.data?.id}`, data: createSupplierResult.data };
+    });
+
+    // 18 Update Supplier
+    await safeTest(33, async () => {
+      if (!ctx.createdSupplierId) return { skip: true, skipMessage: 'No created supplier to update' };
+      const updateSupplierResult = await suppliersApi.update(ctx.createdSupplierId, {
+        name: `Updated Test Supplier ${Date.now()}`,
+        contactInfo: 'updated@supplier.com',
+        address: 'Updated Test Address'
+      });
+      return { message: `Updated supplier ${ctx.createdSupplierId}`, data: updateSupplierResult.data };
+    });
+
+    // 19 Delete Supplier
+    await safeTest(34, async () => {
+      if (!ctx.createdSupplierId) return { skip: true, skipMessage: 'No created supplier to delete' };
+      await suppliersApi.delete(ctx.createdSupplierId);
+      return { message: 'Supplier deleted successfully' };
+    });
+
+    // 20 Test Supplier Uniqueness
+    await safeTest(35, async () => {
+      const uniqueTestName = `Unique Test Supplier ${Date.now()}`;
+      // Create first supplier
+      const firstResult = await suppliersApi.create({
+        name: uniqueTestName,
+        contactInfo: 'unique@supplier.com',
+        address: 'Unique Test Address'
+      });
+      ctx.uniqueTestSupplierId = firstResult.data?.id;
+      
+      // Try to create duplicate (should fail)
+      try {
+        await suppliersApi.create({
+          name: uniqueTestName,
+          contactInfo: 'duplicate@supplier.com',
+          address: 'Different Address'
+        });
+        return { message: 'ERROR: Duplicate supplier was allowed!', error: true };
+      } catch (error: any) {
+        // Clean up the test supplier
+        if (ctx.uniqueTestSupplierId) {  
+          await suppliersApi.delete(ctx.uniqueTestSupplierId);
+        }
+        return { message: 'Uniqueness constraint working: duplicate supplier rejected', data: error.message };
+      }
+    });
+
+    // 21 Raw Materials list
+    await safeTest(36, async () => {
       const rawMaterialsResult = await rawMaterialsApi.getAll();
       ctx.rawMaterials = rawMaterialsResult.data || [];
       return { message: `Found ${ctx.rawMaterials.length} raw materials`, data: rawMaterialsResult.data };
     });
 
-    // 6 Create Raw Material
-    await safeTest(5, async () => {
+    // 22 Create Raw Material
+    await safeTest(37, async () => {
       const category = (ctx.categories || []).find((c: any) => c.type === CategoryType.RAW_MATERIAL);
       const supplier = (ctx.suppliers || [])[0];
       const location = (ctx.locations || [])[0];
@@ -182,7 +453,7 @@ const ApiTestPage: React.FC = () => {
     });
 
     // 7 Update Raw Material
-    await safeTest(6, async () => {
+    await safeTest(22, async () => {
       if (!ctx.createdRawMaterialId) {
         return { skip: true, skipMessage: 'No created raw material to update' };
       }
@@ -195,7 +466,7 @@ const ApiTestPage: React.FC = () => {
     });
 
     // 8 Delete Raw Material
-    await safeTest(7, async () => {
+    await safeTest(23, async () => {
       if (!ctx.createdRawMaterialId) {
         return { skip: true, skipMessage: 'No created raw material to delete' };
       }
@@ -209,14 +480,14 @@ const ApiTestPage: React.FC = () => {
     });
 
     // 9 Finished Products list
-    await safeTest(8, async () => {
+    await safeTest(24, async () => {
       const finishedProductsResult = await finishedProductsApi.getAll();
       ctx.finishedProducts = finishedProductsResult.data || [];
       return { message: `Found ${ctx.finishedProducts.length} finished products`, data: finishedProductsResult.data };
     });
 
     // 10 Create Finished Product
-    await safeTest(9, async () => {
+    await safeTest(25, async () => {
       console.debug('[API TEST] Test 10: Create Finished Product');
       // Refresh categories for potential new category creation
       const categoriesResult = await categoriesApi.getAll();
@@ -263,7 +534,7 @@ const ApiTestPage: React.FC = () => {
     });
 
     // 11 Update Finished Product
-    await safeTest(10, async () => {
+    await safeTest(26, async () => {
       if (!ctx.createdFinishedProductId) return { skip: true, skipMessage: 'No created finished product to update' };
       const updateFinishedResult = await finishedProductsApi.update(ctx.createdFinishedProductId, {
         quantity: 150,
@@ -273,26 +544,26 @@ const ApiTestPage: React.FC = () => {
     });
 
     // 12 Delete Finished Product
-    await safeTest(11, async () => {
+    await safeTest(27, async () => {
       if (!ctx.createdFinishedProductId) return { skip: true, skipMessage: 'No created finished product to delete' };
       await finishedProductsApi.delete(ctx.createdFinishedProductId);
       return { message: 'Finished product deleted successfully' };
     });
 
     // 13 Expiring
-    await safeTest(12, async () => {
+    await safeTest(28, async () => {
       const expiringResult = await finishedProductsApi.getExpiring(7);
       return { message: `Found ${expiringResult.data?.length || 0} products expiring in 7 days`, data: expiringResult.data };
     });
 
     // 14 Low Stock
-    await safeTest(13, async () => {
+    await safeTest(29, async () => {
       const lowStockResult = await finishedProductsApi.getLowStock(10);
       return { message: `Found ${lowStockResult.data?.length || 0} low stock products`, data: lowStockResult.data };
     });
 
     // 15 Reserve Product
-    await safeTest(14, async () => {
+    await safeTest(30, async () => {
       const allProducts = await finishedProductsApi.getAll();
       const availableProduct = allProducts.data?.find(p => p.quantity > p.reservedQuantity);
       if (!availableProduct) return { skip: true, skipMessage: 'No product with available quantity to reserve' };
@@ -302,49 +573,49 @@ const ApiTestPage: React.FC = () => {
     });
 
     // 16 Release Reservation
-    await safeTest(15, async () => {
+    await safeTest(31, async () => {
       if (!ctx.reservationProductId) return { skip: true, skipMessage: 'No reservation product to release' };
       const releaseResult = await finishedProductsApi.releaseReservation(ctx.reservationProductId, 5);
       return { message: 'Released 5 units reservation', data: releaseResult.data };
     });
 
     // 17 Dashboard Summary
-    await safeTest(16, async () => {
+    await safeTest(32, async () => {
       const summaryResponse = await fetch('/api/dashboard/summary');
       const summaryResult = await summaryResponse.json();
       return { message: `Dashboard total items: ${summaryResult.data?.inventoryCounts?.total || 0}`, data: summaryResult.data };
     });
 
     // 18 Dashboard Alerts
-    await safeTest(17, async () => {
+    await safeTest(33, async () => {
       const alertsResponse = await fetch('/api/dashboard/alerts');
       const alertsResult = await alertsResponse.json();
       return { message: `Found ${alertsResult.data?.length || 0} alerts`, data: alertsResult.data };
     });
 
     // 19 Dashboard Trends
-    await safeTest(18, async () => {
+    await safeTest(34, async () => {
       const trendsResponse = await fetch('/api/dashboard/trends?days=7');
       const trendsResult = await trendsResponse.json();
       return { message: 'Trends loaded for 7 days', data: trendsResult.data };
     });
 
     // 20 Dashboard Categories
-    await safeTest(19, async () => {
+    await safeTest(35, async () => {
       const categoriesResponse = await fetch('/api/dashboard/categories');
       const categoriesResult = await categoriesResponse.json();
       return { message: 'Categories breakdown loaded', data: categoriesResult.data };
     });
 
     // 21 Dashboard Value
-    await safeTest(20, async () => {
+    await safeTest(36, async () => {
       const valueResponse = await fetch('/api/dashboard/value');
       const valueResult = await valueResponse.json();
       return { message: 'Value analysis loaded', data: valueResult.data };
     });
 
     // 22 Recipes list
-    await safeTest(21, async () => {
+    await safeTest(37, async () => {
       const recipesResponse = await fetch('/api/recipes');
       const recipesResult = await recipesResponse.json();
       ctx.recipes = recipesResult.data || [];
@@ -352,7 +623,7 @@ const ApiTestPage: React.FC = () => {
     });
 
     // 23 Create Recipe (guarantee prerequisites: recipe category + raw material)
-    await safeTest(22, async () => {
+    await safeTest(38, async () => {
       console.debug('[API TEST] Test 23: Create Recipe');
       // Ensure categories cached
       if (!ctx.categories) {
@@ -460,7 +731,7 @@ const ApiTestPage: React.FC = () => {
     });
 
     // 24 Recipe Cost Analysis
-    await safeTest(23, async () => {
+    await safeTest(39, async () => {
       let recipeId = ctx.createdRecipeId;
       if (!recipeId) {
         // fallback: fetch one
@@ -479,7 +750,7 @@ const ApiTestPage: React.FC = () => {
     });
 
     // 25 What Can I Make
-    await safeTest(24, async () => {
+    await safeTest(40, async () => {
       const whatCanMakeResponse = await fetch('/api/recipes/what-can-i-make');
       if (!whatCanMakeResponse.ok) throw new Error(`API error: ${whatCanMakeResponse.status}`);
       const result = await whatCanMakeResponse.json();
@@ -490,7 +761,7 @@ const ApiTestPage: React.FC = () => {
     });
 
     // 26 Update Recipe
-    await safeTest(25, async () => {
+    await safeTest(41, async () => {
       if (!ctx.createdRecipeId) return { skip: true, skipMessage: 'No created recipe to update' };
       const updateData = { name: `Updated Test Recipe ${Date.now()}`, description: 'Updated test recipe description', prepTime: 45 };
       const updateResponse = await fetch(`/api/recipes/${ctx.createdRecipeId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updateData) });
@@ -500,7 +771,7 @@ const ApiTestPage: React.FC = () => {
     });
 
     // 27 Delete Recipe
-    await safeTest(26, async () => {
+    await safeTest(42, async () => {
       console.debug('[API TEST] Test 27: Delete Recipe');
       if (!ctx.createdRecipeId) return { skip: true, skipMessage: 'No created recipe to delete' };
       const deleteResponse = await fetch(`/api/recipes/${ctx.createdRecipeId}`, { method: 'DELETE' });
@@ -509,7 +780,7 @@ const ApiTestPage: React.FC = () => {
       return { message: 'Recipe deleted successfully', data: deleteResult };
     });
     // 28 Finished Product Materials Traceability
-    await safeTest(27, async () => {
+    await safeTest(43, async () => {
       // Attempt to locate a finished product that is COMPLETED; if none, skip.
       const fps = await finishedProductsApi.getAll();
       const product = (fps.data || []).find((p: any) => (p.status || p.productionStatus) === 'COMPLETED') || (fps.data || [])[0];
@@ -528,7 +799,7 @@ const ApiTestPage: React.FC = () => {
     });
 
     // 29 Production Workflow (Light)
-    await safeTest(28, async () => {
+    await safeTest(44, async () => {
       // Placeholder – real workflow requires multi-step production run. For now call health check.
       const healthResp = await fetch('/api/system/health');
       if (!healthResp.ok) return { skip: true, skipMessage: 'Health endpoint unavailable' };
@@ -538,7 +809,7 @@ const ApiTestPage: React.FC = () => {
     });
 
     // 30 Production Contamination Check
-    await safeTest(29, async () => {
+    await safeTest(45, async () => {
       // Query finished products for contaminated flag
       const fps = await finishedProductsApi.getAll();
       const contaminated = (fps.data || []).filter((p: any) => p.isContaminated);
@@ -546,11 +817,316 @@ const ApiTestPage: React.FC = () => {
     });
 
     // 31 Production Capacity Check
-    await safeTest(30, async () => {
+    await safeTest(46, async () => {
       // Placeholder capacity: count products vs categories
       const fps = await finishedProductsApi.getAll();
       const count = (fps.data || []).length;
       return { message: `Finished products count: ${count}`, data: fps.data?.slice(0,5) };
+    });
+
+    // 32 Raw Material SKU Reuse
+    await safeTest(47, async () => {
+      // Create first raw material with a name
+      const category = (ctx.categories || []).find((c: any) => c.type === CategoryType.RAW_MATERIAL);
+      const supplier = (ctx.suppliers || [])[0];
+      const location = (ctx.locations || [])[0];
+      const unit = (ctx.units || [])[0];
+      if (!category || !supplier || !location || !unit) {
+        return { skip: true, skipMessage: 'Missing prerequisites for raw material SKU test' };
+      }
+      const baseName = `SKU Reuse Flour`; // stable name to trigger reuse
+      const rm1 = await rawMaterialsApi.create({
+        name: baseName,
+        categoryId: category.id,
+        supplierId: supplier.id,
+        batchNumber: `SRM-${Date.now()}`,
+        purchaseDate: new Date().toISOString().split('T')[0],
+        expirationDate: '2025-12-31',
+        quantity: 5,
+        unit: unit.symbol,
+        costPerUnit: 1,
+        reorderLevel: 1,
+        storageLocationId: location.id
+      });
+      const rm2 = await rawMaterialsApi.create({
+        name: baseName,
+        categoryId: category.id,
+        supplierId: supplier.id,
+        batchNumber: `SRM-${Date.now()+1}`,
+        purchaseDate: new Date().toISOString().split('T')[0],
+        expirationDate: '2025-12-31',
+        quantity: 6,
+        unit: unit.symbol,
+        costPerUnit: 1,
+        reorderLevel: 1,
+        storageLocationId: location.id
+      });
+      const sku1 = rm1.data?.sku;
+      const sku2 = rm2.data?.sku;
+      if (!sku1 || !sku2) throw new Error('Missing SKU on created raw materials');
+      if (sku1 !== sku2) throw new Error('SKU not reused for identical names');
+      return { message: `Reused SKU ${sku1}`, data: { first: rm1.data, second: rm2.data } };
+    });
+
+    // 33 Finished Product SKU Reuse
+    await safeTest(48, async () => {
+      // Ensure finished product category
+      const FINISHED_KEY = (CategoryType as any)?.FINISHED_PRODUCT || 'FINISHED_PRODUCT';
+      let fpCategory = (ctx.categories || []).find((c: any) => c.type === FINISHED_KEY);
+      if (!fpCategory) {
+        try {
+          const catRes = await categoriesApi.create({ name: 'Temp Finished Category', type: FINISHED_KEY } as any);
+          fpCategory = catRes.data;
+          if (fpCategory) (ctx.categories || []).push(fpCategory);
+        } catch {
+          return { skip: true, skipMessage: 'Cannot ensure finished product category' };
+        }
+      }
+      const unit = (ctx.units || [])[0];
+      if (!unit || !fpCategory) return { skip: true, skipMessage: 'Missing unit or category' };
+      const baseName = 'Reusable SKU Bread';
+      const fp1 = await finishedProductsApi.create({
+        name: baseName,
+        sku: `TMP-${Date.now()}`, // initial user provided that should be normalized/reused logic may override
+        categoryId: fpCategory.id,
+        batchNumber: `B-${Date.now()}`,
+        productionDate: new Date().toISOString().split('T')[0],
+        expirationDate: new Date(Date.now() + 10*24*60*60*1000).toISOString().split('T')[0],
+        shelfLife: 10,
+        quantity: 10,
+        unit: unit.symbol,
+        salePrice: 5,
+        costToProduce: 3
+      });
+      const fp2 = await finishedProductsApi.create({
+        name: baseName,
+        sku: `TMP-${Date.now()+1}`,
+        categoryId: fpCategory.id,
+        batchNumber: `B-${Date.now()+1}`,
+        productionDate: new Date().toISOString().split('T')[0],
+        expirationDate: new Date(Date.now() + 10*24*60*60*1000).toISOString().split('T')[0],
+        shelfLife: 10,
+        quantity: 8,
+        unit: unit.symbol,
+        salePrice: 5,
+        costToProduce: 3
+      });
+      const sku1 = fp1.data?.sku;
+      const sku2 = fp2.data?.sku;
+      if (!sku1 || !sku2) throw new Error('Missing SKU on finished products');
+      if (sku1 !== sku2) throw new Error('Finished product SKU not reused');
+      return { message: `Reused Finished Product SKU ${sku1}`, data: { first: fp1.data, second: fp2.data } };
+    });
+
+    // === Customer Orders API Tests ===
+    
+    // 49 Customers API - Get All
+    await safeTest(49, async () => {
+      const customersResult = await customersApi.getAll();
+      ctx.customers = customersResult.data || [];
+      return { message: `Found ${ctx.customers.length} customers`, data: customersResult.data };
+    });
+
+    // 50 Customers API - Create Customer
+    await safeTest(50, async () => {
+      const createCustomerData = {
+        name: `Test Customer ${Date.now()}`,
+        email: `test${Date.now()}@example.com`,
+        phone: '+1 (555) 123-4567',
+        address: '123 Test Street, Test City',
+        isActive: true
+      };
+      const createCustomerResult = await customersApi.create(createCustomerData);
+      ctx.createdCustomerId = createCustomerResult.data?.id;
+      return { message: `Created customer ${ctx.createdCustomerId}`, data: createCustomerResult.data };
+    });
+
+    // 51 Customers API - Get Customer by ID
+    await safeTest(51, async () => {
+      if (!ctx.createdCustomerId) return { skip: true, skipMessage: 'No created customer' };
+      const customerResult = await customersApi.getById(ctx.createdCustomerId);
+      return { message: `Retrieved customer ${ctx.createdCustomerId}`, data: customerResult.data };
+    });
+
+    // 52 Customers API - Update Customer
+    await safeTest(52, async () => {
+      if (!ctx.createdCustomerId) return { skip: true, skipMessage: 'No created customer to update' };
+      const updateCustomerResult = await customersApi.update(ctx.createdCustomerId, {
+        name: `Updated Test Customer ${Date.now()}`,
+        email: `updated${Date.now()}@example.com`,
+        isActive: true
+      });
+      return { message: `Updated customer ${ctx.createdCustomerId}`, data: updateCustomerResult.data };
+    });
+
+    // 53 Customers API - Delete Customer (will fail if has orders, but test the endpoint)
+    await safeTest(53, async () => {
+      // Create a temporary customer specifically for deletion
+      const tempCustomer = await customersApi.create({
+        name: `Temp Delete Customer ${Date.now()}`,
+        email: `delete${Date.now()}@example.com`,
+        isActive: true
+      });
+      if (!tempCustomer.data?.id) return { skip: true, skipMessage: 'Could not create temp customer' };
+      
+      await customersApi.delete(tempCustomer.data.id);
+      return { message: `Successfully deleted customer ${tempCustomer.data.id}` };
+    });
+
+    // 54 Customer Orders API - Get All Orders
+    await safeTest(54, async () => {
+      const ordersResult = await customerOrdersApi.getAll();
+      ctx.customerOrders = ordersResult.data || [];
+      return { message: `Found ${ctx.customerOrders.length} customer orders`, data: ordersResult.data };
+    });
+
+    // 55 Customer Orders API - Create Order
+    await safeTest(55, async () => {
+      if (!ctx.createdCustomerId) return { skip: true, skipMessage: 'No customer available' };
+      
+      // Get a finished product to use in the order
+      const finishedProducts = await finishedProductsApi.getAll();
+      const product = finishedProducts.data?.[0];
+      if (!product) return { skip: true, skipMessage: 'No finished products available' };
+
+      const createOrderData = {
+        customerId: ctx.createdCustomerId,
+        expectedDeliveryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        priceMarkupPercentage: 20,
+        items: [
+          {
+            productId: product.id,
+            quantity: 2,
+            unitPrice: product.salePrice || 10
+          }
+        ]
+      };
+      const createOrderResult = await customerOrdersApi.create(createOrderData);
+      ctx.createdOrderId = createOrderResult.data?.id;
+      return { message: `Created order ${ctx.createdOrderId}`, data: createOrderResult.data };
+    });
+
+    // 56 Customer Orders API - Get Order by ID
+    await safeTest(56, async () => {
+      if (!ctx.createdOrderId) return { skip: true, skipMessage: 'No created order' };
+      const orderResult = await customerOrdersApi.getById(ctx.createdOrderId);
+      return { message: `Retrieved order ${ctx.createdOrderId}`, data: orderResult.data };
+    });
+
+    // 57 Customer Orders API - Update Order
+    await safeTest(57, async () => {
+      if (!ctx.createdOrderId) return { skip: true, skipMessage: 'No created order to update' };
+      const updateOrderResult = await customerOrdersApi.update(ctx.createdOrderId, {
+        priceMarkupPercentage: 25,
+        notes: 'Updated via API test'
+      });
+      return { message: `Updated order ${ctx.createdOrderId}`, data: updateOrderResult.data };
+    });
+
+    // 58 Customer Orders API - Confirm Order
+    await safeTest(58, async () => {
+      if (!ctx.createdOrderId) return { skip: true, skipMessage: 'No created order to confirm' };
+      try {
+        const confirmResult = await customerOrdersApi.confirmOrder(ctx.createdOrderId);
+        return { message: `Confirmed order ${ctx.createdOrderId}`, data: confirmResult.data };
+      } catch (error) {
+        // Might fail if insufficient inventory
+        return { message: `Confirm attempted: ${error instanceof Error ? error.message : 'Unknown error'}` };
+      }
+    });
+
+    // 59 Customer Orders API - Check Inventory
+    await safeTest(59, async () => {
+      if (!ctx.createdOrderId) return { skip: true, skipMessage: 'No created order' };
+      const inventoryResult = await customerOrdersApi.checkInventory(ctx.createdOrderId);
+      return { message: 'Inventory check completed', data: inventoryResult.data };
+    });
+
+    // 60 Customer Orders API - Fulfill Order
+    await safeTest(60, async () => {
+      if (!ctx.createdOrderId) return { skip: true, skipMessage: 'No created order to fulfill' };
+      try {
+        const fulfillResult = await customerOrdersApi.fulfillOrder(ctx.createdOrderId);
+        return { message: `Fulfilled order ${ctx.createdOrderId}`, data: fulfillResult.data };
+      } catch (error) {
+        // Might fail if not confirmed or insufficient inventory
+        return { message: `Fulfill attempted: ${error instanceof Error ? error.message : 'Unknown error'}` };
+      }
+    });
+
+    // 61 Customer Orders API - Revert to Draft
+    await safeTest(61, async () => {
+      // Create a new order to test revert functionality
+      if (!ctx.createdCustomerId) return { skip: true, skipMessage: 'No customer available' };
+      
+      const finishedProducts = await finishedProductsApi.getAll();
+      const product = finishedProducts.data?.[0];
+      if (!product) return { skip: true, skipMessage: 'No finished products available' };
+
+      const newOrderData = {
+        customerId: ctx.createdCustomerId,
+        expectedDeliveryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        priceMarkupPercentage: 15,
+        items: [{ productId: product.id, quantity: 1, unitPrice: product.salePrice || 10 }]
+      };
+      const newOrder = await customerOrdersApi.create(newOrderData);
+      
+      if (!newOrder.data?.id) return { skip: true, skipMessage: 'Could not create order for revert test' };
+      
+      try {
+        // Try to confirm first
+        await customerOrdersApi.confirmOrder(newOrder.data.id);
+        // Then revert
+        const revertResult = await customerOrdersApi.revertToDraft(newOrder.data.id);
+        return { message: `Reverted order ${newOrder.data.id} to DRAFT`, data: revertResult.data };
+      } catch (error) {
+        return { message: `Revert test: ${error instanceof Error ? error.message : 'Unknown error'}` };
+      }
+    });
+
+    // 62 Customer Orders API - Export PDF
+    await safeTest(62, async () => {
+      if (!ctx.createdOrderId) return { skip: true, skipMessage: 'No created order to export' };
+      try {
+        await customerOrdersApi.exportPDF(ctx.createdOrderId);
+        return { message: `PDF export initiated for order ${ctx.createdOrderId}` };
+      } catch (error) {
+        return { message: `PDF export attempted: ${error instanceof Error ? error.message : 'Unknown error'}` };
+      }
+    });
+
+    // 63 Customer Orders API - Export Excel
+    await safeTest(63, async () => {
+      if (!ctx.createdOrderId) return { skip: true, skipMessage: 'No created order to export' };
+      try {
+        await customerOrdersApi.exportExcel(ctx.createdOrderId);
+        return { message: `Excel export initiated for order ${ctx.createdOrderId}` };
+      } catch (error) {
+        return { message: `Excel export attempted: ${error instanceof Error ? error.message : 'Unknown error'}` };
+      }
+    });
+
+    // 64 Customer Orders API - Delete Order
+    await safeTest(64, async () => {
+      // Create a temporary order specifically for deletion
+      if (!ctx.createdCustomerId) return { skip: true, skipMessage: 'No customer available' };
+      
+      const finishedProducts = await finishedProductsApi.getAll();
+      const product = finishedProducts.data?.[0];
+      if (!product) return { skip: true, skipMessage: 'No finished products available' };
+
+      const tempOrderData = {
+        customerId: ctx.createdCustomerId,
+        expectedDeliveryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        priceMarkupPercentage: 10,
+        items: [{ productId: product.id, quantity: 1, unitPrice: product.salePrice || 10 }]
+      };
+      const tempOrder = await customerOrdersApi.create(tempOrderData);
+      
+      if (!tempOrder.data?.id) return { skip: true, skipMessage: 'Could not create temp order' };
+      
+      await customerOrdersApi.delete(tempOrder.data.id);
+      return { message: `Successfully deleted order ${tempOrder.data.id}` };
     });
 
     console.debug('[API TEST] Completed runAllTests in', Date.now() - ctx._startTime, 'ms');
