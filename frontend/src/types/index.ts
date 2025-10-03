@@ -173,7 +173,7 @@ export interface FinishedProduct {
 export interface CreateFinishedProductData {
   name: string;
   description?: string;
-  sku: string;
+  sku?: string; // Optional - auto-generated from name if not provided
   categoryId: string;
   batchNumber: string;
   productionDate: string;

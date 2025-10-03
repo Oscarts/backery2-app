@@ -895,7 +895,7 @@ const ApiTestPage: React.FC = () => {
       const baseName = 'Reusable SKU Bread';
       const fp1 = await finishedProductsApi.create({
         name: baseName,
-        sku: `TMP-${Date.now()}`, // initial user provided that should be normalized/reused logic may override
+        // Don't provide SKU - let it auto-generate from name
         categoryId: fpCategory.id,
         batchNumber: `B-${Date.now()}`,
         productionDate: new Date().toISOString().split('T')[0],
@@ -908,7 +908,7 @@ const ApiTestPage: React.FC = () => {
       });
       const fp2 = await finishedProductsApi.create({
         name: baseName,
-        sku: `TMP-${Date.now()+1}`,
+        // Don't provide SKU - let it auto-generate from name (should match fp1)
         categoryId: fpCategory.id,
         batchNumber: `B-${Date.now()+1}`,
         productionDate: new Date().toISOString().split('T')[0],
@@ -922,7 +922,7 @@ const ApiTestPage: React.FC = () => {
       const sku1 = fp1.data?.sku;
       const sku2 = fp2.data?.sku;
       if (!sku1 || !sku2) throw new Error('Missing SKU on finished products');
-      if (sku1 !== sku2) throw new Error('Finished product SKU not reused');
+      if (sku1 !== sku2) throw new Error(`Finished product SKU not reused: ${sku1} vs ${sku2}`);
       return { message: `Reused Finished Product SKU ${sku1}`, data: { first: fp1.data, second: fp2.data } };
     });
 
