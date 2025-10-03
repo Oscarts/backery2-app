@@ -150,37 +150,16 @@ const ApiTestPage: React.FC = () => {
     const ctx = testContextRef.current;
     ctx._startTime = Date.now();
 
-    // 1 Categories
+    // 0 - Categories API
     await safeTest(0, async () => {
-      console.debug('[API TEST] Test 1: Fetch categories');
+      console.debug('[API TEST] Test 0: Fetch categories');
       const categoriesResult = await categoriesApi.getAll();
       ctx.categories = categoriesResult.data || [];
       return { message: `Found ${ctx.categories.length} categories`, data: categoriesResult.data };
     });
 
-    // 2 Storage Locations
+    // 1 - Create Category
     await safeTest(1, async () => {
-      const locationsResult = await storageLocationsApi.getAll();
-      ctx.locations = locationsResult.data || [];
-      return { message: `Found ${ctx.locations.length} storage locations`, data: locationsResult.data };
-    });
-
-    // 3 Units
-    await safeTest(2, async () => {
-      const unitsResult = await unitsApi.getAll();
-      ctx.units = unitsResult.data || [];
-      return { message: `Found ${ctx.units.length} units`, data: unitsResult.data };
-    });
-
-    // 4 Suppliers
-    await safeTest(3, async () => {
-      const suppliersResult = await suppliersApi.getAll();
-      ctx.suppliers = suppliersResult.data || [];
-      return { message: `Found ${ctx.suppliers.length} suppliers`, data: suppliersResult.data };
-    });
-
-    // 5 Create Category (Settings CRUD Tests)
-    await safeTest(4, async () => {
       const createCategoryData = {
         name: `Test Category CRUD ${Date.now()}`,
         type: 'RAW_MATERIAL' as CategoryType,
@@ -191,8 +170,8 @@ const ApiTestPage: React.FC = () => {
       return { message: `Created category ${createCategoryResult.data?.id}`, data: createCategoryResult.data };
     });
 
-    // 6 Update Category
-    await safeTest(21, async () => {
+    // 2 - Update Category
+    await safeTest(2, async () => {
       if (!ctx.createdCategoryId) return { skip: true, skipMessage: 'No created category to update' };
       const updateCategoryResult = await categoriesApi.update(ctx.createdCategoryId, {
         name: `Updated Test Category ${Date.now()}`,
@@ -202,15 +181,15 @@ const ApiTestPage: React.FC = () => {
       return { message: `Updated category ${ctx.createdCategoryId}`, data: updateCategoryResult.data };
     });
 
-    // 7 Delete Category
-    await safeTest(22, async () => {
+    // 3 - Delete Category
+    await safeTest(3, async () => {
       if (!ctx.createdCategoryId) return { skip: true, skipMessage: 'No created category to delete' };
       await categoriesApi.delete(ctx.createdCategoryId);
       return { message: 'Category deleted successfully' };
     });
 
-    // 8 Test Category Uniqueness
-    await safeTest(23, async () => {
+    // 4 - Test Category Uniqueness
+    await safeTest(4, async () => {
       const uniqueTestName = `Unique Test Category ${Date.now()}`;
       // Create first category
       const firstResult = await categoriesApi.create({
@@ -237,8 +216,15 @@ const ApiTestPage: React.FC = () => {
       }
     });
 
-    // 9 Create Storage Location
-    await safeTest(24, async () => {
+    // 5 - Storage Locations API
+    await safeTest(5, async () => {
+      const locationsResult = await storageLocationsApi.getAll();
+      ctx.locations = locationsResult.data || [];
+      return { message: `Found ${ctx.locations.length} storage locations`, data: locationsResult.data };
+    });
+
+    // 6 - Create Storage Location
+    await safeTest(6, async () => {
       const createLocationData = {
         name: `Test Storage CRUD ${Date.now()}`,
         description: 'Test storage location for CRUD testing'
@@ -248,8 +234,8 @@ const ApiTestPage: React.FC = () => {
       return { message: `Created storage location ${createLocationResult.data?.id}`, data: createLocationResult.data };
     });
 
-    // 10 Update Storage Location
-    await safeTest(25, async () => {
+    // 7 - Update Storage Location
+    await safeTest(7, async () => {
       if (!ctx.createdLocationId) return { skip: true, skipMessage: 'No created storage location to update' };
       const updateLocationResult = await storageLocationsApi.update(ctx.createdLocationId, {
         name: `Updated Test Storage ${Date.now()}`,
@@ -258,15 +244,15 @@ const ApiTestPage: React.FC = () => {
       return { message: `Updated storage location ${ctx.createdLocationId}`, data: updateLocationResult.data };
     });
 
-    // 11 Delete Storage Location
-    await safeTest(26, async () => {
+    // 8 - Delete Storage Location
+    await safeTest(8, async () => {
       if (!ctx.createdLocationId) return { skip: true, skipMessage: 'No created storage location to delete' };
       await storageLocationsApi.delete(ctx.createdLocationId);
       return { message: 'Storage location deleted successfully' };
     });
 
-    // 12 Test Storage Location Uniqueness
-    await safeTest(27, async () => {
+    // 9 - Test Storage Location Uniqueness
+    await safeTest(9, async () => {
       const uniqueTestName = `Unique Test Storage ${Date.now()}`;
       // Create first storage location
       const firstResult = await storageLocationsApi.create({
@@ -291,8 +277,15 @@ const ApiTestPage: React.FC = () => {
       }
     });
 
-    // 13 Create Unit
-    await safeTest(28, async () => {
+    // 10 - Units API
+    await safeTest(10, async () => {
+      const unitsResult = await unitsApi.getAll();
+      ctx.units = unitsResult.data || [];
+      return { message: `Found ${ctx.units.length} units`, data: unitsResult.data };
+    });
+
+    // 11 - Create Unit
+    await safeTest(11, async () => {
       const createUnitData = {
         name: `Test Unit CRUD ${Date.now()}`,
         symbol: `tu${Date.now().toString().slice(-4)}`,
@@ -305,8 +298,8 @@ const ApiTestPage: React.FC = () => {
       return { message: `Created unit ${createUnitResult.data?.id}`, data: createUnitResult.data };
     });
 
-    // 14 Update Unit
-    await safeTest(29, async () => {
+    // 12 - Update Unit
+    await safeTest(12, async () => {
       if (!ctx.createdUnitId) return { skip: true, skipMessage: 'No created unit to update' };
       const updateUnitResult = await unitsApi.update(ctx.createdUnitId, {
         name: `Updated Test Unit ${Date.now()}`,
@@ -316,15 +309,15 @@ const ApiTestPage: React.FC = () => {
       return { message: `Updated unit ${ctx.createdUnitId}`, data: updateUnitResult.data };
     });
 
-    // 15 Delete Unit
-    await safeTest(30, async () => {
+    // 13 - Delete Unit
+    await safeTest(13, async () => {
       if (!ctx.createdUnitId) return { skip: true, skipMessage: 'No created unit to delete' };
       await unitsApi.delete(ctx.createdUnitId);
       return { message: 'Unit deleted successfully' };
     });
 
-    // 16 Test Unit Uniqueness
-    await safeTest(31, async () => {
+    // 14 - Test Unit Uniqueness
+    await safeTest(14, async () => {
       const uniqueTestName = `Unique Test Unit ${Date.now()}`;
       const uniqueTestSymbol = `utu${Date.now().toString().slice(-4)}`;
       
@@ -357,8 +350,15 @@ const ApiTestPage: React.FC = () => {
       }
     });
 
-    // 17 Create Supplier
-    await safeTest(32, async () => {
+    // 15 - Suppliers API
+    await safeTest(15, async () => {
+      const suppliersResult = await suppliersApi.getAll();
+      ctx.suppliers = suppliersResult.data || [];
+      return { message: `Found ${ctx.suppliers.length} suppliers`, data: suppliersResult.data };
+    });
+
+    // 16 - Create Supplier
+    await safeTest(16, async () => {
       const createSupplierData = {
         name: `Test Supplier CRUD ${Date.now()}`,
         contactInfo: 'test@supplier.com',
@@ -369,8 +369,8 @@ const ApiTestPage: React.FC = () => {
       return { message: `Created supplier ${createSupplierResult.data?.id}`, data: createSupplierResult.data };
     });
 
-    // 18 Update Supplier
-    await safeTest(33, async () => {
+    // 17 - Update Supplier
+    await safeTest(17, async () => {
       if (!ctx.createdSupplierId) return { skip: true, skipMessage: 'No created supplier to update' };
       const updateSupplierResult = await suppliersApi.update(ctx.createdSupplierId, {
         name: `Updated Test Supplier ${Date.now()}`,
@@ -380,15 +380,15 @@ const ApiTestPage: React.FC = () => {
       return { message: `Updated supplier ${ctx.createdSupplierId}`, data: updateSupplierResult.data };
     });
 
-    // 19 Delete Supplier
-    await safeTest(34, async () => {
+    // 18 - Delete Supplier
+    await safeTest(18, async () => {
       if (!ctx.createdSupplierId) return { skip: true, skipMessage: 'No created supplier to delete' };
       await suppliersApi.delete(ctx.createdSupplierId);
       return { message: 'Supplier deleted successfully' };
     });
 
-    // 20 Test Supplier Uniqueness
-    await safeTest(35, async () => {
+    // 19 - Test Supplier Uniqueness
+    await safeTest(19, async () => {
       const uniqueTestName = `Unique Test Supplier ${Date.now()}`;
       // Create first supplier
       const firstResult = await suppliersApi.create({
@@ -415,15 +415,15 @@ const ApiTestPage: React.FC = () => {
       }
     });
 
-    // 21 Raw Materials list
-    await safeTest(36, async () => {
+    // 20 - Raw Materials API
+    await safeTest(20, async () => {
       const rawMaterialsResult = await rawMaterialsApi.getAll();
       ctx.rawMaterials = rawMaterialsResult.data || [];
       return { message: `Found ${ctx.rawMaterials.length} raw materials`, data: rawMaterialsResult.data };
     });
 
-    // 22 Create Raw Material
-    await safeTest(37, async () => {
+    // 21 - Create Raw Material
+    await safeTest(21, async () => {
       const category = (ctx.categories || []).find((c: any) => c.type === CategoryType.RAW_MATERIAL);
       const supplier = (ctx.suppliers || [])[0];
       const location = (ctx.locations || [])[0];
@@ -452,7 +452,7 @@ const ApiTestPage: React.FC = () => {
       return { message: `Created raw material ${createRawResult.data?.id}`, data: createRawResult.data };
     });
 
-    // 7 Update Raw Material
+    // 22 - Update Raw Material
     await safeTest(22, async () => {
       if (!ctx.createdRawMaterialId) {
         return { skip: true, skipMessage: 'No created raw material to update' };
@@ -465,7 +465,7 @@ const ApiTestPage: React.FC = () => {
       return { message: `Updated raw material quantity to ${updateRawResult.data?.quantity}`, data: updateRawResult.data };
     });
 
-    // 8 Delete Raw Material
+    // 23 - Delete Raw Material
     await safeTest(23, async () => {
       if (!ctx.createdRawMaterialId) {
         return { skip: true, skipMessage: 'No created raw material to delete' };
@@ -479,14 +479,14 @@ const ApiTestPage: React.FC = () => {
       return { message: 'Raw material deleted (others remain)' };
     });
 
-    // 9 Finished Products list
+    // 24 - Finished Products API
     await safeTest(24, async () => {
       const finishedProductsResult = await finishedProductsApi.getAll();
       ctx.finishedProducts = finishedProductsResult.data || [];
       return { message: `Found ${ctx.finishedProducts.length} finished products`, data: finishedProductsResult.data };
     });
 
-    // 10 Create Finished Product
+    // 25 - Create Finished Product
     await safeTest(25, async () => {
       console.debug('[API TEST] Test 10: Create Finished Product');
       // Refresh categories for potential new category creation
@@ -533,7 +533,7 @@ const ApiTestPage: React.FC = () => {
       return { message: `Created finished product ${createFinishedResult.data?.id}`, data: createFinishedResult.data };
     });
 
-    // 11 Update Finished Product
+    // 26 - Update Finished Product
     await safeTest(26, async () => {
       if (!ctx.createdFinishedProductId) return { skip: true, skipMessage: 'No created finished product to update' };
       const updateFinishedResult = await finishedProductsApi.update(ctx.createdFinishedProductId, {
@@ -543,26 +543,26 @@ const ApiTestPage: React.FC = () => {
       return { message: `Updated finished product quantity to ${updateFinishedResult.data?.quantity}`, data: updateFinishedResult.data };
     });
 
-    // 12 Delete Finished Product
+    // 27 - Delete Finished Product
     await safeTest(27, async () => {
       if (!ctx.createdFinishedProductId) return { skip: true, skipMessage: 'No created finished product to delete' };
       await finishedProductsApi.delete(ctx.createdFinishedProductId);
       return { message: 'Finished product deleted successfully' };
     });
 
-    // 13 Expiring
+    // 28 - Get Expiring Products
     await safeTest(28, async () => {
       const expiringResult = await finishedProductsApi.getExpiring(7);
       return { message: `Found ${expiringResult.data?.length || 0} products expiring in 7 days`, data: expiringResult.data };
     });
 
-    // 14 Low Stock
+    // 29 - Get Low Stock Products
     await safeTest(29, async () => {
       const lowStockResult = await finishedProductsApi.getLowStock(10);
       return { message: `Found ${lowStockResult.data?.length || 0} low stock products`, data: lowStockResult.data };
     });
 
-    // 15 Reserve Product
+    // 30 - Reserve Product Quantity
     await safeTest(30, async () => {
       const allProducts = await finishedProductsApi.getAll();
       const availableProduct = allProducts.data?.find(p => p.quantity > p.reservedQuantity);
@@ -572,49 +572,49 @@ const ApiTestPage: React.FC = () => {
       return { message: `Reserved 5 units of ${availableProduct.name}`, data: reserveResult.data };
     });
 
-    // 16 Release Reservation
+    // 31 - Release Product Reservation
     await safeTest(31, async () => {
       if (!ctx.reservationProductId) return { skip: true, skipMessage: 'No reservation product to release' };
       const releaseResult = await finishedProductsApi.releaseReservation(ctx.reservationProductId, 5);
       return { message: 'Released 5 units reservation', data: releaseResult.data };
     });
 
-    // 17 Dashboard Summary
+    // 32 - Dashboard Summary
     await safeTest(32, async () => {
       const summaryResponse = await fetch('/api/dashboard/summary');
       const summaryResult = await summaryResponse.json();
       return { message: `Dashboard total items: ${summaryResult.data?.inventoryCounts?.total || 0}`, data: summaryResult.data };
     });
 
-    // 18 Dashboard Alerts
+    // 33 - Dashboard Alerts
     await safeTest(33, async () => {
       const alertsResponse = await fetch('/api/dashboard/alerts');
       const alertsResult = await alertsResponse.json();
       return { message: `Found ${alertsResult.data?.length || 0} alerts`, data: alertsResult.data };
     });
 
-    // 19 Dashboard Trends
+    // 34 - Dashboard Trends
     await safeTest(34, async () => {
       const trendsResponse = await fetch('/api/dashboard/trends?days=7');
       const trendsResult = await trendsResponse.json();
       return { message: 'Trends loaded for 7 days', data: trendsResult.data };
     });
 
-    // 20 Dashboard Categories
+    // 35 - Dashboard Categories
     await safeTest(35, async () => {
       const categoriesResponse = await fetch('/api/dashboard/categories');
       const categoriesResult = await categoriesResponse.json();
       return { message: 'Categories breakdown loaded', data: categoriesResult.data };
     });
 
-    // 21 Dashboard Value
+    // 36 - Dashboard Value Analysis
     await safeTest(36, async () => {
       const valueResponse = await fetch('/api/dashboard/value');
       const valueResult = await valueResponse.json();
       return { message: 'Value analysis loaded', data: valueResult.data };
     });
 
-    // 22 Recipes list
+    // 37 - Recipes API
     await safeTest(37, async () => {
       const recipesResponse = await fetch('/api/recipes');
       const recipesResult = await recipesResponse.json();
@@ -622,7 +622,7 @@ const ApiTestPage: React.FC = () => {
       return { message: `Found ${ctx.recipes.length} recipes`, data: recipesResult.data };
     });
 
-    // 23 Create Recipe (guarantee prerequisites: recipe category + raw material)
+    // 38 - Create Recipe
     await safeTest(38, async () => {
       console.debug('[API TEST] Test 23: Create Recipe');
       // Ensure categories cached
@@ -730,7 +730,7 @@ const ApiTestPage: React.FC = () => {
       return { message: `Recipe created ${createResult.data.name} (${mixed ? 'mixed' : 'raw-only'})`, data: createResult.data };
     });
 
-    // 24 Recipe Cost Analysis
+    // 39 - Recipe Cost Analysis
     await safeTest(39, async () => {
       let recipeId = ctx.createdRecipeId;
       if (!recipeId) {
@@ -749,7 +749,7 @@ const ApiTestPage: React.FC = () => {
       return { message: `Cost: $${costResult.data?.totalCost?.toFixed(2) || '0.00'} (${rawCount} raw, ${finishedCount} finished)`, data: costResult.data };
     });
 
-    // 25 What Can I Make
+    // 40 - What Can I Make Analysis
     await safeTest(40, async () => {
       const whatCanMakeResponse = await fetch('/api/recipes/what-can-i-make');
       if (!whatCanMakeResponse.ok) throw new Error(`API error: ${whatCanMakeResponse.status}`);
@@ -760,7 +760,7 @@ const ApiTestPage: React.FC = () => {
       return { message: `Can make ${canMakeCount} of ${totalRecipes} recipes`, data: result.data };
     });
 
-    // 26 Update Recipe
+    // 41 - Update Recipe
     await safeTest(41, async () => {
       if (!ctx.createdRecipeId) return { skip: true, skipMessage: 'No created recipe to update' };
       const updateData = { name: `Updated Test Recipe ${Date.now()}`, description: 'Updated test recipe description', prepTime: 45 };
@@ -770,16 +770,17 @@ const ApiTestPage: React.FC = () => {
       return { message: `Recipe updated ${updateResult.data.name}`, data: updateResult.data };
     });
 
-    // 27 Delete Recipe
+    // 42 - Delete Recipe
     await safeTest(42, async () => {
-      console.debug('[API TEST] Test 27: Delete Recipe');
+      console.debug('[API TEST] Test 42: Delete Recipe');
       if (!ctx.createdRecipeId) return { skip: true, skipMessage: 'No created recipe to delete' };
       const deleteResponse = await fetch(`/api/recipes/${ctx.createdRecipeId}`, { method: 'DELETE' });
       const deleteResult = await deleteResponse.json();
       if (!deleteResult.success) throw new Error(deleteResult.error || 'Failed to delete recipe');
       return { message: 'Recipe deleted successfully', data: deleteResult };
     });
-    // 28 Finished Product Materials Traceability
+    
+    // 43 - Finished Product Materials Traceability
     await safeTest(43, async () => {
       // Attempt to locate a finished product that is COMPLETED; if none, skip.
       const fps = await finishedProductsApi.getAll();
@@ -798,7 +799,7 @@ const ApiTestPage: React.FC = () => {
       }
     });
 
-    // 29 Production Workflow (Light)
+    // 44 - Production Workflow (Light)
     await safeTest(44, async () => {
       // Placeholder – real workflow requires multi-step production run. For now call health check.
       const healthResp = await fetch('/api/system/health');
@@ -808,7 +809,7 @@ const ApiTestPage: React.FC = () => {
       return { message: 'System health OK', data: healthJson.data };
     });
 
-    // 30 Production Contamination Check
+    // 45 - Production Contamination Check
     await safeTest(45, async () => {
       // Query finished products for contaminated flag
       const fps = await finishedProductsApi.getAll();
@@ -816,7 +817,7 @@ const ApiTestPage: React.FC = () => {
       return { message: `${contaminated.length} contaminated product(s)`, data: contaminated.slice(0,3) };
     });
 
-    // 31 Production Capacity Check
+    // 46 - Production Capacity Check
     await safeTest(46, async () => {
       // Placeholder capacity: count products vs categories
       const fps = await finishedProductsApi.getAll();
@@ -824,7 +825,7 @@ const ApiTestPage: React.FC = () => {
       return { message: `Finished products count: ${count}`, data: fps.data?.slice(0,5) };
     });
 
-    // 32 Raw Material SKU Reuse
+    // 47 - Raw Material SKU Reuse
     await safeTest(47, async () => {
       // Create first raw material with a name
       const category = (ctx.categories || []).find((c: any) => c.type === CategoryType.RAW_MATERIAL);
@@ -868,7 +869,7 @@ const ApiTestPage: React.FC = () => {
       return { message: `Reused SKU ${sku1}`, data: { first: rm1.data, second: rm2.data } };
     });
 
-    // 33 Finished Product SKU Reuse
+    // 48 - Finished Product SKU Reuse
     await safeTest(48, async () => {
       // Ensure finished product category
       const FINISHED_KEY = (CategoryType as any)?.FINISHED_PRODUCT || 'FINISHED_PRODUCT';
