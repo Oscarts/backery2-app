@@ -58,6 +58,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { rawMaterialsApi, categoriesApi, storageLocationsApi, unitsApi, suppliersApi, qualityStatusApi } from '../services/realApi';
 import { RawMaterial, CategoryType, CreateRawMaterialData, UpdateRawMaterialData } from '../types';
+import { borderRadius } from '../theme/designTokens';
 import { formatDate, isExpired, isExpiringSoon, getDaysUntilExpiration } from '../utils/api';
 
 const RawMaterials: React.FC = () => {
@@ -261,10 +262,24 @@ const RawMaterials: React.FC = () => {
         mb={3}
         gap={2}
       >
-        <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <InventoryIcon color="secondary" />
-          Raw Materials
-        </Typography>
+        <Box>
+          <Typography 
+            variant={isMobile ? "h4" : "h3"}
+            sx={{
+              fontWeight: 'bold',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              mb: 1
+            }}
+          >
+            <InventoryIcon sx={{ fontSize: '1.2em', color: 'primary.main' }} />
+            Raw Materials
+          </Typography>
+          <Typography variant="subtitle1" color="text.secondary">
+            Track ingredients, supplies, and stock levels for production
+          </Typography>
+        </Box>
 
         <Box display="flex" gap={1} width={{ xs: '100%', sm: 'auto' }}>
           {/* View Toggle Buttons */}
@@ -273,7 +288,7 @@ const RawMaterials: React.FC = () => {
               display: { xs: 'flex', md: 'flex' },
               border: 1,
               borderColor: 'divider',
-              borderRadius: 1,
+              borderRadius: borderRadius.base, // 12px - Modern rounded toggle
               mr: 1
             }}
           >
@@ -282,7 +297,7 @@ const RawMaterials: React.FC = () => {
                 color={viewMode === 'list' ? 'primary' : 'default'}
                 onClick={() => setViewMode('list')}
                 sx={{
-                  borderRadius: '4px 0 0 4px',
+                  borderRadius: `${borderRadius.base} 0 0 ${borderRadius.base}`, // Left rounded
                   bgcolor: viewMode === 'list' ? 'action.selected' : 'transparent'
                 }}
               >
@@ -294,7 +309,7 @@ const RawMaterials: React.FC = () => {
                 color={viewMode === 'card' ? 'primary' : 'default'}
                 onClick={() => setViewMode('card')}
                 sx={{
-                  borderRadius: '0 4px 4px 0',
+                  borderRadius: `0 ${borderRadius.base} ${borderRadius.base} 0`, // Right rounded
                   bgcolor: viewMode === 'card' ? 'action.selected' : 'transparent'
                 }}
               >
@@ -335,7 +350,7 @@ const RawMaterials: React.FC = () => {
           <Card
             elevation={1}
             sx={{
-              borderRadius: 1.5,
+              borderRadius: borderRadius.md, // 16px - Modern rounded cards
               p: 0.5,
               border: 1,
               borderColor: indicatorFilter === 'all' ? 'primary.main' : 'divider',
@@ -381,7 +396,7 @@ const RawMaterials: React.FC = () => {
           <Card
             elevation={1}
             sx={{
-              borderRadius: 1.5,
+              borderRadius: borderRadius.md, // 16px - Modern rounded cards
               p: 0.5,
               border: 1,
               borderColor: indicatorFilter === 'expiring_soon' ? 'warning.main' : (expiringSoonCount > 0 ? 'warning.main' : 'divider'),
@@ -427,7 +442,7 @@ const RawMaterials: React.FC = () => {
           <Card
             elevation={1}
             sx={{
-              borderRadius: 1.5,
+              borderRadius: borderRadius.md, // 16px - Modern rounded cards
               p: 0.5,
               border: 1,
               borderColor: indicatorFilter === 'low_stock' ? 'error.main' : (lowStockCount > 0 ? 'error.main' : 'divider'),

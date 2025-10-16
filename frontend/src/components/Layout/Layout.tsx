@@ -12,7 +12,6 @@ import {
   ListItemIcon,
   ListItemText,
   Toolbar,
-  Typography,
   useTheme,
   useMediaQuery,
   Divider,
@@ -31,11 +30,11 @@ import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
   Science as ScienceIcon,
-  BakeryDining as BakeryIcon,
   People as PeopleIcon,
   ShoppingCart as OrderIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
+import RapidProLogo from '../Brand/RapidProLogo';
 
 // Define drawer widths for open and closed states
 const drawerWidth = 240; // Reduced from 280
@@ -73,33 +72,39 @@ const Layout: React.FC = () => {
 
   const drawer = (
     <div>
-      <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', px: 1, minHeight: '56px' }}>
-        {drawerOpen ? (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <BakeryIcon sx={{ color: 'secondary.main', fontSize: '1.3rem' }} />
-            <Typography
-              variant="h6"
-              noWrap
-              component="div"
-              sx={{
-                fontSize: '1.1rem',
-                fontWeight: 600,
-                background: 'linear-gradient(45deg, #2E7D32 30%, #FF8E53 90%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent'
-              }}
-            >
-              Freshed
-            </Typography>
-          </Box>
-        ) : null}
-        <IconButton onClick={handleDrawerCollapse}>
-          {theme.direction === 'ltr' ? (
-            drawerOpen ? <ChevronLeftIcon /> : <ChevronRightIcon />
-          ) : (
-            drawerOpen ? <ChevronRightIcon /> : <ChevronLeftIcon />
-          )}
-        </IconButton>
+      <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, minHeight: '64px' }}>
+        {/* Always show just the icon in the sidebar */}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexGrow: drawerOpen ? 0 : 1 }}>
+          <RapidProLogo size="small" variant="icon-only" />
+        </Box>
+        {/* Show collapse button only when drawer is open */}
+        {drawerOpen && (
+          <IconButton onClick={handleDrawerCollapse} size="small">
+            <ChevronLeftIcon />
+          </IconButton>
+        )}
+        {/* Show expand button when collapsed - positioned absolutely */}
+        {!drawerOpen && (
+          <IconButton 
+            onClick={handleDrawerCollapse} 
+            size="small"
+            sx={{ 
+              position: 'absolute',
+              right: -12,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              bgcolor: 'background.paper',
+              border: 1,
+              borderColor: 'divider',
+              '&:hover': {
+                bgcolor: 'action.hover',
+              },
+              zIndex: 1201,
+            }}
+          >
+            <ChevronRightIcon fontSize="small" />
+          </IconButton>
+        )}
       </Toolbar>
       <Divider />
       <List dense sx={{ py: 0.5 }}>
@@ -114,9 +119,18 @@ const Layout: React.FC = () => {
                     setMobileOpen(false);
                   }
                 }}
-                sx={{ px: drawerOpen ? 2 : 1.5, py: 1 }} // Reduced horizontal padding
+                sx={{ 
+                  px: drawerOpen ? 2 : 1.5,
+                  py: 1,
+                  justifyContent: drawerOpen ? 'flex-start' : 'center',
+                }}
               >
-                <ListItemIcon sx={{ minWidth: drawerOpen ? 40 : 32 }}>{item.icon}</ListItemIcon>
+                <ListItemIcon sx={{ 
+                  minWidth: drawerOpen ? 40 : 'auto',
+                  justifyContent: 'center',
+                }}>
+                  {item.icon}
+                </ListItemIcon>
                 {drawerOpen && <ListItemText primary={item.text} />}
               </ListItemButton>
             </Tooltip>
@@ -155,36 +169,16 @@ const Layout: React.FC = () => {
           >
             <MenuIcon />
           </IconButton>
-          <BakeryIcon sx={{ mr: 1.5, fontSize: '2.2rem', color: 'secondary.main' }} />
-          <Box>
-            <Typography
-              variant="h5"
-              noWrap
-              component="div"
-              sx={{
-                fontWeight: 700,
-                background: 'linear-gradient(45deg, #2E7D32 30%, #FF8E53 90%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                letterSpacing: '0.5px',
-                display: 'flex',
-                alignItems: 'center',
-              }}
-            >
-              Freshed
-            </Typography>
-            <Typography
-              variant="caption"
-              noWrap
-              sx={{
-                opacity: 0.8,
-                mt: -0.5,
-                display: { xs: 'none', sm: 'block' }
-              }}
-            >
-              Fresh Bakery Inventory
-            </Typography>
-          </Box>
+          <RapidProLogo 
+            size="medium" 
+            variant="full"
+            sx={{ display: { xs: 'none', sm: 'flex' } }}
+          />
+          <RapidProLogo 
+            size="small" 
+            variant="icon-only"
+            sx={{ display: { xs: 'flex', sm: 'none' } }}
+          />
         </Toolbar>
       </AppBar>
       <Box

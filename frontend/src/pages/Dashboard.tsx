@@ -12,6 +12,8 @@ import {
   Tooltip,
   CircularProgress,
   LinearProgress,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Inventory as InventoryIcon,
@@ -19,6 +21,7 @@ import {
   Science as ScienceIcon,
   LocalDining as LocalDiningIcon,
   MenuBook as MenuBookIcon,
+  Dashboard as DashboardIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
@@ -35,6 +38,8 @@ interface DashboardSummary {
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,10 +90,32 @@ const Dashboard: React.FC = () => {
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h3" component="h1">
-          Dashboard
-        </Typography>
+      <Box 
+        display="flex" 
+        flexDirection={{ xs: 'column', sm: 'row' }}
+        justifyContent="space-between" 
+        alignItems={{ xs: 'flex-start', sm: 'center' }}
+        mb={3}
+        gap={2}
+      >
+        <Box>
+          <Typography 
+            variant={isMobile ? "h4" : "h3"}
+            sx={{
+              fontWeight: 'bold',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              mb: 1
+            }}
+          >
+            <DashboardIcon sx={{ fontSize: '1.2em', color: 'primary.main' }} />
+            Dashboard
+          </Typography>
+          <Typography variant="subtitle1" color="text.secondary">
+            Real-time overview of your bakery operations
+          </Typography>
+        </Box>
         <Box display="flex" alignItems="center" gap={2}>
           <Typography variant="body2" color="text.secondary">
             Last updated: {formatDate(lastRefresh)}

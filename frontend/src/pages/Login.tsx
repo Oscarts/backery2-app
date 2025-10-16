@@ -6,68 +6,105 @@ import {
   Button,
   Typography,
   Box,
-  Alert
+  Alert,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
+import RapidProLogo from '../components/Brand/RapidProLogo';
+import { borderRadius } from '../theme/designTokens';
 
 const Login: React.FC = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   return (
-    <Container component="main" maxWidth="sm">
-      <Box
-        sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
-        <Paper elevation={3} sx={{ padding: 4, width: '100%' }}>
-          <Typography component="h1" variant="h4" align="center" gutterBottom>
-            Bakery Inventory
-          </Typography>
-          <Typography variant="h6" align="center" color="text.secondary" gutterBottom>
-            Sign in to your account
-          </Typography>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.light} 100%)`,
+        py: 4,
+      }}
+    >
+      <Container component="main" maxWidth="sm">
+        <Paper
+          elevation={24}
+          sx={{
+            padding: { xs: 3, sm: 5 },
+            borderRadius: borderRadius.lg, // 20px - Modern rounded dialog
+            background: 'white',
+          }}
+        >
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+            }}
+          >
+            <RapidProLogo size={isMobile ? 'medium' : 'large'} variant="full" sx={{ mb: 3 }} />
 
-          <Alert severity="info" sx={{ mb: 3 }}>
-            Login functionality will be implemented with authentication system.
-          </Alert>
+            <Typography variant="h5" align="center" gutterBottom sx={{ fontWeight: 600, color: '#1E4687' }}>
+              Bienvenido
+            </Typography>
+            <Typography variant="body2" align="center" color="text.secondary" gutterBottom sx={{ mb: 3 }}>
+              Accede a tu sistema de gestión de producción
+            </Typography>
 
-          <Box component="form" sx={{ mt: 1 }}>
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="email"
-              label="Email Address"
-              name="email"
-              autoComplete="email"
-              autoFocus
-              disabled
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="password"
-              label="Password"
-              type="password"
-              id="password"
-              autoComplete="current-password"
-              disabled
-            />
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ mt: 3, mb: 2 }}
-              disabled
-            >
-              Sign In
-            </Button>
+            <Alert severity="info" sx={{ mb: 3, width: '100%' }}>
+              Login functionality will be implemented with authentication system.
+            </Alert>
+
+            <Box component="form" sx={{ width: '100%' }}>
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                id="email"
+                label="Email Address"
+                name="email"
+                autoComplete="email"
+                autoFocus
+                disabled
+                sx={{ mb: 2 }}
+              />
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                name="password"
+                label="Password"
+                type="password"
+                id="password"
+                autoComplete="current-password"
+                disabled
+                sx={{ mb: 3 }}
+              />
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                size="large"
+                disabled
+                sx={{
+                  py: 1.5,
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  fontSize: '1rem',
+                }}
+              >
+                Sign In
+              </Button>
+            </Box>
+
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 3 }}>
+              © 2025 RapidPro - Gestión de Producción. Todos los derechos reservados.
+            </Typography>
           </Box>
         </Paper>
-      </Box>
-    </Container>
+      </Container>
+    </Box>
   );
 };
 

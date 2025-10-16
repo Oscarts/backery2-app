@@ -62,6 +62,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import { finishedProductsApi, categoriesApi, storageLocationsApi, unitsApi, qualityStatusApi } from '../services/realApi';
 import { FinishedProduct, CategoryType, CreateFinishedProductData, UpdateFinishedProductData, ProductStatus, MaterialBreakdown, MaterialAllocation, ApiResponse } from '../types';
 import { formatDate, isExpired, isExpiringSoon, getDaysUntilExpiration, formatCurrency } from '../utils/api';
+import { borderRadius } from '../theme/designTokens';
 
 // Status display helper functions
 
@@ -490,7 +491,7 @@ const FinishedProducts: React.FC = () => {
                             sx={{
                               width: 12,
                               height: 12,
-                              borderRadius: 1,
+                              borderRadius: borderRadius.sm, // 8px - Small rounded box
                               backgroundColor: status.color || '#gray',
                               border: '1px solid #ddd',
                             }}
@@ -712,10 +713,24 @@ const FinishedProducts: React.FC = () => {
         mb={3}
         gap={2}
       >
-        <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <LocalDiningIcon color="success" />
-          Finished Products
-        </Typography>
+        <Box>
+          <Typography 
+            variant={isMobile ? "h4" : "h3"}
+            sx={{
+              fontWeight: 'bold',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              mb: 1
+            }}
+          >
+            <LocalDiningIcon sx={{ fontSize: '1.2em', color: 'primary.main' }} />
+            Finished Products
+          </Typography>
+          <Typography variant="subtitle1" color="text.secondary">
+            Monitor ready-to-sell products and inventory levels
+          </Typography>
+        </Box>
 
         <Box display="flex" gap={1} width={{ xs: '100%', sm: 'auto' }}>
           {/* View Toggle Buttons */}
@@ -724,7 +739,7 @@ const FinishedProducts: React.FC = () => {
               display: { xs: 'flex', md: 'flex' },
               border: 1,
               borderColor: 'divider',
-              borderRadius: 1,
+              borderRadius: borderRadius.base, // 12px - Modern rounded toggle
               mr: 1
             }}
           >
@@ -733,7 +748,7 @@ const FinishedProducts: React.FC = () => {
                 color={viewMode === 'list' ? 'primary' : 'default'}
                 onClick={() => setViewMode('list')}
                 sx={{
-                  borderRadius: '4px 0 0 4px',
+                  borderRadius: `${borderRadius.base} 0 0 ${borderRadius.base}`, // Left rounded
                   bgcolor: viewMode === 'list' ? 'action.selected' : 'transparent'
                 }}
               >
@@ -745,7 +760,7 @@ const FinishedProducts: React.FC = () => {
                 color={viewMode === 'card' ? 'primary' : 'default'}
                 onClick={() => setViewMode('card')}
                 sx={{
-                  borderRadius: '0 4px 4px 0',
+                  borderRadius: `0 ${borderRadius.base} ${borderRadius.base} 0`, // Right rounded
                   bgcolor: viewMode === 'card' ? 'action.selected' : 'transparent'
                 }}
               >
@@ -787,7 +802,7 @@ const FinishedProducts: React.FC = () => {
             onClick={() => setIndicatorFilter('all')}
             elevation={1}
             sx={{
-              borderRadius: 1.5,
+              borderRadius: borderRadius.md, // 16px - Modern rounded cards
               p: 0.5,
               border: 1,
               borderColor: indicatorFilter === 'all' ? 'primary.main' : 'divider',
@@ -833,7 +848,7 @@ const FinishedProducts: React.FC = () => {
             onClick={() => setIndicatorFilter(indicatorFilter === 'expiring_soon' ? 'all' : 'expiring_soon')}
             elevation={1}
             sx={{
-              borderRadius: 1.5,
+              borderRadius: borderRadius.md, // 16px - Modern rounded cards
               p: 0.5,
               border: 1,
               borderColor: indicatorFilter === 'expiring_soon' ? 'warning.main' : (expiringSoonCount > 0 ? 'warning.main' : 'divider'),
@@ -879,7 +894,7 @@ const FinishedProducts: React.FC = () => {
             onClick={() => setIndicatorFilter(indicatorFilter === 'low_stock' ? 'all' : 'low_stock')}
             elevation={1}
             sx={{
-              borderRadius: 1.5,
+              borderRadius: borderRadius.md, // 16px - Modern rounded cards
               p: 0.5,
               border: 1,
               borderColor: indicatorFilter === 'low_stock' ? 'error.main' : (lowStockCount > 0 ? 'error.main' : 'divider'),
@@ -1032,7 +1047,7 @@ const FinishedProducts: React.FC = () => {
 
       {/* List/Table View */}
       {viewMode === 'list' && (
-        <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
+        <Paper sx={{ borderRadius: borderRadius.md, overflow: 'hidden' }}>
           <TableContainer>
             <Table
               size="small"
@@ -1246,7 +1261,7 @@ const FinishedProducts: React.FC = () => {
                       flexDirection: 'column',
                       borderLeft: product.isContaminated ? '4px solid #d32f2f' : 'none',
                       position: 'relative',
-                      borderRadius: 2
+                      borderRadius: borderRadius.md // 16px - Modern rounded cards
                     }}
                     onClick={() => handleOpenForm(product)}
                   >

@@ -56,6 +56,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { customersApi } from '../services/realApi';
 import { Customer, CreateCustomerData } from '../types';
+import { borderRadius } from '../theme/designTokens';
 
 const Customers: React.FC = () => {
   const queryClient = useQueryClient();
@@ -278,10 +279,24 @@ const Customers: React.FC = () => {
         mb={3}
         gap={2}
       >
-        <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <PersonIcon color="primary" />
-          Customer Management
-        </Typography>
+        <Box>
+          <Typography 
+            variant={isMobile ? "h4" : "h3"}
+            sx={{
+              fontWeight: 'bold',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              mb: 1
+            }}
+          >
+            <PersonIcon sx={{ fontSize: '1.2em', color: 'primary.main' }} />
+            Customer Management
+          </Typography>
+          <Typography variant="subtitle1" color="text.secondary">
+            Manage your customer relationships and order history
+          </Typography>
+        </Box>
 
         <Box display="flex" gap={1} width={{ xs: '100%', sm: 'auto' }}>
           {/* View Toggle Buttons */}
@@ -290,7 +305,7 @@ const Customers: React.FC = () => {
               display: { xs: 'flex', md: 'flex' },
               border: 1,
               borderColor: 'divider',
-              borderRadius: 1,
+              borderRadius: borderRadius.base, // 12px - Modern rounded toggle
               mr: 1
             }}
           >
@@ -299,7 +314,7 @@ const Customers: React.FC = () => {
                 color={viewMode === 'list' ? 'primary' : 'default'}
                 onClick={() => setViewMode('list')}
                 sx={{
-                  borderRadius: '4px 0 0 4px',
+                  borderRadius: `${borderRadius.base} 0 0 ${borderRadius.base}`, // Left rounded
                   bgcolor: viewMode === 'list' ? 'action.selected' : 'transparent'
                 }}
               >
@@ -311,7 +326,7 @@ const Customers: React.FC = () => {
                 color={viewMode === 'card' ? 'primary' : 'default'}
                 onClick={() => setViewMode('card')}
                 sx={{
-                  borderRadius: '0 4px 4px 0',
+                  borderRadius: `0 ${borderRadius.base} ${borderRadius.base} 0`, // Right rounded
                   bgcolor: viewMode === 'card' ? 'action.selected' : 'transparent'
                 }}
               >
@@ -352,7 +367,7 @@ const Customers: React.FC = () => {
             onClick={() => setStatusFilter('all')}
             elevation={1}
             sx={{
-              borderRadius: 1.5,
+              borderRadius: borderRadius.md, // 16px - Modern rounded cards
               p: 0.5,
               border: 1,
               borderColor: statusFilter === 'all' ? 'primary.main' : 'divider',
@@ -394,7 +409,7 @@ const Customers: React.FC = () => {
             onClick={() => setStatusFilter(statusFilter === 'active' ? 'all' : 'active')}
             elevation={1}
             sx={{
-              borderRadius: 1.5,
+              borderRadius: borderRadius.md, // 16px - Modern rounded cards
               p: 0.5,
               border: 1,
               borderColor: statusFilter === 'active' ? 'success.main' : 'divider',
@@ -436,7 +451,7 @@ const Customers: React.FC = () => {
             onClick={() => setStatusFilter(statusFilter === 'inactive' ? 'all' : 'inactive')}
             elevation={1}
             sx={{
-              borderRadius: 1.5,
+              borderRadius: borderRadius.md, // 16px - Modern rounded cards
               p: 0.5,
               border: 1,
               borderColor: statusFilter === 'inactive' ? 'grey.500' : 'divider',
@@ -476,7 +491,7 @@ const Customers: React.FC = () => {
 
       {/* Search - Desktop */}
       {!isMobile && (
-        <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
+        <Paper sx={{ p: 2, mb: 3, borderRadius: borderRadius.md }}>
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} md={10}>
               <TextField
@@ -555,7 +570,7 @@ const Customers: React.FC = () => {
 
       {/* List View */}
       {viewMode === 'list' && (
-        <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
+        <Paper sx={{ borderRadius: borderRadius.md, overflow: 'hidden' }}>
           <TableContainer>
             <Table size="small" sx={{ '& .MuiTableCell-root': { px: 2, py: 1.5 } }}>
               <TableHead>
@@ -697,7 +712,7 @@ const Customers: React.FC = () => {
                     height: '100%',
                     display: 'flex',
                     flexDirection: 'column',
-                    borderRadius: 2,
+                    borderRadius: borderRadius.md, // 16px - Modern rounded cards
                   }}
                   onClick={() => handleOpenForm(customer)}
                 >

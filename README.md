@@ -10,7 +10,7 @@ A comprehensive, full-stack inventory management solution designed specifically 
 - 🏭 **Production Workflow Engine** - Real-time production run tracking with customizable steps
 - 📊 **Business Analytics** - Real-time dashboard with inventory metrics and production insights
 - 🔍 **Quality Management** - Comprehensive quality tracking and contamination monitoring
-- 📝 **Recipe Management** - Cost analysis and "What Can I Make?" functionality
+- 📝 **Recipe Management** - Advanced cost calculation with overhead, SKU system, and "What Can I Make?" functionality
 - 🔐 **User Authentication** - JWT-based security with role-based access control
 - 🎉 **Interactive UI** - Material-UI design with celebration animations and responsive layout
 
@@ -105,6 +105,20 @@ npm run dev
 - **Database**: PostgreSQL
 - **ORM**: Prisma
 - **Authentication**: JWT
+
+## 🎨 Design System
+
+RapidPro features a modern, rounded design system with consistent styling across all components:
+
+- **Brand Identity**: Professional navy blue + vibrant orange color scheme
+- **Typography**: Inter font family with responsive scale
+- **Rounded UI**: Modern 8-20px border radius system for friendly, approachable interface
+- **Responsive**: Mobile-first design that works on all screen sizes
+
+**Documentation**:
+- 📘 [`frontend/DESIGN_SYSTEM.md`](./frontend/DESIGN_SYSTEM.md) - Complete design guidelines
+- 🎯 [`ROUNDED_DESIGN_UPDATE.md`](./ROUNDED_DESIGN_UPDATE.md) - Latest rounded design implementation
+- 🎨 [`frontend/src/theme/designTokens.ts`](./frontend/src/theme/designTokens.ts) - Design token source code
 
 ## 🚨 Critical Guidelines
 

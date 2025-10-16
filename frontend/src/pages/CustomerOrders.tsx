@@ -60,6 +60,7 @@ import { useNavigate } from 'react-router-dom';
 import { customerOrdersApi, customersApi } from '../services/realApi';
 import { CustomerOrder, OrderStatus } from '../types';
 import { formatDate } from '../utils/api';
+import { borderRadius } from '../theme/designTokens';
 
 const CustomerOrders: React.FC = () => {
   const queryClient = useQueryClient();
@@ -284,10 +285,24 @@ const CustomerOrders: React.FC = () => {
         mb={3}
         gap={2}
       >
-        <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <ShoppingCartIcon color="primary" />
-          Customer Orders
-        </Typography>
+        <Box>
+          <Typography 
+            variant={isMobile ? "h4" : "h3"}
+            sx={{
+              fontWeight: 'bold',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              mb: 1
+            }}
+          >
+            <ShoppingCartIcon sx={{ fontSize: '1.2em', color: 'primary.main' }} />
+            Customer Orders
+          </Typography>
+          <Typography variant="subtitle1" color="text.secondary">
+            Track customer orders and fulfillment status
+          </Typography>
+        </Box>
 
         <Box display="flex" gap={1} width={{ xs: '100%', sm: 'auto' }}>
           {/* View Toggle Buttons */}
@@ -296,7 +311,7 @@ const CustomerOrders: React.FC = () => {
               display: { xs: 'flex', md: 'flex' },
               border: 1,
               borderColor: 'divider',
-              borderRadius: 1,
+              borderRadius: borderRadius.base, // 12px - Modern rounded toggle
               mr: 1
             }}
           >
@@ -305,7 +320,7 @@ const CustomerOrders: React.FC = () => {
                 color={viewMode === 'list' ? 'primary' : 'default'}
                 onClick={() => setViewMode('list')}
                 sx={{
-                  borderRadius: '4px 0 0 4px',
+                  borderRadius: `${borderRadius.base} 0 0 ${borderRadius.base}`, // Left rounded
                   bgcolor: viewMode === 'list' ? 'action.selected' : 'transparent'
                 }}
               >
@@ -317,7 +332,7 @@ const CustomerOrders: React.FC = () => {
                 color={viewMode === 'card' ? 'primary' : 'default'}
                 onClick={() => setViewMode('card')}
                 sx={{
-                  borderRadius: '0 4px 4px 0',
+                  borderRadius: `0 ${borderRadius.base} ${borderRadius.base} 0`, // Right rounded
                   bgcolor: viewMode === 'card' ? 'action.selected' : 'transparent'
                 }}
               >
@@ -358,7 +373,7 @@ const CustomerOrders: React.FC = () => {
             onClick={() => setStatusFilter('all')}
             elevation={1}
             sx={{
-              borderRadius: 1.5,
+              borderRadius: borderRadius.md, // 16px - Modern rounded cards
               p: 0.5,
               border: 1,
               borderColor: statusFilter === 'all' ? 'primary.main' : 'divider',
@@ -400,7 +415,7 @@ const CustomerOrders: React.FC = () => {
             onClick={() => setStatusFilter(statusFilter === OrderStatus.DRAFT ? 'all' : OrderStatus.DRAFT)}
             elevation={1}
             sx={{
-              borderRadius: 1.5,
+              borderRadius: borderRadius.md, // 16px - Modern rounded cards
               p: 0.5,
               border: 1,
               borderColor: statusFilter === OrderStatus.DRAFT ? 'warning.main' : 'divider',
@@ -442,7 +457,7 @@ const CustomerOrders: React.FC = () => {
             onClick={() => setStatusFilter(statusFilter === OrderStatus.CONFIRMED ? 'all' : OrderStatus.CONFIRMED)}
             elevation={1}
             sx={{
-              borderRadius: 1.5,
+              borderRadius: borderRadius.md, // 16px - Modern rounded cards
               p: 0.5,
               border: 1,
               borderColor: statusFilter === OrderStatus.CONFIRMED ? 'info.main' : 'divider',
@@ -484,7 +499,7 @@ const CustomerOrders: React.FC = () => {
             onClick={() => setStatusFilter(statusFilter === OrderStatus.FULFILLED ? 'all' : OrderStatus.FULFILLED)}
             elevation={1}
             sx={{
-              borderRadius: 1.5,
+              borderRadius: borderRadius.md, // 16px - Modern rounded cards
               p: 0.5,
               border: 1,
               borderColor: statusFilter === OrderStatus.FULFILLED ? 'success.main' : 'divider',
@@ -831,7 +846,7 @@ const CustomerOrders: React.FC = () => {
                     height: '100%',
                     display: 'flex',
                     flexDirection: 'column',
-                    borderRadius: 2,
+                    borderRadius: borderRadius.md,
                     position: 'relative'
                   }}
                   onClick={() => handleViewOrder(order.id)}
