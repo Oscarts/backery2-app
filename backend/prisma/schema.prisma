@@ -351,6 +351,7 @@ model CustomerOrder {
   totalProductionCost     Float       @default(0) @map("total_production_cost")
   totalPrice              Float       @default(0) @map("total_price")
   priceMarkupPercentage   Float       @default(30) @map("price_markup_percentage")
+  tvaRate                 Float       @default(20) @map("tva_rate") // TVA/VAT rate in percentage (default 20% for France)
   notes                   String?
   createdAt               DateTime    @default(now()) @map("created_at")
   updatedAt               DateTime    @updatedAt @map("updated_at")

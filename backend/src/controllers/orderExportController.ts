@@ -64,3 +64,25 @@ export const exportBulkExcel = async (req: Request, res: Response): Promise<void
     });
   }
 };
+
+/**
+ * Export single order as professional Word document (DOCX)
+ * French-style proforma/devis with TVA - excludes production costs
+ */
+export const exportOrderWord = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    
+    const wordBuffer = await orderExportService.generateOrderWord(id);
+    
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename=order-${id}.docx`);
+    res.send(wordBuffer);
+  } catch (error) {
+    console.error('Error exporting order to Word:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to export order to Word',
+    });
+  }
+};

@@ -174,38 +174,52 @@ export const createOrder = async (req: Request, res: Response) => {
     // Generate order number
     const orderNumber = await generateOrderNumber();
 
-    // Calculate totals
+    // Calculate totals and fetch product details
     let totalProductionCost = 0;
     let totalPrice = 0;
 
-    const orderItems = items.map((item: any) => {
-      const lineProductionCost = item.unitProductionCost * item.quantity;
-      const linePrice = item.unitPrice * item.quantity;
-      totalProductionCost += lineProductionCost;
-      totalPrice += linePrice;
+    const orderItems = await Promise.all(
+      items.map(async (item: any) => {
+        // Fetch product details from database
+        const product = await prisma.finishedProduct.findUnique({
+          where: { id: item.productId },
+        });
 
-      return {
-        productId: item.productId,
-        productName: item.productName,
-        productSku: item.productSku || null,
-        quantity: item.quantity,
-        unitProductionCost: item.unitProductionCost,
-        unitPrice: item.unitPrice,
-        lineProductionCost,
-        linePrice,
-      };
-    });
+        if (!product) {
+          throw new Error(`Product not found: ${item.productId}`);
+        }
+
+        const unitProductionCost = product.costToProduce || 0;
+        const lineProductionCost = unitProductionCost * item.quantity;
+        const linePrice = item.unitPrice * item.quantity;
+        totalProductionCost += lineProductionCost;
+        totalPrice += linePrice;
+
+        return {
+          productId: item.productId,
+          productName: product.name,
+          productSku: product.sku || null,
+          quantity: item.quantity,
+          unitProductionCost,
+          unitPrice: item.unitPrice,
+          lineProductionCost,
+          linePrice,
+        };
+      })
+    );
 
     // Create order with items
     const order = await prisma.customerOrder.create({
       data: {
         orderNumber,
-        customerId,
         expectedDeliveryDate: new Date(expectedDeliveryDate),
         priceMarkupPercentage: priceMarkupPercentage || 30,
         notes,
         totalProductionCost,
         totalPrice,
+        customer: {
+          connect: { id: customerId },
+        },
         items: {
           create: orderItems,
         },

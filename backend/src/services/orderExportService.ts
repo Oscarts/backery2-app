@@ -1,5 +1,6 @@
 import PDFDocument from 'pdfkit';
 import ExcelJS from 'exceljs';
+import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, HeadingLevel } from 'docx';
 import { PrismaClient, OrderStatus } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -312,4 +313,326 @@ export const generateBulkExcel = async (filters: OrderExportFilters): Promise<Bu
   // Generate buffer
   const buffer = await workbook.xlsx.writeBuffer();
   return Buffer.from(buffer);
+};
+
+/**
+ * Generate professional Word document (DOCX) for a single order
+ * French-style proforma/devis format with TVA calculation
+ * Excludes production costs - only shows sale prices
+ */
+export const generateOrderWord = async (orderId: string): Promise<Buffer> => {
+  // Fetch order with all related data
+  const order = await prisma.customerOrder.findUnique({
+    where: { id: orderId },
+    include: {
+      customer: true,
+      items: true,
+    },
+  });
+
+  if (!order) {
+    throw new Error('Order not found');
+  }
+
+  // Calculate totals
+  const subtotalHT = order.totalPrice / (1 + order.tvaRate / 100); // Price before tax
+  const tvaAmount = order.totalPrice - subtotalHT; // Tax amount
+  const totalTTC = order.totalPrice; // Total including tax
+
+  // Create professional document sections
+  const doc = new Document({
+    sections: [
+      {
+        properties: {},
+        children: [
+          // Document Title - DEVIS/PROFORMA
+          new Paragraph({
+            text: order.status === OrderStatus.DRAFT ? 'DEVIS' : 'PROFORMA',
+            heading: HeadingLevel.HEADING_1,
+            alignment: AlignmentType.CENTER,
+            spacing: {
+              after: 400,
+            },
+          }),
+
+          // Order Information Line
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `N° ${order.orderNumber}`,
+                bold: true,
+                size: 24,
+              }),
+              new TextRun({
+                text: `          Date: ${order.createdAt.toLocaleDateString('fr-FR')}`,
+                size: 22,
+              }),
+            ],
+            spacing: { after: 200 },
+          }),
+
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `Date de livraison prévue: ${order.expectedDeliveryDate.toLocaleDateString('fr-FR')}`,
+                size: 22,
+              }),
+            ],
+            spacing: { after: 400 },
+          }),
+
+          // Customer Information Section
+          new Paragraph({
+            text: 'CLIENT',
+            heading: HeadingLevel.HEADING_2,
+            spacing: { before: 300, after: 200 },
+          }),
+
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: order.customer.name,
+                bold: true,
+                size: 24,
+              }),
+            ],
+            spacing: { after: 100 },
+          }),
+
+          ...(order.customer.address
+            ? [
+                new Paragraph({
+                  text: order.customer.address,
+                  spacing: { after: 100 },
+                }),
+              ]
+            : []),
+
+          ...(order.customer.email
+            ? [
+                new Paragraph({
+                  text: `Email: ${order.customer.email}`,
+                  spacing: { after: 100 },
+                }),
+              ]
+            : []),
+
+          ...(order.customer.phone
+            ? [
+                new Paragraph({
+                  text: `Téléphone: ${order.customer.phone}`,
+                  spacing: { after: 400 },
+                }),
+              ]
+            : []),
+
+          // Items Table Header
+          new Paragraph({
+            text: 'DÉTAIL DE LA COMMANDE',
+            heading: HeadingLevel.HEADING_2,
+            spacing: { before: 400, after: 200 },
+          }),
+
+          // Items Table
+          new Table({
+            width: {
+              size: 100,
+              type: WidthType.PERCENTAGE,
+            },
+            borders: {
+              top: { style: BorderStyle.SINGLE, size: 1 },
+              bottom: { style: BorderStyle.SINGLE, size: 1 },
+              left: { style: BorderStyle.SINGLE, size: 1 },
+              right: { style: BorderStyle.SINGLE, size: 1 },
+              insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
+              insideVertical: { style: BorderStyle.SINGLE, size: 1 },
+            },
+            rows: [
+              // Table Header
+              new TableRow({
+                tableHeader: true,
+                children: [
+                  new TableCell({
+                    children: [new Paragraph({ text: 'Désignation', alignment: AlignmentType.LEFT })],
+                    shading: { fill: 'E0E0E0' },
+                    width: { size: 40, type: WidthType.PERCENTAGE },
+                  }),
+                  new TableCell({
+                    children: [new Paragraph({ text: 'Référence', alignment: AlignmentType.CENTER })],
+                    shading: { fill: 'E0E0E0' },
+                    width: { size: 15, type: WidthType.PERCENTAGE },
+                  }),
+                  new TableCell({
+                    children: [new Paragraph({ text: 'Quantité', alignment: AlignmentType.CENTER })],
+                    shading: { fill: 'E0E0E0' },
+                    width: { size: 15, type: WidthType.PERCENTAGE },
+                  }),
+                  new TableCell({
+                    children: [new Paragraph({ text: 'Prix Unit. HT', alignment: AlignmentType.RIGHT })],
+                    shading: { fill: 'E0E0E0' },
+                    width: { size: 15, type: WidthType.PERCENTAGE },
+                  }),
+                  new TableCell({
+                    children: [new Paragraph({ text: 'Total HT', alignment: AlignmentType.RIGHT })],
+                    shading: { fill: 'E0E0E0' },
+                    width: { size: 15, type: WidthType.PERCENTAGE },
+                  }),
+                ],
+              }),
+
+              // Table Rows - Items
+              ...order.items.map(
+                (item) =>
+                  new TableRow({
+                    children: [
+                      new TableCell({
+                        children: [new Paragraph({ text: item.productName })],
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({ text: item.productSku || '-', alignment: AlignmentType.CENTER })],
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({ text: item.quantity.toString(), alignment: AlignmentType.CENTER })],
+                      }),
+                      new TableCell({
+                        children: [
+                          new Paragraph({
+                            text: `${(item.unitPrice / (1 + order.tvaRate / 100)).toFixed(2)} €`,
+                            alignment: AlignmentType.RIGHT,
+                          }),
+                        ],
+                      }),
+                      new TableCell({
+                        children: [
+                          new Paragraph({
+                            text: `${(item.linePrice / (1 + order.tvaRate / 100)).toFixed(2)} €`,
+                            alignment: AlignmentType.RIGHT,
+                          }),
+                        ],
+                      }),
+                    ],
+                  })
+              ),
+            ],
+          }),
+
+          // Totals Section
+          new Paragraph({
+            text: '',
+            spacing: { before: 400 },
+          }),
+
+          // Subtotal HT
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: 'Total HT (Hors Taxes):',
+                size: 24,
+              }),
+              new TextRun({
+                text: `${' '.repeat(50)}${subtotalHT.toFixed(2)} €`,
+                size: 24,
+                bold: false,
+              }),
+            ],
+            alignment: AlignmentType.RIGHT,
+            spacing: { after: 100 },
+          }),
+
+          // TVA Amount
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `TVA (${order.tvaRate.toFixed(1)}%):`,
+                size: 24,
+              }),
+              new TextRun({
+                text: `${' '.repeat(50)}${tvaAmount.toFixed(2)} €`,
+                size: 24,
+                bold: false,
+              }),
+            ],
+            alignment: AlignmentType.RIGHT,
+            spacing: { after: 100 },
+          }),
+
+          // Total TTC
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: 'Total TTC (Toutes Taxes Comprises):',
+                size: 26,
+                bold: true,
+              }),
+              new TextRun({
+                text: `${' '.repeat(30)}${totalTTC.toFixed(2)} €`,
+                size: 26,
+                bold: true,
+              }),
+            ],
+            alignment: AlignmentType.RIGHT,
+            spacing: { after: 400 },
+          }),
+
+          // Notes Section (if any)
+          ...(order.notes
+            ? [
+                new Paragraph({
+                  text: 'NOTES',
+                  heading: HeadingLevel.HEADING_2,
+                  spacing: { before: 400, after: 200 },
+                }),
+                new Paragraph({
+                  text: order.notes,
+                  spacing: { after: 400 },
+                }),
+              ]
+            : []),
+
+          // Payment Terms and Conditions
+          new Paragraph({
+            text: 'CONDITIONS DE PAIEMENT',
+            heading: HeadingLevel.HEADING_2,
+            spacing: { before: 400, after: 200 },
+          }),
+
+          new Paragraph({
+            text: 'Paiement à réception de facture.',
+            spacing: { after: 100 },
+          }),
+
+          new Paragraph({
+            text: 'Modalités de livraison: Selon accord avec le client.',
+            spacing: { after: 100 },
+          }),
+
+          new Paragraph({
+            text: 'Validité du devis: 30 jours.',
+            spacing: { after: 400 },
+          }),
+
+          // Footer
+          new Paragraph({
+            text: '_'.repeat(80),
+            spacing: { before: 600, after: 100 },
+          }),
+
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `Document généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`,
+                size: 18,
+                italics: true,
+              }),
+            ],
+            alignment: AlignmentType.CENTER,
+          }),
+        ],
+      },
+    ],
+  });
+
+  // Generate buffer
+  const buffer = await Packer.toBuffer(doc);
+  return buffer;
 };

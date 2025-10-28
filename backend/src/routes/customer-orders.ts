@@ -82,6 +82,13 @@ router.get('/:id/export/pdf', orderExportController.exportOrderPDF);
 router.get('/:id/export/excel', orderExportController.exportOrderExcel);
 
 /**
+ * @route GET /api/customer-orders/:id/export/word
+ * @desc Export single order as professional Word document (DOCX) - French proforma/devis with TVA
+ * @access Public
+ */
+router.get('/:id/export/word', orderExportController.exportOrderWord);
+
+/**
  * @route POST /api/customer-orders/export/excel
  * @desc Export multiple orders as Excel with filters
  * @access Public

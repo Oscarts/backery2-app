@@ -631,4 +631,13 @@ export const customerOrdersApi = {
     }
     return response.blob();
   },
+
+  // Export as professional Word document (DOCX) - French proforma/devis with TVA
+  exportWord: async (id: string): Promise<Blob> => {
+    const response = await fetch(`${API_BASE_URL}/customer-orders/${id}/export/word`);
+    if (!response.ok) {
+      throw new Error(`Failed to export Word: ${response.statusText}`);
+    }
+    return response.blob();
+  },
 };

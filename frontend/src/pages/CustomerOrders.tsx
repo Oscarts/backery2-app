@@ -54,6 +54,7 @@ import {
   FilterList as FilterIcon,
   Receipt as ReceiptIcon,
   PendingActions as PendingIcon,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -212,6 +213,28 @@ const CustomerOrders: React.FC = () => {
 
   const handleEditOrder = (orderId: string) => {
     navigate(`/customer-orders/${orderId}/edit`);
+  };
+
+  // Export order as Word document (DOCX)
+  const handleExportOrder = async (orderId: string, orderNumber: string) => {
+    try {
+      const blob = await customerOrdersApi.exportWord(orderId);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `commande-${orderNumber}.docx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      showSnackbar('Export réussi', 'success');
+    } catch (error) {
+      console.error('Export error:', error);
+      showSnackbar('Erreur lors de l\'export', 'error');
+    }
   };
 
   // Status badge color
@@ -753,6 +776,20 @@ const CustomerOrders: React.FC = () => {
                           <ViewIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
+
+                      {/* Export button - available for all statuses */}
+                      <Tooltip title="Export as Word (Proforma/Devis)">
+                        <IconButton
+                          size="small"
+                          color="secondary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleExportOrder(order.id, order.orderNumber);
+                          }}
+                        >
+                          <DownloadIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                       
                       {order.status === OrderStatus.DRAFT && (
                         <>
@@ -954,6 +991,20 @@ const CustomerOrders: React.FC = () => {
                           }}
                         >
                           <ViewIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+
+                      {/* Export button - available for all statuses */}
+                      <Tooltip title="Export as Word (Proforma/Devis)">
+                        <IconButton
+                          size="small"
+                          color="secondary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleExportOrder(order.id, order.orderNumber);
+                          }}
+                        >
+                          <DownloadIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
 

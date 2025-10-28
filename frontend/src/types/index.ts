@@ -587,6 +587,7 @@ export interface CustomerOrder {
   totalProductionCost: number;
   totalPrice: number;
   priceMarkupPercentage: number;
+  tvaRate: number; // TVA/VAT rate in percentage (e.g., 20 for 20%)
   notes?: string;
   createdAt: string;
   updatedAt: string;
@@ -600,6 +601,7 @@ export interface CreateOrderData {
   customerId: string;
   expectedDeliveryDate: string;
   priceMarkupPercentage?: number;
+  tvaRate?: number; // TVA/VAT rate - defaults to 20 if not provided
   notes?: string;
   items: CreateOrderItemData[];
 }
@@ -611,12 +613,12 @@ export interface CreateOrderItemData {
 }
 
 export interface OrderInventoryCheck {
-  available: boolean;
+  canFulfill: boolean;
   insufficientProducts: Array<{
     productId: string;
     productName: string;
-    requiredQuantity: number;
-    availableQuantity: number;
+    required: number;
+    available: number;
     shortage: number;
   }>;
 }

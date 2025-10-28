@@ -7,11 +7,15 @@ async function main() {
 
   // Delete existing data in reverse order (to respect foreign keys)
   console.log('🗑️  Cleaning existing data...');
-  await prisma.finishedProduct.deleteMany();
-  await prisma.intermediateProduct.deleteMany();
-  await prisma.rawMaterial.deleteMany();
+  await prisma.orderItem.deleteMany();
+  await prisma.customerOrder.deleteMany();
+  await prisma.customer.deleteMany();
+  await prisma.productionStep.deleteMany();
+  await prisma.productionRun.deleteMany();
   await prisma.recipeIngredient.deleteMany();
   await prisma.recipe.deleteMany();
+  await prisma.finishedProduct.deleteMany();
+  await prisma.rawMaterial.deleteMany();
   await prisma.qualityStatus.deleteMany();
   await prisma.storageLocation.deleteMany();
   await prisma.unit.deleteMany();
@@ -31,16 +35,8 @@ async function main() {
     prisma.category.create({
       data: { name: 'Dairy', type: 'RAW_MATERIAL', description: 'Milk, butter, cream' }
     }),
-
-    // Intermediate Product Categories
     prisma.category.create({
-      data: { name: 'Dough', type: 'INTERMEDIATE', description: 'Pre-made doughs and bases' }
-    }),
-    prisma.category.create({
-      data: { name: 'Fillings', type: 'INTERMEDIATE', description: 'Creams, jams, and fillings' }
-    }),
-    prisma.category.create({
-      data: { name: 'Glazes', type: 'INTERMEDIATE', description: 'Icings and glazes' }
+      data: { name: 'Ingredients', type: 'RAW_MATERIAL', description: 'General baking ingredients' }
     }),
 
     // Finished Product Categories
@@ -49,6 +45,14 @@ async function main() {
     }),
     prisma.category.create({
       data: { name: 'Pastries', type: 'FINISHED_PRODUCT', description: 'Croissants, danishes, etc.' }
+    }),
+    prisma.category.create({
+      data: { name: 'Cakes', type: 'FINISHED_PRODUCT', description: 'Cakes and layer cakes' }
+    }),
+
+    // Recipe Categories
+    prisma.category.create({
+      data: { name: 'Baking', type: 'RECIPE', description: 'Baked goods recipes' }
     })
   ]);
 
@@ -292,69 +296,13 @@ async function main() {
 
   console.log(`✅ Created ${rawMaterials.length} raw materials`);
 
-  // Create intermediate products
-  const intermediateProducts = await Promise.all([
-    prisma.intermediateProduct.create({
-      data: {
-        name: 'Basic Bread Dough',
-        description: 'Pre-fermented bread dough base',
-        categoryId: categories[3].id, // Dough category
-        storageLocationId: storageLocations[3].id,
-        recipeId: recipes[0].id,
-        batchNumber: 'BD001',
-        productionDate: new Date('2024-08-20'),
-        expirationDate: new Date('2024-08-22'),
-        quantity: 25.5,
-        unit: 'kg',
-        status: 'COMPLETED',
-        contaminated: false,
-        qualityStatusId: defaultQualityStatus?.id
-      }
-    }),
-    prisma.intermediateProduct.create({
-      data: {
-        name: 'Vanilla Pastry Cream',
-        description: 'Basic pastry cream for fillings',
-        categoryId: categories[4].id, // Fillings category
-        storageLocationId: storageLocations[1].id,
-        recipeId: recipes[1].id,
-        batchNumber: 'PC001',
-        productionDate: new Date('2024-08-24'),
-        expirationDate: new Date('2024-08-26'),
-        quantity: 10,
-        unit: 'L',
-        status: 'IN_PRODUCTION',
-        contaminated: false,
-        qualityStatusId: defaultQualityStatus?.id
-      }
-    }),
-    prisma.intermediateProduct.create({
-      data: {
-        name: 'Chocolate Ganache',
-        description: 'Dark chocolate ganache for cake coating',
-        categoryId: categories[5].id, // Glazes category
-        storageLocationId: storageLocations[1].id,
-        batchNumber: 'CG001',
-        productionDate: new Date('2024-08-23'),
-        expirationDate: new Date('2024-08-30'),
-        quantity: 15,
-        unit: 'kg',
-        status: 'COMPLETED',
-        contaminated: false,
-        qualityStatusId: defaultQualityStatus?.id
-      }
-    })
-  ]);
-
-  console.log(`✅ Created ${intermediateProducts.length} intermediate products`);
-
   // Create finished products
   const finishedProducts = await Promise.all([
     prisma.finishedProduct.create({
       data: {
         name: 'Artisan Sourdough Bread',
         description: 'Traditional sourdough bread with crispy crust',
-        categoryId: categories[6].id, // Breads category
+        categoryId: categories[4].id, // Breads category
         sku: 'BRD-SD-001',
         batchNumber: 'BSB001',
         productionDate: new Date('2024-08-24'),
@@ -366,14 +314,14 @@ async function main() {
         costToProduce: 2.50,
         storageLocationId: storageLocations[0].id,
         qualityStatusId: defaultQualityStatus?.id,
-        status: 'IN_PRODUCTION'
+        status: 'COMPLETED'
       }
     }),
     prisma.finishedProduct.create({
       data: {
         name: 'Chocolate Croissant',
         description: 'Butter croissant with chocolate filling',
-        categoryId: categories[7].id, // Pastries category
+        categoryId: categories[5].id, // Pastries category
         sku: 'PST-CC-001',
         batchNumber: 'CC001',
         productionDate: new Date('2024-08-25'),
@@ -385,14 +333,14 @@ async function main() {
         costToProduce: 1.20,
         storageLocationId: storageLocations[0].id,
         qualityStatusId: defaultQualityStatus?.id,
-        status: 'IN_PRODUCTION'
+        status: 'COMPLETED'
       }
     }),
     prisma.finishedProduct.create({
       data: {
         name: 'Classic Baguette',
         description: 'Traditional French baguette',
-        categoryId: categories[6].id, // Breads category
+        categoryId: categories[4].id, // Breads category
         sku: 'BRD-BG-001',
         batchNumber: 'BG001',
         productionDate: new Date('2024-08-25'),
@@ -404,7 +352,7 @@ async function main() {
         costToProduce: 1.50,
         storageLocationId: storageLocations[0].id,
         qualityStatusId: defaultQualityStatus?.id,
-        status: 'IN_PRODUCTION'
+        status: 'COMPLETED'
       }
     })
   ]);

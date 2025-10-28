@@ -492,6 +492,201 @@ Create a new production run with optional custom steps.
 - Custom steps must have unique `stepOrder` values
 - All steps start with `status: "PENDING"`
 
+---
+
+## 🛒 Customer Orders
+
+Customer order management with export capabilities for French business documents.
+
+### GET /customer-orders
+
+Get list of all customer orders.
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "order_123",
+      "orderNumber": "ORD-202510-0001",
+      "customerId": "cust_456",
+      "customer": {
+        "id": "cust_456",
+        "name": "Boulangerie Martin",
+        "email": "contact@martin.fr",
+        "phone": "+33 1 23 45 67 89",
+        "address": "15 Rue de la Paix, 75001 Paris"
+      },
+      "status": "CONFIRMED",
+      "expectedDeliveryDate": "2025-11-04T10:00:00.000Z",
+      "totalProductionCost": 45.50,
+      "totalPrice": 89.99,
+      "priceMarkupPercentage": 30,
+      "tvaRate": 20,
+      "notes": "Delivery instructions...",
+      "items": [
+        {
+          "id": "item_789",
+          "productId": "prod_123",
+          "productName": "Pain de Campagne",
+          "productSku": "PAIN-CAMP-001",
+          "quantity": 10,
+          "unitProductionCost": 2.50,
+          "unitPrice": 4.99,
+          "lineProductionCost": 25.00,
+          "linePrice": 49.90
+        }
+      ],
+      "createdAt": "2025-10-28T10:00:00.000Z",
+      "updatedAt": "2025-10-28T11:00:00.000Z"
+    }
+  ]
+}
+```
+
+### POST /customer-orders
+
+Create a new customer order.
+
+**Request:**
+
+```json
+{
+  "customerId": "cust_456",
+  "expectedDeliveryDate": "2025-11-04T10:00:00.000Z",
+  "priceMarkupPercentage": 30,
+  "tvaRate": 20,
+  "notes": "Special delivery instructions",
+  "items": [
+    {
+      "productId": "prod_123",
+      "productName": "Pain de Campagne",
+      "productSku": "PAIN-CAMP-001",
+      "quantity": 10,
+      "unitProductionCost": 2.50,
+      "unitPrice": 4.99
+    }
+  ]
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "order_123",
+    "orderNumber": "ORD-202510-0001",
+    "status": "DRAFT",
+    "...": "..."
+  }
+}
+```
+
+### GET /customer-orders/:id/export/word
+
+Export a single customer order as a professional Word document (DOCX) in French proforma/devis format.
+
+**Description:**
+
+Generates a professionally formatted Microsoft Word document suitable for French business use. The document format changes based on order status:
+
+- **DRAFT orders:** Exports as "DEVIS" (quote)
+- **CONFIRMED/FULFILLED orders:** Exports as "PROFORMA" (proforma invoice)
+
+The document includes:
+
+- Customer information (CLIENT section)
+- Itemized order details with quantities and prices
+- Subtotal before tax (Total HT - Hors Taxes)
+- TVA calculation with configurable rate (e.g., 20%)
+- Total including tax (Total TTC - Toutes Taxes Comprises)
+- Payment terms and conditions in French
+- **Production costs are excluded** - only sale prices shown
+
+**URL Parameters:**
+
+- `id` (required): Customer order ID
+
+**Response:**
+
+- **Content-Type:** `application/vnd.openxmlformats-officedocument.wordprocessingml.document`
+- **Content-Disposition:** `attachment; filename="order-{id}.docx"`
+- **Body:** Binary DOCX file data
+
+**Success Example:**
+
+```bash
+curl -X GET http://localhost:8000/api/customer-orders/order_123/export/word \
+  -o commande-ORD-202510-0001.docx
+```
+
+Downloads file: `commande-ORD-202510-0001.docx`
+
+**Error Responses:**
+
+```json
+// 404 - Order not found
+{
+  "success": false,
+  "error": "Order not found"
+}
+
+// 500 - Export generation failed
+{
+  "success": false,
+  "error": "Failed to export Word document",
+  "details": "..."
+}
+```
+
+**Document Structure:**
+
+1. **Header:** DEVIS or PROFORMA title based on order status
+2. **Customer Section (CLIENT):** Name, address, email, phone
+3. **Order Details Table (DÉTAIL DE LA COMMANDE):**
+   - Désignation (Product name)
+   - Référence (SKU)
+   - Quantité (Quantity)
+   - Prix Unit. HT (Unit price before tax)
+   - Total HT (Line total before tax)
+4. **Financial Summary:**
+   - Total HT (Subtotal before tax)
+   - TVA ({rate}%) (Tax amount)
+   - **Total TTC (Total including tax)** - displayed prominently in bold
+5. **Payment Terms (CONDITIONS DE PAIEMENT):** French business terms
+6. **Footer:** Document generation timestamp
+
+**TVA Calculation:**
+
+```
+Subtotal HT = Total Price / (1 + TVA Rate / 100)
+TVA Amount = Total Price - Subtotal HT
+Total TTC = Total Price
+```
+
+**Notes:**
+
+- Available for all order statuses (DRAFT, CONFIRMED, FULFILLED)
+- Export button appears in both list and card views in the UI
+- Default TVA rate is 20% (French standard) but configurable per order
+- Production costs (unitProductionCost, lineProductionCost, totalProductionCost) are never included in the exported document
+- Document formatting follows French business document standards
+- All monetary values displayed in euros (€)
+
+### POST /customer-orders/:id/confirm
+
+Confirm a DRAFT order, changing its status to CONFIRMED.
+
+### POST /customer-orders/:id/fulfill
+
+Mark a CONFIRMED order as FULFILLED.
+
+---
+
 #### GET /production/runs/stats
 
 Get production statistics for the dashboard.

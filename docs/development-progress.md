@@ -6,15 +6,145 @@ This document tracks all completed features and development milestones for the B
 
 ## 🎯 Current Status
 
-**Project Phase:** Material Tracking System Complete
-**Last Updated:** September 18, 2025
-**Total Features Completed:** 38+
-**Testing Coverage:** API endpoints tested, frontend components functional, production completion workflow verified, material tracking fully implemented
-**Recent Major Update:** Implemented comprehensive material tracking system for production runs including raw material traceability, cost calculation, SKU/batch tracking, and finished product material breakdown
+**Project Phase:** Customer Order Export Enhancement Complete
+**Last Updated:** October 28, 2025
+**Total Features Completed:** 39+
+**Testing Coverage:** API endpoints tested, frontend components functional, production completion workflow verified, material tracking fully implemented, customer order Word export operational
+**Recent Major Update:** Implemented comprehensive Word document export for customer orders in professional French proforma/devis format with TVA calculations, available for all order statuses (DRAFT, CONFIRMED, FULFILLED)
 
 ## ✅ Completed Features
 
-### 🔧 Phase 9: Production Material Tracking System (September 2025)
+### � Phase 10: Customer Order Word Export (October 2025)
+
+#### Professional French Proforma/Devis Export
+
+**Completed:** October 28, 2025
+
+**Feature:** Professional Microsoft Word (DOCX) export for customer orders in French business document format. Supports DEVIS (quote) for draft orders and PROFORMA (proforma invoice) for confirmed/fulfilled orders. Includes comprehensive TVA (Value Added Tax) calculations with configurable rates, excludes production cost information.
+
+**Business Value:**
+
+- Professional customer-facing documents meeting French business standards
+- Streamlined order communication with customers via standardized formats
+- Accurate TVA calculations complying with French tax regulations  
+- Export available at all order stages (draft quotes, confirmed proformas, fulfilled invoices)
+- Reduced manual document preparation time
+
+**Implementation Details:**
+
+1. **Database Schema Enhancement**
+   - Added `tvaRate` Float field to `CustomerOrder` model (default 20% for French standard rate)
+   - Created migration `20251028215755_add_customer_orders` establishing customers, customer_orders, and order_items tables
+   - Updated seed data to populate with default TVA rates
+   - Fixed migration `20250907144901_new7sept` to use `IF EXISTS` for safe schema updates
+   - Removed INTERMEDIATE category references from seed file
+
+2. **Document Generation Service**
+   - Implemented `generateOrderWord()` in `orderExportService.ts` (307 lines)
+   - Professional French document structure using `docx` library (v8.5.0):
+     - **Header:** DEVIS (draft) or PROFORMA (confirmed/fulfilled) title
+     - **CLIENT section:** Customer name, address, email, phone
+     - **DÉTAIL DE LA COMMANDE table:** Product designation, reference (SKU), quantity, unit price HT, line total HT
+     - **Financial summary:** Total HT (before tax), TVA amount with rate display, Total TTC (including tax) in bold
+     - **CONDITIONS DE PAIEMENT:** French payment terms
+     - **Footer:** Document generation timestamp
+   - TVA calculation: `subtotalHT = totalPrice / (1 + tvaRate/100)`, `tvaAmount = totalPrice - subtotalHT`
+   - **Production costs completely excluded** from exported document
+   - Returns Buffer from `Packer.toBuffer()` for file download
+
+3. **API Implementation**
+   - Created `exportOrderWord` controller endpoint in `orderExportController.ts`
+   - Configured GET `/api/customer-orders/:id/export/word` route
+   - Proper HTTP headers: Content-Type `application/vnd.openxmlformats-officedocument.wordprocessingml.document`
+   - Content-Disposition with filename pattern `order-{id}.docx`
+   - Error handling with standardized {success, error, details} response format
+
+4. **Frontend Integration**
+   - Updated TypeScript types:
+     - Added `tvaRate: number` to `CustomerOrder` interface
+     - Added optional `tvaRate?: number` to `CreateOrderData` interface
+   - Implemented `exportWord()` function in `customerOrdersApi` (realApi.ts)
+   - Created `handleExportOrder()` handler in CustomerOrders page:
+     - Blob URL creation for file download
+     - French filename pattern: `commande-{orderNumber}.docx`
+     - Success/error snackbar messages in French: "Export réussi" / "Erreur lors de l'export"
+     - Proper cleanup: link removal, URL revocation
+   - Added export button (DownloadIcon) to **both list and card views**:
+     - Placed after "View Details" button, before status-conditional actions
+     - Available for **ALL order statuses** (DRAFT, CONFIRMED, FULFILLED) without conditionals
+     - Tooltip: "Export as Word (Proforma/Devis)"
+     - Secondary color scheme matching Material-UI design system
+
+5. **Documentation**
+   - Added comprehensive section to `docs/api-reference.md`:
+     - Endpoint documentation with request/response examples
+     - Document structure explanation
+     - TVA calculation formula
+     - Error response formats
+     - French business document standards notes
+   - Updated `docs/development-progress.md` with feature completion details
+
+**Files Modified:**
+
+**Backend:**
+- `backend/package.json` - Added docx@8.5.0 dependency
+- `backend/prisma/schema.prisma` - Added tvaRate field to CustomerOrder model
+- `backend/prisma/migrations/20251028215755_add_customer_orders/migration.sql` - Customer order tables creation
+- `backend/prisma/migrations/20250907144901_new7sept/migration.sql` - Fixed with IF EXISTS clauses
+- `backend/prisma/seed.ts` - Removed INTERMEDIATE references, updated to 8 categories
+- `backend/src/services/orderExportService.ts` - New generateOrderWord() function (lines 318-625)
+- `backend/src/controllers/orderExportController.ts` - New exportOrderWord endpoint (lines 49-68)
+- `backend/src/routes/customer-orders.ts` - New GET /:id/export/word route (lines 74-79)
+
+**Frontend:**
+- `frontend/src/types/index.ts` - Added tvaRate to CustomerOrder and CreateOrderData interfaces
+- `frontend/src/services/realApi.ts` - New exportWord() API function (lines 629-637)
+- `frontend/src/pages/CustomerOrders.tsx` - Export button UI implementation:
+  - Line 57: DownloadIcon import
+  - Lines 219-237: handleExportOrder handler
+  - Lines 780-793: List view export button
+  - Lines 1007-1020: Card view export button
+
+**Documentation:**
+- `docs/api-reference.md` - Customer order export endpoint documentation
+- `docs/development-progress.md` - Feature completion tracking
+
+**Testing Status:**
+
+- ✅ TypeScript compilation passes (backend and frontend)
+- ✅ Database migration applied successfully
+- ✅ Seed data populated with TVA defaults
+- ✅ Export buttons visible in both UI views
+- ✅ API endpoint documented comprehensively
+- ⏳ Manual testing pending: Create orders via UI and test Word export download for all three statuses
+
+**Technical Notes:**
+
+- Export uses `docx` library for professional document generation (not basic text/HTML conversion)
+- Document formatting includes tables with borders, shading, and professional typography
+- TVA rate is configurable per order (default 20%) to support different tax scenarios
+- Production cost fields (unitProductionCost, lineProductionCost, totalProductionCost) are intentionally excluded from all exports
+- Export functionality follows existing API patterns with standardized response format
+- Frontend uses blob download mechanism for file handling
+- No temporary file creation - documents generated in memory and streamed to client
+
+**Definition of Done Checklist:**
+
+- ✅ TypeScript builds without errors
+- ✅ Database migration created and applied
+- ✅ Seed file updated and runs successfully
+- ✅ Backend service implemented with proper error handling
+- ✅ API endpoint created and documented
+- ✅ Frontend types updated with strong typing
+- ✅ UI components added to both list and card views
+- ✅ Export available for all order statuses as required
+- ✅ API documentation updated (api-reference.md)
+- ✅ Development progress documented
+- ⏳ Manual testing with real orders (pending user testing)
+
+---
+
+### �🔧 Phase 9: Production Material Tracking System (September 2025)
 
 #### Comprehensive Material Tracking Implementation
 

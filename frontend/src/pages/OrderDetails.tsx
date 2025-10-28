@@ -31,8 +31,6 @@ import {
   Check as ConfirmIcon,
   Undo as RevertIcon,
   CheckCircle as FulfillIcon,
-  PictureAsPdf as PdfIcon,
-  TableChart as ExcelIcon,
   Inventory as InventoryIcon,
   Warning as WarningIcon,
 } from '@mui/icons-material';
@@ -124,43 +122,22 @@ const OrderDetails: React.FC = () => {
   };
 
   // Export handlers
-  const handleExportPDF = async () => {
-    try {
-      const blob = await customerOrdersApi.exportPDF(id!);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `order-${order.orderNumber}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      showSnackbar('PDF exported successfully', 'success');
-    } catch (error) {
-      showSnackbar('Failed to export PDF', 'error');
-    }
-  };
-
-  const handleExportExcel = async () => {
-    try {
-      const blob = await customerOrdersApi.exportExcel(id!);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `order-${order.orderNumber}.xlsx`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      showSnackbar('Excel exported successfully', 'success');
-    } catch (error) {
-      showSnackbar('Failed to export Excel', 'error');
-    }
-  };
-
   const handleCheckInventory = () => {
     refetchInventoryCheck();
     setInventoryCheckOpen(true);
+  };
+
+  const handleConfirmClick = async () => {
+    // Check inventory before showing confirm dialog
+    const result = await refetchInventoryCheck();
+    if (result.data?.data?.canFulfill === false) {
+      // Show inventory check dialog if insufficient
+      setInventoryCheckOpen(true);
+      showSnackbar('Cannot confirm: Insufficient inventory for some items', 'error');
+    } else {
+      // Show confirm dialog if inventory is available
+      setConfirmDialogOpen(true);
+    }
   };
 
   if (isLoading) {
@@ -216,14 +193,6 @@ const OrderDetails: React.FC = () => {
             </Typography>
             <Chip label={order.status} color={getStatusColor(order.status)} />
           </Box>
-          <Stack direction="row" spacing={1}>
-            <Button variant="outlined" startIcon={<PdfIcon />} onClick={handleExportPDF}>
-              Export PDF
-            </Button>
-            <Button variant="outlined" startIcon={<ExcelIcon />} onClick={handleExportExcel}>
-              Export Excel
-            </Button>
-          </Stack>
         </Box>
       </Box>
 
@@ -406,7 +375,7 @@ const OrderDetails: React.FC = () => {
                 variant="contained"
                 color="success"
                 startIcon={<ConfirmIcon />}
-                onClick={() => setConfirmDialogOpen(true)}
+                onClick={handleConfirmClick}
               >
                 Confirm Order
               </Button>
@@ -538,7 +507,7 @@ const OrderDetails: React.FC = () => {
         <DialogTitle>Inventory Availability Check</DialogTitle>
         <DialogContent>
           {inventoryCheck ? (
-            inventoryCheck.available ? (
+            inventoryCheck.canFulfill ? (
               <Alert severity="success" icon={<FulfillIcon />}>
                 <Typography variant="body1" fontWeight="medium">
                   All items are available in inventory!
@@ -568,8 +537,8 @@ const OrderDetails: React.FC = () => {
                       {inventoryCheck.insufficientProducts?.map((item) => (
                         <TableRow key={item.productId}>
                           <TableCell>{item.productName}</TableCell>
-                          <TableCell align="right">{item.requiredQuantity}</TableCell>
-                          <TableCell align="right">{item.availableQuantity}</TableCell>
+                          <TableCell align="right">{item.required}</TableCell>
+                          <TableCell align="right">{item.available}</TableCell>
                           <TableCell align="right">
                             <Typography color="error" fontWeight="medium">
                               {item.shortage}
