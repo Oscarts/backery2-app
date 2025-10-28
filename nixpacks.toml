@@ -1,0 +1,16 @@
+nixpacks:
+  phases:
+    setup:
+      nixPkgs:
+        - nodejs_20
+        - postgresql
+    install:
+      cmds:
+        - npm ci
+        - cd backend && npm ci
+        - cd frontend && npm ci
+    build:
+      cmds:
+        - cd backend && npx prisma generate
+        - cd backend && npm run build
+        - cd frontend && npm run build
