@@ -2,7 +2,9 @@
 // Handles creating finished products when production runs are completed
 
 import { PrismaClient } from '@prisma/client';
-import { InventoryAllocationService } from './inventoryAllocationService.js';
+// Removed explicit .js extension so TypeScript/ts-node can resolve correctly in both TS and built JS outputs
+import { InventoryAllocationService } from './inventoryAllocationService';
+import { getOrCreateSkuForName } from './skuService';
 
 const prisma = new PrismaClient();
 const inventoryAllocationService = new InventoryAllocationService();
@@ -43,7 +45,6 @@ export class ProductionCompletionService {
                 );
                 return productionRun;
             }
-
             // Verify all steps are completed
             const pendingSteps = productionRun.steps.filter(step =>
                 step.status !== 'COMPLETED' && step.status !== 'SKIPPED'
@@ -120,31 +121,51 @@ export class ProductionCompletionService {
             // Get default storage location
             const defaultLocation = await this.getOrCreateDefaultStorageLocation();
 
-            // Create SKU based on recipe name and batch
-            const sku = `${productionRun.recipe.name.replace(/\s+/g, '-').toUpperCase()}-${batchNumber}`;
+            // Derive/reuse stable SKU (independent of batch)
+            const sku = await getOrCreateSkuForName(productionRun.recipe.name);
 
-            // Create finished product
-            const finishedProduct = await prisma.finishedProduct.create({
-                data: {
-                    name: productionRun.recipe.name,
-                    description: `Produced from recipe: ${productionRun.recipe.name}`,
-                    sku,
-                    batchNumber,
-                    productionDate,
-                    expirationDate: finalExpirationDate,
-                    shelfLife: 7, // days
-                    quantity,
-                    unit: productionRun.targetUnit,
-                    salePrice: 10.0, // Default price - should be calculated based on recipe cost
-                    costToProduce: await this.calculateProductionCost(productionRun),
-                    storageLocationId: defaultLocation.id,
-                    productionRunId: productionRun.id, // Link to production run
-                    status: 'COMPLETED',
-                    packagingInfo: `Produced via ${productionRun.name}`,
-                    isContaminated: false,
-                    reservedQuantity: 0
+            let finishedProduct;
+            try {
+                // Attempt to create new finished product record
+                finishedProduct = await prisma.finishedProduct.create({
+                    data: {
+                        name: productionRun.recipe.name,
+                        description: `Produced from recipe: ${productionRun.recipe.name}`,
+                        sku,
+                        batchNumber,
+                        productionDate,
+                        expirationDate: finalExpirationDate,
+                        shelfLife: 7, // days
+                        quantity,
+                        unit: productionRun.targetUnit,
+                        salePrice: 10.0, // Default price - should be calculated based on recipe cost
+                        costToProduce: await this.calculateProductionCost(productionRun),
+                        storageLocationId: defaultLocation.id,
+                        productionRunId: productionRun.id, // Link to production run
+                        status: 'COMPLETED',
+                        packagingInfo: `Produced via ${productionRun.name}`,
+                        isContaminated: false,
+                        reservedQuantity: 0
+                    }
+                });
+            } catch (err: any) {
+                // If a unique constraint on SKU still exists in the database (legacy schema),
+                // reuse the existing product and increment its quantity instead of failing.
+                if (err.code === 'P2002' && Array.isArray(err.meta?.target) && err.meta.target.includes('sku')) {
+                    console.warn('⚠️  Unique constraint on finished_products.sku detected (legacy). Reusing existing product for SKU:', sku);
+                    finishedProduct = await prisma.finishedProduct.findFirst({ where: { sku }, orderBy: { createdAt: 'asc' } });
+                    if (finishedProduct) {
+                        finishedProduct = await prisma.finishedProduct.update({
+                            where: { id: finishedProduct.id },
+                            data: { quantity: finishedProduct.quantity + quantity }
+                        });
+                    } else {
+                        throw err; // unexpected: sku conflict but no existing product
+                    }
+                } else {
+                    throw err;
                 }
-            });
+            }
 
             console.log(`📦 Created finished product: ${finishedProduct.name}`);
             return finishedProduct;
@@ -239,3 +260,14 @@ export class ProductionCompletionService {
 }
 
 export default ProductionCompletionService;
+
+// Factory helper to avoid constructor resolution issues in transpiled environments
+export function createProductionCompletionService() {
+    return new ProductionCompletionService();
+}
+
+// Lightweight functional API for tests to avoid constructor & circular issues
+export async function completeProductionRunDirect(productionRunId: string, actualQuantity?: number) {
+    const svc = new ProductionCompletionService();
+    return svc.completeProductionRun(productionRunId, actualQuantity);
+}

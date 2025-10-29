@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../app';
 import Joi from 'joi';
+import { getOrCreateSkuForName, resolveSkuOnRename, validateOrAssignSku } from '../services/skuService';
 
 // Helper function to get the default quality status (first item by sortOrder)
 const getDefaultQualityStatus = async () => {
@@ -14,6 +15,7 @@ const getDefaultQualityStatus = async () => {
 // Validation schemas
 const createRawMaterialSchema = Joi.object({
   name: Joi.string().required().min(1).max(255),
+  sku: Joi.string().optional(), // Ignored if provided; system derives from name or reuses existing
   categoryId: Joi.string().optional().allow('').allow(null),
   supplierId: Joi.string().required(),
   batchNumber: Joi.string().required().min(1).max(100),
@@ -239,8 +241,10 @@ export const rawMaterialController = {
       // Prepare create data with field mapping
       const defaultQualityStatusId = value.qualityStatusId || await getDefaultQualityStatus();
 
+  const derivedSku = await validateOrAssignSku(value.name, value.sku);
       const createData = {
         ...value,
+        sku: derivedSku,
         purchaseDate: new Date(value.purchaseDate),
         expirationDate: new Date(value.expirationDate),
         unitPrice: value.costPerUnit, // Map costPerUnit to unitPrice
@@ -324,6 +328,12 @@ export const rawMaterialController = {
 
       // Prepare update data
       const updateData: any = { ...value };
+      if (value.name && value.name !== existingRawMaterial.name) {
+        updateData.sku = await resolveSkuOnRename(value.name);
+      } else if (value.sku) {
+        // Validate provided SKU against name mapping
+        updateData.sku = await validateOrAssignSku(value.name || existingRawMaterial.name, value.sku);
+      }
       if (value.purchaseDate) updateData.purchaseDate = new Date(value.purchaseDate);
       if (value.expirationDate) updateData.expirationDate = new Date(value.expirationDate);
 

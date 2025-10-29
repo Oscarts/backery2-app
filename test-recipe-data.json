@@ -1,0 +1,17 @@
+{
+  "name": "Test Recipe Update",
+  "description": "Updated description with new fields",
+  "categoryId": "cmg5wr2a000051k2k9lzw9vrj",
+  "yieldQuantity": 1,
+  "yieldUnit": "loaf",
+  "prepTime": 30,
+  "cookTime": 45,
+  "difficulty": "MEDIUM",
+  "emoji": "🍞",
+  "instructions": ["Mix ingredients", "Bake"],
+  "ingredients": [],
+  "isActive": true,
+  "estimatedTotalTime": 75,
+  "imageUrl": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==",
+  "overheadPercentage": 25
+}

@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
 import { PrismaClient, ProductionStatus, ProductionStepStatus } from '@prisma/client';
-import { ProductionCompletionService } from '../services/productionCompletionService';
+import ProductionCompletionService, { ProductionCompletionService as ProductionCompletionServiceNamed, createProductionCompletionService } from '../services/productionCompletionService';
 import { InventoryAllocationService } from '../services/inventoryAllocationService';
 
 const prisma = new PrismaClient();
-const productionCompletionService = new ProductionCompletionService();
+// Support either named or default export depending on transpilation
+const productionCompletionService = createProductionCompletionService();
 const inventoryAllocationService = new InventoryAllocationService();
 
 // Get all production runs with complete details

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../app';
 import Joi from 'joi';
+import { getOrCreateSkuForName, resolveSkuOnRename, validateOrAssignSku } from '../services/skuService';
 
 // Helper function to get the default quality status (first item by sortOrder)
 const getDefaultQualityStatus = async () => {
@@ -15,7 +16,7 @@ const getDefaultQualityStatus = async () => {
 const createFinishedProductSchema = Joi.object({
   name: Joi.string().required().min(1).max(255),
   description: Joi.string().optional().max(1000),
-  sku: Joi.string().required().min(1).max(100),
+  sku: Joi.string().optional(), // Optional: system will derive based on name
   categoryId: Joi.string().optional().allow('').allow(null),
   batchNumber: Joi.string().required().min(1).max(100),
   productionDate: Joi.date().required(),
@@ -162,17 +163,8 @@ export const finishedProductController = {
         });
       }
 
-      // Check if SKU already exists
-      const existingSku = await prisma.finishedProduct.findUnique({
-        where: { sku: value.sku },
-      });
-
-      if (existingSku) {
-        return res.status(400).json({
-          success: false,
-          error: 'SKU already exists',
-        });
-      }
+      // Derive/reuse SKU based on name (ignore provided sku if any)
+  const derivedSku = await validateOrAssignSku(value.name, value.sku);
 
       // Verify related entities exist
       let category = null;
@@ -208,6 +200,7 @@ export const finishedProductController = {
 
       const createData = {
         ...value,
+        sku: derivedSku,
         productionDate: new Date(value.productionDate),
         expirationDate: new Date(value.expirationDate),
         reservedQuantity: 0, // Default reserved quantity
@@ -258,21 +251,11 @@ export const finishedProductController = {
         });
       }
 
-      // Check SKU uniqueness if being updated
-      if (value.sku) {
-        const existingSku = await prisma.finishedProduct.findFirst({
-          where: {
-            sku: value.sku,
-            id: { not: id },
-          },
-        });
-
-        if (existingSku) {
-          return res.status(400).json({
-            success: false,
-            error: 'SKU already exists',
-          });
-        }
+      // If name changed derive SKU accordingly; ignore manual sku changes
+      if (value.name && value.name !== existingProduct.name) {
+        (value as any).sku = await resolveSkuOnRename(value.name);
+      } else if (value.sku) {
+        (value as any).sku = await validateOrAssignSku(value.name || existingProduct.name, value.sku);
       }
 
       // Verify storage location exists if being updated

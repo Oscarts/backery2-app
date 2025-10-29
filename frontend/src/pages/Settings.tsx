@@ -312,11 +312,38 @@ const Settings: React.FC = () => {
     const suppliers = suppliersData?.data || [];
     const storageLocations = storageLocationsData?.data || [];
 
+    const checkForDuplicates = (type: string, name: string, currentId?: string): boolean => {
+        let existingItems: any[] = [];
+        
+        if (type === 'category') {
+            existingItems = categories;
+        } else if (type === 'supplier') {
+            existingItems = suppliers;
+        } else if (type === 'storageLocation') {
+            existingItems = storageLocations;
+        }
+
+        return existingItems.some(item => 
+            item.name.toLowerCase() === name.toLowerCase() && 
+            item.id !== currentId
+        );
+    };
+
     const handleFormSubmit = () => {
         if (dialogType === 'category') {
             const data = {
                 ...formData,
             };
+
+            // Check for duplicates
+            if (checkForDuplicates('category', data.name, editingCategory?.id)) {
+                setSnackbar({
+                    open: true,
+                    message: 'A category with this name already exists',
+                    severity: 'error'
+                });
+                return;
+            }
 
             if (editingCategory) {
                 updateCategoryMutation.mutate({ id: editingCategory.id, data });
@@ -328,6 +355,16 @@ const Settings: React.FC = () => {
                 ...supplierFormData,
             };
 
+            // Check for duplicates
+            if (checkForDuplicates('supplier', data.name, editingSupplier?.id)) {
+                setSnackbar({
+                    open: true,
+                    message: 'A supplier with this name already exists',
+                    severity: 'error'
+                });
+                return;
+            }
+
             if (editingSupplier) {
                 updateSupplierMutation.mutate({ id: editingSupplier.id, data });
             } else {
@@ -337,6 +374,16 @@ const Settings: React.FC = () => {
             const data = {
                 ...storageLocationFormData,
             };
+
+            // Check for duplicates
+            if (checkForDuplicates('storageLocation', data.name, editingStorageLocation?.id)) {
+                setSnackbar({
+                    open: true,
+                    message: 'A storage location with this name already exists',
+                    severity: 'error'
+                });
+                return;
+            }
 
             if (editingStorageLocation) {
                 updateStorageLocationMutation.mutate({ id: editingStorageLocation.id, data });

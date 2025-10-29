@@ -51,9 +51,17 @@ export const categoryController = {
       });
 
       res.status(201).json({ success: true, data: category });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating category:', error);
-      res.status(500).json({ success: false, error: 'Failed to create category' });
+      if (error.code === 'P2002') {
+        // Unique constraint violation
+        res.status(400).json({ 
+          success: false, 
+          error: 'A category with this name already exists' 
+        });
+      } else {
+        res.status(500).json({ success: false, error: 'Failed to create category' });
+      }
     }
   },
 
@@ -78,6 +86,12 @@ export const categoryController = {
       console.error('Error updating category:', error);
       if (error.code === 'P2025') {
         res.status(404).json({ success: false, error: 'Category not found' });
+      } else if (error.code === 'P2002') {
+        // Unique constraint violation
+        res.status(400).json({ 
+          success: false, 
+          error: 'A category with this name already exists' 
+        });
       } else {
         res.status(500).json({ success: false, error: 'Failed to update category' });
       }

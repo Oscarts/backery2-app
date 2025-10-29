@@ -295,66 +295,7 @@ export const dashboardController = {
         }
       });
 
-      // Get intermediate products alerts
-      const intermediateProducts = await prisma.intermediateProduct.findMany({
-        where: {
-          OR: [
-            { expirationDate: { lt: today } },
-            { expirationDate: { lte: sevenDaysFromNow, gte: today } },
-            { contaminated: true },
-          ],
-        },
-        include: {
-          category: { select: { name: true } },
-          storageLocation: { select: { name: true } },
-        },
-      });
-
-      intermediateProducts.forEach(ip => {
-        const daysUntilExpiration = Math.ceil((new Date(ip.expirationDate).getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-
-        if (ip.contaminated) {
-          alerts.push({
-            id: ip.id,
-            name: ip.name,
-            type: 'intermediate_product',
-            alertType: 'contaminated',
-            severity: 'critical',
-            quantity: ip.quantity,
-            unit: ip.unit,
-            category: ip.category?.name || 'Unknown',
-            location: ip.storageLocation?.name,
-          });
-        } else if (daysUntilExpiration < 0) {
-          alerts.push({
-            id: ip.id,
-            name: ip.name,
-            type: 'intermediate_product',
-            alertType: 'expired',
-            severity: 'critical',
-            quantity: ip.quantity,
-            unit: ip.unit,
-            expirationDate: ip.expirationDate.toISOString(),
-            daysUntilExpiration,
-            category: ip.category?.name || 'Unknown',
-            location: ip.storageLocation?.name,
-          });
-        } else if (daysUntilExpiration <= 7) {
-          alerts.push({
-            id: ip.id,
-            name: ip.name,
-            type: 'intermediate_product',
-            alertType: 'expiring_soon',
-            severity: daysUntilExpiration <= 2 ? 'critical' : 'warning',
-            quantity: ip.quantity,
-            unit: ip.unit,
-            expirationDate: ip.expirationDate.toISOString(),
-            daysUntilExpiration,
-            category: ip.category?.name || 'Unknown',
-            location: ip.storageLocation?.name,
-          });
-        }
-      });
+      // Intermediate products removed; no alerts for that legacy type
 
       // Get finished products alerts
       const finishedProducts = await prisma.finishedProduct.findMany({
@@ -460,11 +401,6 @@ export const dashboardController = {
           where: { createdAt: { gte: startDate } },
           _count: { id: true },
         }),
-        prisma.intermediateProduct.groupBy({
-          by: ['createdAt'],
-          where: { createdAt: { gte: startDate } },
-          _count: { id: true },
-        }),
         prisma.finishedProduct.groupBy({
           by: ['createdAt'],
           where: { createdAt: { gte: startDate } },
@@ -482,7 +418,7 @@ export const dashboardController = {
         trendData.unshift({
           date: dateStr,
           rawMaterials: 0,
-          intermediateProducts: 0,
+          intermediateProducts: 0, // legacy removed
           finishedProducts: 0,
           total: 0,
         });
@@ -492,15 +428,15 @@ export const dashboardController = {
       const recent = {
         last7Days: {
           rawMaterials: dailyCreations[0].length,
-          intermediateProducts: dailyCreations[1].length,
-          finishedProducts: dailyCreations[2].length,
-          total: dailyCreations[0].length + dailyCreations[1].length + dailyCreations[2].length,
+          intermediateProducts: 0,
+          finishedProducts: dailyCreations[1].length,
+          total: dailyCreations[0].length + dailyCreations[1].length,
         },
         last30Days: {
           rawMaterials: dailyCreations[0].length,
-          intermediateProducts: dailyCreations[1].length,
-          finishedProducts: dailyCreations[2].length,
-          total: dailyCreations[0].length + dailyCreations[1].length + dailyCreations[2].length,
+          intermediateProducts: 0,
+          finishedProducts: dailyCreations[1].length,
+          total: dailyCreations[0].length + dailyCreations[1].length,
         },
       };
 
@@ -522,7 +458,7 @@ export const dashboardController = {
       const categories = await prisma.category.findMany({
         include: {
           rawMaterials: { select: { quantity: true, unitPrice: true, isContaminated: true } },
-          intermediateProducts: { select: { quantity: true } },
+          // intermediateProducts removed
           finishedProducts: { select: { quantity: true, salePrice: true, costToProduce: true } },
         },
       });
@@ -544,9 +480,9 @@ export const dashboardController = {
           type: category.type,
           counts: {
             rawMaterials: category.rawMaterials.length,
-            intermediateProducts: category.intermediateProducts.length,
+            intermediateProducts: 0,
             finishedProducts: category.finishedProducts.length,
-            total: category.rawMaterials.length + category.intermediateProducts.length + category.finishedProducts.length,
+            total: category.rawMaterials.length + category.finishedProducts.length,
           },
           values: {
             rawMaterialsValue: Math.round(rawMaterialsValue * 100) / 100,

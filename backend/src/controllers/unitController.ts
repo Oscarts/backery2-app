@@ -51,13 +51,21 @@ export const createUnit = async (req: Request, res: Response) => {
     });
 
     res.status(201).json({ success: true, data: unit });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating unit:', error);
-    if (error instanceof Error && error.message.includes('Unique constraint')) {
-      res.status(400).json({ success: false, error: 'Unit name or symbol already exists' });
-    } else {
-      res.status(500).json({ success: false, error: 'Failed to create unit' });
+    
+    // Handle Prisma unique constraint violation
+    if (error.code === 'P2002') {
+      const field = error.meta?.target?.[0];
+      const message = field === 'name' 
+        ? 'Unit name already exists' 
+        : field === 'symbol' 
+        ? 'Unit symbol already exists' 
+        : 'Unit name or symbol already exists';
+      return res.status(400).json({ success: false, error: message });
     }
+    
+    res.status(500).json({ success: false, error: 'Failed to create unit' });
   }
 };
 
@@ -79,15 +87,25 @@ export const updateUnit = async (req: Request, res: Response) => {
     });
 
     res.json({ success: true, data: unit });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating unit:', error);
-    if (error instanceof Error && error.message.includes('Record to update not found')) {
-      res.status(404).json({ success: false, error: 'Unit not found' });
-    } else if (error instanceof Error && error.message.includes('Unique constraint')) {
-      res.status(400).json({ success: false, error: 'Unit name or symbol already exists' });
-    } else {
-      res.status(500).json({ success: false, error: 'Failed to update unit' });
+    
+    // Handle Prisma errors
+    if (error.code === 'P2025') {
+      return res.status(404).json({ success: false, error: 'Unit not found' });
     }
+    
+    if (error.code === 'P2002') {
+      const field = error.meta?.target?.[0];
+      const message = field === 'name' 
+        ? 'Unit name already exists' 
+        : field === 'symbol' 
+        ? 'Unit symbol already exists' 
+        : 'Unit name or symbol already exists';
+      return res.status(400).json({ success: false, error: message });
+    }
+    
+    res.status(500).json({ success: false, error: 'Failed to update unit' });
   }
 };
 
@@ -102,12 +120,13 @@ export const deleteUnit = async (req: Request, res: Response) => {
     });
 
     res.json({ success: true, data: unit });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error deleting unit:', error);
-    if (error instanceof Error && error.message.includes('Record to update not found')) {
-      res.status(404).json({ success: false, error: 'Unit not found' });
-    } else {
-      res.status(500).json({ success: false, error: 'Failed to delete unit' });
+    
+    if (error.code === 'P2025') {
+      return res.status(404).json({ success: false, error: 'Unit not found' });
     }
+    
+    res.status(500).json({ success: false, error: 'Failed to delete unit' });
   }
 };

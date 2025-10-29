@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { recipeCostService } from '../services/recipeCostService';
 
 const prisma = new PrismaClient();
 
@@ -100,7 +101,9 @@ export const createRecipe = async (req: Request, res: Response) => {
       isActive,
       emoji,
       difficulty,
-      estimatedTotalTime
+      estimatedTotalTime,
+      imageUrl,
+      overheadPercentage
     } = req.body;
 
     // Validate required fields
@@ -128,14 +131,25 @@ export const createRecipe = async (req: Request, res: Response) => {
           emoji: emoji || '🍞',
           difficulty: difficulty || 'MEDIUM',
           estimatedTotalTime: estimatedTotalTime ? Number(estimatedTotalTime) : null,
+          imageUrl: imageUrl || null,
+          overheadPercentage: overheadPercentage !== undefined ? Number(overheadPercentage) : 20,
           version: 1 // Default version
         }
       });
 
       // Create ingredients if provided
       if (ingredients && ingredients.length > 0) {
+        console.log('📝 Ingredients received:', JSON.stringify(ingredients, null, 2));
+        
         // Validate each ingredient - exactly one of rawMaterialId or finishedProductId
-        for (const ing of ingredients) {
+        for (let i = 0; i < ingredients.length; i++) {
+          const ing = ingredients[i];
+          console.log(`📋 Ingredient ${i}:`, JSON.stringify(ing, null, 2));
+          console.log(`  - rawMaterialId: ${ing.rawMaterialId}`);
+          console.log(`  - finishedProductId: ${ing.finishedProductId}`);
+          console.log(`  - has both? ${!!(ing.rawMaterialId && ing.finishedProductId)}`);
+          console.log(`  - has neither? ${!!(! ing.rawMaterialId && !ing.finishedProductId)}`);
+          
           if ((!ing.rawMaterialId && !ing.finishedProductId) || (ing.rawMaterialId && ing.finishedProductId)) {
             throw new Error('Each ingredient must have exactly one of rawMaterialId or finishedProductId');
           }
@@ -219,7 +233,9 @@ export const updateRecipe = async (req: Request, res: Response) => {
       isActive,
       emoji,
       difficulty,
-      estimatedTotalTime
+      estimatedTotalTime,
+      imageUrl,
+      overheadPercentage
     } = req.body;
 
     console.log('Update recipe request:', { id, body: req.body });
@@ -241,6 +257,8 @@ export const updateRecipe = async (req: Request, res: Response) => {
           emoji,
           difficulty,
           estimatedTotalTime,
+          imageUrl,
+          overheadPercentage,
           version: {
             increment: 1
           }
@@ -378,104 +396,23 @@ export const getRecipeCost = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const recipe = await prisma.recipe.findUnique({
-      where: { id },
-      include: {
-        ingredients: {
-          include: {
-            rawMaterial: true,
-            finishedProduct: true
-          }
-        }
-      }
-    });
+    const costBreakdown = await recipeCostService.calculateRecipeCost(id);
 
-    if (!recipe) {
+    res.json({
+      success: true,
+      data: costBreakdown,
+      message: 'Recipe cost calculated successfully'
+    });
+  } catch (error: any) {
+    console.error('Error calculating recipe cost:', error);
+    
+    if (error.message.includes('Recipe not found')) {
       return res.status(404).json({
         success: false,
         error: 'Recipe not found'
       });
     }
 
-    let totalCost = 0;
-    const ingredientCosts = [];
-
-    // Import the unit conversion utilities
-    const { convertUnits, areUnitsCompatible } = await import('../utils/unitConversion');
-
-    for (const ingredient of recipe.ingredients) {
-      let unitCost = 0;
-      let ingredientName = '';
-      let availableQuantity = 0;
-      let sourceUnit = '';
-      let ingredientType: 'RAW' | 'FINISHED' = 'RAW';
-
-      if (ingredient.rawMaterial) {
-        ingredientType = 'RAW';
-        unitCost = ingredient.rawMaterial.unitPrice;
-        ingredientName = ingredient.rawMaterial.name;
-        availableQuantity = ingredient.rawMaterial.quantity;
-        sourceUnit = ingredient.rawMaterial.unit;
-      } else if (ingredient.finishedProduct) {
-        ingredientType = 'FINISHED';
-        ingredientName = ingredient.finishedProduct.name;
-        // Derive unit cost from costToProduce / quantity (fallback 0)
-        const fpQty = ingredient.finishedProduct.quantity || 0;
-        const fpCost = ingredient.finishedProduct.costToProduce || 0;
-        unitCost = fpQty > 0 ? fpCost / fpQty : 0;
-        availableQuantity = ingredient.finishedProduct.quantity || 0;
-        sourceUnit = ingredient.finishedProduct.unit;
-      } else {
-        continue; // skip invalid
-      }
-
-      // Check if units need conversion
-      let convertedQuantity = availableQuantity;
-      if (sourceUnit !== ingredient.unit && sourceUnit && ingredient.unit) {
-        if (areUnitsCompatible(sourceUnit, ingredient.unit)) {
-          const converted = convertUnits(availableQuantity, sourceUnit, ingredient.unit);
-          if (converted !== null) {
-            convertedQuantity = converted;
-
-            // We also need to adjust the unit cost to match the new unit
-            unitCost = unitCost * (convertUnits(1, ingredient.unit, sourceUnit) || 1);
-          }
-        }
-      }
-
-      const ingredientTotalCost = unitCost * ingredient.quantity;
-      totalCost += ingredientTotalCost;
-
-      ingredientCosts.push({
-        ingredientId: ingredient.id,
-        name: ingredientName,
-        quantity: ingredient.quantity,
-        unit: ingredient.unit,
-        unitCost,
-        totalCost: ingredientTotalCost,
-        availableQuantity: convertedQuantity,
-        canMake: convertedQuantity >= ingredient.quantity,
-        type: ingredientType
-      });
-    }
-
-    const costPerUnit = recipe.yieldQuantity > 0 ? totalCost / recipe.yieldQuantity : 0;
-
-    res.json({
-      success: true,
-      data: {
-        recipeId: recipe.id,
-        recipeName: recipe.name,
-        yieldQuantity: recipe.yieldQuantity,
-        yieldUnit: recipe.yieldUnit,
-        totalCost,
-        costPerUnit,
-        ingredientCosts,
-        canMakeRecipe: ingredientCosts.every(ing => ing.canMake)
-      }
-    });
-  } catch (error) {
-    console.error('Error calculating recipe cost:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to calculate recipe cost'
@@ -610,6 +547,55 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
       success: false,
       message: 'Failed to analyze recipes',
       error: error.message
+    });
+  }
+};
+
+// Update estimated cost for a recipe
+export const updateRecipeCost = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const updatedCost = await recipeCostService.updateRecipeEstimatedCost(id);
+
+    res.json({
+      success: true,
+      data: { estimatedCost: updatedCost },
+      message: 'Recipe cost updated successfully'
+    });
+  } catch (error: any) {
+    console.error('Error updating recipe cost:', error);
+    
+    if (error.message.includes('Recipe not found')) {
+      return res.status(404).json({
+        success: false,
+        error: 'Recipe not found'
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update recipe cost'
+    });
+  }
+};
+
+// Batch update all recipe costs
+export const updateAllRecipeCosts = async (req: Request, res: Response) => {
+  try {
+    const result = await recipeCostService.updateAllRecipeCosts();
+
+    res.json({
+      success: true,
+      data: result,
+      message: `Updated costs for ${result.updated} recipes`
+    });
+  } catch (error: any) {
+    console.error('Error updating all recipe costs:', error);
+
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update recipe costs'
     });
   }
 };

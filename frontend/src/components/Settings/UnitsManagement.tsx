@@ -97,6 +97,28 @@ const UnitsManagement: React.FC = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
+  const checkForDuplicates = (name: string, symbol: string, currentId?: string): string | null => {
+    const duplicateName = units.find(unit => 
+      unit.name.toLowerCase() === name.toLowerCase() && 
+      unit.id !== currentId
+    );
+    
+    const duplicateSymbol = units.find(unit => 
+      unit.symbol.toLowerCase() === symbol.toLowerCase() && 
+      unit.id !== currentId
+    );
+
+    if (duplicateName) {
+      return `A unit with the name "${name}" already exists`;
+    }
+    
+    if (duplicateSymbol) {
+      return `A unit with the symbol "${symbol}" already exists`;
+    }
+
+    return null;
+  };
+
   const handleSubmitForm = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -104,6 +126,18 @@ const UnitsManagement: React.FC = () => {
     formData.forEach((value, key) => {
       formValues[key] = value;
     });
+
+    // Check for duplicates
+    const duplicateError = checkForDuplicates(
+      formValues.name as string,
+      formValues.symbol as string,
+      editingUnit?.id
+    );
+
+    if (duplicateError) {
+      showSnackbar(duplicateError, 'error');
+      return;
+    }
 
     if (editingUnit) {
       // Update existing unit

@@ -12,10 +12,6 @@ router.get('/status', async (req, res) => {
       where: { isContaminated: true }
     });
 
-    const intermediateProducts = await prisma.intermediateProduct.count({
-      where: { contaminated: true }
-    });
-
     // For finishedProducts, we need to query differently since the schema might have conflicts
     const finishedProductsResult = await prisma.$queryRaw`
       SELECT COUNT(*) as count FROM finished_products WHERE "isContaminated" = true
@@ -30,9 +26,8 @@ router.get('/status', async (req, res) => {
       success: true,
       data: {
         rawMaterials,
-        intermediateProducts,
         finishedProducts,
-        total: rawMaterials + intermediateProducts + finishedProducts
+        total: rawMaterials + finishedProducts
       }
     });
   } catch (error) {

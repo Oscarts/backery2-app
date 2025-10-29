@@ -52,7 +52,7 @@ export const createQualityStatus = async (req: Request, res: Response) => {
       },
     });
 
-    res.status(201).json(newQualityStatus);
+    res.status(201).json({ success: true, data: newQualityStatus });
   } catch (error: any) {
     console.error('Error creating quality status:', error);
 
@@ -82,7 +82,7 @@ export const updateQualityStatus = async (req: Request, res: Response) => {
       },
     });
 
-    res.json(updatedQualityStatus);
+    res.json({ success: true, data: updatedQualityStatus });
   } catch (error: any) {
     console.error('Error updating quality status:', error);
 
@@ -104,9 +104,9 @@ export const deleteQualityStatus = async (req: Request, res: Response) => {
     const { id } = req.params;
 
     // Check if quality status is in use
+    // intermediateProduct model removed from schema; only check raw & finished products
     const inUse = await Promise.all([
       prisma.rawMaterial.count({ where: { qualityStatusId: id } }),
-      prisma.intermediateProduct.count({ where: { qualityStatusId: id } }),
       prisma.finishedProduct.count({ where: { qualityStatusId: id } }),
     ]);
 
@@ -119,9 +119,10 @@ export const deleteQualityStatus = async (req: Request, res: Response) => {
         data: { isActive: false },
       });
 
-      res.json({
+      res.json({ 
+        success: true, 
         message: 'Quality status deactivated (it is in use by existing products)',
-        qualityStatus: updatedQualityStatus,
+        data: updatedQualityStatus,
       });
     } else {
       // Hard delete if not in use
@@ -129,7 +130,7 @@ export const deleteQualityStatus = async (req: Request, res: Response) => {
         where: { id },
       });
 
-      res.json({ message: 'Quality status deleted successfully' });
+      res.json({ success: true, message: 'Quality status deleted successfully' });
     }
   } catch (error) {
     console.error('Error deleting quality status:', error);
@@ -149,7 +150,6 @@ export const getQualityStatusUsage = async (req: Request, res: Response) => {
 
     const usage = await Promise.all([
       prisma.rawMaterial.count({ where: { qualityStatusId: id } }),
-      prisma.intermediateProduct.count({ where: { qualityStatusId: id } }),
       prisma.finishedProduct.count({ where: { qualityStatusId: id } }),
     ]);
 
@@ -157,8 +157,7 @@ export const getQualityStatusUsage = async (req: Request, res: Response) => {
       qualityStatusId: id,
       usage: {
         rawMaterials: usage[0],
-        intermediateProducts: usage[1],
-        finishedProducts: usage[2],
+        finishedProducts: usage[1],
         total: usage.reduce((sum, count) => sum + count, 0),
       },
     });

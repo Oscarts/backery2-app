@@ -395,12 +395,44 @@ const Recipes: React.FC = () => {
     const dataToSubmit = {
       ...formData,
       instructions: Array.isArray(formData.instructions) ? formData.instructions : [],
-      // Make sure ingredients is always an array
-      ingredients: Array.isArray(formData.ingredients) ? formData.ingredients : []
+      // Clean up ingredients before submission - keep only backend-required fields
+      ingredients: (Array.isArray(formData.ingredients) ? formData.ingredients : []).map((ing: any) => {
+        // Only keep the fields the backend expects
+        const cleaned: any = {
+          quantity: ing.quantity,
+          unit: ing.unit
+        };
+        
+        // Add the appropriate ID field based on what's present
+        if (ing.rawMaterialId) {
+          cleaned.rawMaterialId = ing.rawMaterialId;
+        } else if (ing.finishedProductId) {
+          cleaned.finishedProductId = ing.finishedProductId;
+        }
+        
+        // Add notes if present
+        if (ing.notes) {
+          cleaned.notes = ing.notes;
+        }
+        
+        return cleaned;
+      })
     };
 
     // Log what we're about to send
-    console.log('Submitting recipe data:', dataToSubmit);
+    console.log('📤 Submitting recipe data:', JSON.stringify(dataToSubmit, null, 2));
+    console.log('📦 Ingredients being sent:', dataToSubmit.ingredients);
+    if (dataToSubmit.ingredients && dataToSubmit.ingredients.length > 0) {
+      dataToSubmit.ingredients.forEach((ing: any, idx: number) => {
+        console.log(`  Ingredient ${idx}:`, {
+          rawMaterialId: ing.rawMaterialId,
+          finishedProductId: ing.finishedProductId,
+          quantity: ing.quantity,
+          unit: ing.unit,
+          allKeys: Object.keys(ing)
+        });
+      });
+    }
 
     if (editingRecipe) {
       updateRecipeMutation.mutate({ id: editingRecipe.id, data: dataToSubmit });
@@ -430,17 +462,28 @@ const Recipes: React.FC = () => {
 
   const addIngredient = () => {
     if (ingredientForm.itemId && ingredientForm.quantity > 0) {
+      // Create clean ingredient object with only backend-required fields
       const newIngredient: any = {
-        ingredientType: ingredientForm.type,
         quantity: ingredientForm.quantity,
         unit: ingredientForm.unit,
         notes: ingredientForm.notes
       };
+      
+      // Add the appropriate ID field
       if (ingredientForm.type === 'RAW') {
         newIngredient.rawMaterialId = ingredientForm.itemId;
+        console.log('🔴 ADDING RAW MATERIAL - rawMaterialId:', ingredientForm.itemId);
       } else {
         newIngredient.finishedProductId = ingredientForm.itemId;
+        console.log('🔵 ADDING FINISHED PRODUCT - finishedProductId:', ingredientForm.itemId);
       }
+      
+      // Store ingredientType only for UI display purposes
+      newIngredient.ingredientType = ingredientForm.type;
+      
+      console.log('✅ New ingredient object:', JSON.stringify(newIngredient, null, 2));
+      console.log('✅ Object keys:', Object.keys(newIngredient));
+      
       setFormData(prev => ({
         ...prev,
         ingredients: [...(prev.ingredients || []), newIngredient]

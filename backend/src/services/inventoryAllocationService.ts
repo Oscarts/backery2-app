@@ -120,7 +120,7 @@ export class InventoryAllocationService {
         materialType: 'RAW_MATERIAL',
         materialId: material.id,
         materialName: material.name,
-        materialSku: `RM-${material.id.substring(0, 8)}`, // Generate SKU from ID if not available
+  materialSku: material.sku || `RM-${material.id.substring(0, 8)}`, // Use unified SKU if available
         materialBatchNumber: material.batchNumber || 'NO-BATCH',
         quantityAllocated: quantityNeeded,
         unit,
@@ -136,7 +136,7 @@ export class InventoryAllocationService {
       materialType: 'RAW_MATERIAL',
       materialId: material.id,
       materialName: material.name,
-      materialSku: allocation.materialSku || 'N/A',
+  materialSku: allocation.materialSku || material.sku || 'N/A',
       materialBatchNumber: material.batchNumber || 'NO-BATCH',
       quantityNeeded,
       quantityAllocated: quantityNeeded,

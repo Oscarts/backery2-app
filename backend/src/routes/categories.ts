@@ -44,8 +44,16 @@ router.post('/', async (req, res, next) => {
       data: category,
       message: 'Category created successfully',
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    if (error.code === 'P2002') {
+      // Unique constraint violation
+      res.status(400).json({ 
+        success: false, 
+        error: 'A category with this name already exists' 
+      });
+    } else {
+      next(error);
+    }
   }
 });
 
@@ -54,13 +62,6 @@ router.put('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
     const { name, type, description } = req.body;
-
-    if (!name || !type) {
-      return res.status(400).json({
-        success: false,
-        error: 'Name and type are required',
-      });
-    }
 
     // Check if category exists
     const existingCategory = await prisma.category.findUnique({
@@ -74,9 +75,15 @@ router.put('/:id', async (req, res, next) => {
       });
     }
 
+    // Build update data object with only provided fields
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name;
+    if (type !== undefined) updateData.type = type;
+    if (description !== undefined) updateData.description = description;
+
     const category = await prisma.category.update({
       where: { id },
-      data: { name, type, description },
+      data: updateData,
     });
 
     res.json({
@@ -84,8 +91,16 @@ router.put('/:id', async (req, res, next) => {
       data: category,
       message: 'Category updated successfully',
     });
-  } catch (error) {
-    next(error);
+  } catch (error: any) {
+    if (error.code === 'P2002') {
+      // Unique constraint violation
+      res.status(400).json({ 
+        success: false, 
+        error: 'A category with this name already exists' 
+      });
+    } else {
+      next(error);
+    }
   }
 });
 
@@ -107,14 +122,13 @@ router.delete('/:id', async (req, res, next) => {
     }
 
     // Check if category is being used by other entities
-    const [rawMaterialsCount, intermediateProductsCount, finishedProductsCount, recipesCount] = await Promise.all([
+    const [rawMaterialsCount, finishedProductsCount, recipesCount] = await Promise.all([
       prisma.rawMaterial.count({ where: { categoryId: id } }),
-      prisma.intermediateProduct.count({ where: { categoryId: id } }),
       prisma.finishedProduct.count({ where: { categoryId: id } }),
       prisma.recipe.count({ where: { categoryId: id } }),
     ]);
 
-    const totalUsage = rawMaterialsCount + intermediateProductsCount + finishedProductsCount + recipesCount;
+    const totalUsage = rawMaterialsCount + finishedProductsCount + recipesCount;
     
     if (totalUsage > 0) {
       return res.status(409).json({
@@ -122,7 +136,6 @@ router.delete('/:id', async (req, res, next) => {
         error: 'Cannot delete category as it is being used by other items',
         details: {
           rawMaterials: rawMaterialsCount,
-          intermediateProducts: intermediateProductsCount,
           finishedProducts: finishedProductsCount,
           recipes: recipesCount,
         },

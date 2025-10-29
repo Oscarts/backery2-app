@@ -242,7 +242,23 @@ export const EnhancedRecipeForm: React.FC<EnhancedRecipeFormProps> = ({
   };
 
   const handleSave = () => {
-    onSave(formData);
+    // Transform ingredients from UI format to backend format
+    const dataToSubmit = {
+      ...formData,
+      ingredients: formData.ingredients.map(ing => ({
+        quantity: ing.quantity,
+        unit: ing.unit,
+        notes: ing.notes || '',
+        // Convert ingredientId to the correct field based on type
+        ...(ing.ingredientType === 'RAW' 
+          ? { rawMaterialId: ing.ingredientId }
+          : { finishedProductId: ing.ingredientId }
+        )
+      }))
+    };
+    
+    console.log('🚀 Submitting recipe with transformed ingredients:', JSON.stringify(dataToSubmit.ingredients, null, 2));
+    onSave(dataToSubmit);
   };
 
   const isValid = formData.name && formData.categoryId && formData.yieldQuantity > 0;

@@ -157,9 +157,22 @@ const QualityStatusManagement: React.FC = () => {
     }));
   };
 
+  const checkForDuplicates = (name: string, currentId?: string): boolean => {
+    return qualityStatuses.some(status => 
+      status.name.toLowerCase() === name.toLowerCase() && 
+      status.id !== currentId
+    );
+  };
+
   const handleSubmit = () => {
     if (!formData.name.trim()) {
       showSnackbar('Quality status name is required', 'error');
+      return;
+    }
+
+    // Check for duplicates
+    if (checkForDuplicates(formData.name.trim(), editingQualityStatus?.id)) {
+      showSnackbar('A quality status with this name already exists', 'error');
       return;
     }
 

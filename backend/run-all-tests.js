@@ -5,41 +5,47 @@ const { spawn } = require('child_process');
 
 const tests = [
   // Core API tests
-  'backend/test-api-fix.js',
-  'backend/test-recipe-api.js',
-  'backend/test-what-can-i-make.js',
-  
-  // Contamination tests  
-  'backend/test-contamination-api.js',
-  'backend/test-contamination-endpoint.js',
-  'backend/test-contamination-update.js',
-  
+  'test-api-fix.js',
+  'test-recipe-api.js',
+  'test-what-can-i-make.js',
+
+  // Contamination tests
+  'test-contamination-api.js',
+  'test-contamination-endpoint.js',
+  'test-contamination-update.js',
+
   // Quality tests
-  'backend/test-quality-api.js',
-  'backend/test-quality-update.js',
-  'backend/test-quality-status-enhanced.js',
-  
+  'test-quality-api.js',
+  'test-quality-update.js',
+  'test-quality-status-enhanced.js',
+
   // Production tests
-  'backend/test-production-completion-fix.js',
-  'backend/test-production-indicators.js',
-  'backend/test-simple-production-completion.js',
-  'backend/test-end-to-end-production.js',
-  'backend/test-complete-production-workflow.js',
-  
+  'test-production-completion-fix.js',
+  'test-production-indicators.js',
+  'test-simple-production-completion.js',
+  'test-end-to-end-production.js',
+  'test-complete-production-workflow.js',
+  'test-production-sku-stability.js',
+
   // Inventory tests
-  'backend/test-inventory-integration.js',
-  'backend/test-inventory-minimal.js',
-  'backend/test-inventory-quick.js',
-  'backend/test-material-tracking.js',
-  
+  'test-inventory-integration.js',
+  'test-inventory-minimal.js',
+  'test-inventory-quick.js',
+  'test-material-tracking.js',
+
   // Product tests
-  'backend/test-finished-product-update.js',
-  'backend/test-finished-product-status.js'
+  'test-finished-product-update.js',
+  'test-finished-product-status.js',
+
+  // SKU mapping tests
+  'test-raw-material-sku-reuse.js',
+  'test-finished-product-sku-reuse.js'
 ];
 
+// Adjust Jest test paths if they exist after build
 const jestTests = [
-  'backend/dist/tests/materialTracking.test.js',
-  'backend/dist/tests/materialTrackingAPI.test.js'
+  'dist/tests/materialTracking.test.js',
+  'dist/tests/materialTrackingAPI.test.js'
 ];
 
 async function runTests() {
@@ -50,7 +56,7 @@ async function runTests() {
     console.log(`\n📝 Running ${test}...`);
     console.log('='.repeat(50));
     await new Promise((resolve, reject) => {
-      const child = spawn('node', [test], { stdio: 'inherit' });
+  const child = spawn('node', [test], { stdio: 'inherit' });
       child.on('close', code => {
         if (code === 0) {
           console.log(`\n✅ ${test} completed successfully`);
