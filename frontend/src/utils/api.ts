@@ -135,4 +135,30 @@ export const validateDate = (dateString: string): boolean => {
   return !isNaN(date.getTime());
 };
 
+/**
+ * Extract error message from various error types
+ * Handles Error objects, API error responses, and strings
+ */
+export const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  
+  if (typeof error === 'string') {
+    return error;
+  }
+  
+  if (error && typeof error === 'object') {
+    // Check for API error response format
+    if ('error' in error && typeof error.error === 'string') {
+      return error.error;
+    }
+    if ('message' in error && typeof error.message === 'string') {
+      return error.message;
+    }
+  }
+  
+  return 'An unexpected error occurred';
+};
+
 export default api;

@@ -61,7 +61,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { finishedProductsApi, categoriesApi, storageLocationsApi, unitsApi, qualityStatusApi } from '../services/realApi';
 import { FinishedProduct, CategoryType, CreateFinishedProductData, UpdateFinishedProductData, ProductStatus, MaterialBreakdown, MaterialAllocation, ApiResponse } from '../types';
-import { formatDate, isExpired, isExpiringSoon, getDaysUntilExpiration, formatCurrency } from '../utils/api';
+import { formatDate, isExpired, isExpiringSoon, getDaysUntilExpiration, formatCurrency, getErrorMessage } from '../utils/api';
 import { borderRadius } from '../theme/designTokens';
 
 // Status display helper functions
@@ -183,8 +183,8 @@ const FinishedProducts: React.FC = () => {
       handleCloseForm();
       showSnackbar('Finished product created successfully', 'success');
     },
-    onError: () => {
-      showSnackbar('Error creating finished product', 'error');
+    onError: (error: unknown) => {
+      showSnackbar(getErrorMessage(error), 'error');
     },
   });
 
@@ -200,8 +200,8 @@ const FinishedProducts: React.FC = () => {
       handleCloseForm();
       showSnackbar('Finished product updated successfully', 'success');
     },
-    onError: () => {
-      showSnackbar('Error updating finished product', 'error');
+    onError: (error: unknown) => {
+      showSnackbar(getErrorMessage(error), 'error');
     },
   });
 
@@ -210,8 +210,8 @@ const FinishedProducts: React.FC = () => {
       queryClient.invalidateQueries(['finishedProducts']);
       showSnackbar('Finished product deleted successfully', 'success');
     },
-    onError: () => {
-      showSnackbar('Error deleting finished product', 'error');
+    onError: (error: unknown) => {
+      showSnackbar(getErrorMessage(error), 'error');
     },
   });
 

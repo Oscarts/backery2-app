@@ -59,7 +59,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { rawMaterialsApi, categoriesApi, storageLocationsApi, unitsApi, suppliersApi, qualityStatusApi } from '../services/realApi';
 import { RawMaterial, CategoryType, CreateRawMaterialData, UpdateRawMaterialData } from '../types';
 import { borderRadius } from '../theme/designTokens';
-import { formatDate, isExpired, isExpiringSoon, getDaysUntilExpiration } from '../utils/api';
+import { formatDate, isExpired, isExpiringSoon, getDaysUntilExpiration, getErrorMessage } from '../utils/api';
 
 const RawMaterials: React.FC = () => {
   const theme = useTheme();
@@ -136,8 +136,8 @@ const RawMaterials: React.FC = () => {
       handleCloseForm();
       showSnackbar('Raw material created successfully', 'success');
     },
-    onError: () => {
-      showSnackbar('Error creating raw material', 'error');
+    onError: (error: unknown) => {
+      showSnackbar(getErrorMessage(error), 'error');
     },
   });
 
@@ -149,8 +149,8 @@ const RawMaterials: React.FC = () => {
       handleCloseForm();
       showSnackbar('Raw material updated successfully', 'success');
     },
-    onError: () => {
-      showSnackbar('Error updating raw material', 'error');
+    onError: (error: unknown) => {
+      showSnackbar(getErrorMessage(error), 'error');
     },
   });
 
@@ -159,8 +159,8 @@ const RawMaterials: React.FC = () => {
       queryClient.invalidateQueries(['rawMaterials']);
       showSnackbar('Raw material deleted successfully', 'success');
     },
-    onError: () => {
-      showSnackbar('Error deleting raw material', 'error');
+    onError: (error: unknown) => {
+      showSnackbar(getErrorMessage(error), 'error');
     },
   });
 
