@@ -325,23 +325,45 @@ export const updateOrder = async (req: Request, res: Response) => {
       let totalProductionCost = 0;
       let calculatedTotalPrice = 0;
 
-      const orderItems = items.map((item: any) => {
-        const lineProductionCost = item.unitProductionCost * item.quantity;
+      const orderItems = await Promise.all(items.map(async (item: any) => {
+        // Fetch product to get production cost if not provided
+        let unitProductionCost = item.unitProductionCost;
+        let productName = item.productName;
+        let productSku = item.productSku;
+
+        if (!unitProductionCost || !productName) {
+          const product = await prisma.finishedProduct.findUnique({
+            where: { id: item.productId },
+            select: {
+              name: true,
+              sku: true,
+              costToProduce: true,
+            },
+          });
+
+          if (product) {
+            unitProductionCost = unitProductionCost || product.costToProduce || 0;
+            productName = productName || product.name;
+            productSku = productSku || product.sku;
+          }
+        }
+
+        const lineProductionCost = (unitProductionCost || 0) * item.quantity;
         const linePrice = item.unitPrice * item.quantity;
         totalProductionCost += lineProductionCost;
         calculatedTotalPrice += linePrice;
 
         return {
           productId: item.productId,
-          productName: item.productName,
-          productSku: item.productSku || null,
+          productName: productName || 'Unknown Product',
+          productSku: productSku || null,
           quantity: item.quantity,
-          unitProductionCost: item.unitProductionCost,
+          unitProductionCost: unitProductionCost || 0,
           unitPrice: item.unitPrice,
           lineProductionCost,
           linePrice,
         };
-      });
+      }));
 
       updateData.totalProductionCost = totalProductionCost;
       if (totalPrice === undefined) {
@@ -351,6 +373,11 @@ export const updateOrder = async (req: Request, res: Response) => {
       updateData.items = {
         create: orderItems,
       };
+    } else {
+      // If no items provided but updating other fields, ensure totalProductionCost is set
+      if (updateData.totalPrice !== undefined && !updateData.totalProductionCost) {
+        updateData.totalProductionCost = 0;
+      }
     }
 
     const order = await prisma.customerOrder.update({
