@@ -459,7 +459,7 @@ export const EnhancedRecipeForm: React.FC<EnhancedRecipeFormProps> = ({
                               onChange={(e) => handleInputChange('yieldUnit', e.target.value)}
                             >
                               {units.map((unit) => (
-                                <MenuItem key={unit.id} value={unit.name}>
+                                <MenuItem key={unit.id} value={unit.symbol}>
                                   {unit.name} ({unit.symbol})
                                 </MenuItem>
                               ))}

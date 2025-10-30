@@ -275,6 +275,29 @@ const FinishedProducts: React.FC = () => {
       window.addEventListener('open-materials-tab', handler);
       return () => window.removeEventListener('open-materials-tab', handler);
     }, []);
+    // Helper function to normalize unit values
+    const normalizeUnit = (unit: string): string => {
+      // Map common full names to their symbols
+      const unitMap: Record<string, string> = {
+        'Piece': 'pcs',
+        'Pieces': 'pcs',
+        'Dozen': 'dz',
+        'Kilogram': 'kg',
+        'Gram': 'g',
+        'Liter': 'L',
+        'Milliliter': 'ml',
+        'Ounce': 'oz',
+        'Pound': 'lb',
+        'Cup': 'cup',
+        'Tablespoon': 'tbsp',
+        'Teaspoon': 'tsp',
+        'Package': 'pkg'
+      };
+      
+      // Return mapped value or original if no mapping exists
+      return unitMap[unit] || unit;
+    };
+
     const [formData, setFormData] = useState<CreateFinishedProductData>({
       name: editingProduct?.name || '',
       sku: editingProduct?.sku || '',
@@ -284,7 +307,7 @@ const FinishedProducts: React.FC = () => {
       expirationDate: editingProduct?.expirationDate?.split('T')[0] || '',
       shelfLife: editingProduct?.shelfLife || 0,
       quantity: editingProduct?.quantity || 0,
-      unit: editingProduct?.unit || '',
+      unit: normalizeUnit(editingProduct?.unit || ''),
       salePrice: editingProduct?.salePrice || 0,
       costToProduce: editingProduct?.costToProduce || undefined,
       packagingInfo: editingProduct?.packagingInfo || '',
