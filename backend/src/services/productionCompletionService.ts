@@ -61,6 +61,39 @@ export class ProductionCompletionService {
                 throw new Error(`Cannot complete production: ${pendingSteps.length} steps still pending`);
             }
 
+            // Allocate materials if not already done
+            const existingAllocations = await prisma.productionAllocation.findMany({
+                where: { productionRunId }
+            });
+            
+            if (existingAllocations.length === 0) {
+                console.log('🔄 Auto-allocating materials for production run');
+                fs.appendFileSync('/tmp/production-debug.log', 
+                    `${new Date().toISOString()} SERVICE: Auto-allocating materials\n`
+                );
+                
+                try {
+                    const productionMultiplier = productionRun.targetQuantity / (productionRun.recipe?.yieldQuantity || 1);
+                    const allocations = await inventoryAllocationService.allocateIngredients(
+                        productionRunId,
+                        productionRun.recipeId,
+                        productionMultiplier
+                    );
+                    console.log(`✓ Allocated ${allocations.length} materials`);
+                    fs.appendFileSync('/tmp/production-debug.log', 
+                        `${new Date().toISOString()} SERVICE: Allocated ${allocations.length} materials\n`
+                    );
+                } catch (allocError) {
+                    console.warn('⚠️ Material allocation failed:', allocError);
+                    fs.appendFileSync('/tmp/production-debug.log', 
+                        `${new Date().toISOString()} SERVICE WARNING: Material allocation failed - ${allocError}\n`
+                    );
+                    // Continue with completion even if allocation fails
+                }
+            } else {
+                console.log(`✓ Materials already allocated (${existingAllocations.length} items)`);
+            }
+
             // Use actual quantity if provided, otherwise use target quantity
             const finalQuantity = actualQuantity || productionRun.targetQuantity;
             

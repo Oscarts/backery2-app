@@ -666,6 +666,17 @@ const FinishedProducts: React.FC = () => {
                     </TableContainer>
                   </Box>
                 )}
+                {!materialLoading && !materialError && materialBreakdownResponse?.data && (!materialBreakdownResponse.data.materials || materialBreakdownResponse.data.materials.length === 0) && (
+                  <Alert severity="warning">
+                    <Typography variant="body2" gutterBottom>
+                      No material allocations recorded for this production run.
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      This may be an older production run created before the material tracking system was implemented.
+                      Future production runs will automatically track material usage and costs.
+                    </Typography>
+                  </Alert>
+                )}
                 {!materialLoading && !materialError && !materialBreakdownResponse?.data && (
                   <Alert severity="info">No material breakdown data available.</Alert>
                 )}

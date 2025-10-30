@@ -198,6 +198,21 @@ export const createProductionRun = async (req: Request, res: Response) => {
             }
         });
 
+        // Auto-allocate materials for the production run
+        console.log('🔄 Auto-allocating materials for new production run');
+        try {
+            const productionMultiplier = targetQuantity / (recipe.yieldQuantity || 1);
+            const allocations = await inventoryAllocationService.allocateIngredients(
+                productionRun.id,
+                recipeId,
+                productionMultiplier
+            );
+            console.log(`✓ Allocated ${allocations.length} materials for production run`);
+        } catch (allocError) {
+            console.warn('⚠️ Material allocation failed during creation:', allocError);
+            // Continue - production run is created, allocation can be done later
+        }
+
         res.status(201).json({
             success: true,
             data: productionRun
