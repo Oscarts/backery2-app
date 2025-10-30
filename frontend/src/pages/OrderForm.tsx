@@ -35,7 +35,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import { customersApi, customerOrdersApi, finishedProductsApi } from '../services/realApi';
-import { CreateOrderData, CreateOrderItemData, Customer, FinishedProduct } from '../types';
+import { CreateOrderData, CreateOrderItemData } from '../types';
 
 interface OrderItemForm extends CreateOrderItemData {
   id: string; // Temporary ID for form management

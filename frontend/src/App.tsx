@@ -16,6 +16,7 @@ import Login from './pages/Login';
 import Customers from './pages/Customers';
 import CustomerOrders from './pages/CustomerOrders';
 import OrderForm from './pages/OrderForm';
+import EnhancedOrderForm from './pages/EnhancedOrderForm';
 import OrderDetails from './pages/OrderDetails';
 
 // Import components
@@ -44,9 +45,11 @@ function App() {
           <Route path="contamination" element={<Contamination />} />
           <Route path="customers" element={<Customers />} />
           <Route path="customer-orders" element={<CustomerOrders />} />
-          <Route path="customer-orders/new" element={<OrderForm />} />
+          <Route path="customer-orders/new" element={<EnhancedOrderForm />} />
           <Route path="customer-orders/:id" element={<OrderDetails />} />
-          <Route path="customer-orders/:id/edit" element={<OrderForm />} />
+          <Route path="customer-orders/:id/edit" element={<EnhancedOrderForm />} />
+          <Route path="customer-orders-old/new" element={<OrderForm />} />
+          <Route path="customer-orders-old/:id/edit" element={<OrderForm />} />
           <Route path="reports" element={<Reports />} />
           <Route path="settings" element={<Settings />} />
           <Route path="api-test" element={<ApiTest />} />
