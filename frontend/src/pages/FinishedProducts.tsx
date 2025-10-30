@@ -45,7 +45,6 @@ import {
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
-  Warning as WarningIcon,
   Search as SearchIcon,
   GridView as GridViewIcon,
   ViewList as ListViewIcon,
@@ -1060,9 +1059,9 @@ const FinishedProducts: React.FC = () => {
               }}>
               <TableHead>
                 <TableRow>
-                  <TableCell width="20%">Product</TableCell>
+                  <TableCell width="18%">Product</TableCell>
                   {!isMobile && <TableCell width="10%">SKU/Batch</TableCell>}
-                  <TableCell width="10%" align="center">Quantity</TableCell>
+                  <TableCell width="12%" align="center">Inventory</TableCell>
                   {!isMobile && <TableCell width="10%" align="center">Production</TableCell>}
                   {!isMobile && <TableCell width="10%" align="center">Storage</TableCell>}
                   {!isMobile && <TableCell width="10%" align="right">Price</TableCell>}
@@ -1074,8 +1073,6 @@ const FinishedProducts: React.FC = () => {
               </TableHead>
               <TableBody>
                 {paginatedProducts.map((product) => {
-                  const isLowStock = product.quantity <= 10;
-
                   return (
                     <TableRow
                       key={product.id}
@@ -1111,22 +1108,49 @@ const FinishedProducts: React.FC = () => {
                         </Box>
                       </TableCell>
                       <TableCell align="center">
-                        <Box display="flex" alignItems="center" justifyContent="center" gap={1}>
+                        <Box display="flex" flexDirection="column" alignItems="center" gap={0.5}>
                           {product.quantity === 0 ? (
-                            <Typography sx={{ color: 'error.main', fontWeight: 'bold' }}>
+                            <Typography sx={{ color: 'error.main', fontWeight: 'bold', fontSize: '0.875rem' }}>
                               Out of Stock
                             </Typography>
                           ) : (
-                            <Typography
-                              sx={{
-                                fontWeight: isLowStock ? 'bold' : 'regular',
-                                color: isLowStock ? 'warning.main' : 'text.primary',
-                                borderBottom: isLowStock ? '1px solid' : 'none',
-                                borderColor: 'warning.main'
-                              }}
-                            >
-                              {product.quantity.toLocaleString()} {cleanUnit(product.unit, product.sku)}
-                            </Typography>
+                            <>
+                              <Box display="flex" alignItems="center" gap={0.5}>
+                                <Typography
+                                  sx={{
+                                    fontWeight: 'bold',
+                                    color: (product.quantity - product.reservedQuantity) <= 5 ? 'error.main' : 
+                                           (product.quantity - product.reservedQuantity) <= 10 ? 'warning.main' : 
+                                           'success.main',
+                                    fontSize: '1rem'
+                                  }}
+                                >
+                                  {(product.quantity - product.reservedQuantity).toLocaleString()}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  available
+                                </Typography>
+                              </Box>
+                              {product.reservedQuantity > 0 && (
+                                <Box display="flex" alignItems="center" gap={0.5}>
+                                  <Typography
+                                    sx={{
+                                      fontSize: '0.875rem',
+                                      color: 'info.main',
+                                      fontWeight: 'medium'
+                                    }}
+                                  >
+                                    {product.reservedQuantity.toLocaleString()}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    reserved
+                                  </Typography>
+                                </Box>
+                              )}
+                              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.25 }}>
+                                Total: {product.quantity.toLocaleString()} {cleanUnit(product.unit, product.sku)}
+                              </Typography>
+                            </>
                           )}
                         </Box>
                       </TableCell>
@@ -1247,9 +1271,7 @@ const FinishedProducts: React.FC = () => {
       {viewMode === 'card' && (
         <Box sx={{ mt: 2 }}>
           <Grid container spacing={2}>
-            {paginatedProducts.map((product) => {
-              const isLowStock = product.quantity <= 10;
-              return (
+            {paginatedProducts.map((product) => (
                 <Grid item xs={12} sm={6} md={4} key={product.id}>
                   <Card
                     elevation={2}
@@ -1317,27 +1339,73 @@ const FinishedProducts: React.FC = () => {
 
                     <CardContent sx={{ pt: 2, pb: 1, flexGrow: 1 }}>
                       <Grid container spacing={2}>
-                        <Grid item xs={6}>
-                          <Typography variant="subtitle2" color="text.secondary">
-                            Available
-                          </Typography>
-                          <Typography
-                            variant="body1"
-                            sx={{
-                              fontWeight: isLowStock ? 'bold' : 'medium',
-                              color: isLowStock ? 'error.main' : 'text.primary',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 0.5
-                            }}
-                          >
-                            {product.quantity.toLocaleString()} {cleanUnit(product.unit, product.sku)}
-                            {isLowStock && (
-                              <Tooltip title="Low stock">
-                                <WarningIcon color="error" fontSize="small" sx={{ fontSize: '1rem' }} />
-                              </Tooltip>
-                            )}
-                          </Typography>
+                        <Grid item xs={12}>
+                          <Box sx={{ 
+                            bgcolor: 'background.paper', 
+                            border: 1, 
+                            borderColor: 'divider',
+                            borderRadius: 1,
+                            p: 1.5
+                          }}>
+                            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                              Inventory Status
+                            </Typography>
+                            <Stack spacing={1}>
+                              <Box display="flex" justifyContent="space-between" alignItems="center">
+                                <Typography variant="body2" color="text.secondary">
+                                  Available
+                                </Typography>
+                                <Typography
+                                  variant="h6"
+                                  sx={{
+                                    fontWeight: 'bold',
+                                    color: (product.quantity - product.reservedQuantity) <= 5 ? 'error.main' : 
+                                           (product.quantity - product.reservedQuantity) <= 10 ? 'warning.main' : 
+                                           'success.main',
+                                  }}
+                                >
+                                  {(product.quantity - product.reservedQuantity).toLocaleString()}
+                                  <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                                    {cleanUnit(product.unit, product.sku)}
+                                  </Typography>
+                                </Typography>
+                              </Box>
+                              {product.reservedQuantity > 0 && (
+                                <>
+                                  <Divider />
+                                  <Box display="flex" justifyContent="space-between" alignItems="center">
+                                    <Typography variant="body2" color="text.secondary">
+                                      Reserved
+                                    </Typography>
+                                    <Typography
+                                      variant="body1"
+                                      sx={{
+                                        fontWeight: 'medium',
+                                        color: 'info.main',
+                                      }}
+                                    >
+                                      {product.reservedQuantity.toLocaleString()}
+                                      <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                                        {cleanUnit(product.unit, product.sku)}
+                                      </Typography>
+                                    </Typography>
+                                  </Box>
+                                </>
+                              )}
+                              <Divider />
+                              <Box display="flex" justifyContent="space-between" alignItems="center">
+                                <Typography variant="body2" color="text.secondary" fontWeight="medium">
+                                  Total Inventory
+                                </Typography>
+                                <Typography variant="body1" fontWeight="medium">
+                                  {product.quantity.toLocaleString()}
+                                  <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                                    {cleanUnit(product.unit, product.sku)}
+                                  </Typography>
+                                </Typography>
+                              </Box>
+                            </Stack>
+                          </Box>
                         </Grid>
 
                         <Grid item xs={6}>
@@ -1444,8 +1512,7 @@ const FinishedProducts: React.FC = () => {
                     </CardActions>
                   </Card>
                 </Grid>
-              );
-            })}
+            ))}
           </Grid>
 
           {/* Card view pagination */}
