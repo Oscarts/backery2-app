@@ -23,6 +23,7 @@ import {
     addProductionStep,
     removeProductionStep
 } from '../controllers/productionStepController';
+import { normalizeUnitsMiddleware } from '../middleware/unitValidation';
 
 const router = Router();
 
@@ -32,8 +33,8 @@ router.get('/runs/dashboard', getDashboardProductionRuns);
 router.get('/runs/stats', getProductionStats);
 router.get('/runs/completed', getCompletedProductionRuns);
 router.get('/runs/:id', getProductionRunById);
-router.post('/runs', createProductionRun);
-router.put('/runs/:id', updateProductionRun);
+router.post('/runs', normalizeUnitsMiddleware, createProductionRun);
+router.put('/runs/:id', normalizeUnitsMiddleware, updateProductionRun);
 router.delete('/runs/:id', deleteProductionRun);
 
 // Production Step routes

@@ -10,6 +10,7 @@ import {
   updateAllRecipeCosts,
   getWhatCanIMake
 } from '../controllers/recipeController';
+import { normalizeUnitsMiddleware } from '../middleware/unitValidation';
 
 const router = Router();
 
@@ -20,8 +21,8 @@ router.get('/:id', getRecipeById);
 router.get('/:id/cost', getRecipeCost);
 router.put('/:id/cost', updateRecipeCost);
 router.put('/costs/update-all', updateAllRecipeCosts);
-router.post('/', createRecipe);
-router.put('/:id', updateRecipe);
+router.post('/', normalizeUnitsMiddleware, createRecipe);
+router.put('/:id', normalizeUnitsMiddleware, updateRecipe);
 router.delete('/:id', deleteRecipe);
 
 export default router;

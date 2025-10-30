@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { finishedProductController } from '../controllers/finishedProductController';
 import { getFinishedProductMaterials } from '../controllers/productionRunController';
+import { normalizeUnitsMiddleware } from '../middleware/unitValidation';
 
 const router = Router();
 
@@ -16,8 +17,8 @@ router.get('/:id/materials', (req, res) => {
 	(req as any).params.finishedProductId = req.params.id;
 	return getFinishedProductMaterials(req as any, res as any);
 });
-router.post('/', finishedProductController.create);
-router.put('/:id', finishedProductController.update);
+router.post('/', normalizeUnitsMiddleware, finishedProductController.create);
+router.put('/:id', normalizeUnitsMiddleware, finishedProductController.update);
 router.delete('/:id', finishedProductController.delete);
 
 // Reservation management
