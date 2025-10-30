@@ -262,7 +262,7 @@ export const finishedProductsApi = {
 
   // Fetch material & cost breakdown for a finished product (traceability endpoint)
   getMaterialBreakdown: async (id: string): Promise<ApiResponse<MaterialBreakdown>> => {
-    return apiCall<MaterialBreakdown>(`/finished-products/${id}/materials`);
+    return apiCall<MaterialBreakdown>(`/production/finished-products/${id}/materials`);
   },
 };
 
