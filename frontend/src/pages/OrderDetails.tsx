@@ -309,6 +309,101 @@ const OrderDetails: React.FC = () => {
         </TableContainer>
       </Paper>
 
+      {/* Quick Actions - Prominent placement at top */}
+      {order.status !== OrderStatus.FULFILLED && (
+        <Paper 
+          sx={{ 
+            p: 3, 
+            mb: 3, 
+            bgcolor: 'primary.50',
+            border: '1px solid',
+            borderColor: 'primary.main'
+          }}
+        >
+          <Typography variant="h6" gutterBottom color="primary.main" fontWeight="bold">
+            Quick Actions
+          </Typography>
+          <Divider sx={{ my: 2 }} />
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} flexWrap="wrap">
+            {order.status === OrderStatus.DRAFT && (
+              <>
+                <Button
+                  variant="contained"
+                  size="large"
+                  color="success"
+                  startIcon={<ConfirmIcon />}
+                  onClick={handleConfirmClick}
+                  sx={{ flexGrow: 1, minWidth: 180 }}
+                >
+                  Confirm Order
+                </Button>
+                <Button
+                  variant="contained"
+                  size="large"
+                  color="primary"
+                  startIcon={<EditIcon />}
+                  onClick={() => navigate(`/customer-orders/${id}/edit`)}
+                  sx={{ flexGrow: 1, minWidth: 180 }}
+                >
+                  Edit Order
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="large"
+                  startIcon={<InventoryIcon />}
+                  onClick={handleCheckInventory}
+                  sx={{ flexGrow: 1, minWidth: 180 }}
+                >
+                  Check Inventory
+                </Button>
+              </>
+            )}
+
+            {order.status === OrderStatus.CONFIRMED && (
+              <>
+                <Button
+                  variant="contained"
+                  size="large"
+                  color="success"
+                  startIcon={<FulfillIcon />}
+                  onClick={() => setFulfillDialogOpen(true)}
+                  sx={{ flexGrow: 1, minWidth: 180 }}
+                >
+                  Fulfill Order
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="large"
+                  color="warning"
+                  startIcon={<RevertIcon />}
+                  onClick={() => setRevertDialogOpen(true)}
+                  sx={{ flexGrow: 1, minWidth: 180 }}
+                >
+                  Revert to Draft
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="large"
+                  startIcon={<InventoryIcon />}
+                  onClick={handleCheckInventory}
+                  sx={{ flexGrow: 1, minWidth: 180 }}
+                >
+                  Check Inventory
+                </Button>
+              </>
+            )}
+          </Stack>
+        </Paper>
+      )}
+
+      {order.status === OrderStatus.FULFILLED && (
+        <Alert severity="success" icon={<FulfillIcon />} sx={{ mb: 3 }}>
+          <Typography variant="body1" fontWeight="medium">
+            This order has been fulfilled and delivered to the customer.
+          </Typography>
+        </Alert>
+      )}
+
       {/* Order Summary */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
@@ -346,77 +441,6 @@ const OrderDetails: React.FC = () => {
           </Grid>
         </CardContent>
       </Card>
-
-      {/* Actions */}
-      <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          Order Actions
-        </Typography>
-        <Divider sx={{ my: 2 }} />
-        <Stack direction="row" spacing={2} flexWrap="wrap">
-          {order.status === OrderStatus.DRAFT && (
-            <>
-              <Button
-                variant="outlined"
-                startIcon={<InventoryIcon />}
-                onClick={handleCheckInventory}
-              >
-                Check Inventory
-              </Button>
-              <Button
-                variant="outlined"
-                color="primary"
-                startIcon={<EditIcon />}
-                onClick={() => navigate(`/customer-orders/${id}/edit`)}
-              >
-                Edit Order
-              </Button>
-              <Button
-                variant="contained"
-                color="success"
-                startIcon={<ConfirmIcon />}
-                onClick={handleConfirmClick}
-              >
-                Confirm Order
-              </Button>
-            </>
-          )}
-
-          {order.status === OrderStatus.CONFIRMED && (
-            <>
-              <Button
-                variant="outlined"
-                startIcon={<InventoryIcon />}
-                onClick={handleCheckInventory}
-              >
-                Check Inventory
-              </Button>
-              <Button
-                variant="outlined"
-                color="warning"
-                startIcon={<RevertIcon />}
-                onClick={() => setRevertDialogOpen(true)}
-              >
-                Revert to Draft
-              </Button>
-              <Button
-                variant="contained"
-                color="success"
-                startIcon={<FulfillIcon />}
-                onClick={() => setFulfillDialogOpen(true)}
-              >
-                Fulfill Order
-              </Button>
-            </>
-          )}
-
-          {order.status === OrderStatus.FULFILLED && (
-            <Alert severity="success" sx={{ flexGrow: 1 }}>
-              This order has been fulfilled. No further actions available.
-            </Alert>
-          )}
-        </Stack>
-      </Paper>
 
       {/* Confirm Dialog */}
       <Dialog open={confirmDialogOpen} onClose={() => setConfirmDialogOpen(false)}>

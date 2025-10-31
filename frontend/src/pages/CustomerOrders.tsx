@@ -38,6 +38,9 @@ import {
   useTheme,
   useMediaQuery,
   Drawer,
+  Menu,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -45,9 +48,6 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Search as SearchIcon,
-  Check as ConfirmIcon,
-  Undo as RevertIcon,
-  CheckCircle as FulfillIcon,
   ShoppingCart as ShoppingCartIcon,
   GridView as GridViewIcon,
   ViewList as ListViewIcon,
@@ -55,6 +55,8 @@ import {
   Receipt as ReceiptIcon,
   PendingActions as PendingIcon,
   Download as DownloadIcon,
+  MoreVert as MoreVertIcon,
+  CheckCircle as FulfillIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -93,6 +95,10 @@ const CustomerOrders: React.FC = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<CustomerOrder | null>(null);
 
+  // Action menu state
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedOrder, setSelectedOrder] = useState<CustomerOrder | null>(null);
+
   // Snackbar state
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -129,42 +135,6 @@ const CustomerOrders: React.FC = () => {
     },
   });
 
-  // Confirm mutation
-  const confirmMutation = useMutation({
-    mutationFn: customerOrdersApi.confirmOrder,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customer-orders'] });
-      showSnackbar('Order confirmed successfully', 'success');
-    },
-    onError: (error: Error) => {
-      showSnackbar(`Error: ${error.message}`, 'error');
-    },
-  });
-
-  // Revert mutation
-  const revertMutation = useMutation({
-    mutationFn: customerOrdersApi.revertToDraft,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customer-orders'] });
-      showSnackbar('Order reverted to draft', 'success');
-    },
-    onError: (error: Error) => {
-      showSnackbar(`Error: ${error.message}`, 'error');
-    },
-  });
-
-  // Fulfill mutation
-  const fulfillMutation = useMutation({
-    mutationFn: customerOrdersApi.fulfillOrder,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['customer-orders'] });
-      showSnackbar('Order fulfilled successfully', 'success');
-    },
-    onError: (error: Error) => {
-      showSnackbar(`Error: ${error.message}`, 'error');
-    },
-  });
-
   // Helper functions
   const showSnackbar = (
     message: string,
@@ -195,24 +165,45 @@ const CustomerOrders: React.FC = () => {
     }
   };
 
-  const handleConfirmOrder = (orderId: string) => {
-    confirmMutation.mutate(orderId);
-  };
-
-  const handleRevertOrder = (orderId: string) => {
-    revertMutation.mutate(orderId);
-  };
-
-  const handleFulfillOrder = (orderId: string) => {
-    fulfillMutation.mutate(orderId);
-  };
-
   const handleViewOrder = (orderId: string) => {
     navigate(`/customer-orders/${orderId}`);
   };
 
   const handleEditOrder = (orderId: string) => {
     navigate(`/customer-orders/${orderId}/edit`);
+  };
+
+  // Action menu handlers
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, order: CustomerOrder) => {
+    event.stopPropagation();
+    setAnchorEl(event.currentTarget);
+    setSelectedOrder(order);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setSelectedOrder(null);
+  };
+
+  const handleMenuAction = (action: string) => {
+    if (!selectedOrder) return;
+
+    switch (action) {
+      case 'view':
+        handleViewOrder(selectedOrder.id);
+        break;
+      case 'edit':
+        handleEditOrder(selectedOrder.id);
+        break;
+      case 'export':
+        handleExportOrder(selectedOrder.id, selectedOrder.orderNumber);
+        break;
+      case 'delete':
+        handleDeleteClick(selectedOrder);
+        break;
+    }
+
+    handleMenuClose();
   };
 
   // Export order as Word document (DOCX)
@@ -766,86 +757,12 @@ const CustomerOrders: React.FC = () => {
                     />
                   </TableCell>
                   <TableCell align="right">
-                    <Stack direction="row" spacing={0.5} justifyContent="flex-end">
-                      <Tooltip title="View Details">
-                        <IconButton
-                          size="small"
-                          color="info"
-                          onClick={() => handleViewOrder(order.id)}
-                        >
-                          <ViewIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-
-                      {/* Export button - available for all statuses */}
-                      <Tooltip title="Export as Word (Proforma/Devis)">
-                        <IconButton
-                          size="small"
-                          color="secondary"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleExportOrder(order.id, order.orderNumber);
-                          }}
-                        >
-                          <DownloadIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      
-                      {order.status === OrderStatus.DRAFT && (
-                        <>
-                          <Tooltip title="Edit">
-                            <IconButton
-                              size="small"
-                              color="primary"
-                              onClick={() => handleEditOrder(order.id)}
-                            >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Confirm Order">
-                            <IconButton
-                              size="small"
-                              color="success"
-                              onClick={() => handleConfirmOrder(order.id)}
-                            >
-                              <ConfirmIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Delete">
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={() => handleDeleteClick(order)}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </>
-                      )}
-                      
-                      {order.status === OrderStatus.CONFIRMED && (
-                        <>
-                          <Tooltip title="Revert to Draft">
-                            <IconButton
-                              size="small"
-                              color="warning"
-                              onClick={() => handleRevertOrder(order.id)}
-                            >
-                              <RevertIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Fulfill Order">
-                            <IconButton
-                              size="small"
-                              color="success"
-                              onClick={() => handleFulfillOrder(order.id)}
-                            >
-                              <FulfillIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </>
-                      )}
-                    </Stack>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleMenuOpen(e, order)}
+                    >
+                      <MoreVertIcon />
+                    </IconButton>
                   </TableCell>
                 </TableRow>
               ))
@@ -979,105 +896,13 @@ const CustomerOrders: React.FC = () => {
                     </Grid>
                   </CardContent>
 
-                  <CardActions sx={{ px: 2, py: 1, justifyContent: 'space-between', bgcolor: 'background.default' }}>
-                    <Stack direction="row" spacing={0.5}>
-                      <Tooltip title="View Details">
-                        <IconButton
-                          size="small"
-                          color="info"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleViewOrder(order.id);
-                          }}
-                        >
-                          <ViewIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-
-                      {/* Export button - available for all statuses */}
-                      <Tooltip title="Export as Word (Proforma/Devis)">
-                        <IconButton
-                          size="small"
-                          color="secondary"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleExportOrder(order.id, order.orderNumber);
-                          }}
-                        >
-                          <DownloadIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-
-                      {order.status === OrderStatus.DRAFT && (
-                        <>
-                          <Tooltip title="Edit">
-                            <IconButton
-                              size="small"
-                              color="primary"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditOrder(order.id);
-                              }}
-                            >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Confirm Order">
-                            <IconButton
-                              size="small"
-                              color="success"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleConfirmOrder(order.id);
-                              }}
-                            >
-                              <ConfirmIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Delete">
-                            <IconButton
-                              size="small"
-                              color="error"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteClick(order);
-                              }}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </>
-                      )}
-
-                      {order.status === OrderStatus.CONFIRMED && (
-                        <>
-                          <Tooltip title="Revert to Draft">
-                            <IconButton
-                              size="small"
-                              color="warning"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRevertOrder(order.id);
-                              }}
-                            >
-                              <RevertIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Fulfill Order">
-                            <IconButton
-                              size="small"
-                              color="success"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleFulfillOrder(order.id);
-                              }}
-                            >
-                              <FulfillIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </>
-                      )}
-                    </Stack>
+                  <CardActions sx={{ px: 2, py: 1, justifyContent: 'flex-end', bgcolor: 'background.default' }}>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleMenuOpen(e, order)}
+                    >
+                      <MoreVertIcon />
+                    </IconButton>
                   </CardActions>
                 </Card>
               </Grid>
@@ -1101,6 +926,48 @@ const CustomerOrders: React.FC = () => {
           </Box>
         </Box>
       )}
+
+      {/* Action Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+        PaperProps={{
+          sx: { minWidth: 180 }
+        }}
+      >
+        <MenuItem onClick={() => handleMenuAction('view')}>
+          <ListItemIcon>
+            <ViewIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>View Details</ListItemText>
+        </MenuItem>
+
+        {selectedOrder?.status === OrderStatus.DRAFT && (
+          <MenuItem onClick={() => handleMenuAction('edit')}>
+            <ListItemIcon>
+              <EditIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Edit Order</ListItemText>
+          </MenuItem>
+        )}
+
+        <MenuItem onClick={() => handleMenuAction('export')}>
+          <ListItemIcon>
+            <DownloadIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Export Word</ListItemText>
+        </MenuItem>
+
+        {selectedOrder?.status === OrderStatus.DRAFT && (
+          <MenuItem onClick={() => handleMenuAction('delete')} sx={{ color: 'error.main' }}>
+            <ListItemIcon>
+              <DeleteIcon fontSize="small" color="error" />
+            </ListItemIcon>
+            <ListItemText>Delete</ListItemText>
+          </MenuItem>
+        )}
+      </Menu>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)}>

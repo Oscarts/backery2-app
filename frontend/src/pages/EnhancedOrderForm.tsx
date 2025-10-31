@@ -25,6 +25,7 @@ import {
   InputAdornment,
   Fade,
   Collapse,
+  Paper,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -616,24 +617,34 @@ const EnhancedOrderForm: React.FC = () => {
       )}
 
       {/* Action Buttons */}
-      <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-        <Button
-          variant="outlined"
-          size="large"
-          onClick={() => navigate('/customer-orders')}
-        >
-          Cancel
-        </Button>
-        <Button
-          variant="contained"
-          size="large"
-          startIcon={<SaveIcon />}
-          onClick={handleSubmit}
-          disabled={createMutation.isPending || updateMutation.isPending}
-        >
-          {isEditMode ? 'Update Order' : 'Create Order'}
-        </Button>
-      </Box>
+      <Paper sx={{ p: 3, mt: 3, bgcolor: 'grey.50' }}>
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="body2" color="text.secondary">
+            {isEditMode 
+              ? 'Save your changes to update this order. After saving, you can confirm the order from the order details page.'
+              : 'Create this order as a draft. After creation, you can review and confirm it from the order details page.'}
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+          <Button
+            variant="outlined"
+            size="large"
+            onClick={() => navigate('/customer-orders')}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            size="large"
+            color="primary"
+            startIcon={<SaveIcon />}
+            onClick={handleSubmit}
+            disabled={createMutation.isPending || updateMutation.isPending}
+          >
+            {isEditMode ? 'Save Changes' : 'Save as Draft'}
+          </Button>
+        </Box>
+      </Paper>
 
       {/* Product Selector Dialog */}
       <EnhancedProductSelector
