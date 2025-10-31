@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import {
     Container,
     Typography,
-    Paper,
     Button,
     Box,
+    Accordion,
+    AccordionSummary,
+    AccordionDetails,
     Table,
     TableBody,
     TableCell,
@@ -26,15 +28,21 @@ import {
     Alert,
     Snackbar,
     Tooltip,
-    Tabs,
-    Tab,
-    SelectChangeEvent,
+    Stack,
+    useTheme,
+    useMediaQuery,
 } from '@mui/material';
 import {
     Add as AddIcon,
     Edit as EditIcon,
     Delete as DeleteIcon,
     Settings as SettingsIcon,
+    ExpandMore as ExpandMoreIcon,
+    Category as CategoryIcon,
+    LocalShipping as SupplierIcon,
+    Warehouse as StorageIcon,
+    Straighten as UnitsIcon,
+    CheckCircle as QualityIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { categoriesApi, suppliersApi, storageLocationsApi } from '../services/realApi';
@@ -42,54 +50,60 @@ import { Category, CategoryType, Supplier, StorageLocation } from '../types';
 import UnitsManagement from '../components/Settings/UnitsManagement';
 import QualityStatusManagement from '../components/Settings/QualityStatusManagement';
 
-interface TabPanelProps {
-    children?: React.ReactNode;
-    index: number;
-    value: number;
+interface SettingsSectionProps {
+    title: string;
+    icon: React.ReactNode;
+    description: string;
+    onAdd: () => void;
+    children: React.ReactNode;
 }
 
-function TabPanel(props: TabPanelProps) {
-    const { children, value, index, ...other } = props;
+const SettingsSection: React.FC<SettingsSectionProps> = ({ title, icon, description, onAdd, children }) => {
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
     return (
-        <div
-            role="tabpanel"
-            hidden={value !== index}
-            id={`settings-tabpanel-${index}`}
-            aria-labelledby={`settings-tab-${index}`}
-            {...other}
-        >
-            {value === index && (
-                <Box sx={{ p: 3 }}>
-                    {children}
+        <Accordion defaultExpanded={!isMobile} sx={{ mb: 2, borderRadius: 2, '&:before': { display: 'none' } }} elevation={2}>
+            <AccordionSummary
+                expandIcon={<ExpandMoreIcon />}
+                sx={{
+                    bgcolor: 'primary.50',
+                    '&:hover': { bgcolor: 'primary.100' },
+                    borderRadius: 2,
+                }}
+            >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
+                    {icon}
+                    <Box sx={{ flex: 1 }}>
+                        <Typography variant="h6" fontWeight="medium">
+                            {title}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            {description}
+                        </Typography>
+                    </Box>
                 </Box>
-            )}
-        </div>
+            </AccordionSummary>
+            <AccordionDetails>
+                <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                    <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={onAdd}
+                        size={isMobile ? 'small' : 'medium'}
+                    >
+                        Add New
+                    </Button>
+                </Box>
+                {children}
+            </AccordionDetails>
+        </Accordion>
     );
-}
-
-interface CategoryFormData {
-    name: string;
-    type: CategoryType;
-    description: string;
-}
-
-interface SupplierFormData {
-    name: string;
-    contactInfo: any;
-    address: string;
-    isActive: boolean;
-}
-
-interface StorageLocationFormData {
-    name: string;
-    type: string;
-    description: string;
-    capacity: string;
-}
+};
 
 const Settings: React.FC = () => {
-    const [tabValue, setTabValue] = useState(0);
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [openDialog, setOpenDialog] = useState(false);
     const [dialogType, setDialogType] = useState<'category' | 'supplier' | 'storageLocation'>('category');
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -97,754 +111,573 @@ const Settings: React.FC = () => {
     const [editingStorageLocation, setEditingStorageLocation] = useState<StorageLocation | null>(null);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
-    const [formData, setFormData] = useState<CategoryFormData>({
-        name: '',
-        type: CategoryType.RAW_MATERIAL,
-        description: '',
-    });
-
-    const [supplierFormData, setSupplierFormData] = useState<SupplierFormData>({
-        name: '',
-        contactInfo: { email: '', phone: '' },
-        address: '',
-        isActive: true,
-    });
-
-    const [storageLocationFormData, setStorageLocationFormData] = useState<StorageLocationFormData>({
-        name: '',
-        type: '',
-        description: '',
-        capacity: '',
-    });
+    const [categoryForm, setCategoryForm] = useState({ name: '', type: CategoryType.RAW_MATERIAL, description: '' });
+    const [supplierForm, setSupplierForm] = useState({ name: '', contactInfo: { email: '', phone: '' }, address: '', isActive: true });
+    const [storageForm, setStorageForm] = useState({ name: '', type: '', description: '', capacity: '' });
 
     const queryClient = useQueryClient();
 
-    // Fetch all categories
-    const { data: categoriesData, isLoading, error } = useQuery({
+    // Fetch data
+    const { data: categoriesData, isLoading: categoriesLoading } = useQuery({
         queryKey: ['categories'],
         queryFn: () => categoriesApi.getAll(),
     });
 
-    // Fetch all suppliers
-    const { data: suppliersData } = useQuery({
+    const { data: suppliersData, isLoading: suppliersLoading } = useQuery({
         queryKey: ['suppliers'],
         queryFn: () => suppliersApi.getAll(),
     });
 
-    // Fetch all storage locations
-    const { data: storageLocationsData } = useQuery({
+    const { data: storageLocationsData, isLoading: storageLoading } = useQuery({
         queryKey: ['storageLocations'],
         queryFn: () => storageLocationsApi.getAll(),
     });
 
-    // Mutations for categories
+    const categories = categoriesData?.data || [];
+    const suppliers = suppliersData?.data || [];
+    const storageLocations = storageLocationsData?.data || [];
+
+    // Category mutations
     const createCategoryMutation = useMutation({
         mutationFn: (data: Omit<Category, 'id' | 'createdAt'>) => categoriesApi.create(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['categories'] });
-            setOpenDialog(false);
-            resetForm();
-            setSnackbar({ open: true, message: 'Category created successfully', severity: 'success' });
+            handleCloseDialog();
+            showSnackbar('Category created successfully', 'success');
         },
-        onError: (error: any) => {
-            setSnackbar({ open: true, message: error.message || 'Failed to create category', severity: 'error' });
-        },
+        onError: () => showSnackbar('Failed to create category', 'error'),
     });
 
     const updateCategoryMutation = useMutation({
         mutationFn: ({ id, data }: { id: string; data: Partial<Category> }) => categoriesApi.update(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['categories'] });
-            setOpenDialog(false);
-            setEditingCategory(null);
-            resetForm();
-            setSnackbar({ open: true, message: 'Category updated successfully', severity: 'success' });
+            handleCloseDialog();
+            showSnackbar('Category updated successfully', 'success');
         },
-        onError: (error: any) => {
-            setSnackbar({ open: true, message: error.message || 'Failed to update category', severity: 'error' });
-        },
+        onError: () => showSnackbar('Failed to update category', 'error'),
     });
 
     const deleteCategoryMutation = useMutation({
         mutationFn: (id: string) => categoriesApi.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['categories'] });
-            setSnackbar({ open: true, message: 'Category deleted successfully', severity: 'success' });
+            showSnackbar('Category deleted successfully', 'success');
         },
-        onError: (error: any) => {
-            setSnackbar({ open: true, message: error.message || 'Failed to delete category', severity: 'error' });
-        },
+        onError: () => showSnackbar('Failed to delete category', 'error'),
     });
 
-    // Mutations for suppliers
+    // Supplier mutations
     const createSupplierMutation = useMutation({
         mutationFn: (data: Omit<Supplier, 'id' | 'createdAt' | 'updatedAt'>) => suppliersApi.create(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['suppliers'] });
-            setOpenDialog(false);
-            resetSupplierForm();
-            setSnackbar({ open: true, message: 'Supplier created successfully', severity: 'success' });
+            handleCloseDialog();
+            showSnackbar('Supplier created successfully', 'success');
         },
-        onError: (error: any) => {
-            setSnackbar({ open: true, message: error.message || 'Failed to create supplier', severity: 'error' });
-        },
+        onError: () => showSnackbar('Failed to create supplier', 'error'),
     });
 
     const updateSupplierMutation = useMutation({
         mutationFn: ({ id, data }: { id: string; data: Partial<Supplier> }) => suppliersApi.update(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['suppliers'] });
-            setOpenDialog(false);
-            setEditingSupplier(null);
-            resetSupplierForm();
-            setSnackbar({ open: true, message: 'Supplier updated successfully', severity: 'success' });
+            handleCloseDialog();
+            showSnackbar('Supplier updated successfully', 'success');
         },
-        onError: (error: any) => {
-            setSnackbar({ open: true, message: error.message || 'Failed to update supplier', severity: 'error' });
-        },
+        onError: () => showSnackbar('Failed to update supplier', 'error'),
     });
 
     const deleteSupplierMutation = useMutation({
         mutationFn: (id: string) => suppliersApi.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['suppliers'] });
-            setSnackbar({ open: true, message: 'Supplier deleted successfully', severity: 'success' });
+            showSnackbar('Supplier deleted successfully', 'success');
         },
-        onError: (error: any) => {
-            setSnackbar({ open: true, message: error.message || 'Failed to delete supplier', severity: 'error' });
-        },
+        onError: () => showSnackbar('Failed to delete supplier', 'error'),
     });
 
-    // Mutations for storage locations
-    const createStorageLocationMutation = useMutation({
+    // Storage location mutations
+    const createStorageMutation = useMutation({
         mutationFn: (data: Omit<StorageLocation, 'id' | 'createdAt'>) => storageLocationsApi.create(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['storageLocations'] });
-            setOpenDialog(false);
-            resetStorageLocationForm();
-            setSnackbar({ open: true, message: 'Storage location created successfully', severity: 'success' });
+            handleCloseDialog();
+            showSnackbar('Storage location created successfully', 'success');
         },
-        onError: (error: any) => {
-            setSnackbar({ open: true, message: error.message || 'Failed to create storage location', severity: 'error' });
-        },
+        onError: () => showSnackbar('Failed to create storage location', 'error'),
     });
 
-    const updateStorageLocationMutation = useMutation({
+    const updateStorageMutation = useMutation({
         mutationFn: ({ id, data }: { id: string; data: Partial<StorageLocation> }) => storageLocationsApi.update(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['storageLocations'] });
-            setOpenDialog(false);
-            setEditingStorageLocation(null);
-            resetStorageLocationForm();
-            setSnackbar({ open: true, message: 'Storage location updated successfully', severity: 'success' });
+            handleCloseDialog();
+            showSnackbar('Storage location updated successfully', 'success');
         },
-        onError: (error: any) => {
-            setSnackbar({ open: true, message: error.message || 'Failed to update storage location', severity: 'error' });
-        },
+        onError: () => showSnackbar('Failed to update storage location', 'error'),
     });
 
-    const deleteStorageLocationMutation = useMutation({
+    const deleteStorageMutation = useMutation({
         mutationFn: (id: string) => storageLocationsApi.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['storageLocations'] });
-            setSnackbar({ open: true, message: 'Storage location deleted successfully', severity: 'success' });
+            showSnackbar('Storage location deleted successfully', 'success');
         },
-        onError: (error: any) => {
-            setSnackbar({ open: true, message: error.message || 'Failed to delete storage location', severity: 'error' });
-        },
+        onError: () => showSnackbar('Failed to delete storage location', 'error'),
     });
 
-    const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-        setTabValue(newValue);
+    const showSnackbar = (message: string, severity: 'success' | 'error') => {
+        setSnackbar({ open: true, message, severity });
     };
 
-    const handleAddCategory = () => {
-        resetForm();
+    const handleCloseDialog = () => {
+        setOpenDialog(false);
         setEditingCategory(null);
+        setEditingSupplier(null);
+        setEditingStorageLocation(null);
+        setCategoryForm({ name: '', type: CategoryType.RAW_MATERIAL, description: '' });
+        setSupplierForm({ name: '', contactInfo: { email: '', phone: '' }, address: '', isActive: true });
+        setStorageForm({ name: '', type: '', description: '', capacity: '' });
+    };
+
+    const handleAddCategory = (type: CategoryType) => {
+        setCategoryForm({ name: '', type, description: '' });
         setDialogType('category');
         setOpenDialog(true);
     };
 
     const handleEditCategory = (category: Category) => {
         setEditingCategory(category);
-        setFormData({
-            name: category.name,
-            type: category.type,
-            description: category.description || '',
-        });
+        setCategoryForm({ name: category.name, type: category.type, description: category.description || '' });
         setDialogType('category');
         setOpenDialog(true);
     };
 
     const handleDeleteCategory = (id: string) => {
-        if (window.confirm('Are you sure you want to delete this category? This may affect related items.')) {
+        if (window.confirm('Delete this category? This may affect related items.')) {
             deleteCategoryMutation.mutate(id);
         }
     };
 
-    const resetForm = () => {
-        setFormData({
-            name: '',
-            type: CategoryType.RAW_MATERIAL,
-            description: '',
-        });
-    };
-
-    const resetSupplierForm = () => {
-        setSupplierFormData({
-            name: '',
-            contactInfo: { email: '', phone: '' },
-            address: '',
-            isActive: true,
-        });
-    };
-
-    const resetStorageLocationForm = () => {
-        setStorageLocationFormData({
-            name: '',
-            type: '',
-            description: '',
-            capacity: '',
-        });
-    };
-
-    const categories = categoriesData?.data || [];
-    const suppliers = suppliersData?.data || [];
-    const storageLocations = storageLocationsData?.data || [];
-
-    const checkForDuplicates = (type: string, name: string, currentId?: string): boolean => {
-        let existingItems: any[] = [];
-        
-        if (type === 'category') {
-            existingItems = categories;
-        } else if (type === 'supplier') {
-            existingItems = suppliers;
-        } else if (type === 'storageLocation') {
-            existingItems = storageLocations;
-        }
-
-        return existingItems.some(item => 
-            item.name.toLowerCase() === name.toLowerCase() && 
-            item.id !== currentId
-        );
-    };
-
-    const handleFormSubmit = () => {
-        if (dialogType === 'category') {
-            const data = {
-                ...formData,
-            };
-
-            // Check for duplicates
-            if (checkForDuplicates('category', data.name, editingCategory?.id)) {
-                setSnackbar({
-                    open: true,
-                    message: 'A category with this name already exists',
-                    severity: 'error'
-                });
-                return;
-            }
-
-            if (editingCategory) {
-                updateCategoryMutation.mutate({ id: editingCategory.id, data });
-            } else {
-                createCategoryMutation.mutate(data);
-            }
-        } else if (dialogType === 'supplier') {
-            const data = {
-                ...supplierFormData,
-            };
-
-            // Check for duplicates
-            if (checkForDuplicates('supplier', data.name, editingSupplier?.id)) {
-                setSnackbar({
-                    open: true,
-                    message: 'A supplier with this name already exists',
-                    severity: 'error'
-                });
-                return;
-            }
-
-            if (editingSupplier) {
-                updateSupplierMutation.mutate({ id: editingSupplier.id, data });
-            } else {
-                createSupplierMutation.mutate(data);
-            }
-        } else if (dialogType === 'storageLocation') {
-            const data = {
-                ...storageLocationFormData,
-            };
-
-            // Check for duplicates
-            if (checkForDuplicates('storageLocation', data.name, editingStorageLocation?.id)) {
-                setSnackbar({
-                    open: true,
-                    message: 'A storage location with this name already exists',
-                    severity: 'error'
-                });
-                return;
-            }
-
-            if (editingStorageLocation) {
-                updateStorageLocationMutation.mutate({ id: editingStorageLocation.id, data });
-            } else {
-                createStorageLocationMutation.mutate(data);
-            }
+    const handleSubmitCategory = () => {
+        const data = { name: categoryForm.name, type: categoryForm.type, description: categoryForm.description };
+        if (editingCategory) {
+            updateCategoryMutation.mutate({ id: editingCategory.id, data });
+        } else {
+            createCategoryMutation.mutate(data);
         }
     };
 
-    const handleFormChange = (field: keyof CategoryFormData) => (
-        event: React.ChangeEvent<HTMLInputElement | { value: unknown }> | SelectChangeEvent<string>
-    ) => {
-        const value = event.target.value;
-        setFormData(prev => ({
-            ...prev,
-            [field]: value
-        }));
-    };
-
-    const handleSupplierFormChange = (field: keyof SupplierFormData) => (
-        event: React.ChangeEvent<HTMLInputElement | { value: unknown }> | SelectChangeEvent<string>
-    ) => {
-        const value = event.target.value;
-        setSupplierFormData(prev => ({
-            ...prev,
-            [field]: value
-        }));
-    };
-
-    const handleStorageLocationFormChange = (field: keyof StorageLocationFormData) => (
-        event: React.ChangeEvent<HTMLInputElement | { value: unknown }> | SelectChangeEvent<string>
-    ) => {
-        const value = event.target.value;
-        setStorageLocationFormData(prev => ({
-            ...prev,
-            [field]: value
-        }));
-    };
-
-    const getCategoryTypeLabel = (type: CategoryType) => {
-        switch (type) {
-            case CategoryType.RAW_MATERIAL:
-                return 'Raw Material';
-            case CategoryType.FINISHED_PRODUCT:
-                return 'Finished Product';
-            case CategoryType.RECIPE:
-                return 'Recipe';
-            default:
-                return type;
-        }
-    };
-
-    const getCategoryTypeColor = (type: CategoryType) => {
-        switch (type) {
-            case CategoryType.RAW_MATERIAL:
-                return 'primary';
-            case CategoryType.FINISHED_PRODUCT:
-                return 'success';
-            case CategoryType.RECIPE:
-                return 'warning';
-            default:
-                return 'default';
-        }
-    };
-
-    const filterCategoriesByType = (type: CategoryType) => {
-        return categories.filter(category => category.type === type);
-    };
-
-    // Supplier handlers
     const handleAddSupplier = () => {
-        resetSupplierForm();
-        setEditingSupplier(null);
         setDialogType('supplier');
         setOpenDialog(true);
     };
 
     const handleEditSupplier = (supplier: Supplier) => {
         setEditingSupplier(supplier);
-        setSupplierFormData({
+        setSupplierForm({
             name: supplier.name,
             contactInfo: supplier.contactInfo || { email: '', phone: '' },
             address: supplier.address || '',
-            isActive: supplier.isActive !== false,
+            isActive: supplier.isActive ?? true,
         });
         setDialogType('supplier');
         setOpenDialog(true);
     };
 
     const handleDeleteSupplier = (id: string) => {
-        if (window.confirm('Are you sure you want to delete this supplier? This may affect related items.')) {
+        if (window.confirm('Delete this supplier?')) {
             deleteSupplierMutation.mutate(id);
         }
     };
 
-    // Storage location handlers
-    const handleAddStorageLocation = () => {
-        resetStorageLocationForm();
-        setEditingStorageLocation(null);
+    const handleSubmitSupplier = () => {
+        const data = supplierForm;
+        if (editingSupplier) {
+            updateSupplierMutation.mutate({ id: editingSupplier.id, data });
+        } else {
+            createSupplierMutation.mutate(data);
+        }
+    };
+
+    const handleAddStorage = () => {
         setDialogType('storageLocation');
         setOpenDialog(true);
     };
 
-    const handleEditStorageLocation = (location: StorageLocation) => {
-        setEditingStorageLocation(location);
-        setStorageLocationFormData({
-            name: location.name,
-            type: location.type || '',
-            description: location.description || '',
-            capacity: location.capacity || '',
+    const handleEditStorage = (storage: StorageLocation) => {
+        setEditingStorageLocation(storage);
+        setStorageForm({
+            name: storage.name,
+            type: storage.type || '',
+            description: storage.description || '',
+            capacity: storage.capacity || '',
         });
         setDialogType('storageLocation');
         setOpenDialog(true);
     };
 
-    const handleDeleteStorageLocation = (id: string) => {
-        if (window.confirm('Are you sure you want to delete this storage location? This may affect related items.')) {
-            deleteStorageLocationMutation.mutate(id);
+    const handleDeleteStorage = (id: string) => {
+        if (window.confirm('Delete this storage location?')) {
+            deleteStorageMutation.mutate(id);
         }
     };
 
-    const renderCategoriesTable = (categoryType: CategoryType) => {
-        const filteredCategories = filterCategoriesByType(categoryType);
+    const handleSubmitStorage = () => {
+        const data = storageForm;
+        if (editingStorageLocation) {
+            updateStorageMutation.mutate({ id: editingStorageLocation.id, data });
+        } else {
+            createStorageMutation.mutate(data);
+        }
+    };
+
+    const renderCategoriesTable = (type: CategoryType) => {
+        const filteredCategories = categories.filter((c: Category) => c.type === type);
+
+        if (categoriesLoading) {
+            return <Typography>Loading...</Typography>;
+        }
+
+        if (filteredCategories.length === 0) {
+            return (
+                <Alert severity="info">
+                    No categories found. Click "Add New" to create one.
+                </Alert>
+            );
+        }
 
         return (
-            <Paper>
-                <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="h6">
-                        {getCategoryTypeLabel(categoryType)} Categories
-                    </Typography>
-                    <Button
-                        variant="contained"
-                        startIcon={<AddIcon />}
-                        onClick={handleAddCategory}
-                    >
-                        Add Category
-                    </Button>
-                </Box>
-                <TableContainer>
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>Name</TableCell>
-                                <TableCell>Description</TableCell>
-                                <TableCell>Type</TableCell>
-                                <TableCell>Actions</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {isLoading ? (
-                                <TableRow>
-                                    <TableCell colSpan={4} align="center">Loading...</TableCell>
-                                </TableRow>
-                            ) : filteredCategories.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={4} align="center">
-                                        No {getCategoryTypeLabel(categoryType).toLowerCase()} categories found
+            <TableContainer>
+                <Table size={isMobile ? 'small' : 'medium'}>
+                    <TableHead>
+                        <TableRow>
+                            <TableCell>Name</TableCell>
+                            {!isMobile && <TableCell>Description</TableCell>}
+                            <TableCell align="right">Actions</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {filteredCategories.map((category: Category) => (
+                            <TableRow key={category.id} hover>
+                                <TableCell>
+                                    <Typography variant="body2" fontWeight="medium">
+                                        {category.name}
+                                    </Typography>
+                                </TableCell>
+                                {!isMobile && (
+                                    <TableCell>
+                                        <Typography variant="body2" color="text.secondary">
+                                            {category.description || '-'}
+                                        </Typography>
                                     </TableCell>
-                                </TableRow>
-                            ) : (
-                                filteredCategories.map((category: Category) => (
-                                    <TableRow key={category.id}>
-                                        <TableCell>
-                                            <Typography variant="body2" fontWeight="medium">
-                                                {category.name}
-                                            </Typography>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Typography variant="body2" color="text.secondary">
-                                                {category.description || 'No description'}
-                                            </Typography>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Chip
-                                                label={getCategoryTypeLabel(category.type)}
-                                                color={getCategoryTypeColor(category.type) as any}
-                                                size="small"
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                            <Tooltip title="Edit">
-                                                <IconButton size="small" onClick={() => handleEditCategory(category)}>
-                                                    <EditIcon />
-                                                </IconButton>
-                                            </Tooltip>
-                                            <Tooltip title="Delete">
-                                                <IconButton size="small" onClick={() => handleDeleteCategory(category.id)}>
-                                                    <DeleteIcon />
-                                                </IconButton>
-                                            </Tooltip>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            </Paper>
+                                )}
+                                <TableCell align="right">
+                                    <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                                        <Tooltip title="Edit">
+                                            <IconButton size="small" onClick={() => handleEditCategory(category)}>
+                                                <EditIcon fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title="Delete">
+                                            <IconButton size="small" color="error" onClick={() => handleDeleteCategory(category.id)}>
+                                                <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </Stack>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
         );
     };
 
     const renderSuppliersTable = () => {
+        if (suppliersLoading) {
+            return <Typography>Loading...</Typography>;
+        }
+
+        if (suppliers.length === 0) {
+            return (
+                <Alert severity="info">
+                    No suppliers found. Click "Add New" to create one.
+                </Alert>
+            );
+        }
+
         return (
-            <Paper>
-                <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="h6">
-                        Suppliers
-                    </Typography>
-                    <Button
-                        variant="contained"
-                        startIcon={<AddIcon />}
-                        onClick={handleAddSupplier}
-                    >
-                        Add Supplier
-                    </Button>
-                </Box>
-                <TableContainer>
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>Name</TableCell>
-                                <TableCell>Contact</TableCell>
-                                <TableCell>Address</TableCell>
-                                <TableCell>Status</TableCell>
-                                <TableCell>Actions</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {suppliers.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={5} align="center">
+            <TableContainer>
+                <Table size={isMobile ? 'small' : 'medium'}>
+                    <TableHead>
+                        <TableRow>
+                            <TableCell>Name</TableCell>
+                            {!isMobile && <TableCell>Contact</TableCell>}
+                            <TableCell align="center">Status</TableCell>
+                            <TableCell align="right">Actions</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {suppliers.map((supplier: Supplier) => (
+                            <TableRow key={supplier.id} hover>
+                                <TableCell>
+                                    <Typography variant="body2" fontWeight="medium">
+                                        {supplier.name}
+                                    </Typography>
+                                </TableCell>
+                                {!isMobile && (
+                                    <TableCell>
                                         <Typography variant="body2" color="text.secondary">
-                                            No suppliers found. Click "Add Supplier" to create one.
+                                            {supplier.contactInfo?.email || supplier.contactInfo?.phone || '-'}
                                         </Typography>
                                     </TableCell>
-                                </TableRow>
-                            ) : (
-                                suppliers.map((supplier) => (
-                                    <TableRow key={supplier.id}>
-                                        <TableCell>{supplier.name}</TableCell>
-                                        <TableCell>
-                                            {supplier.contactInfo?.email && (
-                                                <div>{supplier.contactInfo.email}</div>
-                                            )}
-                                            {supplier.contactInfo?.phone && (
-                                                <div>{supplier.contactInfo.phone}</div>
-                                            )}
-                                        </TableCell>
-                                        <TableCell>{supplier.address}</TableCell>
-                                        <TableCell>
-                                            <Chip
-                                                label={supplier.isActive ? 'Active' : 'Inactive'}
-                                                color={supplier.isActive ? 'success' : 'default'}
-                                                size="small"
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                            <Tooltip title="Edit supplier">
-                                                <IconButton
-                                                    size="small"
-                                                    onClick={() => handleEditSupplier(supplier)}
-                                                >
-                                                    <EditIcon />
-                                                </IconButton>
-                                            </Tooltip>
-                                            <Tooltip title="Delete supplier">
-                                                <IconButton
-                                                    size="small"
-                                                    color="error"
-                                                    onClick={() => handleDeleteSupplier(supplier.id)}
-                                                >
-                                                    <DeleteIcon />
-                                                </IconButton>
-                                            </Tooltip>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            </Paper>
+                                )}
+                                <TableCell align="center">
+                                    <Chip
+                                        label={supplier.isActive ? 'Active' : 'Inactive'}
+                                        color={supplier.isActive ? 'success' : 'default'}
+                                        size="small"
+                                    />
+                                </TableCell>
+                                <TableCell align="right">
+                                    <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                                        <Tooltip title="Edit">
+                                            <IconButton size="small" onClick={() => handleEditSupplier(supplier)}>
+                                                <EditIcon fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title="Delete">
+                                            <IconButton size="small" color="error" onClick={() => handleDeleteSupplier(supplier.id)}>
+                                                <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </Stack>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
         );
     };
 
     const renderStorageLocationsTable = () => {
+        if (storageLoading) {
+            return <Typography>Loading...</Typography>;
+        }
+
+        if (storageLocations.length === 0) {
+            return (
+                <Alert severity="info">
+                    No storage locations found. Click "Add New" to create one.
+                </Alert>
+            );
+        }
+
         return (
-            <Paper>
-                <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="h6">
-                        Storage Locations
-                    </Typography>
-                    <Button
-                        variant="contained"
-                        startIcon={<AddIcon />}
-                        onClick={handleAddStorageLocation}
-                    >
-                        Add Storage Location
-                    </Button>
-                </Box>
-                <TableContainer>
-                    <Table>
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>Name</TableCell>
-                                <TableCell>Type</TableCell>
-                                <TableCell>Description</TableCell>
-                                <TableCell>Capacity</TableCell>
-                                <TableCell>Actions</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {storageLocations.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={5} align="center">
+            <TableContainer>
+                <Table size={isMobile ? 'small' : 'medium'}>
+                    <TableHead>
+                        <TableRow>
+                            <TableCell>Name</TableCell>
+                            {!isMobile && <TableCell>Type</TableCell>}
+                            {!isMobile && <TableCell>Capacity</TableCell>}
+                            <TableCell align="right">Actions</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {storageLocations.map((location: StorageLocation) => (
+                            <TableRow key={location.id} hover>
+                                <TableCell>
+                                    <Typography variant="body2" fontWeight="medium">
+                                        {location.name}
+                                    </Typography>
+                                </TableCell>
+                                {!isMobile && (
+                                    <TableCell>
                                         <Typography variant="body2" color="text.secondary">
-                                            No storage locations found. Click "Add Storage Location" to create one.
+                                            {location.type || '-'}
                                         </Typography>
                                     </TableCell>
-                                </TableRow>
-                            ) : (
-                                storageLocations.map((location) => (
-                                    <TableRow key={location.id}>
-                                        <TableCell>{location.name}</TableCell>
-                                        <TableCell>
-                                            <Chip
-                                                label={location.type || 'N/A'}
-                                                color="primary"
-                                                size="small"
-                                            />
-                                        </TableCell>
-                                        <TableCell>{location.description}</TableCell>
-                                        <TableCell>{location.capacity}</TableCell>
-                                        <TableCell>
-                                            <Tooltip title="Edit storage location">
-                                                <IconButton
-                                                    size="small"
-                                                    onClick={() => handleEditStorageLocation(location)}
-                                                >
-                                                    <EditIcon />
-                                                </IconButton>
-                                            </Tooltip>
-                                            <Tooltip title="Delete storage location">
-                                                <IconButton
-                                                    size="small"
-                                                    color="error"
-                                                    onClick={() => handleDeleteStorageLocation(location.id)}
-                                                >
-                                                    <DeleteIcon />
-                                                </IconButton>
-                                            </Tooltip>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            </Paper>
+                                )}
+                                {!isMobile && (
+                                    <TableCell>
+                                        <Typography variant="body2" color="text.secondary">
+                                            {location.capacity || '-'}
+                                        </Typography>
+                                    </TableCell>
+                                )}
+                                <TableCell align="right">
+                                    <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                                        <Tooltip title="Edit">
+                                            <IconButton size="small" onClick={() => handleEditStorage(location)}>
+                                                <EditIcon fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title="Delete">
+                                            <IconButton size="small" color="error" onClick={() => handleDeleteStorage(location.id)}>
+                                                <DeleteIcon fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </Stack>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
         );
     };
 
-    if (error) {
-        return (
-            <Container maxWidth="xl">
-                <Alert severity="error">
-                    Error loading settings. Using mock data for demonstration.
-                </Alert>
-            </Container>
-        );
-    }
-
     return (
-        <Container maxWidth="xl">
-            <Box sx={{ mb: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                    <SettingsIcon color="primary" />
-                    <Typography variant="h4" component="h1">
+        <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+            {/* Header */}
+            <Box sx={{ mb: 4 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                    <SettingsIcon color="primary" sx={{ fontSize: 40 }} />
+                    <Typography variant={isMobile ? 'h4' : 'h3'} component="h1" fontWeight="bold">
                         Settings
                     </Typography>
                 </Box>
-                <Typography variant="body1" color="text.secondary" paragraph>
-                    Manage system settings including categories, suppliers, and storage locations.
+                <Typography variant="body1" color="text.secondary">
+                    Manage system settings including categories, suppliers, storage locations, units, and quality status.
                 </Typography>
             </Box>
 
-            <Paper sx={{ mb: 3 }}>
-                <Tabs
-                    value={tabValue}
-                    onChange={handleTabChange}
-                    indicatorColor="primary"
-                    textColor="primary"
-                    variant="scrollable"
-                    scrollButtons="auto"
-                >
-                    <Tab label="Raw Materials" />
-                    <Tab label="Finished Products" />
-                    <Tab label="Recipes" />
-                    <Tab label="Suppliers" />
-                    <Tab label="Storage Locations" />
-                    <Tab label="Units" />
-                    <Tab label="Quality Status" />
-                </Tabs>
-            </Paper>
-
-            <TabPanel value={tabValue} index={0}>
+            {/* Categories Section - Raw Materials */}
+            <SettingsSection
+                title="Raw Material Categories"
+                icon={<CategoryIcon color="primary" />}
+                description="Manage categories for raw materials like flour, sugar, etc."
+                onAdd={() => handleAddCategory(CategoryType.RAW_MATERIAL)}
+            >
                 {renderCategoriesTable(CategoryType.RAW_MATERIAL)}
-            </TabPanel>
+            </SettingsSection>
 
-            <TabPanel value={tabValue} index={1}>
+            {/* Categories Section - Finished Products */}
+            <SettingsSection
+                title="Finished Product Categories"
+                icon={<CategoryIcon color="secondary" />}
+                description="Manage categories for finished products like bread, pastries, etc."
+                onAdd={() => handleAddCategory(CategoryType.FINISHED_PRODUCT)}
+            >
                 {renderCategoriesTable(CategoryType.FINISHED_PRODUCT)}
-            </TabPanel>
+            </SettingsSection>
 
-            <TabPanel value={tabValue} index={2}>
+            {/* Categories Section - Recipes */}
+            <SettingsSection
+                title="Recipe Categories"
+                icon={<CategoryIcon color="success" />}
+                description="Manage categories for recipes and production formulas"
+                onAdd={() => handleAddCategory(CategoryType.RECIPE)}
+            >
                 {renderCategoriesTable(CategoryType.RECIPE)}
-            </TabPanel>
+            </SettingsSection>
 
-            <TabPanel value={tabValue} index={3}>
+            {/* Suppliers Section */}
+            <SettingsSection
+                title="Suppliers"
+                icon={<SupplierIcon color="info" />}
+                description="Manage supplier contacts and information"
+                onAdd={handleAddSupplier}
+            >
                 {renderSuppliersTable()}
-            </TabPanel>
+            </SettingsSection>
 
-            <TabPanel value={tabValue} index={4}>
+            {/* Storage Locations Section */}
+            <SettingsSection
+                title="Storage Locations"
+                icon={<StorageIcon color="warning" />}
+                description="Manage storage locations and warehouses"
+                onAdd={handleAddStorage}
+            >
                 {renderStorageLocationsTable()}
-            </TabPanel>
+            </SettingsSection>
 
-            <TabPanel value={tabValue} index={5}>
-                <UnitsManagement />
-            </TabPanel>
+            {/* Units Section */}
+            <Accordion sx={{ mb: 2, borderRadius: 2, '&:before': { display: 'none' } }} elevation={2}>
+                <AccordionSummary
+                    expandIcon={<ExpandMoreIcon />}
+                    sx={{
+                        bgcolor: 'primary.50',
+                        '&:hover': { bgcolor: 'primary.100' },
+                        borderRadius: 2,
+                    }}
+                >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <UnitsIcon color="primary" />
+                        <Box>
+                            <Typography variant="h6" fontWeight="medium">
+                                Units of Measurement
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                Manage units for ingredients and products
+                            </Typography>
+                        </Box>
+                    </Box>
+                </AccordionSummary>
+                <AccordionDetails>
+                    <UnitsManagement />
+                </AccordionDetails>
+            </Accordion>
 
-            <TabPanel value={tabValue} index={6}>
-                <QualityStatusManagement />
-            </TabPanel>
+            {/* Quality Status Section */}
+            <Accordion sx={{ mb: 2, borderRadius: 2, '&:before': { display: 'none' } }} elevation={2}>
+                <AccordionSummary
+                    expandIcon={<ExpandMoreIcon />}
+                    sx={{
+                        bgcolor: 'primary.50',
+                        '&:hover': { bgcolor: 'primary.100' },
+                        borderRadius: 2,
+                    }}
+                >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <QualityIcon color="success" />
+                        <Box>
+                            <Typography variant="h6" fontWeight="medium">
+                                Quality Status
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                Manage quality control status options
+                            </Typography>
+                        </Box>
+                    </Box>
+                </AccordionSummary>
+                <AccordionDetails>
+                    <QualityStatusManagement />
+                </AccordionDetails>
+            </Accordion>
 
-            {/* Add/Edit Category Dialog */}
-            <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
+            {/* Dialog for Add/Edit */}
+            <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
                 <DialogTitle>
                     {dialogType === 'category' && (editingCategory ? 'Edit Category' : 'Add Category')}
                     {dialogType === 'supplier' && (editingSupplier ? 'Edit Supplier' : 'Add Supplier')}
                     {dialogType === 'storageLocation' && (editingStorageLocation ? 'Edit Storage Location' : 'Add Storage Location')}
                 </DialogTitle>
                 <DialogContent>
-                    <Grid container spacing={2} sx={{ mt: 1 }}>
+                    <Grid container spacing={2} sx={{ mt: 0.5 }}>
+                        {/* Category Form */}
                         {dialogType === 'category' && (
                             <>
                                 <Grid item xs={12}>
                                     <TextField
                                         fullWidth
                                         label="Category Name"
-                                        value={formData.name}
-                                        onChange={handleFormChange('name')}
+                                        value={categoryForm.name}
+                                        onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
                                         required
-                                        placeholder="e.g., Organic Flour, Premium Chocolate"
                                     />
                                 </Grid>
                                 <Grid item xs={12}>
                                     <FormControl fullWidth required>
                                         <InputLabel>Category Type</InputLabel>
                                         <Select
-                                            value={formData.type}
+                                            value={categoryForm.type}
                                             label="Category Type"
-                                            onChange={handleFormChange('type')}
+                                            onChange={(e) => setCategoryForm({ ...categoryForm, type: e.target.value as CategoryType })}
                                         >
                                             <MenuItem value={CategoryType.RAW_MATERIAL}>Raw Material</MenuItem>
                                             <MenuItem value={CategoryType.FINISHED_PRODUCT}>Finished Product</MenuItem>
@@ -856,115 +689,103 @@ const Settings: React.FC = () => {
                                     <TextField
                                         fullWidth
                                         label="Description"
-                                        value={formData.description}
-                                        onChange={handleFormChange('description')}
+                                        value={categoryForm.description}
+                                        onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
                                         multiline
                                         rows={3}
-                                        placeholder="Describe what this category includes..."
                                     />
                                 </Grid>
                             </>
                         )}
 
+                        {/* Supplier Form */}
                         {dialogType === 'supplier' && (
                             <>
                                 <Grid item xs={12}>
                                     <TextField
                                         fullWidth
                                         label="Supplier Name"
-                                        value={supplierFormData.name}
-                                        onChange={handleSupplierFormChange('name')}
+                                        value={supplierForm.name}
+                                        onChange={(e) => setSupplierForm({ ...supplierForm, name: e.target.value })}
                                         required
-                                        placeholder="e.g., Premium Flour Co."
                                     />
                                 </Grid>
-                                <Grid item xs={6}>
+                                <Grid item xs={12} sm={6}>
                                     <TextField
                                         fullWidth
                                         label="Email"
-                                        value={supplierFormData.contactInfo.email}
-                                        onChange={(e) => setSupplierFormData(prev => ({
-                                            ...prev,
-                                            contactInfo: { ...prev.contactInfo, email: e.target.value }
-                                        }))}
-                                        placeholder="contact@supplier.com"
+                                        type="email"
+                                        value={supplierForm.contactInfo.email}
+                                        onChange={(e) => setSupplierForm({
+                                            ...supplierForm,
+                                            contactInfo: { ...supplierForm.contactInfo, email: e.target.value }
+                                        })}
                                     />
                                 </Grid>
-                                <Grid item xs={6}>
+                                <Grid item xs={12} sm={6}>
                                     <TextField
                                         fullWidth
                                         label="Phone"
-                                        value={supplierFormData.contactInfo.phone}
-                                        onChange={(e) => setSupplierFormData(prev => ({
-                                            ...prev,
-                                            contactInfo: { ...prev.contactInfo, phone: e.target.value }
-                                        }))}
-                                        placeholder="+1-555-0000"
+                                        value={supplierForm.contactInfo.phone}
+                                        onChange={(e) => setSupplierForm({
+                                            ...supplierForm,
+                                            contactInfo: { ...supplierForm.contactInfo, phone: e.target.value }
+                                        })}
                                     />
                                 </Grid>
                                 <Grid item xs={12}>
                                     <TextField
                                         fullWidth
                                         label="Address"
-                                        value={supplierFormData.address}
-                                        onChange={handleSupplierFormChange('address')}
+                                        value={supplierForm.address}
+                                        onChange={(e) => setSupplierForm({ ...supplierForm, address: e.target.value })}
                                         multiline
                                         rows={2}
-                                        placeholder="Full address of the supplier"
                                     />
                                 </Grid>
                                 <Grid item xs={12}>
                                     <FormControl fullWidth>
                                         <InputLabel>Status</InputLabel>
                                         <Select
-                                            value={supplierFormData.isActive ? 'true' : 'false'}
+                                            value={supplierForm.isActive ? 'active' : 'inactive'}
                                             label="Status"
-                                            onChange={(e) => setSupplierFormData(prev => ({
-                                                ...prev,
-                                                isActive: e.target.value === 'true'
-                                            }))}
+                                            onChange={(e) => setSupplierForm({ ...supplierForm, isActive: e.target.value === 'active' })}
                                         >
-                                            <MenuItem value="true">Active</MenuItem>
-                                            <MenuItem value="false">Inactive</MenuItem>
+                                            <MenuItem value="active">Active</MenuItem>
+                                            <MenuItem value="inactive">Inactive</MenuItem>
                                         </Select>
                                     </FormControl>
                                 </Grid>
                             </>
                         )}
 
+                        {/* Storage Location Form */}
                         {dialogType === 'storageLocation' && (
                             <>
                                 <Grid item xs={12}>
                                     <TextField
                                         fullWidth
                                         label="Location Name"
-                                        value={storageLocationFormData.name}
-                                        onChange={handleStorageLocationFormChange('name')}
+                                        value={storageForm.name}
+                                        onChange={(e) => setStorageForm({ ...storageForm, name: e.target.value })}
                                         required
-                                        placeholder="e.g., Dry Storage A"
                                     />
                                 </Grid>
-                                <Grid item xs={6}>
-                                    <FormControl fullWidth>
-                                        <InputLabel>Type</InputLabel>
-                                        <Select
-                                            value={storageLocationFormData.type}
-                                            label="Type"
-                                            onChange={handleStorageLocationFormChange('type')}
-                                        >
-                                            <MenuItem value="DRY">Dry Storage</MenuItem>
-                                            <MenuItem value="COLD">Cold Storage</MenuItem>
-                                            <MenuItem value="FROZEN">Frozen Storage</MenuItem>
-                                            <MenuItem value="AMBIENT">Ambient Storage</MenuItem>
-                                        </Select>
-                                    </FormControl>
+                                <Grid item xs={12} sm={6}>
+                                    <TextField
+                                        fullWidth
+                                        label="Type"
+                                        value={storageForm.type}
+                                        onChange={(e) => setStorageForm({ ...storageForm, type: e.target.value })}
+                                        placeholder="e.g., Freezer, Dry Storage"
+                                    />
                                 </Grid>
-                                <Grid item xs={6}>
+                                <Grid item xs={12} sm={6}>
                                     <TextField
                                         fullWidth
                                         label="Capacity"
-                                        value={storageLocationFormData.capacity}
-                                        onChange={handleStorageLocationFormChange('capacity')}
+                                        value={storageForm.capacity}
+                                        onChange={(e) => setStorageForm({ ...storageForm, capacity: e.target.value })}
                                         placeholder="e.g., 500 kg"
                                     />
                                 </Grid>
@@ -972,11 +793,10 @@ const Settings: React.FC = () => {
                                     <TextField
                                         fullWidth
                                         label="Description"
-                                        value={storageLocationFormData.description}
-                                        onChange={handleStorageLocationFormChange('description')}
+                                        value={storageForm.description}
+                                        onChange={(e) => setStorageForm({ ...storageForm, description: e.target.value })}
                                         multiline
                                         rows={3}
-                                        placeholder="Description of the storage location"
                                     />
                                 </Grid>
                             </>
@@ -984,19 +804,16 @@ const Settings: React.FC = () => {
                     </Grid>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
+                    <Button onClick={handleCloseDialog}>Cancel</Button>
                     <Button
-                        onClick={handleFormSubmit}
                         variant="contained"
-                        disabled={
-                            (dialogType === 'category' && (createCategoryMutation.isPending || updateCategoryMutation.isPending)) ||
-                            (dialogType === 'supplier' && (createSupplierMutation.isPending || updateSupplierMutation.isPending)) ||
-                            (dialogType === 'storageLocation' && (createStorageLocationMutation.isPending || updateStorageLocationMutation.isPending))
-                        }
+                        onClick={() => {
+                            if (dialogType === 'category') handleSubmitCategory();
+                            else if (dialogType === 'supplier') handleSubmitSupplier();
+                            else handleSubmitStorage();
+                        }}
                     >
-                        {dialogType === 'category' && (editingCategory ? 'Update' : 'Create')}
-                        {dialogType === 'supplier' && (editingSupplier ? 'Update' : 'Create')}
-                        {dialogType === 'storageLocation' && (editingStorageLocation ? 'Update' : 'Create')}
+                        {editingCategory || editingSupplier || editingStorageLocation ? 'Update' : 'Create'}
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -1004,10 +821,15 @@ const Settings: React.FC = () => {
             {/* Snackbar */}
             <Snackbar
                 open={snackbar.open}
-                autoHideDuration={6000}
+                autoHideDuration={4000}
                 onClose={() => setSnackbar({ ...snackbar, open: false })}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
             >
-                <Alert severity={snackbar.severity} onClose={() => setSnackbar({ ...snackbar, open: false })}>
+                <Alert
+                    onClose={() => setSnackbar({ ...snackbar, open: false })}
+                    severity={snackbar.severity}
+                    variant="filled"
+                >
                     {snackbar.message}
                 </Alert>
             </Snackbar>
