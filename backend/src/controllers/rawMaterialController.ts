@@ -574,11 +574,13 @@ export const rawMaterialController = {
         orderBy: { name: 'asc' },
       });
 
-      // Generate batch number for today if supplier exists
-      let batchNumber = null;
-      if (firstSupplier) {
-        batchNumber = await generateBatchNumber(firstSupplier.id);
-      }
+      // Get "Ingredients" category as default for raw materials
+      const ingredientsCategory = await prisma.category.findFirst({
+        where: { 
+          name: { contains: 'Ingredient', mode: 'insensitive' },
+          type: 'RAW_MATERIAL'
+        },
+      });
 
       res.json({
         success: true,
@@ -586,8 +588,48 @@ export const rawMaterialController = {
           storageLocationId: firstStorageLocation?.id || null,
           qualityStatusId: defaultQualityStatus,
           supplierId: firstSupplier?.id || null,
-          batchNumber,
+          categoryId: ingredientsCategory?.id || null,
+          batchNumber: null, // Will be generated in frontend after expiration date is entered
         },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // GET /api/raw-materials/generate-batch-number?supplierId=xxx&expirationDate=YYYY-MM-DD
+  generateBatchNumberEndpoint: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const supplierId = req.query.supplierId as string;
+      const expirationDate = req.query.expirationDate as string;
+
+      if (!supplierId) {
+        return res.status(400).json({
+          success: false,
+          error: 'supplierId is required',
+        });
+      }
+
+      if (!expirationDate) {
+        return res.status(400).json({
+          success: false,
+          error: 'expirationDate is required',
+        });
+      }
+
+      const date = new Date(expirationDate);
+      if (isNaN(date.getTime())) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid expirationDate format',
+        });
+      }
+
+      const batchNumber = await generateBatchNumber(supplierId, date);
+
+      res.json({
+        success: true,
+        data: { batchNumber },
       });
     } catch (error) {
       next(error);

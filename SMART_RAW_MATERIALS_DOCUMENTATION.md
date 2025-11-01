@@ -8,10 +8,11 @@ The raw materials inventory form has been enhanced with intelligent defaults, au
 ### 1. Smart Defaults (Auto-Filled)
 When creating a new raw material, the following fields are automatically populated:
 
+- **Category**: "Ingredients" (the default category for raw materials)
 - **Storage Location**: First storage location alphabetically
 - **Quality Status**: "Pending Review" (lowest sortOrder, typically the default)
 - **Supplier**: First supplier alphabetically
-- **Batch Number**: Auto-generated in format `SUPPLIER_CODE-YYYYMMDD-SEQ`
+- **Batch Number**: Auto-generated after you enter the expiration date (format: `SUPPLIER_CODE-YYYYMMDD-SEQ` based on expiration date)
 
 Fields marked with a blue "Auto" or "Default" chip indicate they were pre-filled. You can edit them as needed.
 
@@ -30,16 +31,23 @@ Fields marked with a blue "Auto" or "Default" chip indicate they were pre-filled
 
 ### 4. Batch Number Auto-Generation
 - Format: `SUPPLIER_CODE-YYYYMMDD-SEQ`
-- **Example**: `DAIR-20251101-001`
+- **Example**: `DAIR-20251215-001`
   - `DAIR` = Supplier code (first 4 chars of supplier name, uppercase, alphanumeric only)
-  - `20251101` = Date in YYYYMMDD format
-  - `001` = Sequential number for that supplier/date combination
+  - `20251215` = **Expiration date** in YYYYMMDD format
+  - `001` = Sequential number for that supplier/expiration date combination
   
-- **Automatic Sequencing**: If you add multiple batches from the same supplier on the same day, the sequence number increments (001, 002, 003, etc.)
+- **Important**: Batch numbers are based on the **expiration date**, not the purchase date. This is ideal for tracking perishable items.
+- **Automatic Sequencing**: If you add multiple batches from the same supplier with the same expiration date, the sequence number increments (001, 002, 003, etc.)
 - **Editable**: You can override the auto-generated batch number if needed
+- **Auto-Regeneration**: The batch number updates automatically when you:
+  - Enter or change the expiration date
+  - Change the supplier
 
-### 5. Supplier Change Behavior
-When you change the supplier, the batch number is automatically regenerated with the new supplier's code.
+### 5. Form Field Order
+The form has been optimized for efficient data entry:
+1. First, select the **supplier** (auto-filled by default)
+2. Then, enter the **expiration date** 
+3. The **batch number** is automatically generated based on these two fields
 
 ## API Endpoints
 
@@ -54,7 +62,22 @@ Returns default values for new raw materials.
     "storageLocationId": "cmhgqnx77000b8hj2kuq1a25p",
     "qualityStatusId": "clz005",
     "supplierId": "cmhgqnx76000a8hj2iqgec7sr",
-    "batchNumber": "DAIR-20251101-001"
+    "categoryId": "cmhgqnx7000018hj2xnnv8248",
+    "batchNumber": null
+  }
+}
+```
+**Note**: `batchNumber` is null because it requires the expiration date. Use the `/generate-batch-number` endpoint once the expiration date is known.
+
+### GET /api/raw-materials/generate-batch-number?supplierId=xxx&expirationDate=YYYY-MM-DD
+Generates a batch number based on supplier and expiration date.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "batchNumber": "DAIR-20251215-001"
   }
 }
 ```
@@ -174,6 +197,8 @@ model SkuMapping {
 1. **Click "Add Raw Material"**
    - Form opens with smart defaults already applied
    - Alert shows which fields are auto-filled
+   - **Category** defaults to "Ingredients"
+   - **Supplier**, **Storage Location**, and **Quality Status** pre-selected
 
 2. **Start typing material name** (e.g., "flo...")
    - Autocomplete shows: "Flour (FLOUR)"
@@ -184,20 +209,21 @@ model SkuMapping {
    - Blue "Auto" chip indicates it was generated
    - Can edit if needed
 
-4. **Supplier already selected**
-   - First supplier in list
-   - Blue "Default" chip shown
+4. **Enter expiration date**
+   - This is required before the batch number can be generated
+   - Format: YYYY-MM-DD
 
-5. **Batch number pre-filled**
-   - Shows: "DAIR-20251101-001"
+5. **Batch number auto-generates**
+   - Shows: "DAIR-20251215-001" (based on expiration date)
    - Blue "Auto" chip indicates generation
-   - Updates if you change supplier
+   - Updates automatically if you change supplier or expiration date
 
 6. **Fill remaining required fields**
-   - Purchase date, expiration, quantity, unit, cost
+   - Purchase date, quantity, unit, cost per unit
 
 7. **Submit**
    - New material created with consistent SKU
+   - Batch number tracks expiration date for better perishable management
    - Future entries with same name will use same SKU
 
 ## Benefits

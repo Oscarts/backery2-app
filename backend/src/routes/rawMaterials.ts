@@ -15,6 +15,9 @@ router.get('/sku-mappings', rawMaterialController.getSkuMappings);
 // GET /api/raw-materials/defaults
 router.get('/defaults', rawMaterialController.getDefaults);
 
+// GET /api/raw-materials/generate-batch-number?supplierId=xxx&expirationDate=YYYY-MM-DD
+router.get('/generate-batch-number', rawMaterialController.generateBatchNumberEndpoint);
+
 // GET /api/raw-materials/expiring
 router.get('/expiring', rawMaterialController.getExpiring);
 

@@ -42,6 +42,7 @@ interface Defaults {
   storageLocationId: string | null;
   qualityStatusId: string | null;
   supplierId: string | null;
+  categoryId: string | null;
   batchNumber: string | null;
 }
 
@@ -109,9 +110,9 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
       const initialData: CreateRawMaterialData = {
         name: '',
         sku: '',
-        categoryId: '',
+        categoryId: defaults?.categoryId || '',
         supplierId: defaults?.supplierId || '',
-        batchNumber: defaults?.batchNumber || '',
+        batchNumber: '', // Will be generated after expiration date is entered
         purchaseDate: new Date().toISOString().split('T')[0],
         expirationDate: '',
         quantity: 0,
@@ -128,7 +129,7 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
       if (defaults?.storageLocationId) autoFilled.add('storageLocationId');
       if (defaults?.qualityStatusId) autoFilled.add('qualityStatusId');
       if (defaults?.supplierId) autoFilled.add('supplierId');
-      if (defaults?.batchNumber) autoFilled.add('batchNumber');
+      if (defaults?.categoryId) autoFilled.add('categoryId');
       setAutoFilledFields(autoFilled);
     }
   }, [material, open, defaults]);
@@ -201,6 +202,22 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
     }
   };
 
+  const regenerateBatchNumber = async (supplierId: string, expirationDate: string) => {
+    if (!supplierId || !expirationDate || material) return;
+
+    try {
+      const response = await axios.get('http://localhost:8000/api/raw-materials/generate-batch-number', {
+        params: { supplierId, expirationDate },
+      });
+      if (response.data.success) {
+        setFormData((prev) => ({ ...prev, batchNumber: response.data.data.batchNumber }));
+        setAutoFilledFields((prev) => new Set(prev).add('batchNumber'));
+      }
+    } catch (error) {
+      console.error('Failed to generate batch number:', error);
+    }
+  };
+
   const handleSupplierChange = async (event: any) => {
     const newSupplierId = event.target.value;
     setFormData((prev) => ({ ...prev, supplierId: newSupplierId }));
@@ -212,29 +229,26 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
       return newSet;
     });
 
-    // Regenerate batch number with new supplier
-    if (newSupplierId && !material) {
-      try {
-        const response = await axios.get(`http://localhost:8000/api/raw-materials/defaults`);
-        if (response.data.success && response.data.data.batchNumber) {
-          // This will get the default batch for the current first supplier, but we need to generate for the selected one
-          // For now, we'll just mark it for regeneration by using a timestamp
-          const dateStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
-          const supplier = suppliers.find(s => s.id === newSupplierId);
-          if (supplier) {
-            const supplierCode = supplier.name
-              .trim()
-              .toUpperCase()
-              .replace(/[^A-Z0-9]/g, '')
-              .substring(0, 4) || 'SUPP';
-            const batchNumber = `${supplierCode}-${dateStr}-001`;
-            setFormData((prev) => ({ ...prev, batchNumber }));
-            setAutoFilledFields((prev) => new Set(prev).add('batchNumber'));
-          }
-        }
-      } catch (error) {
-        console.error('Failed to regenerate batch number:', error);
-      }
+    // Regenerate batch number if we have expiration date
+    if (newSupplierId && formData.expirationDate) {
+      await regenerateBatchNumber(newSupplierId, formData.expirationDate);
+    }
+  };
+
+  const handleExpirationDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newExpirationDate = event.target.value;
+    setFormData((prev) => ({ ...prev, expirationDate: newExpirationDate }));
+    
+    // Remove auto-fill indicator
+    setAutoFilledFields((prev) => {
+      const newSet = new Set(prev);
+      newSet.delete('expirationDate');
+      return newSet;
+    });
+
+    // Regenerate batch number if we have supplier
+    if (formData.supplierId && newExpirationDate) {
+      regenerateBatchNumber(formData.supplierId, newExpirationDate);
     }
   };
 
@@ -355,27 +369,6 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
               </FormControl>
             </Grid>
 
-            {/* Batch Number */}
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                required
-                label="Batch Number"
-                value={formData.batchNumber}
-                onChange={handleChange('batchNumber')}
-                helperText={
-                  autoFilledFields.has('batchNumber')
-                    ? 'Auto-generated: SUPPLIER-YYYYMMDD-SEQ'
-                    : 'Format: SUPPLIER-YYYYMMDD-SEQ'
-                }
-                InputProps={{
-                  endAdornment: autoFilledFields.has('batchNumber') ? (
-                    <Chip size="small" label="Auto" icon={<CheckIcon />} color="primary" />
-                  ) : null,
-                }}
-              />
-            </Grid>
-
             {/* Category */}
             <Grid item xs={12} sm={6}>
               <FormControl fullWidth>
@@ -387,6 +380,9 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
                   {categories.map((category) => (
                     <MenuItem key={category.id} value={category.id}>
                       {category.name}
+                      {autoFilledFields.has('categoryId') && category.id === formData.categoryId && (
+                        <Chip size="small" label="Default" icon={<CheckIcon />} color="primary" sx={{ ml: 1 }} />
+                      )}
                     </MenuItem>
                   ))}
                 </Select>
@@ -406,7 +402,7 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
               />
             </Grid>
 
-            {/* Expiration Date */}
+            {/* Expiration Date - MOVED BEFORE BATCH NUMBER */}
             <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
@@ -414,9 +410,30 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
                 type="date"
                 label="Expiration Date"
                 value={formData.expirationDate}
-                onChange={handleChange('expirationDate')}
+                onChange={handleExpirationDateChange}
                 InputLabelProps={{ shrink: true }}
-                helperText="Must be after purchase date"
+                helperText="Used to generate batch number. Must be after purchase date"
+              />
+            </Grid>
+
+            {/* Batch Number - MOVED AFTER EXPIRATION DATE */}
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                required
+                label="Batch Number"
+                value={formData.batchNumber}
+                onChange={handleChange('batchNumber')}
+                helperText={
+                  autoFilledFields.has('batchNumber')
+                    ? 'Auto-generated from expiration date'
+                    : 'Format: SUPPLIER-YYYYMMDD-SEQ (based on expiration)'
+                }
+                InputProps={{
+                  endAdornment: autoFilledFields.has('batchNumber') ? (
+                    <Chip size="small" label="Auto" icon={<CheckIcon />} color="primary" />
+                  ) : null,
+                }}
               />
             </Grid>
 
