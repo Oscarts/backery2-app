@@ -43,6 +43,7 @@ const drawerCollapsedWidth = 65; // Reduced from 73, enough width to show just i
 const menuItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
   { text: 'Raw Materials', icon: <InventoryIcon />, path: '/raw-materials' },
+  { text: 'SKU Reference', icon: <MenuBookIcon />, path: '/sku-reference' },
   { text: 'Finished Products', icon: <LocalDiningIcon />, path: '/finished-products' },
   { text: 'Recipes', icon: <MenuBookIcon />, path: '/recipes' },
   { text: 'Production', icon: <FactoryIcon />, path: '/production' },

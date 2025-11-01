@@ -4,6 +4,7 @@ import { Box } from '@mui/material';
 // Import pages
 import Dashboard from './pages/Dashboard';
 import RawMaterials from './pages/RawMaterials';
+import SkuReference from './pages/SkuReference';
 import FinishedProducts from './pages/FinishedProducts';
 import Recipes from './pages/Recipes';
 import EnhancedRecipes from './pages/EnhancedRecipes';
@@ -38,6 +39,7 @@ function App() {
         >
           <Route index element={<Dashboard />} />
           <Route path="raw-materials" element={<RawMaterials />} />
+          <Route path="sku-reference" element={<SkuReference />} />
           <Route path="finished-products" element={<FinishedProducts />} />
           <Route path="recipes" element={<EnhancedRecipes />} />
           <Route path="recipes-old" element={<Recipes />} />

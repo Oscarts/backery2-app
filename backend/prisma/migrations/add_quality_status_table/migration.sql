@@ -54,16 +54,6 @@ BEGIN
     
     SELECT EXISTS (
         SELECT FROM information_schema.columns 
-        WHERE table_name = 'intermediate_products' 
-        AND column_name = 'qualityStatusId'
-    ) INTO col_exists;
-    
-    IF NOT col_exists THEN
-        ALTER TABLE "intermediate_products" ADD COLUMN "qualityStatusId" TEXT;
-    END IF;
-    
-    SELECT EXISTS (
-        SELECT FROM information_schema.columns 
         WHERE table_name = 'finished_products' 
         AND column_name = 'qualityStatusId'
     ) INTO col_exists;
@@ -75,14 +65,6 @@ BEGIN
     -- Add foreign key constraints if they don't exist
     BEGIN
         ALTER TABLE "raw_materials" ADD CONSTRAINT "raw_materials_qualityStatusId_fkey" 
-        FOREIGN KEY ("qualityStatusId") REFERENCES "quality_statuses"("id") 
-        ON DELETE SET NULL ON UPDATE CASCADE;
-    EXCEPTION WHEN duplicate_object THEN
-        NULL;
-    END;
-
-    BEGIN
-        ALTER TABLE "intermediate_products" ADD CONSTRAINT "intermediate_products_qualityStatusId_fkey" 
         FOREIGN KEY ("qualityStatusId") REFERENCES "quality_statuses"("id") 
         ON DELETE SET NULL ON UPDATE CASCADE;
     EXCEPTION WHEN duplicate_object THEN

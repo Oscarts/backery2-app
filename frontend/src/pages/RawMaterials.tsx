@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import EnhancedRawMaterialForm from '../components/EnhancedRawMaterialForm';
 import {
   Container,
   Typography,
@@ -19,16 +20,10 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Grid,
   Alert,
   Snackbar,
   Tooltip,
-  FormControlLabel,
-  Checkbox,
   useTheme,
   useMediaQuery,
   InputAdornment,
@@ -57,7 +52,7 @@ import {
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { rawMaterialsApi, categoriesApi, storageLocationsApi, unitsApi, suppliersApi, qualityStatusApi } from '../services/realApi';
-import { RawMaterial, CategoryType, CreateRawMaterialData, UpdateRawMaterialData } from '../types';
+import { RawMaterial, CategoryType, UpdateRawMaterialData } from '../types';
 import { borderRadius } from '../theme/designTokens';
 import { formatDate, isExpired, isExpiringSoon, getDaysUntilExpiration, getErrorMessage } from '../utils/api';
 
@@ -124,10 +119,7 @@ const RawMaterials: React.FC = () => {
   const suppliers = suppliersResponse?.data;
   const qualityStatuses = (qualityStatusResponse?.data as any[]) || [];
 
-  // Get the default quality status (first item by sort order)
-  const getDefaultQualityStatusId = () => {
-    return qualityStatuses.length > 0 ? qualityStatuses[0].id : '';
-  };
+
 
   // Mutations
   const createMutation = useMutation(rawMaterialsApi.create, {
@@ -969,8 +961,8 @@ const RawMaterials: React.FC = () => {
         </Box>
       )}
 
-      {/* Form Dialog */}
-      <RawMaterialForm
+      {/* Enhanced Form Dialog with Smart Defaults */}
+      <EnhancedRawMaterialForm
         open={openForm}
         onClose={handleCloseForm}
         material={editingMaterial}
@@ -979,19 +971,11 @@ const RawMaterials: React.FC = () => {
         units={units || []}
         suppliers={suppliers || []}
         qualityStatuses={qualityStatuses || []}
-        defaultQualityStatusId={getDefaultQualityStatusId()}
         onSubmit={(data) => {
           if (editingMaterial) {
-            // For updates, include contaminated field if it exists
-            const updateData: UpdateRawMaterialData = { ...data };
-            if (data.contaminated !== undefined) {
-              updateData.contaminated = data.contaminated;
-            }
-            updateMutation.mutate({ id: editingMaterial.id, data: updateData });
+            updateMutation.mutate({ id: editingMaterial.id, data });
           } else {
-            // For creation, remove contaminated field since new materials are not contaminated
-            const { contaminated, ...createData } = data;
-            createMutation.mutate(createData);
+            createMutation.mutate(data);
           }
         }}
       />
@@ -1011,335 +995,6 @@ const RawMaterials: React.FC = () => {
         </Alert>
       </Snackbar>
     </Container>
-  );
-};
-
-// Raw Material Form Component
-interface RawMaterialFormData extends CreateRawMaterialData {
-  contaminated?: boolean;
-}
-
-interface RawMaterialFormProps {
-  open: boolean;
-  onClose: () => void;
-  material: RawMaterial | null;
-  categories: any[];
-  storageLocations: any[];
-  units: any[];
-  suppliers: any[];
-  qualityStatuses: any[];
-  defaultQualityStatusId: string;
-  onSubmit: (data: RawMaterialFormData) => void;
-}
-
-const RawMaterialForm: React.FC<RawMaterialFormProps> = ({
-  open,
-  onClose,
-  material,
-  categories,
-  storageLocations,
-  units,
-  suppliers,
-  qualityStatuses,
-  defaultQualityStatusId,
-  onSubmit,
-}) => {
-  const [formData, setFormData] = useState<RawMaterialFormData>({
-    name: '',
-    categoryId: '',
-    supplierId: '', // We'll handle suppliers later
-    batchNumber: '',
-    purchaseDate: new Date().toISOString().split('T')[0],
-    expirationDate: '',
-    quantity: 0,
-    unit: '',
-    costPerUnit: 0,
-    reorderLevel: 0,
-    storageLocationId: '',
-    qualityStatusId: '',
-    contaminated: false, // Default is not contaminated
-  });
-
-  React.useEffect(() => {
-    if (material) {
-      setFormData({
-        name: material.name,
-        categoryId: material.categoryId,
-        supplierId: material.supplierId,
-        batchNumber: material.batchNumber,
-        purchaseDate: material.purchaseDate ? material.purchaseDate.split('T')[0] : '',
-        expirationDate: material.expirationDate.split('T')[0],
-        quantity: material.quantity,
-        unit: material.unit,
-        costPerUnit: material.unitPrice,
-        reorderLevel: material.reorderLevel,
-        storageLocationId: material.storageLocationId,
-        qualityStatusId: material.qualityStatusId || '',
-        contaminated: material.isContaminated,
-      });
-    } else {
-      setFormData({
-        name: '',
-        categoryId: '',
-        supplierId: '',
-        batchNumber: '',
-        purchaseDate: new Date().toISOString().split('T')[0],
-        expirationDate: '',
-        quantity: 0,
-        unit: '',
-        costPerUnit: 0,
-        reorderLevel: 0,
-        storageLocationId: '',
-        qualityStatusId: '',
-        contaminated: false, // Default is not contaminated
-      });
-    }
-  }, [material, open]);
-
-  // Set default quality status when quality statuses are loaded and no material is being edited
-  React.useEffect(() => {
-    if (qualityStatuses.length > 0 && !material && formData.qualityStatusId === '') {
-      setFormData(prev => ({
-        ...prev,
-        qualityStatusId: defaultQualityStatusId
-      }));
-    }
-  }, [qualityStatuses, material, formData.qualityStatusId, defaultQualityStatusId]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit(formData);
-  };
-
-  const handleChange = (field: keyof CreateRawMaterialData) => (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | any
-  ) => {
-    const value = event.target.value;
-    setFormData(prev => ({
-      ...prev,
-      [field]: ['quantity', 'costPerUnit', 'reorderLevel'].includes(field) ? parseFloat(value) || 0 : value,
-    }));
-    // Auto-suggest SKU when name changes and user hasn't manually edited SKU yet
-    if (field === 'name' && !material) {
-      const suggested = value
-        .trim()
-        .toUpperCase()
-        .replace(/[^A-Z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '');
-      setFormData(prev => ({ ...prev, sku: prev.sku ? prev.sku : suggested }));
-    }
-  };
-
-  return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <form onSubmit={handleSubmit}>
-        <DialogTitle>
-          {material ? 'Edit Raw Material' : 'Add New Raw Material'}
-        </DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                required
-                label="Name"
-                value={formData.name}
-                onChange={handleChange('name')}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="SKU"
-                helperText="Editable – defaults from name; must remain consistent for same name"
-                value={formData.sku || ''}
-                onChange={handleChange('sku')}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                required
-                label="Batch Number"
-                value={formData.batchNumber}
-                onChange={handleChange('batchNumber')}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth required>
-                <InputLabel>Category</InputLabel>
-                <Select
-                  value={formData.categoryId}
-                  label="Category"
-                  onChange={handleChange('categoryId')}
-                >
-                  {categories.map((category) => (
-                    <MenuItem key={category.id} value={category.id}>
-                      {category.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth required>
-                <InputLabel>Supplier</InputLabel>
-                <Select
-                  value={formData.supplierId}
-                  label="Supplier"
-                  onChange={handleChange('supplierId')}
-                >
-                  {suppliers.map((supplier) => (
-                    <MenuItem key={supplier.id} value={supplier.id}>
-                      {supplier.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth required>
-                <InputLabel>Storage Location</InputLabel>
-                <Select
-                  value={formData.storageLocationId}
-                  label="Storage Location"
-                  onChange={handleChange('storageLocationId')}
-                >
-                  {storageLocations.map((location) => (
-                    <MenuItem key={location.id} value={location.id}>
-                      {location.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Quality Status</InputLabel>
-                <Select
-                  value={formData.qualityStatusId || ''}
-                  label="Quality Status"
-                  onChange={handleChange('qualityStatusId')}
-                >
-                  <MenuItem value="">
-                    <em>None</em>
-                  </MenuItem>
-                  {qualityStatuses.map((status: any) => (
-                    <MenuItem key={status.id} value={status.id}>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Box
-                          sx={{
-                            width: 12,
-                            height: 12,
-                            borderRadius: 1,
-                            backgroundColor: status.color || '#gray',
-                            border: '1px solid #ddd',
-                          }}
-                        />
-                        {status.name}
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                required
-                label="Purchase Date"
-                type="date"
-                value={formData.purchaseDate}
-                onChange={handleChange('purchaseDate')}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                required
-                label="Expiration Date"
-                type="date"
-                value={formData.expirationDate}
-                onChange={handleChange('expirationDate')}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                required
-                label="Quantity"
-                type="number"
-                value={formData.quantity}
-                onChange={handleChange('quantity')}
-                inputProps={{ min: 0, step: 0.01 }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <FormControl fullWidth required>
-                <InputLabel>Unit</InputLabel>
-                <Select
-                  value={formData.unit}
-                  label="Unit"
-                  onChange={handleChange('unit')}
-                >
-                  {units.map((unit) => (
-                    <MenuItem key={unit.id} value={unit.symbol}>
-                      {unit.name} ({unit.symbol})
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            {material && (
-              <Grid item xs={12} sm={4}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={formData.contaminated || false}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData(prev => ({ ...prev, contaminated: e.target.checked }))}
-                      color="error"
-                    />
-                  }
-                  label="Contaminated"
-                />
-              </Grid>
-            )}
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                required
-                label="Cost per Unit"
-                type="number"
-                value={formData.costPerUnit}
-                onChange={handleChange('costPerUnit')}
-                inputProps={{ min: 0, step: 0.01 }}
-                InputProps={{ startAdornment: '$' }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                fullWidth
-                required
-                label="Reorder Level"
-                type="number"
-                value={formData.reorderLevel}
-                onChange={handleChange('reorderLevel')}
-                inputProps={{ min: 0, step: 0.1 }}
-                helperText="Minimum quantity before reordering"
-              />
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="contained">
-            {material ? 'Update' : 'Create'}
-          </Button>
-        </DialogActions>
-      </form>
-    </Dialog>
   );
 };
 

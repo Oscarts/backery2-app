@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../app';
 import Joi from 'joi';
-import { getOrCreateSkuForName, resolveSkuOnRename, validateOrAssignSku } from '../services/skuService';
+import { getOrCreateSkuForName, resolveSkuOnRename, validateOrAssignSku, getSuggestedSku, getAllSkuMappings, generateBatchNumber } from '../services/skuService';
 
 // Helper function to get the default quality status (first item by sortOrder)
 const getDefaultQualityStatus = async () => {
@@ -515,6 +515,79 @@ export const rawMaterialController = {
         success: true,
         data: rawMaterial,
         message: 'Raw material marked as contaminated',
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // GET /api/raw-materials/sku-suggestions?name=
+  getSkuSuggestions: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const name = req.query.name as string;
+
+      if (!name || name.trim().length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Name parameter is required',
+        });
+      }
+
+      const suggestions = await getSuggestedSku(name);
+
+      res.json({
+        success: true,
+        data: suggestions,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // GET /api/raw-materials/sku-mappings
+  getSkuMappings: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const mappings = await getAllSkuMappings();
+
+      res.json({
+        success: true,
+        data: mappings,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // GET /api/raw-materials/defaults
+  getDefaults: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // Get first storage location
+      const firstStorageLocation = await prisma.storageLocation.findFirst({
+        orderBy: { name: 'asc' },
+      });
+
+      // Get default quality status (first by sortOrder)
+      const defaultQualityStatus = await getDefaultQualityStatus();
+
+      // Get first supplier
+      const firstSupplier = await prisma.supplier.findFirst({
+        orderBy: { name: 'asc' },
+      });
+
+      // Generate batch number for today if supplier exists
+      let batchNumber = null;
+      if (firstSupplier) {
+        batchNumber = await generateBatchNumber(firstSupplier.id);
+      }
+
+      res.json({
+        success: true,
+        data: {
+          storageLocationId: firstStorageLocation?.id || null,
+          qualityStatusId: defaultQualityStatus,
+          supplierId: firstSupplier?.id || null,
+          batchNumber,
+        },
       });
     } catch (error) {
       next(error);

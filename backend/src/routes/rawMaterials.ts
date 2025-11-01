@@ -6,6 +6,15 @@ const router = Router();
 // GET /api/raw-materials
 router.get('/', rawMaterialController.getAll);
 
+// GET /api/raw-materials/sku-suggestions?name=
+router.get('/sku-suggestions', rawMaterialController.getSkuSuggestions);
+
+// GET /api/raw-materials/sku-mappings
+router.get('/sku-mappings', rawMaterialController.getSkuMappings);
+
+// GET /api/raw-materials/defaults
+router.get('/defaults', rawMaterialController.getDefaults);
+
 // GET /api/raw-materials/expiring
 router.get('/expiring', rawMaterialController.getExpiring);
 

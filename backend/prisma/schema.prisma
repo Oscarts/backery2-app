@@ -90,6 +90,20 @@ model Unit {
   @@map("units")
 }
 
+model SkuMapping {
+  id          String   @id @default(cuid())
+  name        String   @unique // Product/material name (unique across system)
+  sku         String   @unique // Auto-generated or manually set SKU
+  description String?
+  category    String?  // General category hint
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([name])
+  @@index([sku])
+  @@map("sku_mappings")
+}
+
 model RawMaterial {
   id                String             @id @default(cuid())
   name              String
@@ -98,13 +112,13 @@ model RawMaterial {
   description       String?
   categoryId        String?
   supplierId        String
-  batchNumber       String
+  batchNumber       String             // Format: SUPPLIER_CODE-YYYYMMDD-SEQ (e.g., SUP1-20251101-001)
   purchaseDate      DateTime?
   expirationDate    DateTime
   quantity          Float
   unit              String
   unitPrice         Float
-  reorderLevel      Float
+  reorderLevel      Float              @default(0) // Default to 0 for optional
   reservedQuantity  Float              @default(0) @map("reserved_quantity")
   storageLocationId String
   qualityStatusId   String?
@@ -117,6 +131,11 @@ model RawMaterial {
   qualityStatus     QualityStatus?     @relation(fields: [qualityStatusId], references: [id])
   recipeIngredients RecipeIngredient[]
 
+  @@index([name])
+  @@index([sku])
+  @@index([batchNumber])
+  @@index([supplierId])
+  @@index([expirationDate])
   @@map("raw_materials")
 }
 
