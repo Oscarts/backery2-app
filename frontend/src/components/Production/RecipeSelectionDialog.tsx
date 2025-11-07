@@ -230,20 +230,34 @@ const RecipeSelectionDialog: React.FC<RecipeSelectionDialogProps> = ({
                                                 )}
                                             </Box>
 
-                                            {/* Recipe Icon */}
+                                            {/* Recipe Image */}
                                             <Box
                                                 sx={{
                                                     display: 'flex',
                                                     justifyContent: 'center',
                                                     alignItems: 'center',
-                                                    height: 80,
+                                                    height: 120,
                                                     mb: 2,
-                                                    fontSize: '3rem',
-                                                    opacity: 1, // All recipes are available
-                                                    filter: 'none' // All recipes are available
+                                                    overflow: 'hidden',
+                                                    borderRadius: 2,
+                                                    bgcolor: 'grey.100',
                                                 }}
                                             >
-                                                {recipe.emoji || '🍞'}
+                                                {recipe.imageUrl ? (
+                                                    <img
+                                                        src={recipe.imageUrl}
+                                                        alt={recipe.name}
+                                                        style={{
+                                                            width: '100%',
+                                                            height: '100%',
+                                                            objectFit: 'cover',
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <Typography sx={{ fontSize: '3rem' }}>
+                                                        {recipe.emoji || '🍞'}
+                                                    </Typography>
+                                                )}
                                             </Box>
 
                                             <Typography

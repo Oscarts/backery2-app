@@ -68,8 +68,8 @@ const QuantitySelectionDialog: React.FC<QuantitySelectionDialogProps> = ({
 
     const maxQuantity = recipe.maxQuantity || recipe.yieldQuantity * 4;
     const batchMultiplier = quantity / recipe.yieldQuantity;
-    const estimatedTime = Math.round((recipe.prepTime + recipe.cookTime) * batchMultiplier);
-    const estimatedCost = recipe.estimatedCost * batchMultiplier;
+    const estimatedTime = Math.round((recipe.estimatedTotalTime || 0) * batchMultiplier);
+    const estimatedCost = (recipe.estimatedCost || 0) * batchMultiplier;
 
     const handleQuantityChange = (newQuantity: number) => {
         const clampedQuantity = Math.min(Math.max(newQuantity, recipe.yieldQuantity), maxQuantity);

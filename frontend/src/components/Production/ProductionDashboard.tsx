@@ -109,6 +109,7 @@ const ProductionDashboard: React.FC = () => {
 
     const handleRecipeSelected = (recipe: any) => {
         setSelectedRecipe(recipe);
+        setShowRecipeSelection(false); // Close recipe selection dialog
         setShowQuantitySelection(true);
     };
 
