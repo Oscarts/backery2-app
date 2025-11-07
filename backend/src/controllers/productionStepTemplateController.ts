@@ -59,29 +59,51 @@ export const getRecipeStepTemplates = async (req: Request, res: Response) => {
     try {
         const { recipeId } = req.params;
 
-        // For now, we'll return default steps but this could be extended to store custom templates per recipe
-        const defaultSteps = [
+        // Fetch the recipe to get actual prep and cook times
+        const recipe = await prisma.recipe.findUnique({
+            where: { id: recipeId }
+        });
+
+        if (!recipe) {
+            return res.status(404).json({
+                success: false,
+                error: 'Recipe not found'
+            });
+        }
+
+        // Calculate step durations based on actual recipe times
+        const prepTime = recipe.prepTime || 30; // Default 30 min if not set
+        const cookTime = recipe.cookTime || 60; // Default 60 min if not set
+        const totalTime = prepTime + cookTime;
+
+        // Dynamic step times based on recipe
+        const prepDuration = Math.max(10, Math.ceil(prepTime * 0.5)); // 50% of prep time for gathering
+        const productionDuration = Math.max(15, cookTime); // Full cook time
+        const qualityDuration = Math.max(5, Math.ceil(totalTime * 0.05)); // 5% of total time
+        const packagingDuration = Math.max(10, Math.ceil(totalTime * 0.1)); // 10% of total time
+
+        const recipeSteps = [
             {
                 id: 'prep',
                 name: 'Preparation',
-                description: 'Gather and prepare all ingredients',
-                estimatedMinutes: 15,
+                description: 'Gather and prepare all ingredients and equipment',
+                estimatedMinutes: prepDuration,
                 stepOrder: 1,
                 isDefault: true
             },
             {
                 id: 'production',
                 name: 'Production',
-                description: 'Mix, bake, or process according to recipe',
-                estimatedMinutes: 60,
+                description: `Mix, bake, or process according to ${recipe.name} recipe`,
+                estimatedMinutes: productionDuration,
                 stepOrder: 2,
                 isDefault: true
             },
             {
                 id: 'quality',
                 name: 'Quality Check',
-                description: 'Inspect product quality and standards',
-                estimatedMinutes: 10,
+                description: `Inspect ${recipe.name} quality and standards`,
+                estimatedMinutes: qualityDuration,
                 stepOrder: 3,
                 isDefault: true
             },
@@ -89,7 +111,7 @@ export const getRecipeStepTemplates = async (req: Request, res: Response) => {
                 id: 'packaging',
                 name: 'Packaging',
                 description: 'Package finished products for inventory',
-                estimatedMinutes: 15,
+                estimatedMinutes: packagingDuration,
                 stepOrder: 4,
                 isDefault: true
             }
@@ -97,7 +119,16 @@ export const getRecipeStepTemplates = async (req: Request, res: Response) => {
 
         res.json({
             success: true,
-            data: defaultSteps
+            data: recipeSteps,
+            meta: {
+                recipeId: recipe.id,
+                recipeName: recipe.name,
+                totalEstimatedMinutes: prepDuration + productionDuration + qualityDuration + packagingDuration,
+                basedOnRecipeTimes: {
+                    prepTime: recipe.prepTime,
+                    cookTime: recipe.cookTime
+                }
+            }
         });
     } catch (error) {
         console.error('Error getting recipe step templates:', error);

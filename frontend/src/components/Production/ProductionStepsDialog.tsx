@@ -65,9 +65,31 @@ const ProductionStepsDialog: React.FC<ProductionStepsDialogProps> = ({
     }, [open, recipe]);
 
     const loadDefaultSteps = async () => {
+        if (!recipe?.id) {
+            console.error('No recipe ID available');
+            return;
+        }
+
         try {
-            // For now, use hardcoded default steps
-            // TODO: Implement API call when backend is ready
+            // Call API to get recipe-specific step templates
+            const response = await fetch(`http://localhost:8000/api/production/step-templates/recipe/${recipe.id}`);
+            
+            if (!response.ok) {
+                throw new Error('Failed to fetch step templates');
+            }
+
+            const data = await response.json();
+            
+            if (data.success && data.data) {
+                setSteps(data.data);
+                console.log('Loaded recipe-specific steps:', data.meta);
+            } else {
+                throw new Error('Invalid response format');
+            }
+        } catch (error) {
+            console.error('Error loading step templates from API:', error);
+            
+            // Fallback to basic defaults only if API fails
             setSteps([
                 {
                     id: 'prep',
@@ -102,8 +124,6 @@ const ProductionStepsDialog: React.FC<ProductionStepsDialogProps> = ({
                     isDefault: true
                 }
             ]);
-        } catch (error) {
-            console.error('Error loading default steps:', error);
         }
     };
 
