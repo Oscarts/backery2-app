@@ -92,10 +92,14 @@ const RecipeSelectionDialog: React.FC<RecipeSelectionDialogProps> = ({
                             `Missing ${ing.shortage} ${ing.name}`
                         ).join(', ')
                         : undefined,
-                    // Add some default values
-                    emoji: '🥖',
-                    difficulty: 'MEDIUM',
-                    estimatedTotalTime: 60
+                    // Add data from recipeAnalysis
+                    emoji: recipeAnalysis.emoji || '🥖',
+                    imageUrl: recipeAnalysis.imageUrl,
+                    difficulty: recipeAnalysis.difficulty || 'MEDIUM',
+                    prepTime: recipeAnalysis.prepTime,
+                    cookTime: recipeAnalysis.cookTime,
+                    description: recipeAnalysis.description,
+                    estimatedTotalTime: (recipeAnalysis.prepTime || 0) + (recipeAnalysis.cookTime || 0) || 60
                 } as Recipe & { canMake: boolean; maxBatches: number; missingIngredients: any[]; shortage?: string }));
                 setRecipes(recipesWithAvailability);
             } else {
