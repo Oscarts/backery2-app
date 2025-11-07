@@ -973,21 +973,55 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                     )}
 
                     {/* Timing information */}
-                    {(step.startedAt || step.completedAt) && (
-                        <Box sx={{ mt: 2, p: 1, bgcolor: 'grey.50', borderRadius: 1 }}>
-                            <Typography variant="caption" color="text.secondary" display="block">
-                                Timing Information
+                    {(step.startedAt || step.completedAt || step.estimatedMinutes || step.actualMinutes) && (
+                        <Box sx={{ mt: 2, p: 1.5, bgcolor: 'grey.50', borderRadius: 1 }}>
+                            <Typography variant="caption" color="text.secondary" display="block" fontWeight="bold" mb={0.5}>
+                                ⏱️ Timing Information
                             </Typography>
-                            {step.startedAt && (
-                                <Typography variant="caption" display="block">
-                                    Started: {format(new Date(step.startedAt), 'MMM dd, HH:mm')}
-                                </Typography>
-                            )}
-                            {step.completedAt && (
-                                <Typography variant="caption" display="block">
-                                    Completed: {format(new Date(step.completedAt), 'MMM dd, HH:mm')}
-                                </Typography>
-                            )}
+                            
+                            <Stack spacing={0.5}>
+                                {step.estimatedMinutes && (
+                                    <Typography variant="caption" display="block">
+                                        Estimated Duration: <strong>{step.estimatedMinutes} min</strong>
+                                    </Typography>
+                                )}
+                                
+                                {step.actualMinutes && step.status === ProductionStepStatus.COMPLETED && (
+                                    <Typography 
+                                        variant="caption" 
+                                        display="block"
+                                        sx={{
+                                            color: step.estimatedMinutes && step.actualMinutes <= step.estimatedMinutes 
+                                                ? 'success.main' 
+                                                : step.estimatedMinutes && step.actualMinutes > step.estimatedMinutes * 1.2
+                                                ? 'error.main'
+                                                : 'warning.main'
+                                        }}
+                                    >
+                                        Actual Duration: <strong>{step.actualMinutes} min</strong>
+                                        {step.estimatedMinutes && (
+                                            <span>
+                                                {' '}({step.actualMinutes <= step.estimatedMinutes 
+                                                    ? `✓ ${Math.round((step.estimatedMinutes - step.actualMinutes) / step.estimatedMinutes * 100)}% faster`
+                                                    : `⚠ ${Math.round((step.actualMinutes - step.estimatedMinutes) / step.estimatedMinutes * 100)}% slower`
+                                                })
+                                            </span>
+                                        )}
+                                    </Typography>
+                                )}
+                                
+                                {step.startedAt && (
+                                    <Typography variant="caption" display="block" color="text.secondary">
+                                        Started: {format(new Date(step.startedAt), 'MMM dd, HH:mm')}
+                                    </Typography>
+                                )}
+                                
+                                {step.completedAt && (
+                                    <Typography variant="caption" display="block" color="text.secondary">
+                                        Completed: {format(new Date(step.completedAt), 'MMM dd, HH:mm')}
+                                    </Typography>
+                                )}
+                            </Stack>
                         </Box>
                     )}
                 </CardContent>

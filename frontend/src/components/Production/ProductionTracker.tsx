@@ -402,11 +402,45 @@ const ProductionTracker: React.FC<ProductionTrackerProps> = ({
                                                     </Typography>
                                                 )}
 
-                                                {step.estimatedMinutes && (
-                                                    <Typography variant="caption" color="text.secondary">
-                                                        Estimated: {step.estimatedMinutes} minutes
-                                                    </Typography>
-                                                )}
+                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+                                                    {step.estimatedMinutes && (
+                                                        <Chip
+                                                            icon={<TimerIcon />}
+                                                            label={`Est: ${step.estimatedMinutes} min`}
+                                                            size="small"
+                                                            variant="outlined"
+                                                            color="default"
+                                                        />
+                                                    )}
+                                                    
+                                                    {step.actualMinutes && step.status === ProductionStepStatus.COMPLETED && (
+                                                        <Chip
+                                                            icon={<TimerIcon />}
+                                                            label={`Actual: ${step.actualMinutes} min`}
+                                                            size="small"
+                                                            color={
+                                                                step.estimatedMinutes && step.actualMinutes <= step.estimatedMinutes 
+                                                                    ? 'success' 
+                                                                    : step.estimatedMinutes && step.actualMinutes > step.estimatedMinutes * 1.2
+                                                                    ? 'error'
+                                                                    : 'warning'
+                                                            }
+                                                        />
+                                                    )}
+                                                    
+                                                    {step.actualMinutes && step.estimatedMinutes && step.status === ProductionStepStatus.COMPLETED && (
+                                                        <Chip
+                                                            label={
+                                                                step.actualMinutes <= step.estimatedMinutes 
+                                                                    ? `✓ ${Math.round((step.estimatedMinutes - step.actualMinutes) / step.estimatedMinutes * 100)}% faster`
+                                                                    : `⚠ ${Math.round((step.actualMinutes - step.estimatedMinutes) / step.estimatedMinutes * 100)}% slower`
+                                                            }
+                                                            size="small"
+                                                            color={step.actualMinutes <= step.estimatedMinutes ? 'success' : 'warning'}
+                                                            variant="filled"
+                                                        />
+                                                    )}
+                                                </Box>
 
                                                 {/* Step Actions */}
                                                 {step.status === ProductionStepStatus.PENDING && (
