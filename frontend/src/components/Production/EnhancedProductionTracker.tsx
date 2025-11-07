@@ -568,11 +568,6 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
         }
     };
 
-    const handleOpenQualityCheck = (step: ProductionStep) => {
-        setSelectedStepForQuality(step);
-        setQualityDialogOpen(true);
-    };
-
     const handleLogQualityCheckpoint = async () => {
         if (!selectedStepForQuality?.id) return;
 
@@ -887,17 +882,6 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                                 size="small"
                             >
                                 Complete
-                            </Button>
-                        )}
-
-                        {isActive && (
-                            <Button
-                                variant="outlined"
-                                startIcon={<QualityIcon />}
-                                onClick={() => handleOpenQualityCheck(step)}
-                                size="small"
-                            >
-                                Quality Check
                             </Button>
                         )}
 
