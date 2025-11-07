@@ -955,13 +955,13 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                             
                             <Stack spacing={1}>
                                 {/* Estimated vs Actual Duration */}
-                                {step.estimatedMinutes !== undefined && (
+                                {step.estimatedMinutes !== undefined && step.estimatedMinutes !== null && (
                                     <Box>
                                         <Typography variant="caption" display="block" color="text.secondary">
                                             Estimated: <strong>{step.estimatedMinutes} min</strong>
                                         </Typography>
                                         
-                                        {step.actualMinutes !== undefined && step.status === ProductionStepStatus.COMPLETED && (
+                                        {step.actualMinutes !== undefined && step.actualMinutes !== null && step.status === ProductionStepStatus.COMPLETED && (
                                             <Typography 
                                                 variant="caption" 
                                                 display="block"
@@ -976,13 +976,13 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                                             >
                                                 Actual: <strong>{step.actualMinutes} min</strong>
                                                 {(() => {
-                                                    const diff = step.estimatedMinutes - step.actualMinutes;
+                                                    const diff = step.estimatedMinutes! - step.actualMinutes;
                                                     if (diff === 0) return ' (on time ✓)';
                                                     if (diff > 0) {
-                                                        const percent = Math.round((diff / step.estimatedMinutes) * 100);
+                                                        const percent = Math.round((diff / step.estimatedMinutes!) * 100);
                                                         return ` (${percent}% faster ✓)`;
                                                     } else {
-                                                        const percent = Math.round((Math.abs(diff) / step.estimatedMinutes) * 100);
+                                                        const percent = Math.round((Math.abs(diff) / step.estimatedMinutes!) * 100);
                                                         return ` (${percent}% slower ⚠)`;
                                                     }
                                                 })()}
