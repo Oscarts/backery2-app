@@ -512,6 +512,18 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
         maxBatches = 0;
       }
 
+      // Calculate cost on-the-fly if not already stored
+      let estimatedCost = recipe.estimatedCost;
+      if (estimatedCost === null || estimatedCost === undefined) {
+        try {
+          const costBreakdown = await recipeCostService.calculateRecipeCost(recipe.id);
+          estimatedCost = costBreakdown.totalProductionCost;
+        } catch (error) {
+          console.warn(`Could not calculate cost for recipe ${recipe.name}:`, error);
+          estimatedCost = 0;
+        }
+      }
+
       results.push({
         recipeId: recipe.id,
         recipeName: recipe.name,
@@ -526,7 +538,7 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
         prepTime: recipe.prepTime,
         cookTime: recipe.cookTime,
         estimatedTotalTime: recipe.estimatedTotalTime,
-        estimatedCost: recipe.estimatedCost,
+        estimatedCost: estimatedCost,
         description: recipe.description,
         missingIngredients: missingIngredients
       });

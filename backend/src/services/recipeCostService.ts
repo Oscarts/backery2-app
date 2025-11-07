@@ -106,8 +106,8 @@ export class RecipeCostService {
       ingredients.push(ingredientCost);
     }
 
-    // Add 20% overhead for labor, utilities, etc.
-    const overheadCost = totalMaterialCost * 0.20;
+    // Add 50% overhead for labor, utilities, etc.
+    const overheadCost = totalMaterialCost * 0.50;
     const totalProductionCost = totalMaterialCost + overheadCost;
     const costPerUnit = recipe.yieldQuantity > 0 ? totalProductionCost / recipe.yieldQuantity : 0;
 
