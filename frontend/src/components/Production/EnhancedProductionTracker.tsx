@@ -902,7 +902,7 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                         )}
 
                         {/* Step Management Buttons */}
-                        {canAddSteps() && (
+                        {canAddSteps() && step.status !== ProductionStepStatus.COMPLETED && (
                             <Button
                                 variant="outlined"
                                 size="small"
