@@ -525,6 +525,8 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
         difficulty: recipe.difficulty || 'MEDIUM',
         prepTime: recipe.prepTime,
         cookTime: recipe.cookTime,
+        estimatedTotalTime: recipe.estimatedTotalTime,
+        estimatedCost: recipe.estimatedCost,
         description: recipe.description,
         missingIngredients: missingIngredients
       });

@@ -341,6 +341,8 @@ export interface RecipeAnalysis {
   difficulty?: string;
   prepTime?: number;
   cookTime?: number;
+  estimatedTotalTime?: number;
+  estimatedCost?: number;
   description?: string;
   missingIngredients: MissingIngredient[];
 }

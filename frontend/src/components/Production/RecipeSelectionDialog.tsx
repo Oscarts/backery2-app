@@ -99,7 +99,8 @@ const RecipeSelectionDialog: React.FC<RecipeSelectionDialogProps> = ({
                     prepTime: recipeAnalysis.prepTime,
                     cookTime: recipeAnalysis.cookTime,
                     description: recipeAnalysis.description,
-                    estimatedTotalTime: (recipeAnalysis.prepTime || 0) + (recipeAnalysis.cookTime || 0) || 60
+                    estimatedTotalTime: recipeAnalysis.estimatedTotalTime || (recipeAnalysis.prepTime || 0) + (recipeAnalysis.cookTime || 0) || 60,
+                    estimatedCost: recipeAnalysis.estimatedCost
                 } as Recipe & { canMake: boolean; maxBatches: number; missingIngredients: any[]; shortage?: string }));
                 setRecipes(recipesWithAvailability);
             } else {
