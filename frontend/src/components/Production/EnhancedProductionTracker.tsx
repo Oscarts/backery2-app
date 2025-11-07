@@ -947,53 +947,65 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                     )}
 
                     {/* Timing information */}
-                    {(step.startedAt || step.completedAt || step.estimatedMinutes || step.actualMinutes) && (
-                        <Box sx={{ mt: 2, p: 1.5, bgcolor: 'grey.50', borderRadius: 1 }}>
-                            <Typography variant="caption" color="text.secondary" display="block" fontWeight="bold" mb={0.5}>
-                                ⏱️ Timing Information
+                    {(step.startedAt || step.completedAt || step.estimatedMinutes !== undefined || step.actualMinutes !== undefined) && (
+                        <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                            <Typography variant="caption" color="text.secondary" display="block" fontWeight="bold" mb={1}>
+                                ⏱️ Time Tracking
                             </Typography>
                             
-                            <Stack spacing={0.5}>
-                                {step.estimatedMinutes && (
-                                    <Typography variant="caption" display="block">
-                                        Estimated Duration: <strong>{step.estimatedMinutes} min</strong>
-                                    </Typography>
-                                )}
-                                
-                                {step.actualMinutes && step.status === ProductionStepStatus.COMPLETED && (
-                                    <Typography 
-                                        variant="caption" 
-                                        display="block"
-                                        sx={{
-                                            color: step.estimatedMinutes && step.actualMinutes <= step.estimatedMinutes 
-                                                ? 'success.main' 
-                                                : step.estimatedMinutes && step.actualMinutes > step.estimatedMinutes * 1.2
-                                                ? 'error.main'
-                                                : 'warning.main'
-                                        }}
-                                    >
-                                        Actual Duration: <strong>{step.actualMinutes} min</strong>
-                                        {step.estimatedMinutes && (
-                                            <span>
-                                                {' '}({step.actualMinutes <= step.estimatedMinutes 
-                                                    ? `✓ ${Math.round((step.estimatedMinutes - step.actualMinutes) / step.estimatedMinutes * 100)}% faster`
-                                                    : `⚠ ${Math.round((step.actualMinutes - step.estimatedMinutes) / step.estimatedMinutes * 100)}% slower`
-                                                })
-                                            </span>
+                            <Stack spacing={1}>
+                                {/* Estimated vs Actual Duration */}
+                                {step.estimatedMinutes !== undefined && (
+                                    <Box>
+                                        <Typography variant="caption" display="block" color="text.secondary">
+                                            Estimated: <strong>{step.estimatedMinutes} min</strong>
+                                        </Typography>
+                                        
+                                        {step.actualMinutes !== undefined && step.status === ProductionStepStatus.COMPLETED && (
+                                            <Typography 
+                                                variant="caption" 
+                                                display="block"
+                                                sx={{
+                                                    color: step.actualMinutes <= step.estimatedMinutes 
+                                                        ? 'success.main' 
+                                                        : step.actualMinutes > step.estimatedMinutes * 1.2
+                                                        ? 'error.main'
+                                                        : 'warning.main',
+                                                    fontWeight: 'medium'
+                                                }}
+                                            >
+                                                Actual: <strong>{step.actualMinutes} min</strong>
+                                                {(() => {
+                                                    const diff = step.estimatedMinutes - step.actualMinutes;
+                                                    if (diff === 0) return ' (on time ✓)';
+                                                    if (diff > 0) {
+                                                        const percent = Math.round((diff / step.estimatedMinutes) * 100);
+                                                        return ` (${percent}% faster ✓)`;
+                                                    } else {
+                                                        const percent = Math.round((Math.abs(diff) / step.estimatedMinutes) * 100);
+                                                        return ` (${percent}% slower ⚠)`;
+                                                    }
+                                                })()}
+                                            </Typography>
                                         )}
-                                    </Typography>
+                                    </Box>
                                 )}
                                 
-                                {step.startedAt && (
-                                    <Typography variant="caption" display="block" color="text.secondary">
-                                        Started: {format(new Date(step.startedAt), 'MMM dd, HH:mm')}
-                                    </Typography>
-                                )}
-                                
-                                {step.completedAt && (
-                                    <Typography variant="caption" display="block" color="text.secondary">
-                                        Completed: {format(new Date(step.completedAt), 'MMM dd, HH:mm')}
-                                    </Typography>
+                                {/* Start and Completion Times */}
+                                {(step.startedAt || step.completedAt) && (
+                                    <Box sx={{ borderTop: 1, borderColor: 'divider', pt: 1, mt: 0.5 }}>
+                                        {step.startedAt && (
+                                            <Typography variant="caption" display="block" color="text.secondary">
+                                                Started: {format(new Date(step.startedAt), 'MMM dd, HH:mm:ss')}
+                                            </Typography>
+                                        )}
+                                        
+                                        {step.completedAt && (
+                                            <Typography variant="caption" display="block" color="text.secondary">
+                                                Completed: {format(new Date(step.completedAt), 'MMM dd, HH:mm:ss')}
+                                            </Typography>
+                                        )}
+                                    </Box>
                                 )}
                             </Stack>
                         </Box>
