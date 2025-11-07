@@ -336,6 +336,12 @@ export interface RecipeAnalysis {
   yieldUnit: string;
   canMake: boolean;
   maxBatches: number;
+  emoji?: string;
+  imageUrl?: string;
+  difficulty?: string;
+  prepTime?: number;
+  cookTime?: number;
+  description?: string;
   missingIngredients: MissingIngredient[];
 }
 

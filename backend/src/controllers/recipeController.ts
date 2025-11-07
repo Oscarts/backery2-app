@@ -521,6 +521,7 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
         canMake: canMake,
         maxBatches: canMake ? maxBatches : 0,
         emoji: recipe.emoji || '🍞',
+        imageUrl: recipe.imageUrl,
         difficulty: recipe.difficulty || 'MEDIUM',
         prepTime: recipe.prepTime,
         cookTime: recipe.cookTime,
