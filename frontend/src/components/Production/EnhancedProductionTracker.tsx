@@ -27,17 +27,16 @@ import {
     Close as CloseIcon,
     PlayArrow as PlayIcon,
     Check as CheckIcon,
+    CheckCircle as CheckCircleIcon,
     VerifiedUser as QualityIcon,
     Warning as WarningIcon,
     Add as AddIcon,
     Delete as DeleteIcon,
     Celebration as CelebrationIcon,
-    Star as StarIcon,
 } from '@mui/icons-material';
 import { TransitionProps } from '@mui/material/transitions';
 import { ProductionRun, ProductionStep, ProductionStepStatus, ProductionStatus } from '../../types/index';
 import { productionApi } from '../../services/realApi';
-import Confetti from 'react-confetti';
 import { format } from 'date-fns';
 
 const Transition = React.forwardRef(function Transition(
@@ -1381,123 +1380,71 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                 </DialogContent>
             </Dialog>
 
-            {/* Production Completion Celebration Dialog */}
+            {/* Production Completion Dialog - Professional & Clean */}
             <Dialog
                 open={showCompletionCelebration}
-                maxWidth="md"
+                maxWidth="sm"
                 fullWidth
                 disableEscapeKeyDown
                 PaperProps={{
                     sx: {
+                        borderRadius: 2,
                         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                         color: 'white',
-                        textAlign: 'center',
-                        borderRadius: 3,
-                        overflow: 'visible',
-                        position: 'relative',
-                        minHeight: '400px'
-                    }
-                }}
-                sx={{
-                    zIndex: 10000,
-                    '& .MuiBackdrop-root': {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)'
                     }
                 }}
             >
-                {/* Confetti Effect */}
-                {showCompletionCelebration && (
-                    <Box sx={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 9999 }}>
-                        <Confetti
-                            width={typeof window !== 'undefined' ? window.innerWidth : 1000}
-                            height={typeof window !== 'undefined' ? window.innerHeight : 800}
-                            recycle={false}
-                            numberOfPieces={200}
-                            gravity={0.3}
-                        />
-                    </Box>
-                )}
-
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        background: 'linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%), linear-gradient(-45deg, rgba(255,255,255,0.1) 25%, transparent 25%)',
-                        backgroundSize: '20px 20px',
-                        animation: 'sparkle 2s linear infinite',
-                        '@keyframes sparkle': {
-                            '0%': { backgroundPosition: '0 0, 0 0' },
-                            '100%': { backgroundPosition: '20px 20px, -20px 20px' }
-                        }
-                    }}
-                />
-
-                <DialogContent sx={{ py: 6, px: 4, position: 'relative', zIndex: 1 }}>
-                    <Box sx={{ mb: 3 }}>
-                        <Box
-                            sx={{
-                                fontSize: '6rem',
-                                mb: 2,
-                                animation: 'bounce 1s ease-in-out infinite alternate',
-                                '@keyframes bounce': {
-                                    '0%': { transform: 'translateY(0)' },
-                                    '100%': { transform: 'translateY(-10px)' }
-                                }
-                            }}
-                        >
-                            🎉
-                        </Box>
-
-                        <Typography
-                            variant="h3"
-                            sx={{
-                                fontWeight: 'bold',
-                                mb: 2,
-                                textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
-                                animation: 'fadeInUp 0.8s ease-out',
-                                '@keyframes fadeInUp': {
-                                    '0%': { opacity: 0, transform: 'translateY(30px)' },
-                                    '100%': { opacity: 1, transform: 'translateY(0)' }
-                                }
-                            }}
-                        >
-                            Production Complete!
-                        </Typography>
-
-                        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mb: 3 }}>
-                            <StarIcon sx={{
-                                fontSize: '2rem',
-                                color: '#FFD700',
-                                animation: 'twinkle 1.5s ease-in-out infinite alternate',
-                                '@keyframes twinkle': {
-                                    '0%': { transform: 'scale(1) rotate(0deg)', opacity: 0.7 },
-                                    '100%': { transform: 'scale(1.2) rotate(180deg)', opacity: 1 }
-                                }
-                            }} />
-                            <StarIcon sx={{
-                                fontSize: '2rem',
-                                color: '#FFD700',
-                                animation: 'twinkle 1.5s ease-in-out infinite alternate 0.3s',
-                                '@keyframes twinkle': {
-                                    '0%': { transform: 'scale(1) rotate(0deg)', opacity: 0.7 },
-                                    '100%': { transform: 'scale(1.2) rotate(180deg)', opacity: 1 }
-                                }
-                            }} />
-                            <StarIcon sx={{
-                                fontSize: '2rem',
-                                color: '#FFD700',
-                                animation: 'twinkle 1.5s ease-in-out infinite alternate 0.6s',
-                                '@keyframes twinkle': {
-                                    '0%': { transform: 'scale(1) rotate(0deg)', opacity: 0.7 },
-                                    '100%': { transform: 'scale(1.2) rotate(180deg)', opacity: 1 }
-                                }
-                            }} />
-                        </Box>
+                <DialogContent sx={{ py: 5, px: 4, textAlign: 'center' }}>
+                    {/* Success Icon */}
+                    <Box
+                        sx={{
+                            width: 80,
+                            height: 80,
+                            margin: '0 auto 24px',
+                            borderRadius: '50%',
+                            background: 'rgba(255,255,255,0.2)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            animation: 'scaleIn 0.5s ease-out',
+                            '@keyframes scaleIn': {
+                                '0%': { transform: 'scale(0)', opacity: 0 },
+                                '50%': { transform: 'scale(1.1)', opacity: 1 },
+                                '100%': { transform: 'scale(1)', opacity: 1 }
+                            }
+                        }}
+                    >
+                        <CheckCircleIcon sx={{ fontSize: 48, color: 'white' }} />
                     </Box>
 
+                    {/* Title */}
+                    <Typography
+                        variant="h4"
+                        sx={{
+                            fontWeight: 'bold',
+                            mb: 1,
+                            animation: 'fadeIn 0.6s ease-out 0.2s both',
+                            '@keyframes fadeIn': {
+                                '0%': { opacity: 0, transform: 'translateY(10px)' },
+                                '100%': { opacity: 1, transform: 'translateY(0)' }
+                            }
+                        }}
+                    >
+                        Production Complete
+                    </Typography>
+
+                    <Typography
+                        variant="body1"
+                        sx={{
+                            mb: 4,
+                            opacity: 0.9,
+                            animation: 'fadeIn 0.6s ease-out 0.3s both'
+                        }}
+                    >
+                        Your production run has been successfully finished
+                    </Typography>
+
+                    {/* Production Summary */}
                     {completedProductionData && (
                         <Box
                             sx={{
@@ -1506,68 +1453,78 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                                 p: 3,
                                 backdropFilter: 'blur(10px)',
                                 border: '1px solid rgba(255,255,255,0.2)',
-                                animation: 'slideInUp 1s ease-out 0.5s both',
-                                '@keyframes slideInUp': {
-                                    '0%': { opacity: 0, transform: 'translateY(50px)' },
-                                    '100%': { opacity: 1, transform: 'translateY(0)' }
-                                }
+                                animation: 'fadeIn 0.6s ease-out 0.4s both'
                             }}
                         >
-                            <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 2 }}>
-                                🧁 {completedProductionData.name}
+                            <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
+                                {completedProductionData.name}
                             </Typography>
 
-                            <Grid container spacing={2} sx={{ mb: 2 }}>
-                                <Grid item xs={6}>
-                                    <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-                                        Quantity Produced
+                            <Grid container spacing={2}>
+                                <Grid item xs={4}>
+                                    <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>
+                                        Quantity
                                     </Typography>
-                                    <Typography variant="h6">
-                                        {completedProductionData.finalQuantity || completedProductionData.targetQuantity} {completedProductionData.targetUnit}
+                                    <Typography variant="h6" sx={{ fontWeight: 'medium' }}>
+                                        {completedProductionData.finalQuantity || completedProductionData.targetQuantity}
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                                        {completedProductionData.targetUnit}
                                     </Typography>
                                 </Grid>
-                                <Grid item xs={6}>
-                                    <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-                                        Total Time
+                                <Grid item xs={4}>
+                                    <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>
+                                        Duration
                                     </Typography>
-                                    <Typography variant="h6">
-                                        {completedProductionData.actualMinutes || 'N/A'} minutes
+                                    <Typography variant="h6" sx={{ fontWeight: 'medium' }}>
+                                        {(() => {
+                                            // Calculate total actual time from all completed steps
+                                            const totalMinutes = steps
+                                                .filter(s => s.actualMinutes !== null && s.actualMinutes !== undefined)
+                                                .reduce((sum, s) => sum + (s.actualMinutes || 0), 0);
+                                            return totalMinutes > 0 ? totalMinutes : 'N/A';
+                                        })()}
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                                        minutes
+                                    </Typography>
+                                </Grid>
+                                <Grid item xs={4}>
+                                    <Typography variant="caption" sx={{ opacity: 0.8, display: 'block' }}>
+                                        Steps
+                                    </Typography>
+                                    <Typography variant="h6" sx={{ fontWeight: 'medium' }}>
+                                        {steps.filter(s => s.status === ProductionStepStatus.COMPLETED).length}
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                                        completed
                                     </Typography>
                                 </Grid>
                             </Grid>
 
                             {completedProductionData.actualCost && (
-                                <Typography variant="h6" sx={{ mt: 2 }}>
-                                    💰 Total Cost: ${completedProductionData.actualCost.toFixed(2)}
-                                </Typography>
+                                <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+                                    <Typography variant="body2" sx={{ opacity: 0.8, mb: 0.5 }}>
+                                        Total Cost
+                                    </Typography>
+                                    <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+                                        ${completedProductionData.actualCost.toFixed(2)}
+                                    </Typography>
+                                </Box>
                             )}
                         </Box>
                     )}
 
                     <Typography
-                        variant="h6"
+                        variant="caption"
                         sx={{
                             mt: 3,
-                            opacity: 0.9,
-                            animation: 'fadeIn 1s ease-out 1s both',
-                            '@keyframes fadeIn': {
-                                '0%': { opacity: 0 },
-                                '100%': { opacity: 0.9 }
-                            }
-                        }}
-                    >
-                        Your delicious products are ready! 🍰
-                    </Typography>
-
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            mt: 2,
                             opacity: 0.7,
-                            animation: 'fadeIn 1s ease-out 1.5s both'
+                            display: 'block',
+                            animation: 'fadeIn 0.6s ease-out 0.5s both'
                         }}
                     >
-                        Automatically closing in 3 seconds...
+                        Closing in 3 seconds...
                     </Typography>
                 </DialogContent>
             </Dialog>
