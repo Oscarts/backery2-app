@@ -25,6 +25,7 @@ import {
   Download as DownloadIcon,
   Refresh as RefreshIcon,
   Edit as EditIcon,
+  Label as LabelIcon,
 } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
@@ -104,9 +105,12 @@ const SkuReference: React.FC = () => {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" fontWeight="bold">
-          SKU Reference
-        </Typography>
+        <Box display="flex" alignItems="center" gap={1}>
+          <LabelIcon sx={{ fontSize: 32, color: 'primary.main' }} />
+          <Typography variant="h4" fontWeight="bold">
+            SKU Reference
+          </Typography>
+        </Box>
         <Box display="flex" gap={1}>
           <Tooltip title="Refresh">
             <IconButton color="primary" onClick={() => refetch()}>
