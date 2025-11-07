@@ -229,20 +229,22 @@ export const completeProductionStep = async (req: Request, res: Response) => {
 
     const completionTime = new Date();
     const startTime = currentStep.startedAt;
-    const calculatedMinutes = startTime ?
-      Math.round((completionTime.getTime() - startTime.getTime()) / (1000 * 60)) :
-      actualMinutes;
+    
+    // ALWAYS calculate actual minutes from timestamps if startedAt exists
+    // This ensures accuracy and prevents manual override errors
+    const calculatedMinutes = startTime 
+      ? Math.round((completionTime.getTime() - startTime.getTime()) / (1000 * 60)) 
+      : (actualMinutes || currentStep.estimatedMinutes || 60);
 
-    // Calculate efficiency score
+    // Calculate efficiency score using the calculated/actual duration
     const expectedMinutes = currentStep.estimatedMinutes || 60;
-    const actualDuration = actualMinutes || calculatedMinutes || expectedMinutes;
     const efficiencyScore = expectedMinutes > 0 ?
-      Math.round((expectedMinutes / actualDuration) * 100) : 100;
+      Math.round((expectedMinutes / calculatedMinutes) * 100) : 100;
 
     // Generate alerts for efficiency issues
     const alerts = [];
     if (efficiencyScore < 80) {
-      alerts.push(`Low efficiency: ${efficiencyScore}% (${actualDuration}min vs ${expectedMinutes}min expected)`);
+      alerts.push(`Low efficiency: ${efficiencyScore}% (${calculatedMinutes}min vs ${expectedMinutes}min expected)`);
     }
     if (qualityCheckPassed === false) {
       alerts.push('Quality check failed');
@@ -253,11 +255,13 @@ export const completeProductionStep = async (req: Request, res: Response) => {
       data: {
         status: ProductionStepStatus.COMPLETED,
         completedAt: completionTime,
-        actualMinutes: actualDuration,
+        actualMinutes: calculatedMinutes,
         qualityCheckPassed: qualityCheckPassed !== undefined ? qualityCheckPassed : null,
         temperature: temperature || currentStep.temperature,
         equipmentUsed: equipmentUsed || currentStep.equipmentUsed,
         notes: notes || currentStep.notes,
+        efficiencyScore: efficiencyScore,
+        alertsGenerated: alerts,
         updatedAt: new Date()
       },
       include: {

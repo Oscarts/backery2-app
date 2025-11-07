@@ -218,8 +218,30 @@ const ProductionDashboard: React.FC = () => {
             production.steps.find(s => s.status === ProductionStepStatus.PENDING);
     };
 
-    const getTimeElapsed = (startTime: string) => {
-        return formatDistanceToNow(new Date(startTime), { addSuffix: false });
+    const getTimeElapsed = (production: ProductionRun) => {
+        if (!production.steps || production.steps.length === 0) {
+            return 'Not started';
+        }
+
+        // Find the first step that has actually started
+        const firstStartedStep = production.steps
+            .filter(s => s.startedAt)
+            .sort((a, b) => new Date(a.startedAt!).getTime() - new Date(b.startedAt!).getTime())[0];
+
+        if (!firstStartedStep || !firstStartedStep.startedAt) {
+            return 'Not started';
+        }
+
+        // If production is completed, use completedAt
+        if (production.status === 'COMPLETED' && production.completedAt) {
+            const start = new Date(firstStartedStep.startedAt);
+            const end = new Date(production.completedAt);
+            const minutes = Math.round((end.getTime() - start.getTime()) / (1000 * 60));
+            return `${minutes} minutes`;
+        }
+
+        // For in-progress productions, show elapsed time from first step start
+        return formatDistanceToNow(new Date(firstStartedStep.startedAt), { addSuffix: false });
     };
 
     return (
@@ -431,7 +453,7 @@ const ProductionDashboard: React.FC = () => {
                                                 <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
                                                     <TimerIcon fontSize="small" color="action" />
                                                     <Typography variant="body2" color="text.secondary">
-                                                        {getTimeElapsed(production.startedAt)} elapsed
+                                                        {getTimeElapsed(production)} elapsed
                                                     </Typography>
                                                 </Stack>
 

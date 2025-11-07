@@ -863,32 +863,6 @@ const EnhancedProductionTracker: React.FC<ProductionTrackerProps> = ({
                         </Typography>
                     )}
 
-                    {/* Progress and timing info */}
-                    <Grid container spacing={2} mb={2}>
-                        <Grid item xs={6}>
-                            <Box>
-                                <Typography variant="caption" color="text.secondary">
-                                    Estimated Time
-                                </Typography>
-                                <Typography variant="body2">
-                                    {step.estimatedMinutes || 'N/A'} min
-                                </Typography>
-                            </Box>
-                        </Grid>
-                        <Grid item xs={6}>
-                            {step.actualMinutes && (
-                                <Box>
-                                    <Typography variant="caption" color="text.secondary">
-                                        Actual Time
-                                    </Typography>
-                                    <Typography variant="body2">
-                                        {step.actualMinutes} min
-                                    </Typography>
-                                </Box>
-                            )}
-                        </Grid>
-                    </Grid>
-
                     {/* Action buttons */}
                     <Stack direction="row" spacing={1} mb={2}>
                         {canStart && (
