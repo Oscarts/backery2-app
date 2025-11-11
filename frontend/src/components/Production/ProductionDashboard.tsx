@@ -145,7 +145,42 @@ const ProductionDashboard: React.FC = () => {
         setSelectedRecipe(null);
     };
 
-    const handleViewProduction = (production: ProductionRun) => {
+    const handleViewProduction = async (production: ProductionRun) => {
+        // If production is on hold, ask user if they want to resume
+        if (production.status === ProductionStatus.ON_HOLD) {
+            const resume = confirm(
+                '⏸️ This production is currently paused.\n\n' +
+                'Would you like to resume it before continuing?'
+            );
+            
+            if (resume) {
+                // Resume the production first
+                try {
+                    const response = await productionApi.updateRun(production.id, {
+                        status: ProductionStatus.IN_PROGRESS
+                    });
+                    
+                    if (response.success && response.data) {
+                        // Update local state
+                        setActiveProductions(activeProductions.map(p =>
+                            p.id === production.id ? response.data! : p
+                        ));
+                        // Reload stats
+                        await loadProductionStats();
+                        // Show tracker with resumed production
+                        setSelectedProduction(response.data);
+                        setShowProductionTracker(true);
+                    }
+                } catch (error) {
+                    console.error('Error resuming production:', error);
+                    alert('Failed to resume production. Please try again.');
+                }
+            }
+            // If user doesn't want to resume, don't open the tracker
+            return;
+        }
+
+        // For other statuses, open normally
         setSelectedProduction(production);
         setShowProductionTracker(true);
     };
