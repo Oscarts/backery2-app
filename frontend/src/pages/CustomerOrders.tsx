@@ -727,7 +727,12 @@ const CustomerOrders: React.FC = () => {
               </TableRow>
             ) : (
               paginatedOrders.map((order) => (
-                <TableRow key={order.id} hover>
+                <TableRow 
+                  key={order.id} 
+                  hover
+                  onClick={() => handleViewOrder(order.id)}
+                  sx={{ cursor: 'pointer' }}
+                >
                   <TableCell>
                     <Typography variant="body2" fontWeight="medium">
                       {order.orderNumber}
@@ -759,7 +764,10 @@ const CustomerOrders: React.FC = () => {
                   <TableCell align="right">
                     <IconButton
                       size="small"
-                      onClick={(e) => handleMenuOpen(e, order)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMenuOpen(e, order);
+                      }}
                     >
                       <MoreVertIcon />
                     </IconButton>

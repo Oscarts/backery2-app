@@ -360,7 +360,12 @@ const Settings: React.FC = () => {
                     </TableHead>
                     <TableBody>
                         {filteredCategories.map((category: Category) => (
-                            <TableRow key={category.id} hover>
+                            <TableRow 
+                              key={category.id} 
+                              hover
+                              onClick={() => handleEditCategory(category)}
+                              sx={{ cursor: 'pointer' }}
+                            >
                                 <TableCell>
                                     <Typography variant="body2" fontWeight="medium">
                                         {category.name}
@@ -376,12 +381,25 @@ const Settings: React.FC = () => {
                                 <TableCell align="right">
                                     <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                                         <Tooltip title="Edit">
-                                            <IconButton size="small" onClick={() => handleEditCategory(category)}>
+                                            <IconButton 
+                                              size="small" 
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleEditCategory(category);
+                                              }}
+                                            >
                                                 <EditIcon fontSize="small" />
                                             </IconButton>
                                         </Tooltip>
                                         <Tooltip title="Delete">
-                                            <IconButton size="small" color="error" onClick={() => handleDeleteCategory(category.id)}>
+                                            <IconButton 
+                                              size="small" 
+                                              color="error" 
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteCategory(category.id);
+                                              }}
+                                            >
                                                 <DeleteIcon fontSize="small" />
                                             </IconButton>
                                         </Tooltip>
@@ -421,7 +439,12 @@ const Settings: React.FC = () => {
                     </TableHead>
                     <TableBody>
                         {suppliers.map((supplier: Supplier) => (
-                            <TableRow key={supplier.id} hover>
+                            <TableRow 
+                              key={supplier.id} 
+                              hover
+                              onClick={() => handleEditSupplier(supplier)}
+                              sx={{ cursor: 'pointer' }}
+                            >
                                 <TableCell>
                                     <Typography variant="body2" fontWeight="medium">
                                         {supplier.name}
@@ -444,12 +467,25 @@ const Settings: React.FC = () => {
                                 <TableCell align="right">
                                     <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                                         <Tooltip title="Edit">
-                                            <IconButton size="small" onClick={() => handleEditSupplier(supplier)}>
+                                            <IconButton 
+                                              size="small" 
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleEditSupplier(supplier);
+                                              }}
+                                            >
                                                 <EditIcon fontSize="small" />
                                             </IconButton>
                                         </Tooltip>
                                         <Tooltip title="Delete">
-                                            <IconButton size="small" color="error" onClick={() => handleDeleteSupplier(supplier.id)}>
+                                            <IconButton 
+                                              size="small" 
+                                              color="error" 
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteSupplier(supplier.id);
+                                              }}
+                                            >
                                                 <DeleteIcon fontSize="small" />
                                             </IconButton>
                                         </Tooltip>
@@ -489,7 +525,12 @@ const Settings: React.FC = () => {
                     </TableHead>
                     <TableBody>
                         {storageLocations.map((location: StorageLocation) => (
-                            <TableRow key={location.id} hover>
+                            <TableRow 
+                              key={location.id} 
+                              hover
+                              onClick={() => handleEditStorage(location)}
+                              sx={{ cursor: 'pointer' }}
+                            >
                                 <TableCell>
                                     <Typography variant="body2" fontWeight="medium">
                                         {location.name}
@@ -512,12 +553,25 @@ const Settings: React.FC = () => {
                                 <TableCell align="right">
                                     <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                                         <Tooltip title="Edit">
-                                            <IconButton size="small" onClick={() => handleEditStorage(location)}>
+                                            <IconButton 
+                                              size="small" 
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleEditStorage(location);
+                                              }}
+                                            >
                                                 <EditIcon fontSize="small" />
                                             </IconButton>
                                         </Tooltip>
                                         <Tooltip title="Delete">
-                                            <IconButton size="small" color="error" onClick={() => handleDeleteStorage(location.id)}>
+                                            <IconButton 
+                                              size="small" 
+                                              color="error" 
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteStorage(location.id);
+                                              }}
+                                            >
                                                 <DeleteIcon fontSize="small" />
                                             </IconButton>
                                         </Tooltip>
