@@ -3,7 +3,6 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
   TextField,
   Button,
   Grid,
@@ -278,9 +277,17 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <form onSubmit={handleSubmit}>
         <DialogTitle>
-          <Box display="flex" alignItems="center" gap={1}>
-            {material ? 'Edit Raw Material' : 'Add New Raw Material'}
-            {!material && loadingDefaults && <CircularProgress size={20} />}
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Box display="flex" alignItems="center" gap={1}>
+              {material ? 'Edit Raw Material' : 'Add New Raw Material'}
+              {!material && loadingDefaults && <CircularProgress size={20} />}
+            </Box>
+            <Box>
+              <Button onClick={onClose} sx={{ mr: 1 }}>Cancel</Button>
+              <Button type="submit" variant="contained" color="primary">
+                {material ? 'Update' : 'Create'}
+              </Button>
+            </Box>
           </Box>
         </DialogTitle>
 
@@ -546,13 +553,6 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
             </Grid>
           </Grid>
         </DialogContent>
-
-        <DialogActions>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="contained" color="primary">
-            {material ? 'Update' : 'Create'}
-          </Button>
-        </DialogActions>
       </form>
     </Dialog>
   );

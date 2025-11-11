@@ -47,6 +47,7 @@ import RecipeSelectionDialog from './RecipeSelectionDialog';
 import QuantitySelectionDialog from './QuantitySelectionDialog';
 import ProductionTracker from './EnhancedProductionTracker';
 import ProductionHistory from './ProductionHistory';
+import { borderRadius } from '../../theme/designTokens';
 
 const ProductionDashboard: React.FC = () => {
     const theme = useTheme();
@@ -487,13 +488,13 @@ const ProductionDashboard: React.FC = () => {
                         sx={{ 
                             p: 2,
                             mb: 3,
-                            borderRadius: 2.5,
+                            borderRadius: borderRadius.lg, // 20px - Modern rounded search bar
                             bgcolor: alpha(theme.palette.background.paper, 0.8),
                             backdropFilter: 'blur(10px)'
                         }}
                     >
                         <Grid container spacing={2} alignItems="center">
-                            <Grid item xs={12} md={5}>
+                            <Grid item xs={12} md={4}>
                                 <TextField
                                     fullWidth
                                     placeholder="Search production runs..."
@@ -508,21 +509,21 @@ const ProductionDashboard: React.FC = () => {
                                     }}
                                     sx={{
                                         '& .MuiOutlinedInput-root': {
-                                            borderRadius: 2,
+                                            borderRadius: borderRadius.md, // 16px - Modern rounded inputs
                                             bgcolor: theme.palette.background.paper
                                         }
                                     }}
                                 />
                             </Grid>
                             
-                            <Grid item xs={12} sm={6} md={3}>
+                            <Grid item xs={12} sm={6} md={2}>
                                 <FormControl fullWidth>
                                     <InputLabel>Status</InputLabel>
                                     <Select
                                         value={statusFilter}
                                         label="Status"
                                         onChange={(e) => setStatusFilter(e.target.value)}
-                                        sx={{ borderRadius: 2 }}
+                                        sx={{ borderRadius: borderRadius.md }} // 16px - Modern rounded select
                                     >
                                         <MenuItem value="all">All Status</MenuItem>
                                         <MenuItem value={ProductionStatus.IN_PROGRESS}>In Progress</MenuItem>
@@ -534,14 +535,14 @@ const ProductionDashboard: React.FC = () => {
                                 </FormControl>
                             </Grid>
 
-                            <Grid item xs={12} sm={6} md={3}>
+                            <Grid item xs={12} sm={6} md={2}>
                                 <FormControl fullWidth>
                                     <InputLabel>Sort By</InputLabel>
                                     <Select
                                         value={sortBy}
                                         label="Sort By"
                                         onChange={(e) => setSortBy(e.target.value as 'name' | 'date' | 'progress')}
-                                        sx={{ borderRadius: 2 }}
+                                        sx={{ borderRadius: borderRadius.md }} // 16px - Modern rounded select
                                     >
                                         <MenuItem value="date">Most Recent</MenuItem>
                                         <MenuItem value="name">Name</MenuItem>
@@ -550,20 +551,18 @@ const ProductionDashboard: React.FC = () => {
                                 </FormControl>
                             </Grid>
 
-                            <Grid item xs={12} md={1}>
-                                <Tooltip title="Refresh">
+                            <Grid item xs={12} md={4}>
+                                <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
                                     <IconButton 
                                         onClick={() => loadActiveProductions()}
                                         sx={{ 
-                                            width: '100%',
-                                            height: 56,
                                             bgcolor: alpha(theme.palette.primary.main, 0.1),
                                             '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.2) }
                                         }}
                                     >
                                         <RefreshIcon />
                                     </IconButton>
-                                </Tooltip>
+                                </Box>
                             </Grid>
                         </Grid>
                     </Paper>

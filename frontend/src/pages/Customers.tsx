@@ -849,7 +849,21 @@ const Customers: React.FC = () => {
       {/* Add/Edit Customer Dialog */}
       <Dialog open={openForm} onClose={handleCloseForm} maxWidth="sm" fullWidth>
         <DialogTitle>
-          {editingCustomer ? 'Edit Customer' : 'Add New Customer'}
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Typography variant="h6">
+              {editingCustomer ? 'Edit Customer' : 'Add New Customer'}
+            </Typography>
+            <Box>
+              <Button onClick={handleCloseForm} sx={{ mr: 1 }}>Cancel</Button>
+              <Button
+                onClick={handleSubmit}
+                variant="contained"
+                disabled={createMutation.isPending || updateMutation.isPending}
+              >
+                {editingCustomer ? 'Update' : 'Create'}
+              </Button>
+            </Box>
+          </Box>
         </DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
@@ -905,16 +919,6 @@ const Customers: React.FC = () => {
             </Grid>
           </Grid>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseForm}>Cancel</Button>
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            disabled={createMutation.isPending || updateMutation.isPending}
-          >
-            {editingCustomer ? 'Update' : 'Create'}
-          </Button>
-        </DialogActions>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
