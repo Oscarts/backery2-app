@@ -17,6 +17,14 @@ import {
     Fab,
     Alert,
     CircularProgress,
+    TextField,
+    InputAdornment,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    Paper,
+    alpha,
 } from '@mui/material';
 import {
     PlayArrow as PlayIcon,
@@ -28,6 +36,8 @@ import {
     History as HistoryIcon,
     Delete as DeleteIcon,
     Block as BlockIcon,
+    Search as SearchIcon,
+    Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { formatDistanceToNow } from 'date-fns';
 import { ProductionRun, ProductionStatus, ProductionStepStatus } from '../../types';
@@ -59,6 +69,11 @@ const ProductionDashboard: React.FC = () => {
     const [showProductionHistory, setShowProductionHistory] = useState(false);
     const [selectedRecipe, setSelectedRecipe] = useState<any>(null);
     const [selectedProduction, setSelectedProduction] = useState<ProductionRun | null>(null);
+
+    // Filter and search state
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [sortBy, setSortBy] = useState<'name' | 'date' | 'progress'>('date');
 
     // Load active production runs and stats
     useEffect(() => {
@@ -325,6 +340,29 @@ const ProductionDashboard: React.FC = () => {
         return formatDistanceToNow(new Date(firstStartedStep.startedAt), { addSuffix: false });
     };
 
+    // Filter and sort productions
+    const filteredProductions = activeProductions
+        .filter(production => {
+            // Search filter
+            const matchesSearch = production.name.toLowerCase().includes(searchTerm.toLowerCase());
+            
+            // Status filter
+            const matchesStatus = statusFilter === 'all' || production.status === statusFilter;
+            
+            return matchesSearch && matchesStatus;
+        })
+        .sort((a, b) => {
+            switch (sortBy) {
+                case 'name':
+                    return a.name.localeCompare(b.name);
+                case 'progress':
+                    return calculateProgress(b) - calculateProgress(a);
+                case 'date':
+                default:
+                    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+            }
+        });
+
     return (
         <Box sx={{ p: isMobile ? 2 : 3 }}>
             {/* Loading State */}
@@ -443,38 +481,129 @@ const ProductionDashboard: React.FC = () => {
                         </Grid>
                     </Grid>
 
+                    {/* Search and Filter Bar */}
+                    <Paper 
+                        elevation={2}
+                        sx={{ 
+                            p: 2,
+                            mb: 3,
+                            borderRadius: 2.5,
+                            bgcolor: alpha(theme.palette.background.paper, 0.8),
+                            backdropFilter: 'blur(10px)'
+                        }}
+                    >
+                        <Grid container spacing={2} alignItems="center">
+                            <Grid item xs={12} md={5}>
+                                <TextField
+                                    fullWidth
+                                    placeholder="Search production runs..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    InputProps={{
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <SearchIcon color="action" />
+                                            </InputAdornment>
+                                        ),
+                                    }}
+                                    sx={{
+                                        '& .MuiOutlinedInput-root': {
+                                            borderRadius: 2,
+                                            bgcolor: theme.palette.background.paper
+                                        }
+                                    }}
+                                />
+                            </Grid>
+                            
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Status</InputLabel>
+                                    <Select
+                                        value={statusFilter}
+                                        label="Status"
+                                        onChange={(e) => setStatusFilter(e.target.value)}
+                                        sx={{ borderRadius: 2 }}
+                                    >
+                                        <MenuItem value="all">All Status</MenuItem>
+                                        <MenuItem value={ProductionStatus.IN_PROGRESS}>In Progress</MenuItem>
+                                        <MenuItem value={ProductionStatus.ON_HOLD}>On Hold</MenuItem>
+                                        <MenuItem value={ProductionStatus.PLANNED}>Planned</MenuItem>
+                                        <MenuItem value={ProductionStatus.COMPLETED}>Completed</MenuItem>
+                                        <MenuItem value={ProductionStatus.CANCELLED}>Cancelled</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth>
+                                    <InputLabel>Sort By</InputLabel>
+                                    <Select
+                                        value={sortBy}
+                                        label="Sort By"
+                                        onChange={(e) => setSortBy(e.target.value as 'name' | 'date' | 'progress')}
+                                        sx={{ borderRadius: 2 }}
+                                    >
+                                        <MenuItem value="date">Most Recent</MenuItem>
+                                        <MenuItem value="name">Name</MenuItem>
+                                        <MenuItem value="progress">Progress</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} md={1}>
+                                <Tooltip title="Refresh">
+                                    <IconButton 
+                                        onClick={() => loadActiveProductions()}
+                                        sx={{ 
+                                            width: '100%',
+                                            height: 56,
+                                            bgcolor: alpha(theme.palette.primary.main, 0.1),
+                                            '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.2) }
+                                        }}
+                                    >
+                                        <RefreshIcon />
+                                    </IconButton>
+                                </Tooltip>
+                            </Grid>
+                        </Grid>
+                    </Paper>
+
                     {/* Active Productions */}
-                    {activeProductions.length === 0 ? (
+                    {filteredProductions.length === 0 ? (
                         <Card sx={{ textAlign: 'center', py: 8 }}>
                             <CardContent>
                                 <Typography variant="h5" sx={{ mb: 2, fontSize: '4rem' }}>
-                                    🧑‍🍳
+                                    {activeProductions.length === 0 ? '🧑‍🍳' : '🔍'}
                                 </Typography>
                                 <Typography variant="h6" color="text.secondary" gutterBottom>
-                                    No active productions
+                                    {activeProductions.length === 0 ? 'No active productions' : 'No productions found'}
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
-                                    Ready to start baking? Create your first production run!
+                                    {activeProductions.length === 0 
+                                        ? 'Ready to start baking? Create your first production run!' 
+                                        : 'Try adjusting your search or filter criteria'}
                                 </Typography>
-                                <Button
-                                    variant="contained"
-                                    size="large"
-                                    startIcon={<KitchenIcon />}
-                                    onClick={handleStartNewProduction}
-                                    sx={{
-                                        height: 56,
-                                        px: 4,
-                                        fontSize: '1.1rem',
-                                        background: 'linear-gradient(45deg, #667eea 30%, #764ba2 90%)',
-                                    }}
-                                >
-                                    🚀 Start Your First Production
-                                </Button>
+                                {activeProductions.length === 0 && (
+                                    <Button
+                                        variant="contained"
+                                        size="large"
+                                        startIcon={<KitchenIcon />}
+                                        onClick={handleStartNewProduction}
+                                        sx={{
+                                            height: 56,
+                                            px: 4,
+                                            fontSize: '1.1rem',
+                                            background: 'linear-gradient(45deg, #667eea 30%, #764ba2 90%)',
+                                        }}
+                                    >
+                                        🚀 Start Your First Production
+                                    </Button>
+                                )}
                             </CardContent>
                         </Card>
                     ) : (
                         <Grid container spacing={3}>
-                            {activeProductions.map((production) => {
+                            {filteredProductions.map((production) => {
                                 const currentStep = getCurrentStep(production);
                                 const progress = calculateProgress(production);
 
