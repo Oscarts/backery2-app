@@ -291,55 +291,55 @@ const EnhancedRecipes: React.FC = () => {
       </Box>
 
       {/* Stats Cards */}
-      <Box sx={{ mb: 3 }}>
-        <Grid container spacing={2}>
-          <Grid item xs={6} sm={3}>
-            <Card sx={{ textAlign: 'center', p: 2, bgcolor: alpha(theme.palette.primary.main, 0.1) }}>
-              <Typography variant="h4" color="primary.main" fontWeight="bold">
-                {recipes.length}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Total Recipes
-              </Typography>
-            </Card>
-          </Grid>
-          <Grid item xs={6} sm={3}>
-            <Card sx={{ textAlign: 'center', p: 2, bgcolor: alpha(theme.palette.success.main, 0.1) }}>
-              <Typography variant="h4" color="success.main" fontWeight="bold">
-                {favorites.size}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Favorites
-              </Typography>
-            </Card>
-          </Grid>
-          <Grid item xs={6} sm={3}>
-            <Card sx={{ textAlign: 'center', p: 2, bgcolor: alpha(theme.palette.warning.main, 0.1) }}>
-              <Typography variant="h4" color="warning.main" fontWeight="bold">
-                {recipes.filter((r: Recipe) => r.estimatedCost).length}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                With Costs
-              </Typography>
-            </Card>
-          </Grid>
-          <Grid item xs={6} sm={3}>
-            <Card sx={{ textAlign: 'center', p: 2, bgcolor: alpha(theme.palette.info.main, 0.1) }}>
-              <Typography variant="h4" color="info.main" fontWeight="bold">
-                {categories.length}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Categories
-              </Typography>
-            </Card>
-          </Grid>
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={6} sm={3}>
+          <Card sx={{ textAlign: 'center', p: 2, bgcolor: alpha(theme.palette.primary.main, 0.1) }}>
+            <Typography variant="h4" color="primary.main" fontWeight="bold">
+              {recipes.length}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Total Recipes
+            </Typography>
+          </Card>
         </Grid>
+        <Grid item xs={6} sm={3}>
+          <Card sx={{ textAlign: 'center', p: 2, bgcolor: alpha(theme.palette.success.main, 0.1) }}>
+            <Typography variant="h4" color="success.main" fontWeight="bold">
+              {favorites.size}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Favorites
+            </Typography>
+          </Card>
+        </Grid>
+        <Grid item xs={6} sm={3}>
+          <Card sx={{ textAlign: 'center', p: 2, bgcolor: alpha(theme.palette.warning.main, 0.1) }}>
+            <Typography variant="h4" color="warning.main" fontWeight="bold">
+              {recipes.filter((r: Recipe) => r.estimatedCost).length}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              With Costs
+            </Typography>
+          </Card>
+        </Grid>
+        <Grid item xs={6} sm={3}>
+          <Card sx={{ textAlign: 'center', p: 2, bgcolor: alpha(theme.palette.info.main, 0.1) }}>
+            <Typography variant="h4" color="info.main" fontWeight="bold">
+              {categories.length}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Categories
+            </Typography>
+          </Card>
+        </Grid>
+      </Grid>
 
-        {/* Search and Filter Bar */}
-        <Paper 
+      {/* Search and Filter Bar */}
+      <Paper 
           elevation={2}
           sx={{ 
-            p: 2, 
+            p: 2,
+            mb: 3,
             borderRadius: borderRadius.lg, // 20px - Modern rounded search bar
             bgcolor: alpha(theme.palette.background.paper, 0.8),
             backdropFilter: 'blur(10px)'
@@ -445,7 +445,6 @@ const EnhancedRecipes: React.FC = () => {
             </Grid>
           </Grid>
         </Paper>
-      </Box>
 
       {/* Recipes Display */}
       <Box sx={{ mb: 3 }}>
