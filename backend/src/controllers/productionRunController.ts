@@ -198,19 +198,49 @@ export const createProductionRun = async (req: Request, res: Response) => {
             }
         });
 
-        // Auto-allocate materials for the production run
-        console.log('🔄 Auto-allocating materials for new production run');
+        // Check ingredient availability and auto-allocate materials for the production run
+        console.log('� Checking ingredient availability for new production run');
+        const productionMultiplier = targetQuantity / (recipe.yieldQuantity || 1);
+        
         try {
-            const productionMultiplier = targetQuantity / (recipe.yieldQuantity || 1);
+            // First, check if all ingredients are available
+            const stockCheck = await inventoryAllocationService.checkIngredientAvailability(
+                recipeId,
+                productionMultiplier
+            );
+
+            if (!stockCheck.allIngredientsAvailable) {
+                // Delete the production run we just created since we can't fulfill it
+                await prisma.productionRun.delete({ where: { id: productionRun.id } });
+                
+                return res.status(400).json({
+                    success: false,
+                    error: 'Insufficient ingredients to start production',
+                    details: {
+                        message: stockCheck.message,
+                        unavailableIngredients: stockCheck.unavailableIngredients,
+                        canProduce: false
+                    }
+                });
+            }
+
+            // All ingredients available, proceed with allocation
             const allocations = await inventoryAllocationService.allocateIngredients(
                 productionRun.id,
                 recipeId,
                 productionMultiplier
             );
-            console.log(`✓ Allocated ${allocations.length} materials for production run`);
+            console.log(`✅ Allocated ${allocations.length} materials for production run`);
         } catch (allocError) {
-            console.warn('⚠️ Material allocation failed during creation:', allocError);
-            // Continue - production run is created, allocation can be done later
+            // If allocation fails after check, delete the production run
+            await prisma.productionRun.delete({ where: { id: productionRun.id } });
+            console.error('❌ Material allocation failed:', allocError);
+            
+            return res.status(500).json({
+                success: false,
+                error: 'Failed to allocate materials for production',
+                details: allocError instanceof Error ? allocError.message : 'Unknown error'
+            });
         }
 
         res.status(201).json({
@@ -745,6 +775,13 @@ export const getFinishedProductMaterials = async (req: Request, res: Response) =
         const materials = await inventoryAllocationService.getMaterialUsage(finishedProduct.productionRun.id);
         const costBreakdown = await inventoryAllocationService.calculateProductionCost(finishedProduct.productionRun.id);
 
+        // Use the costToProduce from the finished product which was calculated at production completion
+        // This matches the recipe's cost per unit calculation (totalCost / yieldQuantity)
+        const costPerUnit = finishedProduct.costToProduce || 0;
+        
+        // Total cost is cost per unit * quantity produced
+        const totalCost = costPerUnit * finishedProduct.quantity;
+
         res.json({
             success: true,
             data: {
@@ -769,8 +806,10 @@ export const getFinishedProductMaterials = async (req: Request, res: Response) =
                 summary: {
                     totalMaterialsUsed: materials.length,
                     totalMaterialCost: costBreakdown.materialCost,
-                    totalProductionCost: costBreakdown.totalCost,
-                    costPerUnit: finishedProduct.quantity > 0 ? costBreakdown.totalCost / finishedProduct.quantity : 0
+                    totalProductionCost: totalCost,
+                    costPerUnit: costPerUnit,
+                    overheadPercentage: costBreakdown.overheadPercentage,
+                    overheadCost: costBreakdown.overheadCost
                 }
             },
             message: 'Material traceability retrieved successfully'
@@ -781,6 +820,60 @@ export const getFinishedProductMaterials = async (req: Request, res: Response) =
         res.status(500).json({
             success: false,
             error: 'Failed to retrieve material traceability'
+        });
+    }
+};
+
+// Check ingredient availability before starting production
+export const checkIngredientAvailability = async (req: Request, res: Response) => {
+    try {
+        const { recipeId, targetQuantity } = req.body;
+
+        if (!recipeId || !targetQuantity) {
+            return res.status(400).json({
+                success: false,
+                error: 'recipeId and targetQuantity are required'
+            });
+        }
+
+        console.log(`🔍 Checking ingredient availability for recipe ${recipeId}, quantity: ${targetQuantity}`);
+
+        // Get recipe to calculate multiplier
+        const recipe = await prisma.recipe.findUnique({
+            where: { id: recipeId },
+            select: { yieldQuantity: true, name: true }
+        });
+
+        if (!recipe) {
+            return res.status(404).json({
+                success: false,
+                error: 'Recipe not found'
+            });
+        }
+
+        const productionMultiplier = targetQuantity / (recipe.yieldQuantity || 1);
+
+        // Check ingredient availability
+        const stockCheck = await inventoryAllocationService.checkIngredientAvailability(
+            recipeId,
+            productionMultiplier
+        );
+
+        res.json({
+            success: true,
+            data: {
+                recipeName: recipe.name,
+                targetQuantity,
+                productionMultiplier,
+                ...stockCheck
+            }
+        });
+
+    } catch (error) {
+        console.error('Error checking ingredient availability:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to check ingredient availability'
         });
     }
 };

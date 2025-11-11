@@ -637,21 +637,25 @@ const FinishedProducts: React.FC = () => {
                           </Button>
                         </Box>
                         <Grid container spacing={2}>
-                          <Grid item xs={6} sm={3}>
+                          <Grid item xs={6} sm={2.4}>
                             <Typography variant="caption" color="text.secondary">Materials</Typography>
                             <Typography variant="body1" fontWeight="bold">
                               {materialBreakdownResponse.data.summary?.totalMaterialsUsed}
                             </Typography>
                           </Grid>
-                          <Grid item xs={6} sm={3}>
+                          <Grid item xs={6} sm={2.4}>
                             <Typography variant="caption" color="text.secondary">Material Cost</Typography>
                             <Typography variant="body1" fontWeight="bold">{formatCurrency(materialBreakdownResponse.data.summary?.totalMaterialCost || 0)}</Typography>
                           </Grid>
-                          <Grid item xs={6} sm={3}>
+                          <Grid item xs={6} sm={2.4}>
+                            <Typography variant="caption" color="text.secondary">Overhead ({materialBreakdownResponse.data.summary?.overheadPercentage || 0}%)</Typography>
+                            <Typography variant="body1" fontWeight="bold">{formatCurrency(materialBreakdownResponse.data.summary?.overheadCost || 0)}</Typography>
+                          </Grid>
+                          <Grid item xs={6} sm={2.4}>
                             <Typography variant="caption" color="text.secondary">Cost / Unit</Typography>
                             <Typography variant="body1" fontWeight="bold">{formatCurrency(materialBreakdownResponse.data.summary?.costPerUnit || 0)}</Typography>
                           </Grid>
-                          <Grid item xs={6} sm={3}>
+                          <Grid item xs={6} sm={2.4}>
                             <Typography variant="caption" color="text.secondary">Total Cost</Typography>
                             <Typography variant="body1" fontWeight="bold">{formatCurrency(materialBreakdownResponse.data.summary?.totalProductionCost || 0)}</Typography>
                           </Grid>

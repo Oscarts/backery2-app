@@ -29,10 +29,132 @@ export interface MaterialConsumption {
   notes?: string;
 }
 
+export interface IngredientAvailability {
+  materialId: string;
+  materialName: string;
+  materialType: 'RAW_MATERIAL' | 'FINISHED_PRODUCT';
+  quantityNeeded: number;
+  quantityAvailable: number;
+  unit: string;
+  isAvailable: boolean;
+  shortage?: number;
+}
+
+export interface StockCheckResult {
+  canProduce: boolean;
+  allIngredientsAvailable: boolean;
+  unavailableIngredients: IngredientAvailability[];
+  availableIngredients: IngredientAvailability[];
+  message?: string;
+}
+
 export class InventoryAllocationService {
   
   /**
+   * Check if all ingredients are available for production without allocating them
+   * This should be called BEFORE creating a production run
+   */
+  async checkIngredientAvailability(recipeId: string, productionMultiplier: number = 1): Promise<StockCheckResult> {
+    try {
+      console.log(`🔍 Checking ingredient availability for recipe: ${recipeId}, multiplier: ${productionMultiplier}`);
+      
+      const recipe = await prisma.recipe.findUnique({
+        where: { id: recipeId },
+        include: {
+          ingredients: {
+            include: {
+              rawMaterial: true,
+              finishedProduct: true
+            }
+          }
+        }
+      });
+
+      if (!recipe) {
+        throw new Error('Recipe not found');
+      }
+
+      const availableIngredients: IngredientAvailability[] = [];
+      const unavailableIngredients: IngredientAvailability[] = [];
+
+      // Check each ingredient
+      for (const ingredient of recipe.ingredients) {
+        const quantityNeeded = ingredient.quantity * productionMultiplier;
+
+        if (ingredient.rawMaterial) {
+          const material = ingredient.rawMaterial;
+          const available = material.quantity - material.reservedQuantity;
+          const isAvailable = available >= quantityNeeded;
+          
+          const availability: IngredientAvailability = {
+            materialId: material.id,
+            materialName: material.name,
+            materialType: 'RAW_MATERIAL',
+            quantityNeeded,
+            quantityAvailable: available,
+            unit: ingredient.unit,
+            isAvailable,
+            shortage: isAvailable ? undefined : quantityNeeded - available
+          };
+
+          if (isAvailable) {
+            availableIngredients.push(availability);
+          } else {
+            unavailableIngredients.push(availability);
+          }
+        } else if (ingredient.finishedProduct) {
+          const product = ingredient.finishedProduct;
+          const available = product.quantity - product.reservedQuantity;
+          const isAvailable = available >= quantityNeeded;
+          
+          const availability: IngredientAvailability = {
+            materialId: product.id,
+            materialName: product.name,
+            materialType: 'FINISHED_PRODUCT',
+            quantityNeeded,
+            quantityAvailable: available,
+            unit: ingredient.unit,
+            isAvailable,
+            shortage: isAvailable ? undefined : quantityNeeded - available
+          };
+
+          if (isAvailable) {
+            availableIngredients.push(availability);
+          } else {
+            unavailableIngredients.push(availability);
+          }
+        }
+      }
+
+      const allIngredientsAvailable = unavailableIngredients.length === 0;
+      
+      let message = '';
+      if (!allIngredientsAvailable) {
+        const shortageList = unavailableIngredients
+          .map(ing => `${ing.materialName}: need ${ing.quantityNeeded} ${ing.unit}, only ${ing.quantityAvailable} ${ing.unit} available (shortage: ${ing.shortage} ${ing.unit})`)
+          .join('; ');
+        message = `Insufficient stock for: ${shortageList}`;
+      }
+
+      console.log(`${allIngredientsAvailable ? '✅' : '❌'} Ingredient check: ${allIngredientsAvailable ? 'All available' : message}`);
+
+      return {
+        canProduce: allIngredientsAvailable,
+        allIngredientsAvailable,
+        unavailableIngredients,
+        availableIngredients,
+        message
+      };
+
+    } catch (error) {
+      console.error('❌ Error checking ingredient availability:', error);
+      throw error;
+    }
+  }
+  
+  /**
    * Allocate ingredients for a production run based on recipe requirements
+   * NOTE: Call checkIngredientAvailability() first to verify stock before allocating
    */
   async allocateIngredients(productionRunId: string, recipeId: string, productionMultiplier: number = 1): Promise<MaterialAllocation[]> {
     try {
@@ -285,7 +407,7 @@ export class InventoryAllocationService {
   /**
    * Calculate total production cost from material usage
    */
-  async calculateProductionCost(productionRunId: string): Promise<{ materialCost: number, totalCost: number, materials: any[] }> {
+  async calculateProductionCost(productionRunId: string): Promise<{ materialCost: number, overheadCost: number, totalCost: number, overheadPercentage: number, materials: any[] }> {
     const materials = await this.getMaterialUsage(productionRunId);
     
     const materialCost = materials.reduce((total, material) => {
@@ -294,12 +416,23 @@ export class InventoryAllocationService {
       return total + (quantity * unitCost);
     }, 0);
 
-    // Add 20% overhead for labor and utilities
-    const totalCost = materialCost * 1.2;
+    // Get the production run's recipe to use its overhead percentage
+    const productionRun = await prisma.productionRun.findUnique({
+      where: { id: productionRunId },
+      include: { recipe: { select: { overheadPercentage: true } } }
+    });
+
+    // Use recipe's overhead percentage or default to 50%
+    const overheadPercentage = productionRun?.recipe?.overheadPercentage ?? 50;
+    const overheadRate = overheadPercentage / 100;
+    const overheadCost = materialCost * overheadRate;
+    const totalCost = materialCost + overheadCost;
 
     return {
       materialCost,
+      overheadCost,
       totalCost,
+      overheadPercentage,
       materials
     };
   }

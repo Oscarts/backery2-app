@@ -19,7 +19,9 @@ import {
   IconButton,
   Card,
   alpha,
-  Fade
+  Fade,
+  Alert,
+  Snackbar
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -54,6 +56,9 @@ const EnhancedRecipes: React.FC = () => {
   const [sortBy, setSortBy] = useState<SortOption>('name');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+
+  // Error state
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Dialog state
   const [formOpen, setFormOpen] = useState(false);
@@ -209,8 +214,12 @@ const EnhancedRecipes: React.FC = () => {
       }
       queryClient.invalidateQueries({ queryKey: ['recipes'] });
       setFormOpen(false);
-    } catch (error) {
+      setErrorMessage(null); // Clear any previous errors
+    } catch (error: any) {
       console.error('Failed to save recipe:', error);
+      // Extract error message from API response
+      const message = error?.response?.data?.error || error?.message || 'Failed to save recipe';
+      setErrorMessage(message);
     }
   };
 
@@ -539,10 +548,27 @@ const EnhancedRecipes: React.FC = () => {
         onClose={() => {
           setFormOpen(false);
           setEditingRecipe(null);
+          setErrorMessage(null); // Clear error when closing
         }}
         onSave={handleSaveRecipe}
         onCalculateCost={handleCalculateCost}
       />
+
+      {/* Error Snackbar */}
+      <Snackbar
+        open={!!errorMessage}
+        autoHideDuration={6000}
+        onClose={() => setErrorMessage(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={() => setErrorMessage(null)} 
+          severity="error" 
+          sx={{ width: '100%' }}
+        >
+          {errorMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

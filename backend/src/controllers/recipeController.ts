@@ -208,6 +208,14 @@ export const createRecipe = async (req: Request, res: Response) => {
       });
     }
 
+    // Check for validation errors (thrown by our code)
+    if (error.message && error.message.includes('must have exactly one')) {
+      return res.status(400).json({
+        success: false,
+        error: error.message
+      });
+    }
+
     // Return a more specific error message if available
     res.status(500).json({
       success: false,
@@ -325,8 +333,17 @@ export const updateRecipe = async (req: Request, res: Response) => {
       success: true,
       data: recipe
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating recipe:', error);
+    
+    // Check for validation errors
+    if (error.message && error.message.includes('must have exactly one')) {
+      return res.status(400).json({
+        success: false,
+        error: error.message
+      });
+    }
+    
     res.status(500).json({
       success: false,
       error: 'Failed to update recipe'

@@ -545,6 +545,8 @@ export interface MaterialBreakdown {
     totalMaterialCost: number;
     totalProductionCost: number;
     costPerUnit: number;
+    overheadPercentage: number;
+    overheadCost: number;
   };
 }
 
