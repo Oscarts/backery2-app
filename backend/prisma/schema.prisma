@@ -7,73 +7,179 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============================================
+// MULTI-TENANT AUTHENTICATION & AUTHORIZATION
+// ============================================
+
+model Client {
+  id          String   @id @default(cuid())
+  name        String   @unique // Company/bakery name
+  slug        String   @unique // URL-friendly identifier
+  email       String?
+  phone       String?
+  address     String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  users               User[]
+  roles               Role[]
+  
+  // All data belongs to a client (tenant isolation)
+  rawMaterials        RawMaterial[]
+  finishedProducts    FinishedProduct[]
+  recipes             Recipe[]
+  productionRuns      ProductionRun[]
+  customers           Customer[]
+  customerOrders      CustomerOrder[]
+  categories          Category[]
+  suppliers           Supplier[]
+  storageLocations    StorageLocation[]
+  qualityStatuses     QualityStatus[]
+  
+  @@map("clients")
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   // e.g., "Admin", "Inventory Manager", "Sales Manager"
+  description String?
+  isSystem    Boolean  @default(false) // True for ADMIN role (cannot be deleted)
+  clientId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  users       User[]
+  permissions RolePermission[]
+  
+  @@unique([clientId, name])
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  resource    String   // Page/module identifier (e.g., "raw-materials", "customer-orders")
+  action      String   // "view", "create", "edit", "delete"
+  description String?
+  createdAt   DateTime @default(now())
+  
+  rolePermissions RolePermission[]
+  
+  @@unique([resource, action])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String     @id @default(cuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime   @default(now())
+  
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
   passwordHash String
-  role         UserRole @default(STAFF)
+  role         UserRole @default(CUSTOM)  // Legacy: ADMIN/MANAGER/STAFF/VIEWER/CUSTOM
+  roleId       String?  // New: Reference to custom Role table
+  clientId     String   // Multi-tenant isolation
   firstName    String
   lastName     String
+  isActive     Boolean  @default(true)
+  lastLoginAt  DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-
+  
+  client       Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  customRole   Role?    @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  
+  @@index([clientId])
+  @@index([email])
   @@map("users")
 }
 
 model Category {
   id                   String                @id @default(cuid())
-  name                 String                @unique
+  name                 String
   type                 CategoryType
   description          String?
+  clientId             String                // Multi-tenant isolation
   createdAt            DateTime              @default(now())
   finishedProducts     FinishedProduct[]
   // intermediateProducts removed
   rawMaterials         RawMaterial[]
   recipes              Recipe[]
+  
+  client               Client                @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
+  @@unique([clientId, name])  // Categories unique per client
+  @@index([clientId])
   @@map("categories")
 }
 
 model Supplier {
   id           String        @id @default(cuid())
-  name         String        @unique
+  name         String
   contactInfo  Json?
   address      String?
   isActive     Boolean       @default(true)
+  clientId     String        // Multi-tenant isolation
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   rawMaterials RawMaterial[]
+  
+  client       Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
+  @@unique([clientId, name])  // Suppliers unique per client
+  @@index([clientId])
   @@map("suppliers")
 }
 
 model StorageLocation {
   id                   String                @id @default(cuid())
-  name                 String                @unique
+  name                 String
   type                 String?
   description          String?
   capacity             String?
+  clientId             String                // Multi-tenant isolation
   createdAt            DateTime              @default(now())
   finishedProducts     FinishedProduct[]
   // intermediateProducts removed
   rawMaterials         RawMaterial[]
+  
+  client               Client                @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
+  @@unique([clientId, name])  // Storage locations unique per client
+  @@index([clientId])
   @@map("storage_locations")
 }
 
 model QualityStatus {
   id                   String                @id @default(cuid())
-  name                 String                @unique
+  name                 String
   description          String?
   color                String?               // For UI display
   isActive             Boolean               @default(true)
   sortOrder            Int                   @default(0)
+  clientId             String                // Multi-tenant isolation
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
   rawMaterials         RawMaterial[]
   // intermediateProducts removed
   finishedProducts     FinishedProduct[]
+  
+  client               Client                @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
+  @@unique([clientId, name])  // Quality statuses unique per client
+  @@index([clientId])
   @@map("quality_statuses")
 }
 
@@ -123,14 +229,17 @@ model RawMaterial {
   storageLocationId String
   qualityStatusId   String?
   isContaminated    Boolean            @default(false)
+  clientId          String             // Multi-tenant isolation
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   category          Category?          @relation(fields: [categoryId], references: [id])
   storageLocation   StorageLocation    @relation(fields: [storageLocationId], references: [id])
   supplier          Supplier           @relation(fields: [supplierId], references: [id])
   qualityStatus     QualityStatus?     @relation(fields: [qualityStatusId], references: [id])
+  client            Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
   recipeIngredients RecipeIngredient[]
 
+  @@index([clientId])
   @@index([name])
   @@index([sku])
   @@index([batchNumber])
@@ -162,14 +271,17 @@ model FinishedProduct {
   productionRunId   String?          @map("production_run_id")
   status            ProductionStatus @default(IN_PROGRESS)
   isContaminated    Boolean          @default(false)
+  clientId          String           // Multi-tenant isolation
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
   category          Category?        @relation(fields: [categoryId], references: [id])
   storageLocation   StorageLocation? @relation(fields: [storageLocationId], references: [id])
   qualityStatus     QualityStatus?   @relation(fields: [qualityStatusId], references: [id])
   productionRun     ProductionRun?   @relation(fields: [productionRunId], references: [id])
+  client            Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
   recipeIngredients RecipeIngredient[]
 
+  @@index([clientId])
   @@map("finished_products")
 }
 
@@ -197,13 +309,16 @@ model Recipe {
   imageUrl             String?               @map("image_url")
   overheadPercentage   Float?                @default(20) @map("overhead_percentage")
   
+  clientId             String                // Multi-tenant isolation
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
     // intermediateProducts removed
   category             Category?             @relation(fields: [categoryId], references: [id])
+  client               Client                @relation(fields: [clientId], references: [id], onDelete: Cascade)
   ingredients          RecipeIngredient[]
   productionRuns       ProductionRun[]
 
+  @@index([clientId])
   @@map("recipes")
 }
 
@@ -237,14 +352,17 @@ model ProductionRun {
   actualCost        Float?
   finalQuantity     Float?
   notes             String?
+  clientId          String              // Multi-tenant isolation
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   
   recipe            Recipe              @relation(fields: [recipeId], references: [id])
+  client            Client              @relation(fields: [clientId], references: [id], onDelete: Cascade)
   steps             ProductionStep[]
   allocations       ProductionAllocation[]
   finishedProducts  FinishedProduct[]
 
+  @@index([clientId])
   @@map("production_runs")
 }
 
@@ -310,6 +428,7 @@ enum UserRole {
   MANAGER
   STAFF
   VIEWER
+  CUSTOM  // For users with custom role assignments
 }
 
 enum CategoryType {
@@ -355,10 +474,14 @@ model Customer {
   phone     String?
   address   String?
   isActive  Boolean  @default(true)
+  clientId  String   // Multi-tenant isolation
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   orders    CustomerOrder[]
+  
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
+  @@index([clientId])
   @@map("customers")
 }
 
@@ -373,12 +496,15 @@ model CustomerOrder {
   priceMarkupPercentage   Float       @default(30) @map("price_markup_percentage")
   tvaRate                 Float       @default(20) @map("tva_rate") // TVA/VAT rate in percentage (default 20% for France)
   notes                   String?
+  clientId                String      // Multi-tenant isolation
   createdAt               DateTime    @default(now()) @map("created_at")
   updatedAt               DateTime    @updatedAt @map("updated_at")
   
   customer                Customer    @relation(fields: [customerId], references: [id])
+  client                  Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
   items                   OrderItem[]
 
+  @@index([clientId])
   @@index([customerId])
   @@index([status])
   @@index([expectedDeliveryDate])
