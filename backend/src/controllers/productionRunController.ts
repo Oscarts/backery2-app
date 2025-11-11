@@ -302,17 +302,24 @@ export const getProductionStats = async (req: Request, res: Response) => {
             })
         ]);
 
-        // Get total target quantity from all non-completed, non-cancelled productions
-        const activeProductions = await prisma.productionRun.findMany({
+        // Get total items produced today (sum of target quantities from completed runs)
+        const completedProductionsToday = await prisma.productionRun.findMany({
             where: {
-                status: { in: [ProductionStatus.PLANNED, ProductionStatus.IN_PROGRESS, ProductionStatus.ON_HOLD] }
+                status: ProductionStatus.COMPLETED,
+                completedAt: {
+                    gte: startOfDay,
+                    lte: endOfDay
+                }
             },
             select: {
                 targetQuantity: true
             }
         });
 
-        const totalTargetQuantity = activeProductions.reduce((sum, run) => sum + (run.targetQuantity || 0), 0);
+        const totalItemsProducedToday = completedProductionsToday.reduce(
+            (sum, run) => sum + (run.targetQuantity || 0), 
+            0
+        );
 
         res.json({
             success: true,
@@ -321,7 +328,7 @@ export const getProductionStats = async (req: Request, res: Response) => {
                 onHold: onHoldCount,
                 planned: 0, // Deprecated - merged into active
                 completedToday: completedTodayCount,
-                totalTargetQuantity: totalTargetQuantity
+                totalItemsProducedToday: totalItemsProducedToday
             }
         });
     } catch (error) {

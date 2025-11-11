@@ -49,7 +49,7 @@ const ProductionDashboard: React.FC = () => {
         onHold: 0,
         planned: 0,
         completedToday: 0,
-        totalTargetQuantity: 0
+        totalItemsProducedToday: 0
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -434,10 +434,10 @@ const ProductionDashboard: React.FC = () => {
                         <Grid item xs={6} md={3}>
                             <Card sx={{ textAlign: 'center', p: 2 }}>
                                 <Typography variant="h4" color="text.primary" sx={{ fontWeight: 'bold' }}>
-                                    {productionStats.totalTargetQuantity}
+                                    {productionStats.totalItemsProducedToday}
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary">
-                                    Total Items
+                                    Items Produced Today
                                 </Typography>
                             </Card>
                         </Grid>

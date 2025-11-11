@@ -370,7 +370,7 @@ export const productionApi = {
     onHold: number;
     planned: number;
     completedToday: number;
-    totalTargetQuantity: number;
+    totalItemsProducedToday: number;
   }>> => {
     return apiCall('/production/runs/stats');
   },
