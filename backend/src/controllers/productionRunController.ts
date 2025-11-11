@@ -229,9 +229,21 @@ export const createProductionRun = async (req: Request, res: Response) => {
 // Get production runs for dashboard
 export const getDashboardProductionRuns = async (req: Request, res: Response) => {
     try {
+        // Get active and recently cancelled runs
+        const today = new Date();
+        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        
         const activeRuns = await prisma.productionRun.findMany({
             where: {
-                status: { in: [ProductionStatus.PLANNED, ProductionStatus.IN_PROGRESS, ProductionStatus.ON_HOLD] }
+                OR: [
+                    // Active productions
+                    { status: { in: [ProductionStatus.PLANNED, ProductionStatus.IN_PROGRESS, ProductionStatus.ON_HOLD] } },
+                    // Recently cancelled (today only)
+                    {
+                        status: ProductionStatus.CANCELLED,
+                        updatedAt: { gte: startOfDay }
+                    }
+                ]
             },
             include: {
                 recipe: true,
@@ -243,7 +255,7 @@ export const getDashboardProductionRuns = async (req: Request, res: Response) =>
                 { status: 'asc' },
                 { startedAt: 'asc' }
             ],
-            take: 10
+            take: 20
         });
 
         res.json({
