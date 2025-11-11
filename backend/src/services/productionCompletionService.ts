@@ -1,12 +1,18 @@
 // Production Completion Service
 // Handles creating finished products when production runs are completed
 
-import { PrismaClient } from '@prisma/client';
-// Removed explicit .js extension so TypeScript/ts-node can resolve correctly in both TS and built JS outputs
-import { InventoryAllocationService } from './inventoryAllocationService';
+import { Prisma, PrismaClient } from '@prisma/client';
+import InventoryAllocationService from './inventoryAllocationService';
 import { getOrCreateSkuForName } from './skuService';
+import { recipeCostService } from './recipeCostService';
+import {
+    ProductionCostCalculation,
+    SalePriceCalculation,
+    DEFAULT_PRODUCTION_COST_CONFIG,
+} from '../types/productionCost';
 
 const prisma = new PrismaClient();
+
 const inventoryAllocationService = new InventoryAllocationService();
 
 export class ProductionCompletionService {
@@ -157,6 +163,10 @@ export class ProductionCompletionService {
             // Derive/reuse stable SKU (independent of batch)
             const sku = await getOrCreateSkuForName(productionRun.recipe.name);
 
+            // Calculate production cost and sale price from recipe
+            const productionCostCalc = await this.calculateProductionCost(productionRun);
+            const salePriceCalc = await this.calculateSalePrice(productionRun.recipeId, productionCostCalc);
+
             let finishedProduct;
             try {
                 // Attempt to create new finished product record
@@ -171,8 +181,9 @@ export class ProductionCompletionService {
                         shelfLife: 7, // days
                         quantity,
                         unit: productionRun.targetUnit,
-                        salePrice: 10.0, // Default price - should be calculated based on recipe cost
-                        costToProduce: await this.calculateProductionCost(productionRun),
+                        salePrice: salePriceCalc.salePrice,
+                        costToProduce: productionCostCalc.costPerUnit,
+                        markupPercentage: salePriceCalc.markupPercentage, // Store the markup percentage
                         storageLocationId: defaultLocation.id,
                         productionRunId: productionRun.id, // Link to production run
                         status: 'COMPLETED',
@@ -209,59 +220,120 @@ export class ProductionCompletionService {
         }
     }
 
-    // Calculate production cost based on ingredients
-    private async calculateProductionCost(productionRun: any): Promise<number> {
+    /**
+     * Calculate production cost for a run using recipe cost service
+     * This ensures costs are calculated consistently with recipe overhead
+     * 
+     * @param productionRun - The production run to calculate cost for
+     * @returns Promise<ProductionCostCalculation> - Detailed cost breakdown
+     * @throws Error if recipe cost calculation fails
+     */
+    private async calculateProductionCost(productionRun: any): Promise<ProductionCostCalculation> {
         try {
-            console.log(`💰 Calculating actual production cost for run: ${productionRun.id}`);
+            if (!productionRun.recipeId) {
+                throw new Error('Production run must have a recipe ID');
+            }
 
-            // First, try to get actual material costs from allocations
-            const costBreakdown = await inventoryAllocationService.calculateProductionCost(productionRun.id);
+            if (!productionRun.targetQuantity || productionRun.targetQuantity <= 0) {
+                throw new Error('Production run must have a valid target quantity');
+            }
+
+            // Use the recipe cost service to get accurate cost including proper overhead
+            const recipeCostBreakdown = await recipeCostService.calculateRecipeCost(productionRun.recipeId);
             
-            if (costBreakdown.materials.length > 0) {
-                console.log(`✅ Using actual material costs: $${costBreakdown.totalCost.toFixed(2)}`);
-                return costBreakdown.totalCost;
+            if (!recipeCostBreakdown || !recipeCostBreakdown.costPerUnit) {
+                throw new Error('Failed to calculate recipe cost breakdown');
             }
 
-            // Fallback to estimated costs from recipe if no allocations exist
-            console.log('⚠️ No material allocations found, using estimated costs from recipe');
-            const recipe = await prisma.recipe.findUnique({
-                where: { id: productionRun.recipeId },
-                include: {
-                    ingredients: {
-                        include: {
-                            rawMaterial: true,
-                            finishedProduct: true
-                        }
-                    }
-                }
-            });
-
-            if (!recipe) {
-                return 5.0; // Default cost
-            }
-
-            let totalCost = 0;
-
-            for (const ingredient of recipe.ingredients) {
-                const requiredQuantity = ingredient.quantity * productionRun.targetQuantity;
-
-                if (ingredient.rawMaterial) {
-                    totalCost += requiredQuantity * (ingredient.rawMaterial.unitPrice || 0);
-                } else if (ingredient.finishedProduct) {
-                    // For finished products, use their cost to produce or default
-                    totalCost += requiredQuantity * (ingredient.finishedProduct.costToProduce || 2.0);
-                }
-            }
-
-            // Add 20% overhead for labor and utilities
-            const finalCost = totalCost * 1.2;
-            console.log(`📊 Estimated cost: $${finalCost.toFixed(2)} (materials: $${totalCost.toFixed(2)} + 20% overhead)`);
+            // Calculate total cost for the target quantity
+            const costPerUnit = recipeCostBreakdown.costPerUnit;
+            const totalCost = costPerUnit * productionRun.targetQuantity;
             
-            return finalCost;
+            const costCalculation: ProductionCostCalculation = {
+                totalCost,
+                costPerUnit,
+                quantity: productionRun.targetQuantity,
+                recipeId: productionRun.recipeId,
+                recipeName: recipeCostBreakdown.recipeName,
+                breakdown: {
+                    materialCost: recipeCostBreakdown.totalMaterialCost || 0,
+                    overheadCost: recipeCostBreakdown.overheadCost || 0,
+                    overheadPercentage: recipeCostBreakdown.overheadCost 
+                        ? (recipeCostBreakdown.overheadCost / recipeCostBreakdown.totalMaterialCost) * 100 
+                        : 0,
+                }
+            };
+
+            console.log(`📊 Production cost calculated: $${totalCost.toFixed(2)} (${productionRun.targetQuantity} units @ $${costPerUnit.toFixed(2)}/unit)`);
+            console.log(`   Materials: $${costCalculation.breakdown.materialCost.toFixed(2)}, Overhead: $${costCalculation.breakdown.overheadCost.toFixed(2)} (${costCalculation.breakdown.overheadPercentage.toFixed(0)}%)`);
+            
+            return costCalculation;
 
         } catch (error) {
-            console.error('Error calculating production cost:', error);
-            return 5.0; // Default fallback cost
+            console.error('❌ Error calculating production cost:', error);
+            console.warn(`⚠️  Using fallback cost: $${DEFAULT_PRODUCTION_COST_CONFIG.fallbackCostPerUnit} per unit`);
+            
+            // Return fallback cost calculation
+            return {
+                totalCost: DEFAULT_PRODUCTION_COST_CONFIG.fallbackCostPerUnit * (productionRun.targetQuantity || 1),
+                costPerUnit: DEFAULT_PRODUCTION_COST_CONFIG.fallbackCostPerUnit,
+                quantity: productionRun.targetQuantity || 1,
+                recipeId: productionRun.recipeId || 'unknown',
+                breakdown: {
+                    materialCost: 0,
+                    overheadCost: 0,
+                    overheadPercentage: 0,
+                }
+            };
+        }
+    }
+
+    /**
+     * Calculate sale price based on recipe cost and markup strategy
+     * This ensures consistent pricing across all finished products
+     * 
+     * @param recipeId - The recipe ID to calculate price for
+     * @param productionCostCalculation - The production cost calculation
+     * @returns Promise<SalePriceCalculation> - Detailed price calculation
+     * @throws Error if sale price calculation fails
+     */
+    private async calculateSalePrice(
+        recipeId: string, 
+        productionCostCalculation: ProductionCostCalculation
+    ): Promise<SalePriceCalculation> {
+        try {
+            console.log(`💵 Calculating sale price for recipe: ${recipeId}`);
+
+            // Use cost per unit from production cost calculation
+            const costPerUnit = productionCostCalculation.costPerUnit;
+            
+            // Apply markup: 50% markup by default (can be configured per recipe later)
+            const markupPercentage = DEFAULT_PRODUCTION_COST_CONFIG.defaultMarkupPercentage;
+            const markupAmount = costPerUnit * markupPercentage;
+            const salePrice = costPerUnit + markupAmount;
+            
+            const priceCalculation: SalePriceCalculation = {
+                salePrice,
+                costPerUnit,
+                markupPercentage,
+                markupAmount,
+            };
+
+            console.log(`📊 Sale price calculated: $${salePrice.toFixed(2)} (Cost: $${costPerUnit.toFixed(2)} + ${(markupPercentage * 100)}% markup: $${markupAmount.toFixed(2)})`);
+            
+            return priceCalculation;
+
+        } catch (error) {
+            console.error('❌ Error calculating sale price:', error);
+            console.warn(`⚠️  Using fallback sale price: $${DEFAULT_PRODUCTION_COST_CONFIG.fallbackSalePrice}`);
+            
+            // Return fallback price calculation
+            return {
+                salePrice: DEFAULT_PRODUCTION_COST_CONFIG.fallbackSalePrice,
+                costPerUnit: productionCostCalculation.costPerUnit || DEFAULT_PRODUCTION_COST_CONFIG.fallbackCostPerUnit,
+                markupPercentage: DEFAULT_PRODUCTION_COST_CONFIG.defaultMarkupPercentage,
+                markupAmount: 0,
+            };
         }
     }
 

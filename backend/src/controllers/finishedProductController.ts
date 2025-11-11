@@ -26,6 +26,7 @@ const createFinishedProductSchema = Joi.object({
   unit: Joi.string().required().min(1).max(50),
   salePrice: Joi.number().required().positive(),
   costToProduce: Joi.number().optional().positive(),
+  markupPercentage: Joi.number().optional().min(0).max(1000), // Profit margin percentage
   packagingInfo: Joi.string().optional().allow('').max(500),
   storageLocationId: Joi.string().optional(),
   qualityStatusId: Joi.string().optional().allow('').allow(null),
@@ -36,7 +37,7 @@ const createFinishedProductSchema = Joi.object({
 const updateFinishedProductSchema = createFinishedProductSchema.fork([
   'name', 'description', 'sku', 'categoryId', 'batchNumber', 'productionDate',
   'expirationDate', 'shelfLife', 'quantity', 'unit', 'salePrice', 'costToProduce',
-  'packagingInfo', 'storageLocationId', 'qualityStatusId', 'isContaminated'
+  'markupPercentage', 'packagingInfo', 'storageLocationId', 'qualityStatusId', 'isContaminated'
 ], (schema) => schema.optional()).keys({
   reservedQuantity: Joi.number().optional().min(0),
   status: Joi.string().valid('IN_PRODUCTION', 'COMPLETED', 'ON_HOLD', 'DISCARDED').optional(),

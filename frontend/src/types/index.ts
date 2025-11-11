@@ -154,6 +154,7 @@ export interface FinishedProduct {
   unit: string;
   salePrice: number;
   costToProduce?: number;
+  markupPercentage?: number; // Profit margin percentage (default 50%)
   packagingInfo?: string;
   storageLocationId?: string;
   qualityStatusId?: string;
@@ -183,6 +184,7 @@ export interface CreateFinishedProductData {
   unit: string;
   salePrice: number;
   costToProduce?: number;
+  markupPercentage?: number; // Profit margin percentage
   packagingInfo?: string;
   storageLocationId?: string;
   qualityStatusId?: string;
@@ -204,6 +206,7 @@ export interface UpdateFinishedProductData {
   unit?: string;
   salePrice?: number;
   costToProduce?: number;
+  markupPercentage?: number; // Profit margin percentage
   packagingInfo?: string;
   storageLocationId?: string;
   qualityStatusId?: string;

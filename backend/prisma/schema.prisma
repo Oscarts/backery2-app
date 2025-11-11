@@ -155,6 +155,7 @@ model FinishedProduct {
   unit              String
   salePrice         Float
   costToProduce     Float?
+  markupPercentage  Float?           @default(50) // Profit margin percentage
   packagingInfo     String?
   storageLocationId String?
   qualityStatusId   String?

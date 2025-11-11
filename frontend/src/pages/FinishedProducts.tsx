@@ -310,6 +310,7 @@ const FinishedProducts: React.FC = () => {
       unit: normalizeUnit(editingProduct?.unit || ''),
       salePrice: editingProduct?.salePrice || 0,
       costToProduce: editingProduct?.costToProduce || undefined,
+      markupPercentage: editingProduct?.markupPercentage || 50, // Default 50% markup
       packagingInfo: editingProduct?.packagingInfo || '',
       storageLocationId: editingProduct?.storageLocationId || '',
       isContaminated: editingProduct?.isContaminated || false, // Default is not contaminated
@@ -467,6 +468,9 @@ const FinishedProducts: React.FC = () => {
                   value={formData.salePrice}
                   onChange={(e) => setFormData({ ...formData, salePrice: parseFloat(e.target.value) || 0 })}
                   required
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                  }}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -476,6 +480,22 @@ const FinishedProducts: React.FC = () => {
                   type="number"
                   value={formData.costToProduce || ''}
                   onChange={(e) => setFormData({ ...formData, costToProduce: parseFloat(e.target.value) || undefined })}
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Markup Percentage"
+                  type="number"
+                  value={formData.markupPercentage || 50}
+                  onChange={(e) => setFormData({ ...formData, markupPercentage: parseFloat(e.target.value) || 50 })}
+                  helperText="Profit margin percentage (e.g., 50 for 50% markup)"
+                  InputProps={{
+                    endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                  }}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
