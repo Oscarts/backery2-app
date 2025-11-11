@@ -267,15 +267,17 @@ export const getProductionStats = async (req: Request, res: Response) => {
         const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
 
         // Get counts for each status
-        const [activeCount, onHoldCount, plannedCount, completedTodayCount] = await Promise.all([
+        // Active includes both PLANNED and IN_PROGRESS runs
+        const [activeCount, onHoldCount, completedTodayCount] = await Promise.all([
             prisma.productionRun.count({
-                where: { status: ProductionStatus.IN_PROGRESS }
+                where: { 
+                    status: { 
+                        in: [ProductionStatus.PLANNED, ProductionStatus.IN_PROGRESS] 
+                    }
+                }
             }),
             prisma.productionRun.count({
                 where: { status: ProductionStatus.ON_HOLD }
-            }),
-            prisma.productionRun.count({
-                where: { status: ProductionStatus.PLANNED }
             }),
             prisma.productionRun.count({
                 where: {
@@ -288,7 +290,7 @@ export const getProductionStats = async (req: Request, res: Response) => {
             })
         ]);
 
-        // Get total target quantity from active productions
+        // Get total target quantity from all non-completed, non-cancelled productions
         const activeProductions = await prisma.productionRun.findMany({
             where: {
                 status: { in: [ProductionStatus.PLANNED, ProductionStatus.IN_PROGRESS, ProductionStatus.ON_HOLD] }
@@ -305,7 +307,7 @@ export const getProductionStats = async (req: Request, res: Response) => {
             data: {
                 active: activeCount,
                 onHold: onHoldCount,
-                planned: plannedCount,
+                planned: 0, // Deprecated - merged into active
                 completedToday: completedTodayCount,
                 totalTargetQuantity: totalTargetQuantity
             }
