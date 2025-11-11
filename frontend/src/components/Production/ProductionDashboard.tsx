@@ -27,6 +27,7 @@ import {
     Timer as TimerIcon,
     History as HistoryIcon,
     Delete as DeleteIcon,
+    Cancel as CancelIcon,
 } from '@mui/icons-material';
 import { formatDistanceToNow } from 'date-fns';
 import { ProductionRun, ProductionStatus, ProductionStepStatus } from '../../types';
@@ -149,20 +150,63 @@ const ProductionDashboard: React.FC = () => {
         setShowProductionTracker(true);
     };
 
-    const handlePauseProduction = (productionId: string) => {
-        setActiveProductions(activeProductions.map(p =>
-            p.id === productionId
-                ? { ...p, status: ProductionStatus.ON_HOLD }
-                : p
-        ));
+    const handlePauseProduction = async (productionId: string) => {
+        try {
+            const response = await productionApi.updateRun(productionId, {
+                status: ProductionStatus.ON_HOLD
+            });
+            
+            if (response.success && response.data) {
+                // Update local state with the response from server
+                setActiveProductions(activeProductions.map(p =>
+                    p.id === productionId ? response.data! : p
+                ));
+                // Reload stats to update indicators
+                await loadProductionStats();
+            }
+        } catch (error) {
+            console.error('Error pausing production:', error);
+        }
     };
 
-    const handleResumeProduction = (productionId: string) => {
-        setActiveProductions(activeProductions.map(p =>
-            p.id === productionId
-                ? { ...p, status: ProductionStatus.IN_PROGRESS }
-                : p
-        ));
+    const handleResumeProduction = async (productionId: string) => {
+        try {
+            const response = await productionApi.updateRun(productionId, {
+                status: ProductionStatus.IN_PROGRESS
+            });
+            
+            if (response.success && response.data) {
+                // Update local state with the response from server
+                setActiveProductions(activeProductions.map(p =>
+                    p.id === productionId ? response.data! : p
+                ));
+                // Reload stats to update indicators
+                await loadProductionStats();
+            }
+        } catch (error) {
+            console.error('Error resuming production:', error);
+        }
+    };
+
+    const handleCancelProduction = async (productionId: string) => {
+        if (!confirm('Are you sure you want to cancel this production run? This cannot be undone.')) {
+            return;
+        }
+
+        try {
+            const response = await productionApi.updateRun(productionId, {
+                status: ProductionStatus.CANCELLED
+            });
+            
+            if (response.success) {
+                // Remove from active productions list
+                setActiveProductions(activeProductions.filter(p => p.id !== productionId));
+                // Reload stats to update indicators
+                await loadProductionStats();
+            }
+        } catch (error) {
+            console.error('Error cancelling production:', error);
+        }
     };
 
     const handleDeleteProduction = async (productionId: string) => {
@@ -539,6 +583,24 @@ const ProductionDashboard: React.FC = () => {
                                                                 }}
                                                             >
                                                                 <PlayIcon />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    )}
+
+                                                    {/* Cancel Button - Available for PLANNED, IN_PROGRESS, and ON_HOLD */}
+                                                    {(production.status === ProductionStatus.PLANNED ||
+                                                      production.status === ProductionStatus.IN_PROGRESS ||
+                                                      production.status === ProductionStatus.ON_HOLD) && (
+                                                        <Tooltip title="Cancel Production">
+                                                            <IconButton
+                                                                size="small"
+                                                                color="error"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleCancelProduction(production.id);
+                                                                }}
+                                                            >
+                                                                <CancelIcon />
                                                             </IconButton>
                                                         </Tooltip>
                                                     )}

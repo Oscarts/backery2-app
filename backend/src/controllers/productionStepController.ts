@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { PrismaClient, ProductionStepStatus } from '@prisma/client';
+import { PrismaClient, ProductionStepStatus, ProductionStatus } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -168,6 +168,21 @@ export const startProductionStep = async (req: Request, res: Response) => {
         }
       }
     });
+
+    // Update production run status to IN_PROGRESS if it's still PLANNED
+    const productionRun = await prisma.productionRun.findUnique({
+      where: { id: currentStep.productionRunId }
+    });
+
+    if (productionRun && productionRun.status === ProductionStatus.PLANNED) {
+      await prisma.productionRun.update({
+        where: { id: currentStep.productionRunId },
+        data: {
+          status: ProductionStatus.IN_PROGRESS,
+          startedAt: new Date()
+        }
+      });
+    }
 
     res.json({
       success: true,
