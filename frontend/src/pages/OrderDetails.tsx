@@ -33,6 +33,7 @@ import {
   CheckCircle as FulfillIcon,
   Inventory as InventoryIcon,
   Warning as WarningIcon,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -137,6 +138,26 @@ const OrderDetails: React.FC = () => {
     } else {
       // Show confirm dialog if inventory is available
       setConfirmDialogOpen(true);
+    }
+  };
+
+  // Export order as Word document (DOCX)
+  const handleExportOrder = async () => {
+    if (!id || !orderData?.data) return;
+    try {
+      const blob = await customerOrdersApi.exportWord(id);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `commande-${orderData.data.orderNumber}.docx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      showSnackbar('Export successful', 'success');
+    } catch (error) {
+      console.error('Export error:', error);
+      showSnackbar('Export failed', 'error');
     }
   };
 
@@ -392,6 +413,17 @@ const OrderDetails: React.FC = () => {
                 </Button>
               </>
             )}
+
+            {/* Export action available for non-fulfilled orders */}
+            <Button
+              variant="outlined"
+              size="large"
+              startIcon={<DownloadIcon />}
+              onClick={handleExportOrder}
+              sx={{ flexGrow: 1, minWidth: 180 }}
+            >
+              Export Word
+            </Button>
           </Stack>
         </Paper>
       )}

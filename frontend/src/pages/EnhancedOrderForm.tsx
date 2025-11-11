@@ -37,6 +37,7 @@ import {
   LocalOffer as PriceIcon,
   ExpandMore as ExpandIcon,
   ExpandLess as CollapseIcon,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -157,6 +158,30 @@ const EnhancedOrderForm: React.FC = () => {
 
   const showSnackbar = (message: string, severity: 'success' | 'error' | 'info' | 'warning') => {
     setSnackbar({ open: true, message, severity });
+  };
+
+  // Export order as Word document (DOCX)
+  const handleExportOrder = async () => {
+    if (!id || !orderData?.data) return;
+    
+    try {
+      const blob = await customerOrdersApi.exportWord(id);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `commande-${orderData.data.orderNumber}.docx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      showSnackbar('Export successful', 'success');
+    } catch (error) {
+      console.error('Export error:', error);
+      showSnackbar('Export failed', 'error');
+    }
   };
 
   const handleProductSelect = (product: FinishedProduct) => {
@@ -301,14 +326,28 @@ const EnhancedOrderForm: React.FC = () => {
         >
           Back to Orders
         </Button>
-        <Typography variant="h4" component="h1" gutterBottom fontWeight="bold">
-          {isEditMode ? 'Edit Order' : 'Create New Order'}
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          {isEditMode
-            ? 'Update order details and manage items'
-            : 'Select customer, add products, and configure pricing'}
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+          <Box>
+            <Typography variant="h4" component="h1" gutterBottom fontWeight="bold">
+              {isEditMode ? 'Edit Order' : 'Create New Order'}
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              {isEditMode
+                ? 'Update order details and manage items'
+                : 'Select customer, add products, and configure pricing'}
+            </Typography>
+          </Box>
+          {isEditMode && orderData?.data && (
+            <Button
+              variant="outlined"
+              startIcon={<DownloadIcon />}
+              onClick={handleExportOrder}
+              sx={{ flexShrink: 0 }}
+            >
+              Export Word
+            </Button>
+          )}
+        </Box>
       </Box>
 
       {/* Order Information Card */}
