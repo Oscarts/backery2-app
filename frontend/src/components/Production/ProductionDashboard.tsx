@@ -27,7 +27,7 @@ import {
     Timer as TimerIcon,
     History as HistoryIcon,
     Delete as DeleteIcon,
-    Cancel as CancelIcon,
+    Block as BlockIcon,
 } from '@mui/icons-material';
 import { formatDistanceToNow } from 'date-fns';
 import { ProductionRun, ProductionStatus, ProductionStepStatus } from '../../types';
@@ -198,9 +198,11 @@ const ProductionDashboard: React.FC = () => {
                 status: ProductionStatus.CANCELLED
             });
             
-            if (response.success) {
-                // Remove from active productions list
-                setActiveProductions(activeProductions.filter(p => p.id !== productionId));
+            if (response.success && response.data) {
+                // Update the production in the list with CANCELLED status
+                setActiveProductions(activeProductions.map(p =>
+                    p.id === productionId ? response.data! : p
+                ));
                 // Reload stats to update indicators
                 await loadProductionStats();
             }
@@ -444,7 +446,7 @@ const ProductionDashboard: React.FC = () => {
                                 return (
                                     <Grid item xs={12} md={6} lg={4} key={production.id}>
                                         <Card
-                                            onClick={() => handleViewProduction(production)}
+                                            onClick={() => production.status !== ProductionStatus.CANCELLED && handleViewProduction(production)}
                                             sx={{
                                                 height: '100%',
                                                 position: 'relative',
@@ -453,17 +455,22 @@ const ProductionDashboard: React.FC = () => {
                                                     ? 'primary.light'
                                                     : production.status === ProductionStatus.ON_HOLD
                                                         ? 'warning.light'
-                                                        : 'divider',
-                                                cursor: 'pointer',
+                                                        : production.status === ProductionStatus.CANCELLED
+                                                            ? 'error.light'
+                                                            : 'divider',
+                                                cursor: production.status === ProductionStatus.CANCELLED ? 'default' : 'pointer',
+                                                opacity: production.status === ProductionStatus.CANCELLED ? 0.6 : 1,
                                                 transition: 'all 0.3s ease',
                                                 '&:hover': {
-                                                    boxShadow: 8,
-                                                    transform: 'translateY(-4px)',
+                                                    boxShadow: production.status === ProductionStatus.CANCELLED ? 2 : 8,
+                                                    transform: production.status === ProductionStatus.CANCELLED ? 'none' : 'translateY(-4px)',
                                                     borderColor: production.status === ProductionStatus.IN_PROGRESS
                                                         ? 'primary.main'
                                                         : production.status === ProductionStatus.ON_HOLD
                                                             ? 'warning.main'
-                                                            : 'primary.light',
+                                                            : production.status === ProductionStatus.CANCELLED
+                                                                ? 'error.light'
+                                                                : 'primary.light',
                                                 }
                                             }}
                                         >
@@ -587,26 +594,36 @@ const ProductionDashboard: React.FC = () => {
                                                         </Tooltip>
                                                     )}
 
-                                                    {/* Cancel Button - Available for PLANNED, IN_PROGRESS, and ON_HOLD */}
+                                                    <Box sx={{ flexGrow: 1 }} />
+
+                                                    {/* Cancel Production - Subtle button at the end */}
                                                     {(production.status === ProductionStatus.PLANNED ||
                                                       production.status === ProductionStatus.IN_PROGRESS ||
                                                       production.status === ProductionStatus.ON_HOLD) && (
-                                                        <Tooltip title="Cancel Production">
-                                                            <IconButton
-                                                                size="small"
-                                                                color="error"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleCancelProduction(production.id);
-                                                                }}
-                                                            >
-                                                                <CancelIcon />
-                                                            </IconButton>
-                                                        </Tooltip>
+                                                        <Button
+                                                            size="small"
+                                                            startIcon={<BlockIcon />}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleCancelProduction(production.id);
+                                                            }}
+                                                            sx={{
+                                                                color: 'text.secondary',
+                                                                minWidth: 'auto',
+                                                                px: 1.5,
+                                                                '&:hover': {
+                                                                    color: 'error.main',
+                                                                    bgcolor: 'error.lighter'
+                                                                }
+                                                            }}
+                                                        >
+                                                            Cancel
+                                                        </Button>
                                                     )}
 
-                                                    {/* Delete Button - Available for all statuses except completed */}
-                                                    {production.status !== ProductionStatus.COMPLETED && (
+                                                    {/* Delete Button - Only for truly removing the record */}
+                                                    {(production.status === ProductionStatus.CANCELLED ||
+                                                      production.status === ProductionStatus.PLANNED) && (
                                                         <Tooltip title="Delete Production Run">
                                                             <IconButton
                                                                 size="small"
@@ -621,21 +638,22 @@ const ProductionDashboard: React.FC = () => {
                                                         </Tooltip>
                                                     )}
 
-                                                    <Box sx={{ flexGrow: 1 }} />
-
-                                                    <Typography
-                                                        variant="body2"
-                                                        color="primary"
-                                                        sx={{
-                                                            fontWeight: 'medium',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: 0.5
-                                                        }}
-                                                    >
-                                                        <ViewIcon fontSize="small" />
-                                                        Click to track
-                                                    </Typography>
+                                                    {/* View action - only show for active productions */}
+                                                    {production.status !== ProductionStatus.CANCELLED && (
+                                                        <Typography
+                                                            variant="body2"
+                                                            color="primary"
+                                                            sx={{
+                                                                fontWeight: 'medium',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: 0.5
+                                                            }}
+                                                        >
+                                                            <ViewIcon fontSize="small" />
+                                                            Click to track
+                                                        </Typography>
+                                                    )}
                                                 </Stack>
                                             </CardActions>
                                         </Card>
