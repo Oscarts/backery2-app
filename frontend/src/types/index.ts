@@ -642,3 +642,87 @@ export interface OrderExportFilters {
   customerIds?: string[];
   statuses?: OrderStatus[];
 }
+
+// Admin types for user/role management
+export interface AdminUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  roleId: string | null;
+  clientId: string;
+  isActive: boolean;
+  lastLoginAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  client: {
+    id: string;
+    name: string;
+    isActive: boolean;
+  };
+  customRole: {
+    id: string;
+    name: string;
+    description: string | null;
+  } | null;
+}
+
+export interface CreateUserData {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  roleId: string;
+  isActive?: boolean;
+}
+
+export interface UpdateUserData {
+  email?: string;
+  password?: string;
+  firstName?: string;
+  lastName?: string;
+  roleId?: string;
+  isActive?: boolean;
+}
+
+export interface Role {
+  id: string;
+  name: string;
+  description: string | null;
+  isSystem: boolean;
+  clientId: string;
+  createdAt: string;
+  updatedAt: string;
+  permissions: RolePermission[];
+  _count: {
+    users: number;
+  };
+}
+
+export interface RolePermission {
+  id: string;
+  roleId: string;
+  permissionId: string;
+  createdAt: string;
+  permission: Permission;
+}
+
+export interface Permission {
+  id: string;
+  resource: string;
+  action: string;
+  description: string | null;
+  createdAt: string;
+}
+
+export interface CreateRoleData {
+  name: string;
+  description?: string;
+  permissionIds?: string[];
+}
+
+export interface UpdateRoleData {
+  name?: string;
+  description?: string;
+  permissionIds?: string[];
+}

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Container,
   Paper,
@@ -9,13 +10,44 @@ import {
   Alert,
   useTheme,
   useMediaQuery,
+  CircularProgress,
 } from '@mui/material';
 import RapidProLogo from '../components/Brand/RapidProLogo';
 import { borderRadius } from '../theme/designTokens';
+import { useAuth } from '../contexts/AuthContext';
 
 const Login: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const navigate = useNavigate();
+  const { login, isAuthenticated } = useAuth();
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // Redirect if already authenticated
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      await login(email, password);
+      // Navigation will happen automatically via useEffect when isAuthenticated changes
+    } catch (err: any) {
+      setError(err.message || 'Login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Box
@@ -52,11 +84,13 @@ const Login: React.FC = () => {
               Accede a tu sistema de gestión de producción
             </Typography>
 
-            <Alert severity="info" sx={{ mb: 3, width: '100%' }}>
-              Login functionality will be implemented with authentication system.
-            </Alert>
+            {error && (
+              <Alert severity="error" sx={{ mb: 3, width: '100%' }}>
+                {error}
+              </Alert>
+            )}
 
-            <Box component="form" sx={{ width: '100%' }}>
+            <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
               <TextField
                 margin="normal"
                 required
@@ -66,7 +100,9 @@ const Login: React.FC = () => {
                 name="email"
                 autoComplete="email"
                 autoFocus
-                disabled
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
                 sx={{ mb: 2 }}
               />
               <TextField
@@ -78,7 +114,9 @@ const Login: React.FC = () => {
                 type="password"
                 id="password"
                 autoComplete="current-password"
-                disabled
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
                 sx={{ mb: 3 }}
               />
               <Button
@@ -86,7 +124,7 @@ const Login: React.FC = () => {
                 fullWidth
                 variant="contained"
                 size="large"
-                disabled
+                disabled={loading || !email || !password}
                 sx={{
                   py: 1.5,
                   fontWeight: 600,
@@ -94,7 +132,7 @@ const Login: React.FC = () => {
                   fontSize: '1rem',
                 }}
               >
-                Sign In
+                {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
               </Button>
             </Box>
 

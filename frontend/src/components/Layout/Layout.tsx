@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate as useRouterNavigate } from 'react-router-dom';
 import {
   AppBar,
   Box,
@@ -16,6 +16,10 @@ import {
   useMediaQuery,
   Divider,
   Tooltip,
+  Menu,
+  MenuItem,
+  Avatar,
+  Typography,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -32,26 +36,42 @@ import {
   People as PeopleIcon,
   ShoppingCart as OrderIcon,
   Label as LabelIcon,
+  AccountCircle as AccountCircleIcon,
+  Logout as LogoutIcon,
+  Shield as ShieldIcon,
+  Business as BusinessIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import RapidProLogo from '../Brand/RapidProLogo';
+import { useAuth } from '../../contexts/AuthContext';
 
 // Define drawer widths for open and closed states
 const drawerWidth = 240; // Reduced from 280
 const drawerCollapsedWidth = 65; // Reduced from 73, enough width to show just icons
 
-const menuItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
-  { text: 'Raw Materials', icon: <InventoryIcon />, path: '/raw-materials' },
-  { text: 'SKU Reference', icon: <LabelIcon />, path: '/sku-reference' },
-  { text: 'Finished Products', icon: <LocalDiningIcon />, path: '/finished-products' },
-  { text: 'Recipes', icon: <MenuBookIcon />, path: '/recipes' },
-  { text: 'Production', icon: <FactoryIcon />, path: '/production' },
-  { text: 'Customers', icon: <PeopleIcon />, path: '/customers' },
-  { text: 'Orders', icon: <OrderIcon />, path: '/customer-orders' },
-  { text: 'Reports', icon: <AssessmentIcon />, path: '/reports' },
-  { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
-  { text: 'API Test', icon: <ScienceIcon />, path: '/api-test' }, // Updated to use ScienceIcon for API Test
+interface MenuItem {
+  text: string;
+  icon: React.ReactElement;
+  path: string;
+  resource?: string; // Permission resource (optional - no permission check if undefined)
+  action?: string;   // Permission action (defaults to 'view')
+}
+
+const menuItems: MenuItem[] = [
+  { text: 'Dashboard', icon: <DashboardIcon />, path: '/', resource: 'dashboard' },
+  { text: 'Raw Materials', icon: <InventoryIcon />, path: '/raw-materials', resource: 'raw-materials' },
+  { text: 'SKU Reference', icon: <LabelIcon />, path: '/sku-reference', resource: 'raw-materials' },
+  { text: 'Finished Products', icon: <LocalDiningIcon />, path: '/finished-products', resource: 'finished-products' },
+  { text: 'Recipes', icon: <MenuBookIcon />, path: '/recipes', resource: 'recipes' },
+  { text: 'Production', icon: <FactoryIcon />, path: '/production', resource: 'production' },
+  { text: 'Customers', icon: <PeopleIcon />, path: '/customers', resource: 'customers' },
+  { text: 'Orders', icon: <OrderIcon />, path: '/customer-orders', resource: 'customer-orders' },
+  { text: 'Reports', icon: <AssessmentIcon />, path: '/reports' }, // No permission check - available to all
+  { text: 'Users', icon: <PeopleIcon />, path: '/settings/users', resource: 'users' },
+  { text: 'Roles', icon: <ShieldIcon />, path: '/settings/roles', resource: 'roles' },
+  { text: 'Clients', icon: <BusinessIcon />, path: '/settings/clients', resource: 'clients' },
+  { text: 'Settings', icon: <SettingsIcon />, path: '/settings', resource: 'settings' },
+  { text: 'API Test', icon: <ScienceIcon />, path: '/api-test' }, // No permission check - dev tool
 ];
 
 const Layout: React.FC = () => {
@@ -59,8 +79,24 @@ const Layout: React.FC = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mobileOpen, setMobileOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(true); // State to control sidebar expansion
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, logout, hasPermission } = useAuth();
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    handleMenuClose();
+    logout();
+    navigate('/login');
+  };
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -108,34 +144,41 @@ const Layout: React.FC = () => {
       </Toolbar>
       <Divider />
       <List dense sx={{ py: 0.5 }}>
-        {menuItems.map((item) => (
-          <ListItem key={item.text} disablePadding>
-            <Tooltip title={drawerOpen ? '' : item.text} placement="right">
-              <ListItemButton
-                selected={location.pathname === item.path}
-                onClick={() => {
-                  navigate(item.path);
-                  if (isMobile) {
-                    setMobileOpen(false);
-                  }
-                }}
-                sx={{ 
-                  px: drawerOpen ? 2 : 1.5,
-                  py: 1,
-                  justifyContent: drawerOpen ? 'flex-start' : 'center',
-                }}
-              >
-                <ListItemIcon sx={{ 
-                  minWidth: drawerOpen ? 40 : 'auto',
-                  justifyContent: 'center',
-                }}>
-                  {item.icon}
-                </ListItemIcon>
-                {drawerOpen && <ListItemText primary={item.text} />}
-              </ListItemButton>
-            </Tooltip>
-          </ListItem>
-        ))}
+        {menuItems
+          .filter((item) => {
+            // If no resource is specified, show the item to everyone
+            if (!item.resource) return true;
+            // Check if user has permission to view this resource
+            return hasPermission(item.resource, item.action || 'view');
+          })
+          .map((item) => (
+            <ListItem key={item.text} disablePadding>
+              <Tooltip title={drawerOpen ? '' : item.text} placement="right">
+                <ListItemButton
+                  selected={location.pathname === item.path}
+                  onClick={() => {
+                    navigate(item.path);
+                    if (isMobile) {
+                      setMobileOpen(false);
+                    }
+                  }}
+                  sx={{ 
+                    px: drawerOpen ? 2 : 1.5,
+                    py: 1,
+                    justifyContent: drawerOpen ? 'flex-start' : 'center',
+                  }}
+                >
+                  <ListItemIcon sx={{ 
+                    minWidth: drawerOpen ? 40 : 'auto',
+                    justifyContent: 'center',
+                  }}>
+                    {item.icon}
+                  </ListItemIcon>
+                  {drawerOpen && <ListItemText primary={item.text} />}
+                </ListItemButton>
+              </Tooltip>
+            </ListItem>
+          ))}
       </List>
     </div>
   );
@@ -179,6 +222,61 @@ const Layout: React.FC = () => {
             variant="icon-only"
             sx={{ display: { xs: 'flex', sm: 'none' } }}
           />
+          
+          {/* User Menu */}
+          <Box sx={{ flexGrow: 1 }} />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                {user?.firstName} {user?.lastName}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {user?.client.name}
+              </Typography>
+            </Box>
+            <Tooltip title="Account">
+              <IconButton
+                onClick={handleMenuOpen}
+                size="small"
+                sx={{ ml: 1 }}
+                aria-controls={anchorEl ? 'account-menu' : undefined}
+                aria-haspopup="true"
+                aria-expanded={anchorEl ? 'true' : undefined}
+              >
+                <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
+                  {user?.firstName?.[0]}{user?.lastName?.[0]}
+                </Avatar>
+              </IconButton>
+            </Tooltip>
+          </Box>
+          <Menu
+            anchorEl={anchorEl}
+            id="account-menu"
+            open={Boolean(anchorEl)}
+            onClose={handleMenuClose}
+            onClick={handleMenuClose}
+            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+          >
+            <Box sx={{ px: 2, py: 1, minWidth: 200 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                {user?.firstName} {user?.lastName}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {user?.email}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" display="block">
+                {user?.customRole?.name} • {user?.client.name}
+              </Typography>
+            </Box>
+            <Divider />
+            <MenuItem onClick={handleLogout}>
+              <ListItemIcon>
+                <LogoutIcon fontSize="small" />
+              </ListItemIcon>
+              Sign Out
+            </MenuItem>
+          </Menu>
         </Toolbar>
       </AppBar>
       <Box

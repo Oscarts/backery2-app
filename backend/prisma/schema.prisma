@@ -22,6 +22,16 @@ model Client {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
+  // Subscription & Billing
+  subscriptionPlan    SubscriptionPlan   @default(TRIAL)
+  maxUsers            Int                @default(5) // User limit based on plan
+  billingEmail        String?
+  subscriptionStatus  SubscriptionStatus @default(TRIAL)
+  trialEndsAt         DateTime?
+  subscriptionEndsAt  DateTime?
+  stripeCustomerId    String?
+  stripeSubscriptionId String?
+  
   // Relations
   users               User[]
   roles               Role[]
@@ -528,4 +538,24 @@ model OrderItem {
 
   @@index([orderId])
   @@map("order_items")
+}
+
+// ============================================
+// SUBSCRIPTION & BILLING ENUMS
+// ============================================
+
+enum SubscriptionPlan {
+  TRIAL       // Free trial period
+  FREE        // Free forever (limited features)
+  STARTER     // €50/month - up to 5 users
+  PROFESSIONAL // €150/month - up to 20 users
+  ENTERPRISE  // Custom pricing - unlimited users
+}
+
+enum SubscriptionStatus {
+  TRIAL       // In trial period
+  ACTIVE      // Subscription active and paid
+  PAST_DUE    // Payment failed, grace period
+  CANCELED    // User canceled
+  SUSPENDED   // Admin suspended
 }

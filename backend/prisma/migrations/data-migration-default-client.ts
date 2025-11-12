@@ -102,56 +102,40 @@ async function main() {
     }
     console.log(`✅ Assigned ${permissions.length} permissions to Admin role\n`);
 
-    // Step 5: Migrate existing users to System client
-    console.log('👥 Step 5: Migrating existing users to System client...');
-    const existingUsers = await prisma.user.findMany({
-      where: { clientId: null },
+    // Step 5: Assign Admin role to existing System users without roleId
+    console.log('👥 Step 5: Assigning Admin role to existing System users...');
+    const usersWithoutRole = await prisma.user.findMany({
+      where: { 
+        clientId: systemClient.id,
+        roleId: null
+      },
     });
 
-    if (existingUsers.length > 0) {
+    if (usersWithoutRole.length > 0) {
       await prisma.user.updateMany({
-        where: { clientId: null },
-        data: {
+        where: { 
           clientId: systemClient.id,
+          roleId: null
+        },
+        data: {
           roleId: adminRole.id,
           role: UserRole.ADMIN,
         },
       });
-      console.log(`✅ Migrated ${existingUsers.length} users to System client with Admin role\n`);
+      console.log(`✅ Assigned Admin role to ${usersWithoutRole.length} existing users\n`);
     } else {
-      console.log('ℹ️  No existing users to migrate\n');
+      console.log('ℹ️  No users need role assignment\n');
     }
 
-    // Step 6: Update all existing data with System clientId
-    console.log('📊 Step 6: Updating existing data with System clientId...');
-    
-    const tables = [
-      'category',
-      'supplier',
-      'storageLocation',
-      'qualityStatus',
-      'rawMaterial',
-      'finishedProduct',
-      'recipe',
-      'productionRun',
-      'customer',
-      'customerOrder',
-    ];
-
-    for (const table of tables) {
-      const result = await prisma.$executeRawUnsafe(
-        `UPDATE ${table} SET "clientId" = $1 WHERE "clientId" IS NULL`,
-        systemClient.id
-      );
-      console.log(`✅ Updated ${table}: ${result} rows`);
-    }
+    // Step 6: Data already migrated by SQL migration
+    console.log('📊 Step 6: Existing data already has clientId from SQL migration - skipping\n');
 
     console.log('\n🎉 Data migration completed successfully!\n');
     console.log('Summary:');
     console.log(`- System client: ${systemClient.name} (${systemClient.id})`);
     console.log(`- Admin role: ${adminRole.name} (${adminRole.id})`);
     console.log(`- Permissions: ${permissions.length} created`);
-    console.log(`- Users migrated: ${existingUsers.length}`);
+    console.log(`- Users updated: ${usersWithoutRole.length}`);
 
   } catch (error) {
     console.error('❌ Error during data migration:', error);

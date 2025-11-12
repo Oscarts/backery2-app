@@ -31,9 +31,13 @@ const API_BASE_URL = 'http://localhost:8000/api';
 // Helper function for API calls
 const apiCall = async <T>(endpoint: string, options?: RequestInit): Promise<ApiResponse<T>> => {
   try {
+    // Get auth token from localStorage
+    const token = localStorage.getItem('authToken');
+    
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       headers: {
         'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
         ...options?.headers,
       },
       ...options,
@@ -639,5 +643,74 @@ export const customerOrdersApi = {
       throw new Error(`Failed to export Word: ${response.statusText}`);
     }
     return response.blob();
+  },
+};
+
+// Admin - Users API
+export const usersApi = {
+  getAll: async (): Promise<ApiResponse<import('../types').AdminUser[]>> => {
+    return apiCall<import('../types').AdminUser[]>('/users');
+  },
+
+  getById: async (id: string): Promise<ApiResponse<import('../types').AdminUser>> => {
+    return apiCall<import('../types').AdminUser>(`/users/${id}`);
+  },
+
+  create: async (data: import('../types').CreateUserData): Promise<ApiResponse<import('../types').AdminUser>> => {
+    return apiCall<import('../types').AdminUser>('/users', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  update: async (id: string, data: import('../types').UpdateUserData): Promise<ApiResponse<import('../types').AdminUser>> => {
+    return apiCall<import('../types').AdminUser>(`/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  delete: async (id: string): Promise<ApiResponse<void>> => {
+    return apiCall<void>(`/users/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Admin - Roles API
+export const rolesApi = {
+  getAll: async (): Promise<ApiResponse<import('../types').Role[]>> => {
+    return apiCall<import('../types').Role[]>('/roles');
+  },
+
+  getById: async (id: string): Promise<ApiResponse<import('../types').Role>> => {
+    return apiCall<import('../types').Role>(`/roles/${id}`);
+  },
+
+  create: async (data: import('../types').CreateRoleData): Promise<ApiResponse<import('../types').Role>> => {
+    return apiCall<import('../types').Role>('/roles', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  update: async (id: string, data: import('../types').UpdateRoleData): Promise<ApiResponse<import('../types').Role>> => {
+    return apiCall<import('../types').Role>(`/roles/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  delete: async (id: string): Promise<ApiResponse<void>> => {
+    return apiCall<void>(`/roles/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Admin - Permissions API
+export const permissionsApi = {
+  getAll: async (): Promise<ApiResponse<import('../types').Permission[]>> => {
+    return apiCall<import('../types').Permission[]>('/permissions');
   },
 };

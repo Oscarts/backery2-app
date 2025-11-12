@@ -46,6 +46,7 @@ export const categoryController = {
         });
       }
 
+      // Note: clientId is automatically added by tenant isolation Prisma middleware
       const category = await prisma.category.create({
         data: { name, type, description }
       });

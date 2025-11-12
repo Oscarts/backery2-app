@@ -19,6 +19,10 @@ import CustomerOrders from './pages/CustomerOrders';
 import OrderForm from './pages/OrderForm';
 import EnhancedOrderForm from './pages/EnhancedOrderForm';
 import OrderDetails from './pages/OrderDetails';
+import UserManagement from './pages/UserManagement';
+import RoleManagement from './pages/RoleManagement';
+import ClientManagement from './pages/ClientManagement';
+import ClientDetails from './pages/ClientDetails';
 
 // Import components
 import Layout from './components/Layout/Layout';
@@ -54,6 +58,10 @@ function App() {
           <Route path="customer-orders-old/:id/edit" element={<OrderForm />} />
           <Route path="reports" element={<Reports />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="settings/users" element={<UserManagement />} />
+          <Route path="settings/roles" element={<RoleManagement />} />
+          <Route path="settings/clients" element={<ClientManagement />} />
+          <Route path="settings/clients/:id" element={<ClientDetails />} />
           <Route path="api-test" element={<ApiTest />} />
         </Route>
       </Routes>

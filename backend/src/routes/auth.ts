@@ -1,25 +1,18 @@
 import { Router } from 'express';
+import { login, register, getProfile, logout } from '../controllers/authController';
+import { authenticate } from '../middleware/auth';
+import { requirePermission } from '../middleware/permissions';
 
 const router = Router();
 
-// POST /api/auth/login
-router.post('/login', (req, res) => {
-  res.json({ message: 'Login endpoint - to be implemented' });
-});
+// Public routes
+router.post('/login', login);
+router.post('/logout', logout);
 
-// POST /api/auth/register
-router.post('/register', (req, res) => {
-  res.json({ message: 'Register endpoint - to be implemented' });
-});
+// Protected routes
+router.get('/profile', authenticate, getProfile);
 
-// POST /api/auth/logout
-router.post('/logout', (req, res) => {
-  res.json({ message: 'Logout endpoint - to be implemented' });
-});
-
-// POST /api/auth/refresh-token
-router.post('/refresh-token', (req, res) => {
-  res.json({ message: 'Refresh token endpoint - to be implemented' });
-});
+// User management route (requires permission)
+router.post('/register', authenticate, requirePermission('users', 'create'), register);
 
 export default router;

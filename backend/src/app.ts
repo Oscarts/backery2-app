@@ -6,6 +6,9 @@ import { PrismaClient } from '@prisma/client';
 // Middleware
 import { notFound } from './middleware/notFound';
 import { errorHandler } from './middleware/errorHandler';
+import { setupTenantIsolation } from './middleware/tenantIsolation';
+import { authenticate, optionalAuthenticate } from './middleware/auth';
+import { tenantContext } from './middleware/tenantIsolation';
 
 // Routes  
 import categoryRoutes from './routes/categories';
@@ -24,11 +27,18 @@ import qualityStatusRoutes from './routes/qualityStatuses';
 import productionStepTemplateRoutes from './routes/productionStepTemplates';
 import customerRoutes from './routes/customers';
 import customerOrderRoutes from './routes/customer-orders';
+import userRoutes from './routes/users';
+import roleRoutes from './routes/roles';
+import permissionRoutes from './routes/permissions';
+import clientRoutes from './routes/clients';
 
 // Initialize Prisma Client
 export const prisma = new PrismaClient({
   log: ['query', 'info', 'warn', 'error'],
 });
+
+// Setup tenant isolation middleware on Prisma
+setupTenantIsolation(prisma);
 
 // Create Express app
 const createApp = (): Application => {
@@ -53,22 +63,29 @@ const createApp = (): Application => {
     });
   });
 
+  // Public routes (no authentication required)
   app.use('/api/auth', authRoutes);
-  app.use('/api/categories', categoryRoutes);
-  app.use('/api/raw-materials', rawMaterialRoutes);
-  app.use('/api/finished-products', finishedProductRoutes);
-  app.use('/api/recipes', recipeRoutes);
-  app.use('/api/production', productionRoutes);
-  app.use('/api/dashboard', dashboardRoutes);
-  app.use('/api/contamination', contaminationRoutes);
-  app.use('/api/reports', reportsRoutes);
-  app.use('/api/suppliers', supplierRoutes);
-  app.use('/api/storage-locations', storageLocationRoutes);
-  app.use('/api/units', unitRoutes);
-  app.use('/api/quality-statuses', qualityStatusRoutes);
-  app.use('/api/production/step-templates', productionStepTemplateRoutes);
-  app.use('/api/customers', customerRoutes);
-  app.use('/api/customer-orders', customerOrderRoutes);
+  app.use('/api/units', unitRoutes); // Public reference data
+
+  // Protected routes (require authentication and tenant isolation)
+  app.use('/api/categories', authenticate, tenantContext, categoryRoutes);
+  app.use('/api/raw-materials', authenticate, tenantContext, rawMaterialRoutes);
+  app.use('/api/finished-products', authenticate, tenantContext, finishedProductRoutes);
+  app.use('/api/recipes', authenticate, tenantContext, recipeRoutes);
+  app.use('/api/production', authenticate, tenantContext, productionRoutes);
+  app.use('/api/dashboard', authenticate, tenantContext, dashboardRoutes);
+  app.use('/api/contamination', authenticate, tenantContext, contaminationRoutes);
+  app.use('/api/reports', authenticate, tenantContext, reportsRoutes);
+  app.use('/api/suppliers', authenticate, tenantContext, supplierRoutes);
+  app.use('/api/storage-locations', authenticate, tenantContext, storageLocationRoutes);
+  app.use('/api/quality-statuses', authenticate, tenantContext, qualityStatusRoutes);
+  app.use('/api/production/step-templates', authenticate, tenantContext, productionStepTemplateRoutes);
+  app.use('/api/customers', authenticate, tenantContext, customerRoutes);
+  app.use('/api/customer-orders', authenticate, tenantContext, customerOrderRoutes);
+  app.use('/api/users', authenticate, tenantContext, userRoutes);
+  app.use('/api/roles', authenticate, tenantContext, roleRoutes);
+  app.use('/api/permissions', authenticate, tenantContext, permissionRoutes);
+  app.use('/api/admin/clients', authenticate, clientRoutes); // Super admin only, no tenant context
 
   // Error handling middleware
   app.use(notFound);
