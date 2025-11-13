@@ -201,6 +201,19 @@ const RoleManagement: React.FC = () => {
         </Alert>
       )}
 
+      {/* Info Alert for Template Roles */}
+      {roles.some((r) => r.client?.slug === 'system' && r.name !== 'Super Admin') && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+            🎨 Template Roles
+          </Typography>
+          <Typography variant="body2">
+            Roles marked as "TEMPLATE" are automatically copied to new clients. 
+            Changes to templates affect only NEW clients. To update existing clients, use the sync script.
+          </Typography>
+        </Alert>
+      )}
+
       {/* Toolbar */}
       <Card sx={{ mb: 3, borderRadius: borderRadius.lg }}>
         <Box sx={{ p: 2.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -265,14 +278,26 @@ const RoleManagement: React.FC = () => {
                           {role.name}
                         </Typography>
                         {role.client && (
-                          <Typography variant="caption" color="text.secondary">
-                            {role.client.name}
+                          <Typography 
+                            variant="caption" 
+                            color={role.client.slug === 'system' ? 'primary' : 'text.secondary'}
+                            sx={{ 
+                              fontWeight: role.client.slug === 'system' ? 600 : 400,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 0.5
+                            }}
+                          >
+                            {role.client.slug === 'system' ? '🎨 Template' : role.client.name}
                           </Typography>
                         )}
                       </Box>
                     </Box>
-                    {role.isSystem && (
-                      <Chip label="System" size="small" color="primary" />
+                    {role.isSystem && role.client?.slug === 'system' && role.name !== 'Super Admin' && (
+                      <Chip label="TEMPLATE" size="small" color="warning" variant="outlined" />
+                    )}
+                    {role.name === 'Super Admin' && (
+                      <Chip label="SUPER ADMIN" size="small" color="error" />
                     )}
                   </Box>
 

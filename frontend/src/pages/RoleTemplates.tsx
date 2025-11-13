@@ -21,9 +21,11 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { rolesApi } from '../services/realApi';
 import { Role } from '../types';
-import { Info as InfoIcon } from '@mui/icons-material';
+import { Info as InfoIcon, Edit as EditIcon } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 
 const RoleTemplates: React.FC = () => {
+  const navigate = useNavigate();
   const [selectedTemplate, setSelectedTemplate] = useState<Role | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
@@ -40,6 +42,11 @@ const RoleTemplates: React.FC = () => {
   const handleViewDetails = (template: Role) => {
     setSelectedTemplate(template);
     setDetailsOpen(true);
+  };
+
+  const handleEditTemplate = (template: Role) => {
+    // Navigate to the regular roles page which has full edit functionality
+    navigate('/settings/roles');
   };
 
   const handleCloseDetails = () => {
@@ -125,9 +132,18 @@ const RoleTemplates: React.FC = () => {
                     size="small"
                     startIcon={<InfoIcon />}
                     onClick={() => handleViewDetails(template)}
-                    fullWidth
+                    sx={{ flex: 1 }}
                   >
-                    View Details
+                    View
+                  </Button>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    startIcon={<EditIcon />}
+                    onClick={() => handleEditTemplate(template)}
+                    sx={{ flex: 1 }}
+                  >
+                    Edit
                   </Button>
                 </Box>
               </CardContent>

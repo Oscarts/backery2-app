@@ -149,6 +149,12 @@ const Layout: React.FC = () => {
           .filter((item) => {
             // If no resource is specified, show the item to everyone
             if (!item.resource) return true;
+            
+            // Role Templates page is only for Super Admin
+            if (item.path === '/settings/role-templates') {
+              return user?.client?.slug === 'system';
+            }
+            
             // Check if user has permission to view this resource
             return hasPermission(item.resource, item.action || 'view');
           })

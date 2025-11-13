@@ -226,11 +226,19 @@ export const updateRole = async (
       });
     }
 
-    // Prevent modifying system roles
-    if (existingRole.isSystem) {
+    // Prevent modifying Super Admin role
+    if (existingRole.name === 'Super Admin') {
       return res.status(400).json({
         success: false,
-        error: 'Cannot modify system roles',
+        error: 'Cannot modify Super Admin role',
+      });
+    }
+
+    // Only Super Admin can modify template roles (isSystem roles in System client)
+    if (existingRole.isSystem && !isSuperAdmin) {
+      return res.status(400).json({
+        success: false,
+        error: 'Only Super Admin can modify template roles',
       });
     }
 
@@ -347,11 +355,19 @@ export const deleteRole = async (
       });
     }
 
-    // Prevent deleting system roles
-    if (role.isSystem) {
+    // Prevent deleting Super Admin role and other critical system roles
+    if (role.name === 'Super Admin') {
       return res.status(400).json({
         success: false,
-        error: 'Cannot delete system roles',
+        error: 'Cannot delete Super Admin role',
+      });
+    }
+
+    // Only Super Admin can delete template roles
+    if (role.isSystem && !isSuperAdmin) {
+      return res.status(400).json({
+        success: false,
+        error: 'Only Super Admin can delete template roles',
       });
     }
 
