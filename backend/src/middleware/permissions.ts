@@ -15,7 +15,10 @@ export type ResourceType =
   | 'settings'
   | 'users'
   | 'roles'
-  | 'clients';
+  | 'clients'
+  | 'permissions'
+  | 'reports'
+  | 'api-test';
 
 export type ActionType = 'view' | 'create' | 'edit' | 'delete';
 
@@ -102,8 +105,7 @@ export const clearPermissionCache = (userId: string): void => {
  */
 export const requirePermission = (
   resource: ResourceType,
-  action: ActionType,
-  options: { skipForAdmin?: boolean } = {}
+  action: ActionType
 ) => {
   return async (
     req: Request,
@@ -116,12 +118,6 @@ export const requirePermission = (
           success: false,
           error: 'Authentication required',
         });
-        return;
-      }
-
-      // If skipForAdmin is true and user is ADMIN, allow access
-      if (options.skipForAdmin && req.user.role === 'ADMIN') {
-        next();
         return;
       }
 
@@ -157,8 +153,7 @@ export const requirePermission = (
  * Middleware to check if user has ANY of the required permissions
  */
 export const requireAnyPermission = (
-  permissions: Array<{ resource: ResourceType; action: ActionType }>,
-  options: { skipForAdmin?: boolean } = {}
+  permissions: Array<{ resource: ResourceType; action: ActionType }>
 ) => {
   return async (
     req: Request,
@@ -171,12 +166,6 @@ export const requireAnyPermission = (
           success: false,
           error: 'Authentication required',
         });
-        return;
-      }
-
-      // If skipForAdmin is true and user is ADMIN, allow access
-      if (options.skipForAdmin && req.user.role === 'ADMIN') {
-        next();
         return;
       }
 

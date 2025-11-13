@@ -32,7 +32,6 @@ import {
   Settings as SettingsIcon,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
-  Science as ScienceIcon,
   People as PeopleIcon,
   ShoppingCart as OrderIcon,
   Label as LabelIcon,
@@ -40,6 +39,7 @@ import {
   Logout as LogoutIcon,
   Shield as ShieldIcon,
   Business as BusinessIcon,
+  Science as ScienceIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import RapidProLogo from '../Brand/RapidProLogo';
@@ -66,12 +66,13 @@ const menuItems: MenuItem[] = [
   { text: 'Production', icon: <FactoryIcon />, path: '/production', resource: 'production' },
   { text: 'Customers', icon: <PeopleIcon />, path: '/customers', resource: 'customers' },
   { text: 'Orders', icon: <OrderIcon />, path: '/customer-orders', resource: 'customer-orders' },
-  { text: 'Reports', icon: <AssessmentIcon />, path: '/reports' }, // No permission check - available to all
+  { text: 'Reports', icon: <AssessmentIcon />, path: '/reports', resource: 'reports' }, // Reports permission
+  { text: 'API Test', icon: <ScienceIcon />, path: '/api-test', resource: 'api-test' }, // Testing tool - assign to testing roles
   { text: 'Users', icon: <PeopleIcon />, path: '/settings/users', resource: 'users' },
   { text: 'Roles', icon: <ShieldIcon />, path: '/settings/roles', resource: 'roles' },
+  { text: 'Role Templates', icon: <ShieldIcon />, path: '/settings/role-templates', resource: 'roles' }, // Super Admin only
   { text: 'Clients', icon: <BusinessIcon />, path: '/settings/clients', resource: 'clients' },
   { text: 'Settings', icon: <SettingsIcon />, path: '/settings', resource: 'settings' },
-  { text: 'API Test', icon: <ScienceIcon />, path: '/api-test' }, // No permission check - dev tool
 ];
 
 const Layout: React.FC = () => {

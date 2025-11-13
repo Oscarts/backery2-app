@@ -134,9 +134,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const hasPermission = (resource: string, action: string): boolean => {
     if (!authState.user) return false;
 
-    // Admin role has all permissions
-    if (authState.user.role === 'ADMIN') return true;
-
     // Check in user's permissions
     return authState.user.permissions.some(
       (p) => p.resource === resource && p.action === action
@@ -148,9 +145,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     permissions: Array<{ resource: string; action: string }>
   ): boolean => {
     if (!authState.user) return false;
-
-    // Admin role has all permissions
-    if (authState.user.role === 'ADMIN') return true;
 
     // Check if user has at least one of the required permissions
     return permissions.some((perm) => hasPermission(perm.resource, perm.action));

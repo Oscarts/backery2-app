@@ -163,23 +163,67 @@ export const createClient = async (
       },
     });
 
-    // Get all permissions
-    const permissions = await prisma.permission.findMany();
+    // Get System client to access role templates
+    const systemClient = await prisma.client.findUnique({
+      where: { slug: 'system' },
+    });
 
-    // Create Admin role for the client
-    const adminRole = await prisma.role.create({
-      data: {
-        name: 'Admin',
-        description: 'Full access to all features',
+    if (!systemClient) {
+      return res.status(500).json({
+        success: false,
+        error: 'System client not found',
+      });
+    }
+
+    // Get all role templates from System client
+    const roleTemplates = await prisma.role.findMany({
+      where: {
+        clientId: systemClient.id,
         isSystem: true,
-        clientId: client.id,
+        name: { not: 'Super Admin' }, // Exclude Super Admin role
+      },
+      include: {
         permissions: {
-          create: permissions.map((permission: any) => ({
-            permissionId: permission.id,
-          })),
+          include: {
+            permission: true,
+          },
         },
       },
     });
+
+    console.log(`📋 Copying ${roleTemplates.length} role templates to ${client.name}...`);
+
+    // Copy each template role to the new client with all permissions
+    let adminRole = null;
+    for (const template of roleTemplates) {
+      const newRole = await prisma.role.create({
+        data: {
+          name: template.name,
+          description: template.description,
+          isSystem: false, // Client roles are not system roles
+          clientId: client.id,
+          permissions: {
+            create: template.permissions.map((rp: any) => ({
+              permissionId: rp.permission.id,
+            })),
+          },
+        },
+      });
+
+      console.log(`   ✅ Created ${template.name} role with ${template.permissions.length} permissions`);
+
+      // Save Admin role reference for creating admin user
+      if (template.name === 'Admin') {
+        adminRole = newRole;
+      }
+    }
+
+    if (!adminRole) {
+      return res.status(500).json({
+        success: false,
+        error: 'Admin role template not found',
+      });
+    }
 
     // Hash password
     const passwordHash = await bcrypt.hash(adminPassword, 10);

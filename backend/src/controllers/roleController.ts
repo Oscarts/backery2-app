@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 
 /**
  * GET /api/roles
- * Get all roles in the current client
+ * Get all roles in the current client (or all clients if Super Admin)
  */
 export const getAllRoles = async (
   req: Request,
@@ -13,11 +13,27 @@ export const getAllRoles = async (
   next: NextFunction
 ) => {
   try {
+    // Check if user is from System client (Super Admin)
+    const systemClient = await prisma.client.findUnique({
+      where: { slug: 'system' },
+    });
+
+    const isSuperAdmin = systemClient && req.user!.clientId === systemClient.id;
+
+    // If Super Admin, get ALL roles from ALL clients
+    // Otherwise, get only roles from the user's client
     const roles = await prisma.role.findMany({
-      where: {
+      where: isSuperAdmin ? {} : {
         clientId: req.user!.clientId,
       },
       include: {
+        client: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
         permissions: {
           include: {
             permission: true,
@@ -29,9 +45,10 @@ export const getAllRoles = async (
           },
         },
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: [
+        { client: { name: 'asc' } },
+        { createdAt: 'desc' },
+      ],
     });
 
     res.json({
@@ -55,12 +72,28 @@ export const getRoleById = async (
   try {
     const { id } = req.params;
 
+    // Check if user is from System client (Super Admin)
+    const systemClient = await prisma.client.findUnique({
+      where: { slug: 'system' },
+    });
+
+    const isSuperAdmin = systemClient && req.user!.clientId === systemClient.id;
+
     const role = await prisma.role.findFirst({
-      where: {
-        id,
-        clientId: req.user!.clientId,
-      },
+      where: isSuperAdmin
+        ? { id } // Super Admin can access any role
+        : {
+            id,
+            clientId: req.user!.clientId, // Regular users only their client's roles
+          },
       include: {
+        client: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
         permissions: {
           include: {
             permission: true,
@@ -169,12 +202,21 @@ export const updateRole = async (
     const { id } = req.params;
     const { name, description, permissionIds } = req.body;
 
-    // Check if role exists and belongs to same client
+    // Check if user is from System client (Super Admin)
+    const systemClient = await prisma.client.findUnique({
+      where: { slug: 'system' },
+    });
+
+    const isSuperAdmin = systemClient && req.user!.clientId === systemClient.id;
+
+    // Check if role exists and belongs to same client (or any client if Super Admin)
     const existingRole = await prisma.role.findFirst({
-      where: {
-        id,
-        clientId: req.user!.clientId,
-      },
+      where: isSuperAdmin
+        ? { id } // Super Admin can update any role
+        : {
+            id,
+            clientId: req.user!.clientId, // Regular users only their client's roles
+          },
     });
 
     if (!existingRole) {
@@ -233,6 +275,13 @@ export const updateRole = async (
       where: { id },
       data: updateData,
       include: {
+        client: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
         permissions: {
           include: {
             permission: true,
@@ -267,12 +316,21 @@ export const deleteRole = async (
   try {
     const { id } = req.params;
 
-    // Check if role exists and belongs to same client
+    // Check if user is from System client (Super Admin)
+    const systemClient = await prisma.client.findUnique({
+      where: { slug: 'system' },
+    });
+
+    const isSuperAdmin = systemClient && req.user!.clientId === systemClient.id;
+
+    // Check if role exists and belongs to same client (or any client if Super Admin)
     const role = await prisma.role.findFirst({
-      where: {
-        id,
-        clientId: req.user!.clientId,
-      },
+      where: isSuperAdmin
+        ? { id } // Super Admin can delete any role
+        : {
+            id,
+            clientId: req.user!.clientId, // Regular users only their client's roles
+          },
       include: {
         _count: {
           select: {

@@ -694,6 +694,11 @@ export interface Role {
   createdAt: string;
   updatedAt: string;
   permissions: RolePermission[];
+  client?: {
+    id: string;
+    name: string;
+    slug: string;
+  };
   _count: {
     users: number;
   };

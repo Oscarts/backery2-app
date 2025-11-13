@@ -91,7 +91,6 @@ export const login = async (
       email: user.email,
       clientId: user.clientId,
       roleId: user.roleId,
-      role: user.role,
     };
 
     const token = generateToken(authUser);
@@ -180,12 +179,11 @@ export const register = async (
         lastName,
         clientId: clientId || req.user?.clientId, // Use provided or authenticated user's client
         roleId: roleId || null,
-        role: 'CUSTOM',
         isActive: true,
       },
       include: {
         client: true,
-        role: true,
+        customRole: true,
       },
     });
 

@@ -260,9 +260,16 @@ const RoleManagement: React.FC = () => {
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <ShieldIcon color="primary" />
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        {role.name}
-                      </Typography>
+                      <Box>
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                          {role.name}
+                        </Typography>
+                        {role.client && (
+                          <Typography variant="caption" color="text.secondary">
+                            {role.client.name}
+                          </Typography>
+                        )}
+                      </Box>
                     </Box>
                     {role.isSystem && (
                       <Chip label="System" size="small" color="primary" />

@@ -131,12 +131,21 @@ export const createUser = async (
       });
     }
 
-    // Verify role exists and belongs to the same client
+    // Check if user is from System client (Super Admin)
+    const systemClient = await prisma.client.findUnique({
+      where: { slug: 'system' },
+    });
+
+    const isSuperAdmin = systemClient && req.user!.clientId === systemClient.id;
+
+    // Verify role exists and belongs to the same client (or any client if Super Admin)
     const role = await prisma.role.findFirst({
-      where: {
-        id: roleId,
-        clientId: req.user!.clientId,
-      },
+      where: isSuperAdmin
+        ? { id: roleId } // Super Admin can use any role
+        : {
+            id: roleId,
+            clientId: req.user!.clientId, // Regular users only their client's roles
+          },
     });
 
     if (!role) {
@@ -147,8 +156,11 @@ export const createUser = async (
     }
 
     // Check user limit for the client
+    // For Super Admin, use the role's client; for regular users, use their own client
+    const targetClientId = isSuperAdmin ? role.clientId : req.user!.clientId;
+
     const client = await prisma.client.findUnique({
-      where: { id: req.user!.clientId },
+      where: { id: targetClientId },
       include: {
         _count: {
           select: { users: true },
@@ -163,8 +175,8 @@ export const createUser = async (
       });
     }
 
-    // Enforce maxUsers limit
-    if (client._count.users >= client.maxUsers) {
+    // Enforce maxUsers limit (skip for System client)
+    if (client.slug !== 'system' && client._count.users >= client.maxUsers) {
       return res.status(403).json({
         success: false,
         error: `User limit reached. Your plan allows ${client.maxUsers} users. Please upgrade your subscription to add more users.`,
@@ -177,7 +189,7 @@ export const createUser = async (
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
+    // Create user in the target client
     const user = await prisma.user.create({
       data: {
         email,
@@ -185,7 +197,7 @@ export const createUser = async (
         firstName,
         lastName,
         roleId,
-        clientId: req.user!.clientId,
+        clientId: targetClientId,
         isActive,
       },
       include: {
@@ -257,13 +269,22 @@ export const updateUser = async (
       }
     }
 
-    // If role is being changed, verify it exists and belongs to same client
+    // If role is being changed, verify it exists and belongs to same client (or any if Super Admin)
     if (roleId) {
+      // Check if user is from System client (Super Admin)
+      const systemClient = await prisma.client.findUnique({
+        where: { slug: 'system' },
+      });
+
+      const isSuperAdmin = systemClient && req.user!.clientId === systemClient.id;
+
       const role = await prisma.role.findFirst({
-        where: {
-          id: roleId,
-          clientId: req.user!.clientId,
-        },
+        where: isSuperAdmin
+          ? { id: roleId } // Super Admin can use any role
+          : {
+              id: roleId,
+              clientId: req.user!.clientId, // Regular users only their client's roles
+            },
       });
 
       if (!role) {

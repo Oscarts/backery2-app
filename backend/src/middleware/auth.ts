@@ -7,7 +7,6 @@ export interface AuthUser {
   email: string;
   clientId: string;
   roleId: string | null;
-  role: string; // Legacy: ADMIN, STAFF, CUSTOM
 }
 
 // Extend Express Request type
@@ -25,7 +24,6 @@ export interface JWTPayload {
   email: string;
   clientId: string;
   roleId: string | null;
-  role: string;
 }
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -40,10 +38,9 @@ export const generateToken = (user: AuthUser): string => {
     email: user.email,
     clientId: user.clientId,
     roleId: user.roleId,
-    role: user.role,
   };
 
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN as string });
+  return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 };
 
 /**
@@ -84,7 +81,6 @@ export const authenticate = async (
         email: decoded.email,
         clientId: decoded.clientId,
         roleId: decoded.roleId,
-        role: decoded.role,
       };
 
       next();
@@ -135,7 +131,6 @@ export const optionalAuthenticate = async (
           email: decoded.email,
           clientId: decoded.clientId,
           roleId: decoded.roleId,
-          role: decoded.role,
         };
       } catch (error) {
         // Silently fail for optional auth
