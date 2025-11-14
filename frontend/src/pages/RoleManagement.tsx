@@ -67,6 +67,19 @@ const RoleManagement: React.FC = () => {
   const roles = rolesData?.data || [];
   const permissions = permissionsData?.data || [];
 
+  // Sort roles: Templates first, then client roles
+  const sortedRoles = [...roles].sort((a, b) => {
+    // Templates (system client) come first
+    const aIsTemplate = a.client?.slug === 'system' && a.name !== 'Super Admin';
+    const bIsTemplate = b.client?.slug === 'system' && b.name !== 'Super Admin';
+    
+    if (aIsTemplate && !bIsTemplate) return -1;
+    if (!aIsTemplate && bIsTemplate) return 1;
+    
+    // Within same category, sort by name
+    return a.name.localeCompare(b.name);
+  });
+
   // Group permissions by resource
   const groupedPermissions = permissions.reduce((acc: Record<string, Permission[]>, perm) => {
     if (!acc[perm.resource]) {
@@ -218,7 +231,7 @@ const RoleManagement: React.FC = () => {
       <Card sx={{ mb: 3, borderRadius: borderRadius.lg }}>
         <Box sx={{ p: 2.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="body2" color="text.secondary">
-            {roles.length} {roles.length === 1 ? 'role' : 'roles'} configured
+            {sortedRoles.length} {sortedRoles.length === 1 ? 'role' : 'roles'} configured
           </Typography>
           <Button
             variant="contained"
@@ -265,7 +278,7 @@ const RoleManagement: React.FC = () => {
             </Card>
           </Grid>
         ) : (
-          roles.map((role) => (
+          sortedRoles.map((role) => (
             <Grid item xs={12} md={6} lg={4} key={role.id}>
               <Card sx={{ borderRadius: borderRadius.lg, height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <Box sx={{ p: 2.5, flexGrow: 1 }}>
