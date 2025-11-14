@@ -122,6 +122,11 @@ const ClientManagement: React.FC = () => {
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [createdAdminCreds, setCreatedAdminCreds] = useState<{
+    email: string;
+    password: string;
+    clientId?: string;
+  } | null>(null);
 
   // Fetch clients
   const { data: clientsData, isLoading: clientsLoading } = useQuery({
@@ -134,9 +139,17 @@ const ClientManagement: React.FC = () => {
   // Mutations
   const createMutation = useMutation({
     mutationFn: (data: CreateClientData) => apiPost('/admin/clients', data),
-    onSuccess: () => {
+    onSuccess: (res: any) => {
+      // Try to capture returned client and show admin credentials (password is only available here)
+      const createdClient = res?.data?.client || res?.data || null;
       queryClient.invalidateQueries({ queryKey: ['admin-clients'] });
       setSuccess('Client created successfully');
+      // Show the admin credentials once so the operator can copy/save them.
+      setCreatedAdminCreds({
+        email: (formData as any).adminEmail,
+        password: (formData as any).adminPassword,
+        clientId: createdClient?.id,
+      });
       handleCloseDialog();
     },
     onError: (err: any) => {
@@ -256,6 +269,21 @@ const ClientManagement: React.FC = () => {
   const handleDelete = () => {
     if (deletingClient) {
       deleteMutation.mutate(deletingClient.id);
+    }
+  };
+
+  const openCreatedClient = async () => {
+    if (!createdAdminCreds?.clientId) return;
+    try {
+      const res = await apiGet(`/admin/clients/${createdAdminCreds.clientId}`);
+      const client = (res as any)?.data || null;
+      if (client) {
+        // Open the edit dialog for the newly created client
+        handleOpenDialog(client as Client);
+        setCreatedAdminCreds(null);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error || err.message || 'Failed to open created client');
     }
   };
 
@@ -685,6 +713,30 @@ const ClientManagement: React.FC = () => {
           >
             {editingClient ? 'Update' : 'Create'}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Created Admin Credentials - shown once after creating a client */}
+      <Dialog open={!!createdAdminCreds} onClose={() => setCreatedAdminCreds(null)}>
+        <DialogTitle>Admin account created</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            An admin user was created for this client. Copy the credentials now — the password will not be shown again.
+          </Typography>
+          <Typography variant="body2">
+            <strong>Email:</strong> {createdAdminCreds?.email}
+          </Typography>
+          <Typography variant="body2">
+            <strong>Password:</strong> {createdAdminCreds?.password}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreatedAdminCreds(null)}>Close</Button>
+          {createdAdminCreds?.clientId && (
+            <Button variant="contained" onClick={openCreatedClient}>
+              Open Client
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
 
