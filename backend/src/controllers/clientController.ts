@@ -53,13 +53,13 @@ export const getClientById = async (
       where: { id },
       include: {
         users: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            isActive: true,
-            lastLoginAt: true,
+          include: {
+            customRole: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
         _count: {
@@ -393,6 +393,100 @@ export const deleteClient = async (
     res.json({
       success: true,
       message: 'Client deleted successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/admin/create-admin
+ * Create an admin user for a client
+ */
+export const createAdminUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { email, password, firstName, lastName, clientId } = req.body;
+
+    // Validate required fields
+    if (!email || !password || !firstName || !lastName || !clientId) {
+      return res.status(400).json({
+        success: false,
+        error: 'All fields are required',
+      });
+    }
+
+    // Check if client exists
+    const client = await prisma.client.findUnique({
+      where: { id: clientId },
+    });
+
+    if (!client) {
+      return res.status(404).json({
+        success: false,
+        error: 'Client not found',
+      });
+    }
+
+    // Check if user with this email already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        error: 'A user with this email already exists',
+      });
+    }
+
+    // Find the Admin role for this client
+    const adminRole = await prisma.role.findFirst({
+      where: {
+        clientId,
+        name: 'Admin',
+      },
+    });
+
+    if (!adminRole) {
+      return res.status(404).json({
+        success: false,
+        error: 'Admin role not found for this client',
+      });
+    }
+
+    // Hash password
+    const bcrypt = require('bcrypt');
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // Create admin user
+    const user = await prisma.user.create({
+      data: {
+        email,
+        passwordHash,
+        firstName,
+        lastName,
+        clientId,
+        roleId: adminRole.id,
+        isActive: true,
+      },
+      include: {
+        customRole: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    res.status(201).json({
+      success: true,
+      data: user,
+      message: 'Admin user created successfully',
     });
   } catch (error) {
     next(error);

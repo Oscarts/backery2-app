@@ -36,6 +36,18 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
 import { borderRadius } from '../theme/designTokens';
 
+interface ClientUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  isActive: boolean;
+  customRole: {
+    id: string;
+    name: string;
+  } | null;
+}
+
 interface Client {
   id: string;
   name: string;
@@ -54,6 +66,7 @@ interface Client {
     users: number;
     roles: number;
   };
+  users?: ClientUser[];
 }
 
 interface CreateClientData {
@@ -127,6 +140,14 @@ const ClientManagement: React.FC = () => {
     password: string;
     clientId?: string;
   } | null>(null);
+  const [clientUsers, setClientUsers] = useState<ClientUser[]>([]);
+  const [showNewAdminForm, setShowNewAdminForm] = useState(false);
+  const [newAdminData, setNewAdminData] = useState({
+    email: '',
+    password: 'password123',
+    firstName: '',
+    lastName: '',
+  });
 
   // Fetch clients
   const { data: clientsData, isLoading: clientsLoading } = useQuery({
@@ -183,7 +204,48 @@ const ClientManagement: React.FC = () => {
     },
   });
 
-  const handleOpenDialog = (client?: Client) => {
+  const deleteAdminMutation = useMutation({
+    mutationFn: (userId: string) => apiDelete(`/users/${userId}`),
+    onSuccess: () => {
+      setSuccess('Admin user deleted successfully');
+      // Reload client users
+      if (editingClient) {
+        fetchClientUsers(editingClient.id);
+      }
+    },
+    onError: (err: any) => {
+      setError(err.response?.data?.error || err.message);
+    },
+  });
+
+  const createAdminMutation = useMutation({
+    mutationFn: (data: { email: string; password: string; firstName: string; lastName: string; clientId: string }) =>
+      apiPost('/admin/create-admin', data),
+    onSuccess: () => {
+      setSuccess('New admin user created successfully');
+      setShowNewAdminForm(false);
+      setNewAdminData({ email: '', password: 'password123', firstName: '', lastName: '' });
+      // Reload client users
+      if (editingClient) {
+        fetchClientUsers(editingClient.id);
+      }
+    },
+    onError: (err: any) => {
+      setError(err.response?.data?.error || err.message);
+    },
+  });
+
+  const fetchClientUsers = async (clientId: string) => {
+    try {
+      const res = await apiGet(`/admin/clients/${clientId}`);
+      const client = (res as any)?.data;
+      setClientUsers(client?.users || []);
+    } catch (err) {
+      console.error('Failed to fetch client users:', err);
+    }
+  };
+
+  const handleOpenDialog = async (client?: Client) => {
     if (client) {
       setEditingClient(client);
       setFormData({
@@ -201,8 +263,11 @@ const ClientManagement: React.FC = () => {
         adminFirstName: '',
         adminLastName: '',
       });
+      // Fetch users for this client
+      await fetchClientUsers(client.id);
     } else {
       setEditingClient(null);
+      setClientUsers([]);
       setFormData({
         name: '',
         slug: '',
@@ -226,6 +291,9 @@ const ClientManagement: React.FC = () => {
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setEditingClient(null);
+    setClientUsers([]);
+    setShowNewAdminForm(false);
+    setNewAdminData({ email: '', password: 'password123', firstName: '', lastName: '' });
     setError('');
   };
 
@@ -647,6 +715,143 @@ const ClientManagement: React.FC = () => {
                     <MenuItem value="inactive">Inactive</MenuItem>
                   </TextField>
                 </Grid>
+              </>
+            )}
+
+            {/* Admin User Management (only for existing clients) */}
+            {editingClient && (
+              <>
+                <Grid item xs={12} sx={{ mt: 2 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Admin Users
+                    </Typography>
+                    {!showNewAdminForm && (
+                      <Button
+                        size="small"
+                        startIcon={<AddIcon />}
+                        onClick={() => setShowNewAdminForm(true)}
+                        sx={{ textTransform: 'none' }}
+                      >
+                        Add Admin
+                      </Button>
+                    )}
+                  </Box>
+                </Grid>
+
+                {clientUsers.filter(u => u.customRole?.name === 'Admin').map(user => (
+                  <Grid item xs={12} key={user.id}>
+                    <Paper sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {user.firstName} {user.lastName}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {user.email}
+                        </Typography>
+                      </Box>
+                      <Tooltip title="Delete admin user">
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => {
+                            if (window.confirm(`Delete admin user ${user.email}?`)) {
+                              deleteAdminMutation.mutate(user.id);
+                            }
+                          }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Paper>
+                  </Grid>
+                ))}
+
+                {clientUsers.filter(u => u.customRole?.name === 'Admin').length === 0 && !showNewAdminForm && (
+                  <Grid item xs={12}>
+                    <Alert severity="warning">
+                      No admin user found. Add one to manage this client.
+                    </Alert>
+                  </Grid>
+                )}
+
+                {showNewAdminForm && (
+                  <>
+                    <Grid item xs={12}>
+                      <Alert severity="info" sx={{ mb: 1 }}>
+                        Creating a new admin user. The password will be shown only once after creation.
+                      </Alert>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label="First Name"
+                        value={newAdminData.firstName}
+                        onChange={(e) => setNewAdminData({ ...newAdminData, firstName: e.target.value })}
+                        required
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label="Last Name"
+                        value={newAdminData.lastName}
+                        onChange={(e) => setNewAdminData({ ...newAdminData, lastName: e.target.value })}
+                        required
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label="Email"
+                        type="email"
+                        value={newAdminData.email}
+                        onChange={(e) => setNewAdminData({ ...newAdminData, email: e.target.value })}
+                        required
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        label="Password"
+                        type="password"
+                        value={newAdminData.password}
+                        onChange={(e) => setNewAdminData({ ...newAdminData, password: e.target.value })}
+                        required
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                        <Button
+                          size="small"
+                          onClick={() => {
+                            setShowNewAdminForm(false);
+                            setNewAdminData({ email: '', password: 'password123', firstName: '', lastName: '' });
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          onClick={() => {
+                            if (!newAdminData.email || !newAdminData.firstName || !newAdminData.lastName) {
+                              setError('Please fill all admin fields');
+                              return;
+                            }
+                            createAdminMutation.mutate({
+                              ...newAdminData,
+                              clientId: editingClient.id,
+                            });
+                          }}
+                          disabled={createAdminMutation.isPending}
+                        >
+                          Create Admin
+                        </Button>
+                      </Box>
+                    </Grid>
+                  </>
+                )}
               </>
             )}
 

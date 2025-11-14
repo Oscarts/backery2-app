@@ -86,6 +86,7 @@ const createApp = (): Application => {
   app.use('/api/roles', authenticate, tenantContext, roleRoutes);
   app.use('/api/permissions', authenticate, tenantContext, permissionRoutes);
   app.use('/api/admin/clients', authenticate, clientRoutes); // Super admin only, no tenant context
+  app.post('/api/admin/create-admin', authenticate, require('../controllers/clientController').createAdminUser); // Create admin user for a client
 
   // Error handling middleware
   app.use(notFound);

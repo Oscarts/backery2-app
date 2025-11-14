@@ -5,6 +5,7 @@ import {
   createClient,
   updateClient,
   deleteClient,
+  createAdminUser,
 } from '../controllers/clientController';
 import { authenticate } from '../middleware/auth';
 import { requirePermission } from '../middleware/permissions';
