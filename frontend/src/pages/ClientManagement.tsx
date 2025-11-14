@@ -239,6 +239,8 @@ const ClientManagement: React.FC = () => {
         address: formData.address,
         subscriptionPlan: formData.subscriptionPlan,
         maxUsers: formData.maxUsers,
+        subscriptionStatus: formData.subscriptionStatus,
+        isActive: formData.isActive,
       };
       updateMutation.mutate({ id: editingClient.id, data: updateData });
     } else {
@@ -473,6 +475,19 @@ const ClientManagement: React.FC = () => {
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {error}
+            </Alert>
+          )}
+
+          {editingClient && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                Current Client Information
+              </Typography>
+              <Typography variant="caption">
+                Email: {editingClient.email || 'Not set'} • 
+                Phone: {editingClient.phone || 'Not set'} • 
+                Address: {editingClient.address || 'Not set'}
+              </Typography>
             </Alert>
           )}
 
