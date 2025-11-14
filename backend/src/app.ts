@@ -31,6 +31,7 @@ import userRoutes from './routes/users';
 import roleRoutes from './routes/roles';
 import permissionRoutes from './routes/permissions';
 import clientRoutes from './routes/clients';
+import { createAdminUser } from './controllers/clientController';
 
 // Initialize Prisma Client
 export const prisma = new PrismaClient({
@@ -86,7 +87,7 @@ const createApp = (): Application => {
   app.use('/api/roles', authenticate, tenantContext, roleRoutes);
   app.use('/api/permissions', authenticate, tenantContext, permissionRoutes);
   app.use('/api/admin/clients', authenticate, clientRoutes); // Super admin only, no tenant context
-  app.post('/api/admin/create-admin', authenticate, require('../controllers/clientController').createAdminUser); // Create admin user for a client
+  app.post('/api/admin/create-admin', authenticate, createAdminUser); // Create admin user for a client
 
   // Error handling middleware
   app.use(notFound);
