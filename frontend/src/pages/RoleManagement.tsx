@@ -26,6 +26,7 @@ import {
   FormControlLabel,
   Grid,
   Divider,
+  InputAdornment,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -35,6 +36,7 @@ import {
   People as PeopleIcon,
   ViewModule as ViewModuleIcon,
   ViewList as ViewListIcon,
+  Search as SearchIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { rolesApi, permissionsApi } from '../services/realApi';
@@ -46,6 +48,7 @@ const RoleManagement: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [viewMode, setViewMode] = useState<'card' | 'table'>('table');
+  const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState<CreateRoleData>({
     name: '',
     description: '',
@@ -81,6 +84,13 @@ const RoleManagement: React.FC = () => {
     // Within same category, sort by name
     return a.name.localeCompare(b.name);
   });
+
+  // Filter roles by search term
+  const filteredRoles = sortedRoles.filter((role) =>
+    role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    role.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    role.client?.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   // Group permissions by resource
   const groupedPermissions = permissions.reduce((acc: Record<string, Permission[]>, perm) => {
@@ -231,11 +241,26 @@ const RoleManagement: React.FC = () => {
 
       {/* Toolbar */}
       <Card sx={{ mb: 3, borderRadius: borderRadius.lg }}>
-        <Box sx={{ p: 2.5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="body2" color="text.secondary">
-            {sortedRoles.length} {sortedRoles.length === 1 ? 'role' : 'roles'} configured
-          </Typography>
+        <Box sx={{ p: 2.5, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+          <TextField
+            placeholder="Search roles..."
+            size="small"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ flexGrow: 1, minWidth: 250 }}
+          />
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+            <Typography variant="body2" color="text.secondary">
+              {filteredRoles.length} {filteredRoles.length === 1 ? 'role' : 'roles'}
+              {searchTerm && ` (filtered from ${sortedRoles.length})`}
+            </Typography>
             {/* View Toggle */}
             <Box sx={{ display: 'flex', gap: 0.5, bgcolor: 'grey.100', borderRadius: borderRadius.md, p: 0.5 }}>
               <IconButton
@@ -309,7 +334,7 @@ const RoleManagement: React.FC = () => {
               </Card>
             </Grid>
           ) : (
-            sortedRoles.map((role) => (
+            filteredRoles.map((role) => (
               <Grid item xs={12} md={6} lg={4} key={role.id}>
                 <Card sx={{ borderRadius: borderRadius.lg, height: '100%', display: 'flex', flexDirection: 'column' }}>
                   <Box sx={{ p: 2.5, flexGrow: 1 }}>
@@ -470,7 +495,7 @@ const RoleManagement: React.FC = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                sortedRoles.map((role) => (
+                filteredRoles.map((role) => (
                   <TableRow 
                     key={role.id} 
                     hover 
