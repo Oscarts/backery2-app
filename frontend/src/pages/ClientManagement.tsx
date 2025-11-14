@@ -31,7 +31,6 @@ import {
   Search as SearchIcon,
   Business as BusinessIcon,
   People as PeopleIcon,
-  Visibility as VisibilityIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiGet, apiPost, apiPut, apiDelete } from '../utils/api';
@@ -65,6 +64,8 @@ interface CreateClientData {
   address: string;
   subscriptionPlan: string;
   maxUsers: number;
+  subscriptionStatus?: string;
+  isActive?: boolean;
   adminEmail: string;
   adminPassword: string;
   adminFirstName: string;
@@ -180,6 +181,8 @@ const ClientManagement: React.FC = () => {
         address: client.address || '',
         subscriptionPlan: client.subscriptionPlan,
         maxUsers: client.maxUsers,
+        subscriptionStatus: client.subscriptionStatus,
+        isActive: client.isActive,
         adminEmail: '',
         adminPassword: '',
         adminFirstName: '',
@@ -195,6 +198,8 @@ const ClientManagement: React.FC = () => {
         address: '',
         subscriptionPlan: 'PROFESSIONAL',
         maxUsers: 20,
+        subscriptionStatus: 'TRIAL',
+        isActive: true,
         adminEmail: '',
         adminPassword: 'password123',
         adminFirstName: '',
@@ -420,16 +425,7 @@ const ClientManagement: React.FC = () => {
                     </Typography>
                   </TableCell>
                   <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-                    <Tooltip title="View Details">
-                      <IconButton
-                        size="small"
-                        onClick={() => window.open(`/settings/clients/${client.id}`, '_blank')}
-                        color="info"
-                      >
-                        <VisibilityIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Edit Plan & Limits">
+                    <Tooltip title="Edit Client">
                       <IconButton
                         size="small"
                         onClick={() => handleOpenDialog(client)}
@@ -459,7 +455,19 @@ const ClientManagement: React.FC = () => {
       {/* Create/Edit Dialog */}
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
         <DialogTitle>
-          {editingClient ? 'Edit Client' : 'Create New Client'}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <BusinessIcon color="primary" />
+            <Box flex={1}>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                {editingClient ? `Edit ${editingClient.name}` : 'Create New Client'}
+              </Typography>
+              {editingClient && (
+                <Typography variant="caption" color="text.secondary">
+                  {editingClient._count?.users || 0} users • {editingClient._count?.roles || 0} roles • Created {new Date(editingClient.createdAt).toLocaleDateString()}
+                </Typography>
+              )}
+            </Box>
+          </Box>
         </DialogTitle>
         <DialogContent>
           {error && (
@@ -564,6 +572,40 @@ const ClientManagement: React.FC = () => {
                 inputProps={{ min: 1, max: 999 }}
               />
             </Grid>
+
+            {/* Subscription Status (only for editing) */}
+            {editingClient && (
+              <>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    select
+                    label="Subscription Status"
+                    value={formData.subscriptionStatus || 'TRIAL'}
+                    onChange={(e) => setFormData({ ...formData, subscriptionStatus: e.target.value })}
+                  >
+                    {SUBSCRIPTION_STATUSES.map((status) => (
+                      <MenuItem key={status.value} value={status.value}>
+                        {status.label}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    select
+                    label="Status"
+                    value={formData.isActive ? 'active' : 'inactive'}
+                    onChange={(e) => setFormData({ ...formData, isActive: e.target.value === 'active' })}
+                  >
+                    <MenuItem value="active">Active</MenuItem>
+                    <MenuItem value="inactive">Inactive</MenuItem>
+                  </TextField>
+                </Grid>
+              </>
+            )}
 
             {/* Admin User (only for new clients) */}
             {!editingClient && (

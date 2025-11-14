@@ -23,7 +23,6 @@ import UserManagement from './pages/UserManagement';
 import RoleManagement from './pages/RoleManagement';
 import RoleTemplates from './pages/RoleTemplates';
 import ClientManagement from './pages/ClientManagement';
-import ClientDetails from './pages/ClientDetails';
 
 // Import components
 import Layout from './components/Layout/Layout';
@@ -63,7 +62,6 @@ function App() {
           <Route path="settings/roles" element={<RoleManagement />} />
           <Route path="settings/role-templates" element={<RoleTemplates />} />
           <Route path="settings/clients" element={<ClientManagement />} />
-          <Route path="settings/clients/:id" element={<ClientDetails />} />
           <Route path="api-test" element={<ApiTest />} />
         </Route>
       </Routes>
