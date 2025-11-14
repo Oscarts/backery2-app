@@ -360,7 +360,12 @@ const ClientManagement: React.FC = () => {
               </TableRow>
             ) : (
               filteredClients.map((client: Client) => (
-                <TableRow key={client.id} hover>
+                <TableRow 
+                  key={client.id} 
+                  hover
+                  onClick={() => handleOpenDialog(client)}
+                  sx={{ cursor: 'pointer' }}
+                >
                   <TableCell>
                     <Stack direction="row" spacing={1} alignItems="center">
                       <BusinessIcon color="primary" />
@@ -414,7 +419,7 @@ const ClientManagement: React.FC = () => {
                       {new Date(client.createdAt).toLocaleDateString()}
                     </Typography>
                   </TableCell>
-                  <TableCell align="right">
+                  <TableCell align="right" onClick={(e) => e.stopPropagation()}>
                     <Tooltip title="View Details">
                       <IconButton
                         size="small"

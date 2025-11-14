@@ -471,7 +471,12 @@ const RoleManagement: React.FC = () => {
                 </TableRow>
               ) : (
                 sortedRoles.map((role) => (
-                  <TableRow key={role.id} hover>
+                  <TableRow 
+                    key={role.id} 
+                    hover 
+                    onClick={() => handleOpenDialog(role)}
+                    sx={{ cursor: 'pointer' }}
+                  >
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <ShieldIcon color="primary" fontSize="small" />
@@ -526,7 +531,7 @@ const RoleManagement: React.FC = () => {
                         color="primary"
                       />
                     </TableCell>
-                    <TableCell align="right">
+                    <TableCell align="right" onClick={(e) => e.stopPropagation()}>
                       <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
                         <IconButton
                           size="small"
