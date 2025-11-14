@@ -26,7 +26,6 @@ import {
   FormControlLabel,
   Grid,
   Divider,
-  Badge,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -34,6 +33,8 @@ import {
   Delete as DeleteIcon,
   Shield as ShieldIcon,
   People as PeopleIcon,
+  ViewModule as ViewModuleIcon,
+  ViewList as ViewListIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { rolesApi, permissionsApi } from '../services/realApi';
@@ -44,6 +45,7 @@ const RoleManagement: React.FC = () => {
   const queryClient = useQueryClient();
   const [openDialog, setOpenDialog] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
+  const [viewMode, setViewMode] = useState<'card' | 'table'>('table');
   const [formData, setFormData] = useState<CreateRoleData>({
     name: '',
     description: '',
@@ -233,105 +235,289 @@ const RoleManagement: React.FC = () => {
           <Typography variant="body2" color="text.secondary">
             {sortedRoles.length} {sortedRoles.length === 1 ? 'role' : 'roles'} configured
           </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => handleOpenDialog()}
-            sx={{
-              borderRadius: borderRadius.md,
-              textTransform: 'none',
-              fontWeight: 600,
-              px: 3,
-            }}
-          >
-            Create Role
-          </Button>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+            {/* View Toggle */}
+            <Box sx={{ display: 'flex', gap: 0.5, bgcolor: 'grey.100', borderRadius: borderRadius.md, p: 0.5 }}>
+              <IconButton
+                size="small"
+                onClick={() => setViewMode('card')}
+                sx={{
+                  bgcolor: viewMode === 'card' ? 'white' : 'transparent',
+                  boxShadow: viewMode === 'card' ? 1 : 0,
+                  '&:hover': { bgcolor: viewMode === 'card' ? 'white' : 'grey.200' },
+                }}
+              >
+                <ViewModuleIcon fontSize="small" />
+              </IconButton>
+              <IconButton
+                size="small"
+                onClick={() => setViewMode('table')}
+                sx={{
+                  bgcolor: viewMode === 'table' ? 'white' : 'transparent',
+                  boxShadow: viewMode === 'table' ? 1 : 0,
+                  '&:hover': { bgcolor: viewMode === 'table' ? 'white' : 'grey.200' },
+                }}
+              >
+                <ViewListIcon fontSize="small" />
+              </IconButton>
+            </Box>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => handleOpenDialog()}
+              sx={{
+                borderRadius: borderRadius.md,
+                textTransform: 'none',
+                fontWeight: 600,
+                px: 3,
+              }}
+            >
+              Create Role
+            </Button>
+          </Box>
         </Box>
       </Card>
 
-      {/* Roles Grid */}
-      <Grid container spacing={3}>
-        {rolesLoading ? (
-          <Grid item xs={12}>
-            <Card sx={{ p: 8, textAlign: 'center', borderRadius: borderRadius.lg }}>
-              <Typography>Loading...</Typography>
-            </Card>
-          </Grid>
-        ) : roles.length === 0 ? (
-          <Grid item xs={12}>
-            <Card sx={{ p: 8, textAlign: 'center', borderRadius: borderRadius.lg }}>
-              <ShieldIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                No roles configured
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Create your first role to start managing permissions
-              </Typography>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => handleOpenDialog()}
-                sx={{ textTransform: 'none', fontWeight: 600 }}
-              >
-                Create Role
-              </Button>
-            </Card>
-          </Grid>
-        ) : (
-          sortedRoles.map((role) => (
-            <Grid item xs={12} md={6} lg={4} key={role.id}>
-              <Card sx={{ borderRadius: borderRadius.lg, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <Box sx={{ p: 2.5, flexGrow: 1 }}>
-                  {/* Header */}
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <ShieldIcon color="primary" />
-                      <Box>
-                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                          {role.name}
-                        </Typography>
-                        {role.client && (
-                          <Typography 
-                            variant="caption" 
-                            color={role.client.slug === 'system' ? 'primary' : 'text.secondary'}
-                            sx={{ 
-                              fontWeight: role.client.slug === 'system' ? 600 : 400,
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 0.5
-                            }}
-                          >
-                            {role.client.slug === 'system' ? '🎨 Template' : role.client.name}
+      {/* Roles Display - Card or Table View */}
+      {viewMode === 'card' ? (
+        /* Card View */
+        <Grid container spacing={3}>
+          {rolesLoading ? (
+            <Grid item xs={12}>
+              <Card sx={{ p: 8, textAlign: 'center', borderRadius: borderRadius.lg }}>
+                <Typography>Loading...</Typography>
+              </Card>
+            </Grid>
+          ) : roles.length === 0 ? (
+            <Grid item xs={12}>
+              <Card sx={{ p: 8, textAlign: 'center', borderRadius: borderRadius.lg }}>
+                <ShieldIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                <Typography variant="h6" color="text.secondary" gutterBottom>
+                  No roles configured
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                  Create your first role to start managing permissions
+                </Typography>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => handleOpenDialog()}
+                  sx={{ textTransform: 'none', fontWeight: 600 }}
+                >
+                  Create Role
+                </Button>
+              </Card>
+            </Grid>
+          ) : (
+            sortedRoles.map((role) => (
+              <Grid item xs={12} md={6} lg={4} key={role.id}>
+                <Card sx={{ borderRadius: borderRadius.lg, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                  <Box sx={{ p: 2.5, flexGrow: 1 }}>
+                    {/* Header */}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <ShieldIcon color="primary" />
+                        <Box>
+                          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                            {role.name}
                           </Typography>
+                          {role.client && (
+                            <Typography 
+                              variant="caption" 
+                              color={role.client.slug === 'system' ? 'primary' : 'text.secondary'}
+                              sx={{ 
+                                fontWeight: role.client.slug === 'system' ? 600 : 400,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 0.5
+                              }}
+                            >
+                              {role.client.slug === 'system' ? '🎨 Template' : role.client.name}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Box>
+                      {role.isSystem && role.client?.slug === 'system' && role.name !== 'Super Admin' && (
+                        <Chip label="TEMPLATE" size="small" color="warning" variant="outlined" />
+                      )}
+                      {role.name === 'Super Admin' && (
+                        <Chip label="SUPER ADMIN" size="small" color="error" />
+                      )}
+                    </Box>
+
+                    {/* Description */}
+                    {role.description && (
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        {role.description}
+                      </Typography>
+                    )}
+
+                    {/* Stats */}
+                    <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                      <Tooltip title="Users with this role">
+                        <Chip
+                          icon={<PeopleIcon />}
+                          label={role._count.users}
+                          size="small"
+                          variant="outlined"
+                        />
+                      </Tooltip>
+                      <Tooltip title="Permissions granted">
+                        <Chip
+                          icon={<ShieldIcon />}
+                          label={role.permissions.length}
+                          size="small"
+                          variant="outlined"
+                          color="primary"
+                        />
+                      </Tooltip>
+                    </Box>
+
+                    {/* Permissions Preview */}
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+                        Permissions:
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {role.permissions.slice(0, 4).map((rp) => (
+                          <Chip
+                            key={rp.id}
+                            label={`${rp.permission.resource}:${rp.permission.action}`}
+                            size="small"
+                            sx={{ fontSize: '0.7rem' }}
+                          />
+                        ))}
+                        {role.permissions.length > 4 && (
+                          <Chip
+                            label={`+${role.permissions.length - 4} more`}
+                            size="small"
+                            sx={{ fontSize: '0.7rem' }}
+                          />
                         )}
                       </Box>
                     </Box>
-                    {role.isSystem && role.client?.slug === 'system' && role.name !== 'Super Admin' && (
-                      <Chip label="TEMPLATE" size="small" color="warning" variant="outlined" />
-                    )}
-                    {role.name === 'Super Admin' && (
-                      <Chip label="SUPER ADMIN" size="small" color="error" />
-                    )}
                   </Box>
 
-                  {/* Description */}
-                  {role.description && (
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                      {role.description}
-                    </Typography>
-                  )}
+                  <Divider />
 
-                  {/* Stats */}
-                  <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                    <Tooltip title="Users with this role">
+                  {/* Actions */}
+                  <Box sx={{ p: 1.5, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                    <Button
+                      size="small"
+                      startIcon={<EditIcon />}
+                      onClick={() => handleOpenDialog(role)}
+                      sx={{ textTransform: 'none' }}
+                    >
+                      Edit
+                    </Button>
+                    {!role.isSystem && (
+                      <Button
+                        size="small"
+                        startIcon={<DeleteIcon />}
+                        onClick={() => handleDelete(role)}
+                        color="error"
+                        sx={{ textTransform: 'none' }}
+                        disabled={role._count.users > 0}
+                      >
+                        Delete
+                      </Button>
+                    )}
+                  </Box>
+                </Card>
+              </Grid>
+            ))
+          )}
+        </Grid>
+      ) : (
+        /* Table View */
+        <TableContainer component={Paper} sx={{ borderRadius: borderRadius.lg, overflow: 'hidden' }}>
+          <Table>
+            <TableHead sx={{ bgcolor: 'grey.50' }}>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 600 }}>Role Name</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Client</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 600 }}>Users</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 600 }}>Permissions</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 600 }}>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {rolesLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
+                    <Typography>Loading...</Typography>
+                  </TableCell>
+                </TableRow>
+              ) : roles.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
+                    <ShieldIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                    <Typography variant="h6" color="text.secondary" gutterBottom>
+                      No roles configured
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                      Create your first role to start managing permissions
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      startIcon={<AddIcon />}
+                      onClick={() => handleOpenDialog()}
+                      sx={{ textTransform: 'none', fontWeight: 600 }}
+                    >
+                      Create Role
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                sortedRoles.map((role) => (
+                  <TableRow key={role.id} hover>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <ShieldIcon color="primary" fontSize="small" />
+                        <Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                              {role.name}
+                            </Typography>
+                            {role.isSystem && role.client?.slug === 'system' && role.name !== 'Super Admin' && (
+                              <Chip label="TEMPLATE" size="small" color="warning" variant="outlined" />
+                            )}
+                            {role.name === 'Super Admin' && (
+                              <Chip label="SUPER ADMIN" size="small" color="error" />
+                            )}
+                          </Box>
+                        </Box>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Typography 
+                        variant="body2" 
+                        color={role.client?.slug === 'system' ? 'primary' : 'text.secondary'}
+                        sx={{ 
+                          fontWeight: role.client?.slug === 'system' ? 600 : 400,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 0.5
+                        }}
+                      >
+                        {role.client?.slug === 'system' ? '🎨 System' : role.client?.name}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 300 }}>
+                        {role.description || '-'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="center">
                       <Chip
                         icon={<PeopleIcon />}
                         label={role._count.users}
                         size="small"
                         variant="outlined"
                       />
-                    </Tooltip>
-                    <Tooltip title="Permissions granted">
+                    </TableCell>
+                    <TableCell align="center">
                       <Chip
                         icon={<ShieldIcon />}
                         label={role.permissions.length}
@@ -339,64 +525,35 @@ const RoleManagement: React.FC = () => {
                         variant="outlined"
                         color="primary"
                       />
-                    </Tooltip>
-                  </Box>
-
-                  {/* Permissions Preview */}
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
-                      Permissions:
-                    </Typography>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {role.permissions.slice(0, 4).map((rp) => (
-                        <Chip
-                          key={rp.id}
-                          label={`${rp.permission.resource}:${rp.permission.action}`}
+                    </TableCell>
+                    <TableCell align="right">
+                      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+                        <IconButton
                           size="small"
-                          sx={{ fontSize: '0.7rem' }}
-                        />
-                      ))}
-                      {role.permissions.length > 4 && (
-                        <Chip
-                          label={`+${role.permissions.length - 4} more`}
-                          size="small"
-                          sx={{ fontSize: '0.7rem' }}
-                        />
-                      )}
-                    </Box>
-                  </Box>
-                </Box>
-
-                <Divider />
-
-                {/* Actions */}
-                <Box sx={{ p: 1.5, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                  <Button
-                    size="small"
-                    startIcon={<EditIcon />}
-                    onClick={() => handleOpenDialog(role)}
-                    sx={{ textTransform: 'none' }}
-                  >
-                    Edit
-                  </Button>
-                  {!role.isSystem && (
-                    <Button
-                      size="small"
-                      startIcon={<DeleteIcon />}
-                      onClick={() => handleDelete(role)}
-                      color="error"
-                      sx={{ textTransform: 'none' }}
-                      disabled={role._count.users > 0}
-                    >
-                      Delete
-                    </Button>
-                  )}
-                </Box>
-              </Card>
-            </Grid>
-          ))
-        )}
-      </Grid>
+                          onClick={() => handleOpenDialog(role)}
+                          color="primary"
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                        {!role.isSystem && (
+                          <IconButton
+                            size="small"
+                            onClick={() => handleDelete(role)}
+                            color="error"
+                            disabled={role._count.users > 0}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
 
       {/* Role Form Dialog */}
       <Dialog
