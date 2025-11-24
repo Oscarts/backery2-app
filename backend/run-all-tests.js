@@ -45,7 +45,9 @@ const tests = [
 // Adjust Jest test paths if they exist after build
 const jestTests = [
   'dist/tests/materialTracking.test.js',
-  'dist/tests/materialTrackingAPI.test.js'
+  'dist/tests/materialTrackingAPI.test.js',
+  'tests/client-creation.test.ts',  // Client creation test
+  'tests/settings-endpoints.test.ts'  // Settings endpoints multi-tenant test
 ];
 
 async function runTests() {
@@ -56,7 +58,7 @@ async function runTests() {
     console.log(`\n📝 Running ${test}...`);
     console.log('='.repeat(50));
     await new Promise((resolve, reject) => {
-  const child = spawn('node', [test], { stdio: 'inherit' });
+      const child = spawn('node', [test], { stdio: 'inherit' });
       child.on('close', code => {
         if (code === 0) {
           console.log(`\n✅ ${test} completed successfully`);

@@ -185,7 +185,7 @@ export const createProductionRun = async (req: Request, res: Response) => {
                 steps: {
                     create: stepsToCreate
                 }
-            },
+            } as any, // clientId added by Prisma middleware
             include: {
                 recipe: {
                     include: {
@@ -201,7 +201,7 @@ export const createProductionRun = async (req: Request, res: Response) => {
         // Check ingredient availability and auto-allocate materials for the production run
         console.log('� Checking ingredient availability for new production run');
         const productionMultiplier = targetQuantity / (recipe.yieldQuantity || 1);
-        
+
         try {
             // First, check if all ingredients are available
             const stockCheck = await inventoryAllocationService.checkIngredientAvailability(
@@ -212,7 +212,7 @@ export const createProductionRun = async (req: Request, res: Response) => {
             if (!stockCheck.allIngredientsAvailable) {
                 // Delete the production run we just created since we can't fulfill it
                 await prisma.productionRun.delete({ where: { id: productionRun.id } });
-                
+
                 return res.status(400).json({
                     success: false,
                     error: 'Insufficient ingredients to start production',
@@ -235,7 +235,7 @@ export const createProductionRun = async (req: Request, res: Response) => {
             // If allocation fails after check, delete the production run
             await prisma.productionRun.delete({ where: { id: productionRun.id } });
             console.error('❌ Material allocation failed:', allocError);
-            
+
             return res.status(500).json({
                 success: false,
                 error: 'Failed to allocate materials for production',
@@ -262,7 +262,7 @@ export const getDashboardProductionRuns = async (req: Request, res: Response) =>
         // Get active and recently cancelled runs
         const today = new Date();
         const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        
+
         const activeRuns = await prisma.productionRun.findMany({
             where: {
                 OR: [
@@ -312,9 +312,9 @@ export const getProductionStats = async (req: Request, res: Response) => {
         // Active includes both PLANNED and IN_PROGRESS runs
         const [activeCount, onHoldCount, completedTodayCount] = await Promise.all([
             prisma.productionRun.count({
-                where: { 
-                    status: { 
-                        in: [ProductionStatus.PLANNED, ProductionStatus.IN_PROGRESS] 
+                where: {
+                    status: {
+                        in: [ProductionStatus.PLANNED, ProductionStatus.IN_PROGRESS]
                     }
                 }
             }),
@@ -347,7 +347,7 @@ export const getProductionStats = async (req: Request, res: Response) => {
         });
 
         const totalItemsProducedToday = completedProductionsToday.reduce(
-            (sum, run) => sum + (run.targetQuantity || 0), 
+            (sum, run) => sum + (run.targetQuantity || 0),
             0
         );
 
@@ -481,48 +481,48 @@ export const updateProductionRun = async (req: Request, res: Response) => {
         let finishedProduct = null;
 
         console.log(`🔍 DEBUG: isCompletion=${isCompletion}, status=${status}, currentRun.status=${currentRun.status}`);
-        
+
         // Write to debug file
         const fs = require('fs');
-        fs.appendFileSync('/tmp/production-debug.log', 
+        fs.appendFileSync('/tmp/production-debug.log',
             `${new Date().toISOString()} DEBUG: isCompletion=${isCompletion}, status=${status}, currentRun.status=${currentRun.status}\n`
         );
 
         if (isCompletion) {
             console.log('🎉 Production run manually completed via finish button!');
-            fs.appendFileSync('/tmp/production-debug.log', 
+            fs.appendFileSync('/tmp/production-debug.log',
                 `${new Date().toISOString()} Production completion triggered!\n`
             );
-            
+
             try {
                 // Call the ProductionCompletionService BEFORE updating status
                 console.log(`📞 Calling productionCompletionService.completeProductionRun(${id}, ${targetQuantity || currentRun.targetQuantity})`);
-                fs.appendFileSync('/tmp/production-debug.log', 
+                fs.appendFileSync('/tmp/production-debug.log',
                     `${new Date().toISOString()} Calling ProductionCompletionService...\n`
                 );
                 const completionResult = await productionCompletionService.completeProductionRun(
-                    id, 
+                    id,
                     targetQuantity || currentRun.targetQuantity
                 );
                 console.log('✅ ProductionCompletionService call succeeded:', completionResult);
-                fs.appendFileSync('/tmp/production-debug.log', 
+                fs.appendFileSync('/tmp/production-debug.log',
                     `${new Date().toISOString()} Service returned: ${JSON.stringify(completionResult)}\n`
                 );
                 finishedProduct = (completionResult as any).finishedProduct;
                 if (finishedProduct) {
                     console.log(`✅ Finished product created: ${finishedProduct.name}`);
-                    fs.appendFileSync('/tmp/production-debug.log', 
+                    fs.appendFileSync('/tmp/production-debug.log',
                         `${new Date().toISOString()} SUCCESS: Finished product created: ${finishedProduct.name}\n`
                     );
                 } else {
-                    fs.appendFileSync('/tmp/production-debug.log', 
+                    fs.appendFileSync('/tmp/production-debug.log',
                         `${new Date().toISOString()} WARNING: finishedProduct is undefined\n`
                     );
                 }
-                
+
                 // The service already updated the status to COMPLETED, so don't update it again
                 const updatedRun = (completionResult as any).productionRun;
-                
+
                 res.json({
                     success: true,
                     data: {
@@ -533,10 +533,10 @@ export const updateProductionRun = async (req: Request, res: Response) => {
                     message: 'Production run completed successfully'
                 });
                 return;
-                
+
             } catch (completionError: any) {
                 console.error('❌ Error creating finished product during manual completion:', completionError);
-                fs.appendFileSync('/tmp/production-debug.log', 
+                fs.appendFileSync('/tmp/production-debug.log',
                     `${new Date().toISOString()} ERROR: ${completionError.message || completionError}\n`
                 );
                 // Fall through to regular update if completion fails
@@ -674,7 +674,7 @@ export const getProductionMaterials = async (req: Request, res: Response) => {
 
         // Get material usage details
         const materials = await inventoryAllocationService.getMaterialUsage(productionRunId);
-        
+
         // Get cost breakdown
         const costBreakdown = await inventoryAllocationService.calculateProductionCost(productionRunId);
 
@@ -778,7 +778,7 @@ export const getFinishedProductMaterials = async (req: Request, res: Response) =
         // Use the costToProduce from the finished product which was calculated at production completion
         // This matches the recipe's cost per unit calculation (totalCost / yieldQuantity)
         const costPerUnit = finishedProduct.costToProduce || 0;
-        
+
         // Total cost is cost per unit * quantity produced
         const totalCost = costPerUnit * finishedProduct.quantity;
 

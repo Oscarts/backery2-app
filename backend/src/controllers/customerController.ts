@@ -10,15 +10,15 @@ const prisma = new PrismaClient();
 export const getCustomers = async (req: Request, res: Response) => {
   try {
     const { search } = req.query;
-    
+
     const where = search
       ? {
-          OR: [
-            { name: { contains: search as string, mode: 'insensitive' as const } },
-            { email: { contains: search as string, mode: 'insensitive' as const } },
-            { phone: { contains: search as string, mode: 'insensitive' as const } },
-          ],
-        }
+        OR: [
+          { name: { contains: search as string, mode: 'insensitive' as const } },
+          { email: { contains: search as string, mode: 'insensitive' as const } },
+          { phone: { contains: search as string, mode: 'insensitive' as const } },
+        ],
+      }
       : {};
 
     const customers = await prisma.customer.findMany({
@@ -31,16 +31,16 @@ export const getCustomers = async (req: Request, res: Response) => {
       },
     });
 
-    res.json({ 
-      success: true, 
-      data: customers 
+    res.json({
+      success: true,
+      data: customers
     });
   } catch (error: any) {
     console.error('Error fetching customers:', error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       error: 'Failed to fetch customers',
-      details: error.message 
+      details: error.message
     });
   }
 };
@@ -69,16 +69,16 @@ export const getCustomerById = async (req: Request, res: Response) => {
       });
     }
 
-    res.json({ 
-      success: true, 
-      data: customer 
+    res.json({
+      success: true,
+      data: customer
     });
   } catch (error: any) {
     console.error('Error fetching customer:', error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       error: 'Failed to fetch customer',
-      details: error.message 
+      details: error.message
     });
   }
 };
@@ -93,9 +93,9 @@ export const createCustomer = async (req: Request, res: Response) => {
 
     // Validation
     if (!name || name.trim() === '') {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Customer name is required' 
+      return res.status(400).json({
+        success: false,
+        error: 'Customer name is required'
       });
     }
 
@@ -120,20 +120,20 @@ export const createCustomer = async (req: Request, res: Response) => {
         phone: phone?.trim() || null,
         address: address?.trim() || null,
         isActive: isActive ?? true,
-      },
+      } as any, // clientId added by Prisma middleware
     });
 
-    res.json({ 
-      success: true, 
-      data: customer, 
-      message: 'Customer created successfully' 
+    res.json({
+      success: true,
+      data: customer,
+      message: 'Customer created successfully'
     });
   } catch (error: any) {
     console.error('Error creating customer:', error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       error: 'Failed to create customer',
-      details: error.message 
+      details: error.message
     });
   }
 };
@@ -161,16 +161,16 @@ export const updateCustomer = async (req: Request, res: Response) => {
 
     // Validation
     if (name && name.trim() === '') {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Customer name cannot be empty' 
+      return res.status(400).json({
+        success: false,
+        error: 'Customer name cannot be empty'
       });
     }
 
     // Check for duplicate email if changed
     if (email && email !== existingCustomer.email) {
       const duplicateEmail = await prisma.customer.findFirst({
-        where: { 
+        where: {
           email: email.toLowerCase(),
           id: { not: id },
         },
@@ -195,17 +195,17 @@ export const updateCustomer = async (req: Request, res: Response) => {
       },
     });
 
-    res.json({ 
-      success: true, 
-      data: customer, 
-      message: 'Customer updated successfully' 
+    res.json({
+      success: true,
+      data: customer,
+      message: 'Customer updated successfully'
     });
   } catch (error: any) {
     console.error('Error updating customer:', error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       error: 'Failed to update customer',
-      details: error.message 
+      details: error.message
     });
   }
 };
@@ -247,16 +247,16 @@ export const deleteCustomer = async (req: Request, res: Response) => {
       where: { id },
     });
 
-    res.json({ 
-      success: true, 
-      message: 'Customer deleted successfully' 
+    res.json({
+      success: true,
+      message: 'Customer deleted successfully'
     });
   } catch (error: any) {
     console.error('Error deleting customer:', error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       error: 'Failed to delete customer',
-      details: error.message 
+      details: error.message
     });
   }
 };

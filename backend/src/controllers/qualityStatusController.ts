@@ -41,7 +41,23 @@ export const getQualityStatusById = async (req: Request, res: Response) => {
 // Create quality status
 export const createQualityStatus = async (req: Request, res: Response) => {
   try {
+    console.log('POST /api/quality-statuses - Request body:', req.body);
+    console.log('POST /api/quality-statuses - User:', req.user);
+
     const { name, description, color, sortOrder } = req.body;
+
+    // Explicitly add clientId from authenticated user
+    const clientId = (req.user as any)?.clientId || (global as any).__currentClientId;
+
+    if (!clientId) {
+      console.error('POST /api/quality-statuses - No clientId available!');
+      return res.status(500).json({
+        success: false,
+        error: 'Client ID not found in request'
+      });
+    }
+
+    console.log('POST /api/quality-statuses - Using clientId:', clientId);
 
     const newQualityStatus = await prisma.qualityStatus.create({
       data: {
@@ -49,9 +65,11 @@ export const createQualityStatus = async (req: Request, res: Response) => {
         description,
         color,
         sortOrder: sortOrder || 0,
+        clientId,
       },
     });
 
+    console.log('POST /api/quality-statuses - Created successfully:', newQualityStatus);
     res.status(201).json({ success: true, data: newQualityStatus });
   } catch (error: any) {
     console.error('Error creating quality status:', error);
@@ -119,8 +137,8 @@ export const deleteQualityStatus = async (req: Request, res: Response) => {
         data: { isActive: false },
       });
 
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         message: 'Quality status deactivated (it is in use by existing products)',
         data: updatedQualityStatus,
       });

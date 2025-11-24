@@ -49,7 +49,7 @@ const createApp = (): Application => {
   app.use(cors());
   app.use(express.json({ limit: '10mb' })); // Increased limit for image uploads
   app.use(express.urlencoded({ extended: true, limit: '10mb' })); // Increased limit for image uploads
-  
+
   // Only use morgan in development to avoid cluttering test output
   if (process.env.NODE_ENV !== 'test') {
     app.use(morgan('combined'));

@@ -21,10 +21,10 @@ export class ProductionCompletionService {
     async completeProductionRun(productionRunId: string, actualQuantity?: number) {
         try {
             console.log(`🏁 Completing production run: ${productionRunId}`);
-            
+
             // Debug logging
             const fs = require('fs');
-            fs.appendFileSync('/tmp/production-debug.log', 
+            fs.appendFileSync('/tmp/production-debug.log',
                 `${new Date().toISOString()} SERVICE: Starting completeProductionRun for ${productionRunId}\n`
             );
 
@@ -38,7 +38,7 @@ export class ProductionCompletionService {
             });
 
             if (!productionRun) {
-                fs.appendFileSync('/tmp/production-debug.log', 
+                fs.appendFileSync('/tmp/production-debug.log',
                     `${new Date().toISOString()} SERVICE ERROR: Production run not found\n`
                 );
                 throw new Error('Production run not found');
@@ -46,7 +46,7 @@ export class ProductionCompletionService {
 
             if (productionRun.status === 'COMPLETED') {
                 console.log('Production run already completed');
-                fs.appendFileSync('/tmp/production-debug.log', 
+                fs.appendFileSync('/tmp/production-debug.log',
                     `${new Date().toISOString()} SERVICE: Already completed, returning existing run\n`
                 );
                 return productionRun;
@@ -55,13 +55,13 @@ export class ProductionCompletionService {
             const pendingSteps = productionRun.steps.filter(step =>
                 step.status !== 'COMPLETED' && step.status !== 'SKIPPED'
             );
-            
-            fs.appendFileSync('/tmp/production-debug.log', 
+
+            fs.appendFileSync('/tmp/production-debug.log',
                 `${new Date().toISOString()} SERVICE: Found ${pendingSteps.length} pending steps\n`
             );
 
             if (pendingSteps.length > 0) {
-                fs.appendFileSync('/tmp/production-debug.log', 
+                fs.appendFileSync('/tmp/production-debug.log',
                     `${new Date().toISOString()} SERVICE ERROR: Cannot complete - pending steps\n`
                 );
                 throw new Error(`Cannot complete production: ${pendingSteps.length} steps still pending`);
@@ -71,13 +71,13 @@ export class ProductionCompletionService {
             const existingAllocations = await prisma.productionAllocation.findMany({
                 where: { productionRunId }
             });
-            
+
             if (existingAllocations.length === 0) {
                 console.log('🔄 Auto-allocating materials for production run');
-                fs.appendFileSync('/tmp/production-debug.log', 
+                fs.appendFileSync('/tmp/production-debug.log',
                     `${new Date().toISOString()} SERVICE: Auto-allocating materials\n`
                 );
-                
+
                 try {
                     const productionMultiplier = productionRun.targetQuantity / (productionRun.recipe?.yieldQuantity || 1);
                     const allocations = await inventoryAllocationService.allocateIngredients(
@@ -86,12 +86,12 @@ export class ProductionCompletionService {
                         productionMultiplier
                     );
                     console.log(`✓ Allocated ${allocations.length} materials`);
-                    fs.appendFileSync('/tmp/production-debug.log', 
+                    fs.appendFileSync('/tmp/production-debug.log',
                         `${new Date().toISOString()} SERVICE: Allocated ${allocations.length} materials\n`
                     );
                 } catch (allocError) {
                     console.warn('⚠️ Material allocation failed:', allocError);
-                    fs.appendFileSync('/tmp/production-debug.log', 
+                    fs.appendFileSync('/tmp/production-debug.log',
                         `${new Date().toISOString()} SERVICE WARNING: Material allocation failed - ${allocError}\n`
                     );
                     // Continue with completion even if allocation fails
@@ -102,15 +102,15 @@ export class ProductionCompletionService {
 
             // Use actual quantity if provided, otherwise use target quantity
             const finalQuantity = actualQuantity || productionRun.targetQuantity;
-            
-            fs.appendFileSync('/tmp/production-debug.log', 
+
+            fs.appendFileSync('/tmp/production-debug.log',
                 `${new Date().toISOString()} SERVICE: Creating finished product with quantity ${finalQuantity}\n`
             );
 
             // Create finished product in inventory
             const finishedProduct = await this.createFinishedProduct(productionRun, finalQuantity);
-            
-            fs.appendFileSync('/tmp/production-debug.log', 
+
+            fs.appendFileSync('/tmp/production-debug.log',
                 `${new Date().toISOString()} SERVICE: Finished product created: ${finishedProduct?.id}\n`
             );
 
@@ -129,13 +129,13 @@ export class ProductionCompletionService {
             });
 
             console.log(`✅ Production completed: ${finishedProduct.quantity} ${finishedProduct.unit} of ${finishedProduct.name}`);
-            
+
             const result = {
                 productionRun: completedRun,
                 finishedProduct
             };
-            
-            fs.appendFileSync('/tmp/production-debug.log', 
+
+            fs.appendFileSync('/tmp/production-debug.log',
                 `${new Date().toISOString()} SERVICE: Returning result with finishedProduct: ${!!result.finishedProduct}\n`
             );
 
@@ -190,7 +190,7 @@ export class ProductionCompletionService {
                         packagingInfo: `Produced via ${productionRun.name}`,
                         isContaminated: false,
                         reservedQuantity: 0
-                    }
+                    } as any // clientId added by Prisma middleware
                 });
             } catch (err: any) {
                 // If a unique constraint on SKU still exists in the database (legacy schema),
@@ -240,7 +240,7 @@ export class ProductionCompletionService {
 
             // Use the recipe cost service to get accurate cost including proper overhead
             const recipeCostBreakdown = await recipeCostService.calculateRecipeCost(productionRun.recipeId);
-            
+
             if (!recipeCostBreakdown || !recipeCostBreakdown.costPerUnit) {
                 throw new Error('Failed to calculate recipe cost breakdown');
             }
@@ -248,7 +248,7 @@ export class ProductionCompletionService {
             // Calculate total cost for the target quantity
             const costPerUnit = recipeCostBreakdown.costPerUnit;
             const totalCost = costPerUnit * productionRun.targetQuantity;
-            
+
             const costCalculation: ProductionCostCalculation = {
                 totalCost,
                 costPerUnit,
@@ -258,21 +258,21 @@ export class ProductionCompletionService {
                 breakdown: {
                     materialCost: recipeCostBreakdown.totalMaterialCost || 0,
                     overheadCost: recipeCostBreakdown.overheadCost || 0,
-                    overheadPercentage: recipeCostBreakdown.overheadCost 
-                        ? (recipeCostBreakdown.overheadCost / recipeCostBreakdown.totalMaterialCost) * 100 
+                    overheadPercentage: recipeCostBreakdown.overheadCost
+                        ? (recipeCostBreakdown.overheadCost / recipeCostBreakdown.totalMaterialCost) * 100
                         : 0,
                 }
             };
 
             console.log(`📊 Production cost calculated: $${totalCost.toFixed(2)} (${productionRun.targetQuantity} units @ $${costPerUnit.toFixed(2)}/unit)`);
             console.log(`   Materials: $${costCalculation.breakdown.materialCost.toFixed(2)}, Overhead: $${costCalculation.breakdown.overheadCost.toFixed(2)} (${costCalculation.breakdown.overheadPercentage.toFixed(0)}%)`);
-            
+
             return costCalculation;
 
         } catch (error) {
             console.error('❌ Error calculating production cost:', error);
             console.warn(`⚠️  Using fallback cost: $${DEFAULT_PRODUCTION_COST_CONFIG.fallbackCostPerUnit} per unit`);
-            
+
             // Return fallback cost calculation
             return {
                 totalCost: DEFAULT_PRODUCTION_COST_CONFIG.fallbackCostPerUnit * (productionRun.targetQuantity || 1),
@@ -298,7 +298,7 @@ export class ProductionCompletionService {
      * @throws Error if sale price calculation fails
      */
     private async calculateSalePrice(
-        recipeId: string, 
+        recipeId: string,
         productionCostCalculation: ProductionCostCalculation
     ): Promise<SalePriceCalculation> {
         try {
@@ -306,12 +306,12 @@ export class ProductionCompletionService {
 
             // Use cost per unit from production cost calculation
             const costPerUnit = productionCostCalculation.costPerUnit;
-            
+
             // Apply markup: 50% markup by default (can be configured per recipe later)
             const markupPercentage = DEFAULT_PRODUCTION_COST_CONFIG.defaultMarkupPercentage;
             const markupAmount = costPerUnit * markupPercentage;
             const salePrice = costPerUnit + markupAmount;
-            
+
             const priceCalculation: SalePriceCalculation = {
                 salePrice,
                 costPerUnit,
@@ -320,13 +320,13 @@ export class ProductionCompletionService {
             };
 
             console.log(`📊 Sale price calculated: $${salePrice.toFixed(2)} (Cost: $${costPerUnit.toFixed(2)} + ${(markupPercentage * 100)}% markup: $${markupAmount.toFixed(2)})`);
-            
+
             return priceCalculation;
 
         } catch (error) {
             console.error('❌ Error calculating sale price:', error);
             console.warn(`⚠️  Using fallback sale price: $${DEFAULT_PRODUCTION_COST_CONFIG.fallbackSalePrice}`);
-            
+
             // Return fallback price calculation
             return {
                 salePrice: DEFAULT_PRODUCTION_COST_CONFIG.fallbackSalePrice,
@@ -356,7 +356,7 @@ export class ProductionCompletionService {
                     type: 'WAREHOUSE',
                     description: 'Default storage location for finished products',
                     capacity: '1000 units'
-                }
+                } as any // clientId added by Prisma middleware
             });
         }
 

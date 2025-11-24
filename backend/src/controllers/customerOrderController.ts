@@ -223,7 +223,7 @@ export const createOrder = async (req: Request, res: Response) => {
         items: {
           create: orderItems,
         },
-      },
+      } as any, // clientId added by Prisma middleware
       include: {
         customer: true,
         items: true,

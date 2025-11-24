@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { seedDefaultClientData, ensureCommonUnits } from '../utils/seedDefaultClientData';
 
 const prisma = new PrismaClient();
 
@@ -157,7 +158,7 @@ export const createClient = async (
         subscriptionPlan: subscriptionPlan as any,
         maxUsers,
         subscriptionStatus: subscriptionPlan === 'TRIAL' ? 'TRIAL' : 'ACTIVE',
-        trialEndsAt: subscriptionPlan === 'TRIAL' 
+        trialEndsAt: subscriptionPlan === 'TRIAL'
           ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
           : null,
       },
@@ -241,6 +242,12 @@ export const createClient = async (
       },
     });
 
+    // Ensure common units exist (global, not client-specific)
+    await ensureCommonUnits();
+
+    // Seed default data for the new client
+    const defaultDataResult = await seedDefaultClientData(client.id);
+
     res.status(201).json({
       success: true,
       data: {
@@ -251,7 +258,9 @@ export const createClient = async (
           firstName: adminUser.firstName,
           lastName: adminUser.lastName,
         },
+        defaultData: defaultDataResult,
       },
+      message: `Client created successfully with default data: ${defaultDataResult.categories} categories, ${defaultDataResult.suppliers} supplier, ${defaultDataResult.storageLocations} storage locations, ${defaultDataResult.qualityStatuses} quality statuses`,
     });
   } catch (error) {
     next(error);

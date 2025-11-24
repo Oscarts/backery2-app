@@ -134,13 +134,13 @@ export const createRecipe = async (req: Request, res: Response) => {
           imageUrl: imageUrl || null,
           overheadPercentage: overheadPercentage !== undefined ? Number(overheadPercentage) : 20,
           version: 1 // Default version
-        }
+        } as any // clientId added by Prisma middleware
       });
 
       // Create ingredients if provided
       if (ingredients && ingredients.length > 0) {
         console.log('📝 Ingredients received:', JSON.stringify(ingredients, null, 2));
-        
+
         // Validate each ingredient - exactly one of rawMaterialId or finishedProductId
         for (let i = 0; i < ingredients.length; i++) {
           const ing = ingredients[i];
@@ -148,8 +148,8 @@ export const createRecipe = async (req: Request, res: Response) => {
           console.log(`  - rawMaterialId: ${ing.rawMaterialId}`);
           console.log(`  - finishedProductId: ${ing.finishedProductId}`);
           console.log(`  - has both? ${!!(ing.rawMaterialId && ing.finishedProductId)}`);
-          console.log(`  - has neither? ${!!(! ing.rawMaterialId && !ing.finishedProductId)}`);
-          
+          console.log(`  - has neither? ${!!(!ing.rawMaterialId && !ing.finishedProductId)}`);
+
           if ((!ing.rawMaterialId && !ing.finishedProductId) || (ing.rawMaterialId && ing.finishedProductId)) {
             throw new Error('Each ingredient must have exactly one of rawMaterialId or finishedProductId');
           }
@@ -335,7 +335,7 @@ export const updateRecipe = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Error updating recipe:', error);
-    
+
     // Check for validation errors
     if (error.message && error.message.includes('must have exactly one')) {
       return res.status(400).json({
@@ -343,7 +343,7 @@ export const updateRecipe = async (req: Request, res: Response) => {
         error: error.message
       });
     }
-    
+
     res.status(500).json({
       success: false,
       error: 'Failed to update recipe'
@@ -432,7 +432,7 @@ export const getRecipeCost = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Error calculating recipe cost:', error);
-    
+
     if (error.message.includes('Recipe not found')) {
       return res.status(404).json({
         success: false,
@@ -469,9 +469,9 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
     console.log(`Found ${recipes.length} active recipes`);
 
     // Get raw material inventory
-  const rawMaterials = await prisma.rawMaterial.findMany();
-  const finishedProducts = await prisma.finishedProduct.findMany();
-  const inventory = new Map();
+    const rawMaterials = await prisma.rawMaterial.findMany();
+    const finishedProducts = await prisma.finishedProduct.findMany();
+    const inventory = new Map();
     const now = new Date();
 
     rawMaterials.forEach(material => {
@@ -560,7 +560,7 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
     }
 
     const canMakeCount = results.filter(r => r.canMake).length;
-    
+
     console.log(`Analysis complete: Can make ${canMakeCount} out of ${recipes.length} recipes`);
 
     res.json({
@@ -595,7 +595,7 @@ export const updateRecipeCost = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Error updating recipe cost:', error);
-    
+
     if (error.message.includes('Recipe not found')) {
       return res.status(404).json({
         success: false,

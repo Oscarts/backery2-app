@@ -26,18 +26,41 @@ router.get('/', async (req, res, next) => {
 // POST /api/categories
 router.post('/', async (req, res, next) => {
   try {
+    console.log('POST /api/categories - Request body:', JSON.stringify(req.body, null, 2));
+    console.log('POST /api/categories - User:', req.user);
+    console.log('POST /api/categories - Global clientId:', (global as any).__currentClientId);
+
     const { name, type, description } = req.body;
 
     if (!name || !type) {
+      console.log('POST /api/categories - Validation failed: missing name or type');
       return res.status(400).json({
         success: false,
         error: 'Name and type are required',
       });
     }
 
+    console.log('POST /api/categories - Creating category:', { name, type, description });
+    console.log('POST /api/categories - Global clientId before create:', (global as any).__currentClientId);
+
+    // Explicitly add clientId since middleware might not work
+    const clientId = (req.user as any)?.clientId || (global as any).__currentClientId;
+
+    if (!clientId) {
+      console.error('POST /api/categories - No clientId available!');
+      return res.status(500).json({
+        success: false,
+        error: 'Client ID not found in request'
+      });
+    }
+
+    console.log('POST /api/categories - Using clientId:', clientId);
+
     const category = await prisma.category.create({
-      data: { name, type, description },
+      data: { name, type, description, clientId },
     });
+
+    console.log('POST /api/categories - Category created successfully:', category);
 
     res.status(201).json({
       success: true,
@@ -45,11 +68,12 @@ router.post('/', async (req, res, next) => {
       message: 'Category created successfully',
     });
   } catch (error: any) {
+    console.error('POST /api/categories - Error:', error);
     if (error.code === 'P2002') {
       // Unique constraint violation
-      res.status(400).json({ 
-        success: false, 
-        error: 'A category with this name already exists' 
+      res.status(400).json({
+        success: false,
+        error: 'A category with this name already exists'
       });
     } else {
       next(error);
@@ -94,9 +118,9 @@ router.put('/:id', async (req, res, next) => {
   } catch (error: any) {
     if (error.code === 'P2002') {
       // Unique constraint violation
-      res.status(400).json({ 
-        success: false, 
-        error: 'A category with this name already exists' 
+      res.status(400).json({
+        success: false,
+        error: 'A category with this name already exists'
       });
     } else {
       next(error);
@@ -129,7 +153,7 @@ router.delete('/:id', async (req, res, next) => {
     ]);
 
     const totalUsage = rawMaterialsCount + finishedProductsCount + recipesCount;
-    
+
     if (totalUsage > 0) {
       return res.status(409).json({
         success: false,

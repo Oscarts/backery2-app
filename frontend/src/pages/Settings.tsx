@@ -139,13 +139,21 @@ const Settings: React.FC = () => {
 
     // Category mutations
     const createCategoryMutation = useMutation({
-        mutationFn: (data: Omit<Category, 'id' | 'createdAt'>) => categoriesApi.create(data),
-        onSuccess: () => {
+        mutationFn: (data: Omit<Category, 'id' | 'createdAt'>) => {
+            console.log('Creating category with data:', data);
+            return categoriesApi.create(data);
+        },
+        onSuccess: (response) => {
+            console.log('Category created successfully:', response);
             queryClient.invalidateQueries({ queryKey: ['categories'] });
             handleCloseDialog();
             showSnackbar('Category created successfully', 'success');
         },
-        onError: () => showSnackbar('Failed to create category', 'error'),
+        onError: (error: any) => {
+            console.error('Failed to create category:', error);
+            const errorMessage = error?.message || 'Failed to create category';
+            showSnackbar(errorMessage, 'error');
+        },
     });
 
     const updateCategoryMutation = useMutation({
@@ -242,7 +250,10 @@ const Settings: React.FC = () => {
     };
 
     const handleAddCategory = (type: CategoryType) => {
-        setCategoryForm({ name: '', type, description: '' });
+        console.log('handleAddCategory called with type:', type);
+        const newForm = { name: '', type, description: '' };
+        console.log('Setting categoryForm to:', newForm);
+        setCategoryForm(newForm);
         setDialogType('category');
         setOpenDialog(true);
     };
@@ -261,7 +272,18 @@ const Settings: React.FC = () => {
     };
 
     const handleSubmitCategory = () => {
+        console.log('handleSubmitCategory called');
+        console.log('categoryForm:', categoryForm);
+        console.log('editingCategory:', editingCategory);
+
+        if (!categoryForm.name || !categoryForm.type) {
+            showSnackbar('Please fill in all required fields', 'error');
+            return;
+        }
+
         const data = { name: categoryForm.name, type: categoryForm.type, description: categoryForm.description };
+        console.log('Submitting category data:', data);
+
         if (editingCategory) {
             updateCategoryMutation.mutate({ id: editingCategory.id, data });
         } else {
@@ -360,11 +382,11 @@ const Settings: React.FC = () => {
                     </TableHead>
                     <TableBody>
                         {filteredCategories.map((category: Category) => (
-                            <TableRow 
-                              key={category.id} 
-                              hover
-                              onClick={() => handleEditCategory(category)}
-                              sx={{ cursor: 'pointer' }}
+                            <TableRow
+                                key={category.id}
+                                hover
+                                onClick={() => handleEditCategory(category)}
+                                sx={{ cursor: 'pointer' }}
                             >
                                 <TableCell>
                                     <Typography variant="body2" fontWeight="medium">
@@ -381,24 +403,24 @@ const Settings: React.FC = () => {
                                 <TableCell align="right">
                                     <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                                         <Tooltip title="Edit">
-                                            <IconButton 
-                                              size="small" 
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleEditCategory(category);
-                                              }}
+                                            <IconButton
+                                                size="small"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleEditCategory(category);
+                                                }}
                                             >
                                                 <EditIcon fontSize="small" />
                                             </IconButton>
                                         </Tooltip>
                                         <Tooltip title="Delete">
-                                            <IconButton 
-                                              size="small" 
-                                              color="error" 
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDeleteCategory(category.id);
-                                              }}
+                                            <IconButton
+                                                size="small"
+                                                color="error"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteCategory(category.id);
+                                                }}
                                             >
                                                 <DeleteIcon fontSize="small" />
                                             </IconButton>
@@ -439,11 +461,11 @@ const Settings: React.FC = () => {
                     </TableHead>
                     <TableBody>
                         {suppliers.map((supplier: Supplier) => (
-                            <TableRow 
-                              key={supplier.id} 
-                              hover
-                              onClick={() => handleEditSupplier(supplier)}
-                              sx={{ cursor: 'pointer' }}
+                            <TableRow
+                                key={supplier.id}
+                                hover
+                                onClick={() => handleEditSupplier(supplier)}
+                                sx={{ cursor: 'pointer' }}
                             >
                                 <TableCell>
                                     <Typography variant="body2" fontWeight="medium">
@@ -467,24 +489,24 @@ const Settings: React.FC = () => {
                                 <TableCell align="right">
                                     <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                                         <Tooltip title="Edit">
-                                            <IconButton 
-                                              size="small" 
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleEditSupplier(supplier);
-                                              }}
+                                            <IconButton
+                                                size="small"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleEditSupplier(supplier);
+                                                }}
                                             >
                                                 <EditIcon fontSize="small" />
                                             </IconButton>
                                         </Tooltip>
                                         <Tooltip title="Delete">
-                                            <IconButton 
-                                              size="small" 
-                                              color="error" 
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDeleteSupplier(supplier.id);
-                                              }}
+                                            <IconButton
+                                                size="small"
+                                                color="error"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteSupplier(supplier.id);
+                                                }}
                                             >
                                                 <DeleteIcon fontSize="small" />
                                             </IconButton>
@@ -525,11 +547,11 @@ const Settings: React.FC = () => {
                     </TableHead>
                     <TableBody>
                         {storageLocations.map((location: StorageLocation) => (
-                            <TableRow 
-                              key={location.id} 
-                              hover
-                              onClick={() => handleEditStorage(location)}
-                              sx={{ cursor: 'pointer' }}
+                            <TableRow
+                                key={location.id}
+                                hover
+                                onClick={() => handleEditStorage(location)}
+                                sx={{ cursor: 'pointer' }}
                             >
                                 <TableCell>
                                     <Typography variant="body2" fontWeight="medium">
@@ -553,24 +575,24 @@ const Settings: React.FC = () => {
                                 <TableCell align="right">
                                     <Stack direction="row" spacing={0.5} justifyContent="flex-end">
                                         <Tooltip title="Edit">
-                                            <IconButton 
-                                              size="small" 
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleEditStorage(location);
-                                              }}
+                                            <IconButton
+                                                size="small"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleEditStorage(location);
+                                                }}
                                             >
                                                 <EditIcon fontSize="small" />
                                             </IconButton>
                                         </Tooltip>
                                         <Tooltip title="Delete">
-                                            <IconButton 
-                                              size="small" 
-                                              color="error" 
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDeleteStorage(location.id);
-                                              }}
+                                            <IconButton
+                                                size="small"
+                                                color="error"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteStorage(location.id);
+                                                }}
                                             >
                                                 <DeleteIcon fontSize="small" />
                                             </IconButton>

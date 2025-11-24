@@ -55,8 +55,18 @@ router.post('/', async (req, res, next) => {
       });
     }
 
+    // Explicitly add clientId from authenticated user
+    const clientId = (req.user as any)?.clientId || (global as any).__currentClientId;
+
+    if (!clientId) {
+      return res.status(500).json({
+        success: false,
+        error: 'Client ID not found in request'
+      });
+    }
+
     const storageLocation = await prisma.storageLocation.create({
-      data: { name, type, description, capacity },
+      data: { name, type, description, capacity, clientId },
     });
 
     res.status(201).json({
@@ -67,9 +77,9 @@ router.post('/', async (req, res, next) => {
   } catch (error: any) {
     if (error.code === 'P2002') {
       // Unique constraint violation
-      res.status(400).json({ 
-        success: false, 
-        error: 'A storage location with this name already exists' 
+      res.status(400).json({
+        success: false,
+        error: 'A storage location with this name already exists'
       });
     } else {
       next(error);
@@ -107,9 +117,9 @@ router.put('/:id', async (req, res, next) => {
       });
     } else if (error.code === 'P2002') {
       // Unique constraint violation
-      res.status(400).json({ 
-        success: false, 
-        error: 'A storage location with this name already exists' 
+      res.status(400).json({
+        success: false,
+        error: 'A storage location with this name already exists'
       });
     } else {
       next(error);
@@ -121,7 +131,7 @@ router.put('/:id', async (req, res, next) => {
 router.delete('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
-    
+
     await prisma.storageLocation.delete({
       where: { id },
     });

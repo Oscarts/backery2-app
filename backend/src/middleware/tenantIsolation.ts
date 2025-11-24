@@ -15,20 +15,24 @@ import { PrismaClient } from '@prisma/client';
  * Sets up middleware on Prisma to automatically add clientId filter
  */
 export const setupTenantIsolation = (prisma: PrismaClient) => {
-  // Models that have clientId field
+  console.log('🔒 Setting up tenant isolation middleware...');
+
+  // Models that have clientId field (PascalCase as Prisma uses)
   const tenantModels = [
-    'user',
-    'rawMaterial',
-    'finishedProduct',
-    'recipe',
-    'productionRun',
-    'customer',
-    'customerOrder',
-    'category',
-    'supplier',
-    'storageLocation',
-    'qualityStatus',
+    'User',
+    'RawMaterial',
+    'FinishedProduct',
+    'Recipe',
+    'ProductionRun',
+    'Customer',
+    'CustomerOrder',
+    'Category',
+    'Supplier',
+    'StorageLocation',
+    'QualityStatus',
   ];
+
+  console.log('✅ Tenant isolation models:', tenantModels);
 
   // Prisma middleware to add clientId filter
   prisma.$use(async (params, next) => {
@@ -69,8 +73,14 @@ export const setupTenantIsolation = (prisma: PrismaClient) => {
 
       // Add clientId to create operations
       if (params.action === 'create') {
+        const currentClientId = (global as any).__currentClientId;
+        console.log(`Prisma middleware - create action for ${params.model}`);
+        console.log(`Prisma middleware - Current global clientId:`, currentClientId);
+        console.log(`Prisma middleware - params.args.data:`, params.args.data);
+
         if (params.args.data && !params.args.data.clientId) {
-          params.args.data.clientId = (global as any).__currentClientId;
+          params.args.data.clientId = currentClientId;
+          console.log(`Prisma middleware - Added clientId to data:`, params.args.data.clientId);
         }
       }
 
@@ -113,7 +123,10 @@ export const tenantContext = (
   res: Response,
   next: NextFunction
 ): void => {
+  console.log('tenantContext middleware - req.user:', req.user);
+
   if (!req.user) {
+    console.log('tenantContext middleware - No user found, returning 401');
     res.status(401).json({
       success: false,
       error: 'Authentication required for tenant isolation',
@@ -123,6 +136,8 @@ export const tenantContext = (
 
   // Set the current clientId in global context for Prisma middleware
   (global as any).__currentClientId = req.user.clientId;
+
+  console.log('tenantContext middleware - Set global clientId to:', req.user.clientId);
 
   next();
 };
