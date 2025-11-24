@@ -199,6 +199,8 @@ model SkuMapping {
    - Alert shows which fields are auto-filled
    - **Category** defaults to "Ingredients"
    - **Supplier**, **Storage Location**, and **Quality Status** pre-selected
+   - **Expiration Date** defaults to 30 days from now
+   - **Batch Number** auto-generates immediately based on default supplier and expiration date
 
 2. **Start typing material name** (e.g., "flo...")
    - Autocomplete shows: "Flour (FLOUR)"
@@ -209,19 +211,17 @@ model SkuMapping {
    - Blue "Auto" chip indicates it was generated
    - Can edit if needed
 
-4. **Enter expiration date**
-   - This is required before the batch number can be generated
-   - Format: YYYY-MM-DD
-
-5. **Batch number auto-generates**
-   - Shows: "DAIR-20251215-001" (based on expiration date)
-   - Blue "Auto" chip indicates generation
+4. **Review auto-filled dates and batch number**
+   - Expiration date pre-set to 30 days ahead (editable)
+   - Batch number already generated: "DAIR-20251224-001"
+   - Both marked with blue "Auto" chips
    - Updates automatically if you change supplier or expiration date
 
-6. **Fill remaining required fields**
-   - Purchase date, quantity, unit, cost per unit
+5. **Fill remaining required fields**
+   - Purchase date (defaults to today)
+   - Quantity, unit, cost per unit
 
-7. **Submit**
+6. **Submit**
    - New material created with consistent SKU
    - Batch number tracks expiration date for better perishable management
    - Future entries with same name will use same SKU

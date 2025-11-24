@@ -18,7 +18,7 @@ import {
 } from '@mui/material';
 import { AutoAwesome as AutoIcon, CheckCircle as CheckIcon } from '@mui/icons-material';
 import { CreateRawMaterialData, RawMaterial } from '../types';
-import axios from 'axios';
+import api from '../utils/api';
 
 interface EnhancedRawMaterialFormProps {
   open: boolean;
@@ -85,7 +85,18 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
     }
   }, [open, material]);
 
-  // Load form data from material when editing
+  // Separate effect for batch number generation after defaults are loaded
+  useEffect(() => {
+    if (!material && defaults?.supplierId && open) {
+      // Calculate default expiration date (30 days from now)
+      const defaultExpirationDate = new Date();
+      defaultExpirationDate.setDate(defaultExpirationDate.getDate() + 30);
+      const expirationDateStr = defaultExpirationDate.toISOString().split('T')[0];
+
+      // Generate batch number
+      regenerateBatchNumber(defaults.supplierId, expirationDateStr);
+    }
+  }, [defaults, material, open]);  // Load form data from material when editing
   useEffect(() => {
     if (material) {
       setFormData({
@@ -104,16 +115,21 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
         qualityStatusId: material.qualityStatusId || '',
       });
       setAutoFilledFields(new Set());
-    } else {
+    } else if (defaults) {
       // Reset form for new material
+      // Calculate default expiration date (30 days from now)
+      const defaultExpirationDate = new Date();
+      defaultExpirationDate.setDate(defaultExpirationDate.getDate() + 30);
+      const expirationDateStr = defaultExpirationDate.toISOString().split('T')[0];
+
       const initialData: CreateRawMaterialData = {
         name: '',
         sku: '',
         categoryId: defaults?.categoryId || '',
         supplierId: defaults?.supplierId || '',
-        batchNumber: '', // Will be generated after expiration date is entered
+        batchNumber: '', // Will be auto-generated in separate effect
         purchaseDate: new Date().toISOString().split('T')[0],
-        expirationDate: '',
+        expirationDate: expirationDateStr,
         quantity: 0,
         unit: '',
         costPerUnit: 0,
@@ -122,13 +138,14 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
         qualityStatusId: defaults?.qualityStatusId || '',
       };
       setFormData(initialData);
-      
+
       // Mark fields that were auto-filled
       const autoFilled = new Set<string>();
       if (defaults?.storageLocationId) autoFilled.add('storageLocationId');
       if (defaults?.qualityStatusId) autoFilled.add('qualityStatusId');
       if (defaults?.supplierId) autoFilled.add('supplierId');
       if (defaults?.categoryId) autoFilled.add('categoryId');
+      autoFilled.add('expirationDate'); // Mark expiration date as auto-filled
       setAutoFilledFields(autoFilled);
     }
   }, [material, open, defaults]);
@@ -136,7 +153,7 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
   const loadDefaults = async () => {
     setLoadingDefaults(true);
     try {
-      const response = await axios.get('http://localhost:8000/api/raw-materials/defaults');
+      const response = await api.get('/raw-materials/defaults');
       if (response.data.success) {
         setDefaults(response.data.data);
       }
@@ -156,7 +173,7 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
 
       setLoadingSuggestions(true);
       try {
-        const response = await axios.get('http://localhost:8000/api/raw-materials/sku-suggestions', {
+        const response = await api.get('/raw-materials/sku-suggestions', {
           params: { name },
         });
         if (response.data.success) {
@@ -175,14 +192,22 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
     if (typeof newValue === 'string') {
       // User typed a value
       setFormData((prev) => ({ ...prev, name: newValue }));
-      
+
       // Auto-generate SKU if it's a new material
       if (!material) {
-        const generatedSku = newValue
+        // Generate SKU in format: RM-PRODUCTNAME-XXX
+        const cleanName = newValue
           .trim()
           .toUpperCase()
           .replace(/[^A-Z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '');
+          .replace(/^-+|-+$/g, '')
+          .substring(0, 15); // Limit to 15 chars for readability
+
+        // Generate a 3-digit random number for uniqueness
+        const randomSuffix = Math.floor(Math.random() * 900 + 100); // 100-999
+
+        const generatedSku = `RM-${cleanName}-${randomSuffix}`;
+
         setFormData((prev) => ({ ...prev, sku: generatedSku }));
         setAutoFilledFields((prev) => new Set(prev).add('sku'));
       }
@@ -205,22 +230,23 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
     if (!supplierId || !expirationDate || material) return;
 
     try {
-      const response = await axios.get('http://localhost:8000/api/raw-materials/generate-batch-number', {
+      const response = await api.get('/raw-materials/generate-batch-number', {
         params: { supplierId, expirationDate },
       });
-      if (response.data.success) {
+      if (response.data.success && response.data.data.batchNumber) {
         setFormData((prev) => ({ ...prev, batchNumber: response.data.data.batchNumber }));
         setAutoFilledFields((prev) => new Set(prev).add('batchNumber'));
       }
     } catch (error) {
       console.error('Failed to generate batch number:', error);
+      // Silently fail - user can still manually enter batch number
     }
   };
 
   const handleSupplierChange = async (event: any) => {
     const newSupplierId = event.target.value;
     setFormData((prev) => ({ ...prev, supplierId: newSupplierId }));
-    
+
     // Remove auto-fill indicator if user manually changes
     setAutoFilledFields((prev) => {
       const newSet = new Set(prev);
@@ -237,7 +263,7 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
   const handleExpirationDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newExpirationDate = event.target.value;
     setFormData((prev) => ({ ...prev, expirationDate: newExpirationDate }));
-    
+
     // Remove auto-fill indicator
     setAutoFilledFields((prev) => {
       const newSet = new Set(prev);
@@ -259,7 +285,7 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
       ...prev,
       [field]: ['quantity', 'costPerUnit', 'reorderLevel'].includes(field) ? parseFloat(value) || 0 : value,
     }));
-    
+
     // Remove auto-fill indicator if user manually changes
     setAutoFilledFields((prev) => {
       const newSet = new Set(prev);
@@ -419,7 +445,16 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
                 value={formData.expirationDate}
                 onChange={handleExpirationDateChange}
                 InputLabelProps={{ shrink: true }}
-                helperText="Used to generate batch number. Must be after purchase date"
+                helperText={
+                  autoFilledFields.has('expirationDate')
+                    ? 'Auto-set to 30 days from now'
+                    : 'Used to generate batch number. Must be after purchase date'
+                }
+                InputProps={{
+                  endAdornment: autoFilledFields.has('expirationDate') ? (
+                    <Chip size="small" label="Auto" icon={<CheckIcon />} color="primary" />
+                  ) : null,
+                }}
               />
             </Grid>
 
