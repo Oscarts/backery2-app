@@ -12,6 +12,12 @@ router.get('/sku-suggestions', rawMaterialController.getSkuSuggestions);
 // GET /api/raw-materials/sku-mappings
 router.get('/sku-mappings', rawMaterialController.getSkuMappings);
 
+// GET /api/raw-materials/sku-mappings/:name/usage
+router.get('/sku-mappings/:name/usage', rawMaterialController.checkSkuUsage);
+
+// DELETE /api/raw-materials/sku-mappings/:name
+router.delete('/sku-mappings/:name', rawMaterialController.deleteSkuMappingEndpoint);
+
 // GET /api/raw-materials/defaults
 router.get('/defaults', rawMaterialController.getDefaults);
 

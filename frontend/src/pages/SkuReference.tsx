@@ -28,7 +28,7 @@ import {
   Label as LabelIcon,
 } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
+import { rawMaterialsApi } from '../services/realApi';
 
 interface SkuMapping {
   name: string;
@@ -45,8 +45,8 @@ const SkuReference: React.FC = () => {
   const { data, isLoading, refetch } = useQuery<SkuMapping[]>(
     ['skuMappings'],
     async () => {
-      const response = await axios.get('http://localhost:8000/api/raw-materials/sku-mappings');
-      return response.data.data;
+      const response = await rawMaterialsApi.getSkuMappings();
+      return response.data;
     }
   );
 

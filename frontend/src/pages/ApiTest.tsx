@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
 import {
   Container,
   Typography,
@@ -100,7 +101,15 @@ const ApiTestPage: React.FC = () => {
     { name: 'Customer Orders API - Revert to Draft', status: 'idle' },
     { name: 'Customer Orders API - Export PDF', status: 'idle' },
     { name: 'Customer Orders API - Export Excel', status: 'idle' },
-    { name: 'Customer Orders API - Delete Order', status: 'idle' }
+    { name: 'Customer Orders API - Delete Order', status: 'idle' },
+    // SKU Mapping Persistence Tests
+    { name: 'SKU Mapping - Create with Persistence', status: 'idle' },
+    { name: 'SKU Mapping - Persist After Raw Material Deletion', status: 'idle' },
+    { name: 'SKU Mapping - Check Usage', status: 'idle' },
+    { name: 'SKU Mapping - Delete Unused', status: 'idle' },
+    { name: 'SKU Mapping - Prevent Deletion When In Use', status: 'idle' },
+    { name: 'SKU Mapping - Finished Product Persistence', status: 'idle' },
+    { name: 'SKU Mapping - Cross-Product Persistence', status: 'idle' }
   ]);
 
   const updateTest = (index: number, updates: Partial<TestResult>) => {
@@ -1153,6 +1162,234 @@ const ApiTestPage: React.FC = () => {
       await customerOrdersApi.delete(tempOrder.data.id);
       return { message: `Successfully deleted order ${tempOrder.data.id}` };
     });
+
+    // 65 - SKU Mapping Persistence - Create Raw Material with SKU Mapping
+    await safeTest(65, async () => {
+      const category = (ctx.categories || []).find((c: any) => c.type === CategoryType.RAW_MATERIAL);
+      const supplier = (ctx.suppliers || [])[0];
+      const location = (ctx.locations || [])[0];
+      const unit = (ctx.units || [])[0];
+      if (!category || !supplier || !location || !unit) {
+        return { skip: true, skipMessage: 'Missing prerequisites' };
+      }
+      
+      const testName = `Persistent SKU Test ${Date.now()}`;
+      const rm = await rawMaterialsApi.create({
+        name: testName,
+        categoryId: category.id,
+        supplierId: supplier.id,
+        batchNumber: `PERSIST-${Date.now()}`,
+        purchaseDate: new Date().toISOString().split('T')[0],
+        expirationDate: '2025-12-31',
+        quantity: 10,
+        unit: unit.symbol,
+        costPerUnit: 5,
+        reorderLevel: 2,
+        storageLocationId: location.id
+      });
+      
+      ctx.persistentSkuName = testName;
+      ctx.persistentSkuValue = rm.data?.sku;
+      ctx.persistentRawMaterialId = rm.data?.id;
+      
+      // Verify SKU mapping exists
+      const response = await axios.get('http://localhost:8000/api/raw-materials/sku-mappings', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
+      });
+      const mapping = response.data.data.find((m: any) => m.name === testName);
+      
+      if (!mapping) throw new Error('SKU mapping not created');
+      return { message: `Created with SKU ${rm.data?.sku}, mapping exists`, data: { rm: rm.data, mapping } };
+    });
+
+    // 66 - SKU Mapping Persistence - Delete Raw Material, SKU Mapping Remains
+    await safeTest(66, async () => {
+      if (!ctx.persistentRawMaterialId || !ctx.persistentSkuName) {
+        return { skip: true, skipMessage: 'No raw material from test 65' };
+      }
+      
+      // Delete the raw material
+      await rawMaterialsApi.delete(ctx.persistentRawMaterialId);
+      
+      // Verify SKU mapping still exists
+      const response = await axios.get('http://localhost:8000/api/raw-materials/sku-mappings', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
+      });
+      const mapping = response.data.data.find((m: any) => m.name === ctx.persistentSkuName);
+      
+      if (!mapping) throw new Error('SKU mapping was deleted (should persist!)');
+      if (mapping.source !== 'mapping') throw new Error(`Expected source 'mapping', got '${mapping.source}'`);
+      
+      return { message: `SKU mapping persisted after deletion`, data: mapping };
+    });
+
+    // 67 - SKU Mapping Usage Check - Verify No Products Use It
+    await safeTest(67, async () => {
+      if (!ctx.persistentSkuName) {
+        return { skip: true, skipMessage: 'No persistent SKU name from test 65' };
+      }
+      
+      const response = await axios.get(
+        `http://localhost:8000/api/raw-materials/sku-mappings/${encodeURIComponent(ctx.persistentSkuName)}/usage`,
+        { headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` } }
+      );
+      
+      const usage = response.data.data;
+      if (usage.inUse) throw new Error('SKU should not be in use after deletion');
+      if (usage.rawMaterialCount !== 0) throw new Error(`Expected 0 raw materials, got ${usage.rawMaterialCount}`);
+      if (usage.finishedProductCount !== 0) throw new Error(`Expected 0 finished products, got ${usage.finishedProductCount}`);
+      
+      return { message: 'SKU not in use, safe to delete', data: usage };
+    });
+
+    // 68 - SKU Mapping Deletion - Delete Unused SKU Mapping
+    await safeTest(68, async () => {
+      if (!ctx.persistentSkuName) {
+        return { skip: true, skipMessage: 'No persistent SKU name from test 65' };
+      }
+      
+      // Delete the unused SKU mapping
+      const response = await axios.delete(
+        `http://localhost:8000/api/raw-materials/sku-mappings/${encodeURIComponent(ctx.persistentSkuName)}`,
+        { headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` } }
+      );
+      
+      if (!response.data.success) throw new Error('Failed to delete SKU mapping');
+      
+      // Verify it's gone
+      const listResponse = await axios.get('http://localhost:8000/api/raw-materials/sku-mappings', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
+      });
+      const mapping = listResponse.data.data.find((m: any) => m.name === ctx.persistentSkuName);
+      
+      if (mapping) throw new Error('SKU mapping still exists after deletion');
+      
+      return { message: 'Successfully deleted unused SKU mapping' };
+    });
+
+    // 69 - SKU Mapping Deletion - Prevent Deletion When In Use
+    await safeTest(69, async () => {
+      const category = (ctx.categories || []).find((c: any) => c.type === CategoryType.RAW_MATERIAL);
+      const supplier = (ctx.suppliers || [])[0];
+      const location = (ctx.locations || [])[0];
+      const unit = (ctx.units || [])[0];
+      if (!category || !supplier || !location || !unit) {
+        return { skip: true, skipMessage: 'Missing prerequisites' };
+      }
+      
+      const testName = `Protected SKU Test ${Date.now()}`;
+      const rm = await rawMaterialsApi.create({
+        name: testName,
+        categoryId: category.id,
+        supplierId: supplier.id,
+        batchNumber: `PROTECT-${Date.now()}`,
+        purchaseDate: new Date().toISOString().split('T')[0],
+        expirationDate: '2025-12-31',
+        quantity: 5,
+        unit: unit.symbol,
+        costPerUnit: 3,
+        reorderLevel: 1,
+        storageLocationId: location.id
+      });
+      
+      ctx.protectedSkuName = testName;
+      ctx.protectedRawMaterialId = rm.data?.id;
+      
+      // Try to delete the SKU mapping while raw material exists
+      try {
+        await axios.delete(
+          `http://localhost:8000/api/raw-materials/sku-mappings/${encodeURIComponent(testName)}`,
+          { headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` } }
+        );
+        throw new Error('Should have prevented deletion of SKU in use');
+      } catch (error: any) {
+        if (error.response?.status === 400 && error.response?.data?.usage) {
+          const usage = error.response.data.usage;
+          if (usage.rawMaterialCount !== 1) throw new Error(`Expected 1 raw material in use, got ${usage.rawMaterialCount}`);
+          return { message: 'Correctly prevented deletion of SKU in use', data: { error: error.response.data, usage } };
+        }
+        throw error;
+      }
+    });
+
+    // 70 - SKU Mapping with Finished Product - Create and Persist
+    await safeTest(70, async () => {
+      const FINISHED_KEY = (CategoryType as any)?.FINISHED_PRODUCT || 'FINISHED_PRODUCT';
+      const fpCategory = (ctx.categories || []).find((c: any) => c.type === FINISHED_KEY);
+      const unit = (ctx.units || [])[0];
+      if (!fpCategory || !unit) {
+        return { skip: true, skipMessage: 'Missing finished product category or unit' };
+      }
+      
+      const testName = `FP SKU Persist ${Date.now()}`;
+      const fp = await finishedProductsApi.create({
+        name: testName,
+        categoryId: fpCategory.id,
+        batchNumber: `FP-${Date.now()}`,
+        productionDate: new Date().toISOString().split('T')[0],
+        expirationDate: new Date(Date.now() + 14*24*60*60*1000).toISOString().split('T')[0],
+        shelfLife: 14,
+        quantity: 20,
+        unit: unit.symbol,
+        salePrice: 15,
+        costToProduce: 8
+      });
+      
+      ctx.fpPersistentName = testName;
+      ctx.fpPersistentId = fp.data?.id;
+      ctx.fpPersistentSku = fp.data?.sku;
+      
+      // Verify SKU mapping exists
+      const response = await axios.get('http://localhost:8000/api/raw-materials/sku-mappings', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
+      });
+      const mapping = response.data.data.find((m: any) => m.name === testName);
+      
+      if (!mapping) throw new Error('SKU mapping not created for finished product');
+      return { message: `Created finished product with SKU ${fp.data?.sku}, mapping exists`, data: { fp: fp.data, mapping } };
+    });
+
+    // 71 - SKU Mapping Cross-Product Persistence
+    await safeTest(71, async () => {
+      if (!ctx.fpPersistentId || !ctx.fpPersistentName) {
+        return { skip: true, skipMessage: 'No finished product from test 70' };
+      }
+      
+      // Delete the finished product
+      await finishedProductsApi.delete(ctx.fpPersistentId);
+      
+      // Verify SKU mapping still exists
+      const response = await axios.get('http://localhost:8000/api/raw-materials/sku-mappings', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
+      });
+      const mapping = response.data.data.find((m: any) => m.name === ctx.fpPersistentName);
+      
+      if (!mapping) throw new Error('SKU mapping was deleted after finished product deletion');
+      if (mapping.source !== 'mapping') throw new Error(`Expected source 'mapping', got '${mapping.source}'`);
+      
+      // Clean up: delete the unused SKU mapping
+      await axios.delete(
+        `http://localhost:8000/api/raw-materials/sku-mappings/${encodeURIComponent(ctx.fpPersistentName)}`,
+        { headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` } }
+      );
+      
+      return { message: 'SKU mapping persisted after finished product deletion, then cleaned up', data: mapping };
+    });
+
+    // Cleanup for test 69
+    if (ctx.protectedRawMaterialId) {
+      try {
+        await rawMaterialsApi.delete(ctx.protectedRawMaterialId);
+        if (ctx.protectedSkuName) {
+          await axios.delete(
+            `http://localhost:8000/api/raw-materials/sku-mappings/${encodeURIComponent(ctx.protectedSkuName)}`,
+            { headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` } }
+          );
+        }
+      } catch (e) {
+        console.warn('Cleanup error:', e);
+      }
+    }
 
     console.debug('[API TEST] Completed runAllTests in', Date.now() - ctx._startTime, 'ms');
   };

@@ -227,3 +227,51 @@ export async function generateBatchNumber(supplierId: string, date: Date = new D
 
   return `${supplierCode}-${dateStr}-${sequenceStr}`;
 }
+
+/**
+ * Create or update a persistent SKU mapping in the SkuMapping table.
+ * This ensures SKU references persist even when all products using them are deleted.
+ */
+export async function ensureSkuMappingExists(name: string, sku: string, category?: string): Promise<void> {
+  await prisma.skuMapping.upsert({
+    where: { name },
+    update: { sku, category: category || null },
+    create: { name, sku, category: category || null },
+  });
+}
+
+/**
+ * Check if a SKU is currently in use by any raw materials or finished products.
+ * Returns true if the SKU is actively used, false otherwise.
+ */
+export async function isSkuInUse(name: string): Promise<{ inUse: boolean; rawMaterialCount: number; finishedProductCount: number }> {
+  const [rawMaterialCount, finishedProductCount] = await Promise.all([
+    prisma.rawMaterial.count({ where: { name } }),
+    prisma.finishedProduct.count({ where: { name } }),
+  ]);
+
+  return {
+    inUse: rawMaterialCount > 0 || finishedProductCount > 0,
+    rawMaterialCount,
+    finishedProductCount,
+  };
+}
+
+/**
+ * Safely delete a SKU mapping only if it's not in use by any products.
+ * Throws an error if the SKU is still in use.
+ */
+export async function deleteSkuMapping(name: string): Promise<void> {
+  const usage = await isSkuInUse(name);
+  
+  if (usage.inUse) {
+    throw Object.assign(
+      new Error(`Cannot delete SKU mapping: ${usage.rawMaterialCount} raw material(s) and ${usage.finishedProductCount} finished product(s) still use this name`),
+      { status: 400, usage }
+    );
+  }
+
+  await prisma.skuMapping.delete({
+    where: { name },
+  });
+}

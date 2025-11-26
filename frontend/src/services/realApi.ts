@@ -33,7 +33,7 @@ const apiCall = async <T>(endpoint: string, options?: RequestInit): Promise<ApiR
   try {
     // Get auth token from localStorage
     const token = localStorage.getItem('authToken');
-    
+
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       headers: {
         'Content-Type': 'application/json',
@@ -205,6 +205,22 @@ export const rawMaterialsApi = {
 
   delete: async (id: string): Promise<ApiResponse<void>> => {
     return apiCall<void>(`/raw-materials/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  getSkuMappings: async (): Promise<ApiResponse<Array<{ name: string; sku: string; source: string }>>> => {
+    return apiCall<Array<{ name: string; sku: string; source: string }>>('/raw-materials/sku-mappings');
+  },
+
+  checkSkuUsage: async (name: string): Promise<ApiResponse<{ inUse: boolean; rawMaterialCount: number; finishedProductCount: number }>> => {
+    return apiCall<{ inUse: boolean; rawMaterialCount: number; finishedProductCount: number }>(
+      `/raw-materials/sku-mappings/${encodeURIComponent(name)}/usage`
+    );
+  },
+
+  deleteSkuMapping: async (name: string): Promise<ApiResponse<void>> => {
+    return apiCall<void>(`/raw-materials/sku-mappings/${encodeURIComponent(name)}`, {
       method: 'DELETE',
     });
   },
@@ -552,7 +568,7 @@ export const customerOrdersApi = {
     if (filters?.startDate) params.append('startDate', filters.startDate);
     if (filters?.endDate) params.append('endDate', filters.endDate);
     if (filters?.search) params.append('search', filters.search);
-    
+
     const queryString = params.toString();
     return apiCall<CustomerOrder[]>(`/customer-orders${queryString ? `?${queryString}` : ''}`);
   },

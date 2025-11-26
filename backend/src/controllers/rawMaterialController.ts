@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../app';
 import Joi from 'joi';
-import { getOrCreateSkuForName, resolveSkuOnRename, validateOrAssignSku, getSuggestedSku, getAllSkuMappings, generateBatchNumber } from '../services/skuService';
+import { getOrCreateSkuForName, resolveSkuOnRename, validateOrAssignSku, getSuggestedSku, getAllSkuMappings, generateBatchNumber, ensureSkuMappingExists, deleteSkuMapping, isSkuInUse } from '../services/skuService';
 
 // Helper function to get the default quality status (first item by sortOrder)
 const getDefaultQualityStatus = async () => {
@@ -261,6 +261,13 @@ export const rawMaterialController = {
           qualityStatus: true,
         },
       });
+
+      // Create persistent SKU mapping to preserve it even if this material is deleted
+      await ensureSkuMappingExists(
+        rawMaterial.name,
+        rawMaterial.sku || '',
+        category?.name || undefined
+      );
 
       // Get unit details
       let unitDetails = null;
@@ -632,6 +639,45 @@ export const rawMaterialController = {
         data: { batchNumber },
       });
     } catch (error) {
+      next(error);
+    }
+  },
+
+  // GET /api/raw-materials/sku-mappings/:name/usage
+  checkSkuUsage: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { name } = req.params;
+
+      const usage = await isSkuInUse(name);
+
+      res.json({
+        success: true,
+        data: usage,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // DELETE /api/raw-materials/sku-mappings/:name
+  deleteSkuMappingEndpoint: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { name } = req.params;
+
+      await deleteSkuMapping(name);
+
+      res.json({
+        success: true,
+        message: 'SKU mapping deleted successfully',
+      });
+    } catch (error: any) {
+      if (error.status === 400) {
+        return res.status(400).json({
+          success: false,
+          error: error.message,
+          usage: error.usage,
+        });
+      }
       next(error);
     }
   },
