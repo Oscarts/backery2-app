@@ -241,7 +241,7 @@ export const rawMaterialController = {
       // Prepare create data with field mapping
       const defaultQualityStatusId = value.qualityStatusId || await getDefaultQualityStatus();
 
-  const derivedSku = await validateOrAssignSku(value.name, value.sku);
+      const derivedSku = await validateOrAssignSku(value.name, value.sku);
       const createData = {
         ...value,
         sku: derivedSku,
@@ -583,7 +583,7 @@ export const rawMaterialController = {
 
       // Get "Ingredients" category as default for raw materials
       const ingredientsCategory = await prisma.category.findFirst({
-        where: { 
+        where: {
           name: { contains: 'Ingredient', mode: 'insensitive' },
           type: 'RAW_MATERIAL'
         },

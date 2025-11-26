@@ -165,7 +165,7 @@ export const finishedProductController = {
       }
 
       // Derive/reuse SKU based on name (ignore provided sku if any)
-  const derivedSku = await validateOrAssignSku(value.name, value.sku);
+      const derivedSku = await validateOrAssignSku(value.name, value.sku);
 
       // Verify related entities exist
       let category = null;
@@ -519,6 +519,45 @@ export const finishedProductController = {
         success: true,
         data: finishedProduct,
         message: `Released ${value.quantity} ${existingProduct.unit} from reservation`,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // GET /api/finished-products/defaults
+  getDefaults: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // Get first storage location (alphabetically)
+      const firstStorageLocation = await prisma.storageLocation.findFirst({
+        orderBy: { name: 'asc' },
+      });
+
+      // Get default quality status (first by sortOrder)
+      const defaultQualityStatus = await getDefaultQualityStatus();
+
+      // Get "Finished Products" or similar category as default
+      const finishedCategory = await prisma.category.findFirst({
+        where: {
+          OR: [
+            { name: { contains: 'Finished', mode: 'insensitive' } },
+            { name: { contains: 'Product', mode: 'insensitive' } },
+            { type: 'FINISHED_PRODUCT' }
+          ],
+        },
+        orderBy: { name: 'asc' },
+      });
+
+      res.json({
+        success: true,
+        data: {
+          storageLocationId: firstStorageLocation?.id || null,
+          qualityStatusId: defaultQualityStatus,
+          categoryId: finishedCategory?.id || null,
+          batchNumber: null, // Will be generated in frontend based on production date
+          shelfLife: 7, // Default 7 days shelf life
+          markupPercentage: 50, // Default 50% markup
+        },
       });
     } catch (error) {
       next(error);

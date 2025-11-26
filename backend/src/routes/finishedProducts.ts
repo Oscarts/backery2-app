@@ -7,6 +7,7 @@ const router = Router();
 
 // Basic CRUD operations
 router.get('/', finishedProductController.getAll);
+router.get('/defaults', finishedProductController.getDefaults);
 router.get('/expiring', finishedProductController.getExpiring);
 router.get('/low-stock', finishedProductController.getLowStock);
 router.get('/:id', finishedProductController.getById);

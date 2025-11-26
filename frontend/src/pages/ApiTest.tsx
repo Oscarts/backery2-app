@@ -207,7 +207,7 @@ const ApiTestPage: React.FC = () => {
         description: 'First unique test category'
       });
       ctx.uniqueTestCategoryId = firstResult.data?.id;
-      
+
       // Try to create duplicate (should fail)
       try {
         await categoriesApi.create({
@@ -269,7 +269,7 @@ const ApiTestPage: React.FC = () => {
         description: 'First unique test storage location'
       });
       ctx.uniqueTestLocationId = firstResult.data?.id;
-      
+
       // Try to create duplicate (should fail)
       try {
         await storageLocationsApi.create({
@@ -329,7 +329,7 @@ const ApiTestPage: React.FC = () => {
     await safeTest(14, async () => {
       const uniqueTestName = `Unique Test Unit ${Date.now()}`;
       const uniqueTestSymbol = `utu${Date.now().toString().slice(-4)}`;
-      
+
       // Create first unit
       const firstResult = await unitsApi.create({
         name: uniqueTestName,
@@ -339,7 +339,7 @@ const ApiTestPage: React.FC = () => {
         isActive: true
       });
       ctx.uniqueTestUnitId = firstResult.data?.id;
-      
+
       // Try to create duplicate name (should fail)
       try {
         await unitsApi.create({
@@ -406,7 +406,7 @@ const ApiTestPage: React.FC = () => {
         address: 'Unique Test Address'
       });
       ctx.uniqueTestSupplierId = firstResult.data?.id;
-      
+
       // Try to create duplicate (should fail)
       try {
         await suppliersApi.create({
@@ -417,7 +417,7 @@ const ApiTestPage: React.FC = () => {
         return { message: 'ERROR: Duplicate supplier was allowed!', error: true };
       } catch (error: any) {
         // Clean up the test supplier
-        if (ctx.uniqueTestSupplierId) {  
+        if (ctx.uniqueTestSupplierId) {
           await suppliersApi.delete(ctx.uniqueTestSupplierId);
         }
         return { message: 'Uniqueness constraint working: duplicate supplier rejected', data: error.message };
@@ -788,7 +788,7 @@ const ApiTestPage: React.FC = () => {
       if (!deleteResult.success) throw new Error(deleteResult.error || 'Failed to delete recipe');
       return { message: 'Recipe deleted successfully', data: deleteResult };
     });
-    
+
     // 43 - Finished Product Materials Traceability
     await safeTest(43, async () => {
       // Attempt to locate a finished product that is COMPLETED; if none, skip.
@@ -808,8 +808,8 @@ const ApiTestPage: React.FC = () => {
         if (!traceJson.success) throw new Error(traceJson.error || 'Traceability endpoint failed');
         const mats = traceJson.data?.materials || [];
         const summary = traceJson.data?.summary || {};
-        return { message: `Materials: ${mats.length} (Total Cost: $${(summary.totalProductionCost || 0).toFixed(2)})`, data: { materials: mats.slice(0,5), summary } };
-      } catch (e:any) {
+        return { message: `Materials: ${mats.length} (Total Cost: $${(summary.totalProductionCost || 0).toFixed(2)})`, data: { materials: mats.slice(0, 5), summary } };
+      } catch (e: any) {
         // Gracefully handle error
         return { skip: true, skipMessage: `Traceability not available: ${e.message}` };
       }
@@ -830,7 +830,7 @@ const ApiTestPage: React.FC = () => {
       // Query finished products for contaminated flag
       const fps = await finishedProductsApi.getAll();
       const contaminated = (fps.data || []).filter((p: any) => p.isContaminated);
-      return { message: `${contaminated.length} contaminated product(s)`, data: contaminated.slice(0,3) };
+      return { message: `${contaminated.length} contaminated product(s)`, data: contaminated.slice(0, 3) };
     });
 
     // 46 - Production Capacity Check
@@ -838,7 +838,7 @@ const ApiTestPage: React.FC = () => {
       // Placeholder capacity: count products vs categories
       const fps = await finishedProductsApi.getAll();
       const count = (fps.data || []).length;
-      return { message: `Finished products count: ${count}`, data: fps.data?.slice(0,5) };
+      return { message: `Finished products count: ${count}`, data: fps.data?.slice(0, 5) };
     });
 
     // 47 - Raw Material SKU Reuse
@@ -869,7 +869,7 @@ const ApiTestPage: React.FC = () => {
         name: baseName,
         categoryId: category.id,
         supplierId: supplier.id,
-        batchNumber: `SRM-${Date.now()+1}`,
+        batchNumber: `SRM-${Date.now() + 1}`,
         purchaseDate: new Date().toISOString().split('T')[0],
         expirationDate: '2025-12-31',
         quantity: 6,
@@ -908,7 +908,7 @@ const ApiTestPage: React.FC = () => {
         categoryId: fpCategory.id,
         batchNumber: `B-${Date.now()}`,
         productionDate: new Date().toISOString().split('T')[0],
-        expirationDate: new Date(Date.now() + 10*24*60*60*1000).toISOString().split('T')[0],
+        expirationDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         shelfLife: 10,
         quantity: 10,
         unit: unit.symbol,
@@ -919,9 +919,9 @@ const ApiTestPage: React.FC = () => {
         name: baseName,
         // Don't provide SKU - let it auto-generate from name (should match fp1)
         categoryId: fpCategory.id,
-        batchNumber: `B-${Date.now()+1}`,
+        batchNumber: `B-${Date.now() + 1}`,
         productionDate: new Date().toISOString().split('T')[0],
-        expirationDate: new Date(Date.now() + 10*24*60*60*1000).toISOString().split('T')[0],
+        expirationDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         shelfLife: 10,
         quantity: 8,
         unit: unit.symbol,
@@ -936,7 +936,7 @@ const ApiTestPage: React.FC = () => {
     });
 
     // === Customer Orders API Tests ===
-    
+
     // 49 Customers API - Get All
     await safeTest(49, async () => {
       const customersResult = await customersApi.getAll();
@@ -985,7 +985,7 @@ const ApiTestPage: React.FC = () => {
         isActive: true
       });
       if (!tempCustomer.data?.id) return { skip: true, skipMessage: 'Could not create temp customer' };
-      
+
       await customersApi.delete(tempCustomer.data.id);
       return { message: `Successfully deleted customer ${tempCustomer.data.id}` };
     });
@@ -1000,7 +1000,7 @@ const ApiTestPage: React.FC = () => {
     // 55 Customer Orders API - Create Order
     await safeTest(55, async () => {
       if (!ctx.createdCustomerId) return { skip: true, skipMessage: 'No customer available' };
-      
+
       // Get a finished product to use in the order
       const finishedProducts = await finishedProductsApi.getAll();
       const product = finishedProducts.data?.[0];
@@ -1078,7 +1078,7 @@ const ApiTestPage: React.FC = () => {
     await safeTest(61, async () => {
       // Create a new order to test revert functionality
       if (!ctx.createdCustomerId) return { skip: true, skipMessage: 'No customer available' };
-      
+
       const finishedProducts = await finishedProductsApi.getAll();
       const product = finishedProducts.data?.[0];
       if (!product) return { skip: true, skipMessage: 'No finished products available' };
@@ -1097,9 +1097,9 @@ const ApiTestPage: React.FC = () => {
         }]
       };
       const newOrder = await customerOrdersApi.create(newOrderData);
-      
+
       if (!newOrder.data?.id) return { skip: true, skipMessage: 'Could not create order for revert test' };
-      
+
       try {
         // Try to confirm first
         await customerOrdersApi.confirmOrder(newOrder.data.id);
@@ -1137,7 +1137,7 @@ const ApiTestPage: React.FC = () => {
     await safeTest(64, async () => {
       // Create a temporary order specifically for deletion
       if (!ctx.createdCustomerId) return { skip: true, skipMessage: 'No customer available' };
-      
+
       const finishedProducts = await finishedProductsApi.getAll();
       const product = finishedProducts.data?.[0];
       if (!product) return { skip: true, skipMessage: 'No finished products available' };
@@ -1156,9 +1156,9 @@ const ApiTestPage: React.FC = () => {
         }]
       };
       const tempOrder = await customerOrdersApi.create(tempOrderData);
-      
+
       if (!tempOrder.data?.id) return { skip: true, skipMessage: 'Could not create temp order' };
-      
+
       await customerOrdersApi.delete(tempOrder.data.id);
       return { message: `Successfully deleted order ${tempOrder.data.id}` };
     });
@@ -1172,7 +1172,7 @@ const ApiTestPage: React.FC = () => {
       if (!category || !supplier || !location || !unit) {
         return { skip: true, skipMessage: 'Missing prerequisites' };
       }
-      
+
       const testName = `Persistent SKU Test ${Date.now()}`;
       const rm = await rawMaterialsApi.create({
         name: testName,
@@ -1187,17 +1187,17 @@ const ApiTestPage: React.FC = () => {
         reorderLevel: 2,
         storageLocationId: location.id
       });
-      
+
       ctx.persistentSkuName = testName;
       ctx.persistentSkuValue = rm.data?.sku;
       ctx.persistentRawMaterialId = rm.data?.id;
-      
+
       // Verify SKU mapping exists
       const response = await axios.get('http://localhost:8000/api/raw-materials/sku-mappings', {
         headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
       });
       const mapping = response.data.data.find((m: any) => m.name === testName);
-      
+
       if (!mapping) throw new Error('SKU mapping not created');
       return { message: `Created with SKU ${rm.data?.sku}, mapping exists`, data: { rm: rm.data, mapping } };
     });
@@ -1207,19 +1207,19 @@ const ApiTestPage: React.FC = () => {
       if (!ctx.persistentRawMaterialId || !ctx.persistentSkuName) {
         return { skip: true, skipMessage: 'No raw material from test 65' };
       }
-      
+
       // Delete the raw material
       await rawMaterialsApi.delete(ctx.persistentRawMaterialId);
-      
+
       // Verify SKU mapping still exists
       const response = await axios.get('http://localhost:8000/api/raw-materials/sku-mappings', {
         headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
       });
       const mapping = response.data.data.find((m: any) => m.name === ctx.persistentSkuName);
-      
+
       if (!mapping) throw new Error('SKU mapping was deleted (should persist!)');
       if (mapping.source !== 'mapping') throw new Error(`Expected source 'mapping', got '${mapping.source}'`);
-      
+
       return { message: `SKU mapping persisted after deletion`, data: mapping };
     });
 
@@ -1228,17 +1228,17 @@ const ApiTestPage: React.FC = () => {
       if (!ctx.persistentSkuName) {
         return { skip: true, skipMessage: 'No persistent SKU name from test 65' };
       }
-      
+
       const response = await axios.get(
         `http://localhost:8000/api/raw-materials/sku-mappings/${encodeURIComponent(ctx.persistentSkuName)}/usage`,
         { headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` } }
       );
-      
+
       const usage = response.data.data;
       if (usage.inUse) throw new Error('SKU should not be in use after deletion');
       if (usage.rawMaterialCount !== 0) throw new Error(`Expected 0 raw materials, got ${usage.rawMaterialCount}`);
       if (usage.finishedProductCount !== 0) throw new Error(`Expected 0 finished products, got ${usage.finishedProductCount}`);
-      
+
       return { message: 'SKU not in use, safe to delete', data: usage };
     });
 
@@ -1247,23 +1247,23 @@ const ApiTestPage: React.FC = () => {
       if (!ctx.persistentSkuName) {
         return { skip: true, skipMessage: 'No persistent SKU name from test 65' };
       }
-      
+
       // Delete the unused SKU mapping
       const response = await axios.delete(
         `http://localhost:8000/api/raw-materials/sku-mappings/${encodeURIComponent(ctx.persistentSkuName)}`,
         { headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` } }
       );
-      
+
       if (!response.data.success) throw new Error('Failed to delete SKU mapping');
-      
+
       // Verify it's gone
       const listResponse = await axios.get('http://localhost:8000/api/raw-materials/sku-mappings', {
         headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
       });
       const mapping = listResponse.data.data.find((m: any) => m.name === ctx.persistentSkuName);
-      
+
       if (mapping) throw new Error('SKU mapping still exists after deletion');
-      
+
       return { message: 'Successfully deleted unused SKU mapping' };
     });
 
@@ -1276,7 +1276,7 @@ const ApiTestPage: React.FC = () => {
       if (!category || !supplier || !location || !unit) {
         return { skip: true, skipMessage: 'Missing prerequisites' };
       }
-      
+
       const testName = `Protected SKU Test ${Date.now()}`;
       const rm = await rawMaterialsApi.create({
         name: testName,
@@ -1291,10 +1291,10 @@ const ApiTestPage: React.FC = () => {
         reorderLevel: 1,
         storageLocationId: location.id
       });
-      
+
       ctx.protectedSkuName = testName;
       ctx.protectedRawMaterialId = rm.data?.id;
-      
+
       // Try to delete the SKU mapping while raw material exists
       try {
         await axios.delete(
@@ -1320,31 +1320,31 @@ const ApiTestPage: React.FC = () => {
       if (!fpCategory || !unit) {
         return { skip: true, skipMessage: 'Missing finished product category or unit' };
       }
-      
+
       const testName = `FP SKU Persist ${Date.now()}`;
       const fp = await finishedProductsApi.create({
         name: testName,
         categoryId: fpCategory.id,
         batchNumber: `FP-${Date.now()}`,
         productionDate: new Date().toISOString().split('T')[0],
-        expirationDate: new Date(Date.now() + 14*24*60*60*1000).toISOString().split('T')[0],
+        expirationDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         shelfLife: 14,
         quantity: 20,
         unit: unit.symbol,
         salePrice: 15,
         costToProduce: 8
       });
-      
+
       ctx.fpPersistentName = testName;
       ctx.fpPersistentId = fp.data?.id;
       ctx.fpPersistentSku = fp.data?.sku;
-      
+
       // Verify SKU mapping exists
       const response = await axios.get('http://localhost:8000/api/raw-materials/sku-mappings', {
         headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
       });
       const mapping = response.data.data.find((m: any) => m.name === testName);
-      
+
       if (!mapping) throw new Error('SKU mapping not created for finished product');
       return { message: `Created finished product with SKU ${fp.data?.sku}, mapping exists`, data: { fp: fp.data, mapping } };
     });
@@ -1354,25 +1354,25 @@ const ApiTestPage: React.FC = () => {
       if (!ctx.fpPersistentId || !ctx.fpPersistentName) {
         return { skip: true, skipMessage: 'No finished product from test 70' };
       }
-      
+
       // Delete the finished product
       await finishedProductsApi.delete(ctx.fpPersistentId);
-      
+
       // Verify SKU mapping still exists
       const response = await axios.get('http://localhost:8000/api/raw-materials/sku-mappings', {
         headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` }
       });
       const mapping = response.data.data.find((m: any) => m.name === ctx.fpPersistentName);
-      
+
       if (!mapping) throw new Error('SKU mapping was deleted after finished product deletion');
       if (mapping.source !== 'mapping') throw new Error(`Expected source 'mapping', got '${mapping.source}'`);
-      
+
       // Clean up: delete the unused SKU mapping
       await axios.delete(
         `http://localhost:8000/api/raw-materials/sku-mappings/${encodeURIComponent(ctx.fpPersistentName)}`,
         { headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` } }
       );
-      
+
       return { message: 'SKU mapping persisted after finished product deletion, then cleaned up', data: mapping };
     });
 
@@ -1438,7 +1438,7 @@ const ApiTestPage: React.FC = () => {
       </Typography>
 
       {/* Test Status Indicator */}
-  <Paper sx={{ p: 2, mb: 3, backgroundColor: stats.failed > 0 ? '#ffebee' : (stats.passed + stats.skipped === stats.total && stats.total > 0) ? '#e8f5e8' : '#f5f5f5' }}>
+      <Paper sx={{ p: 2, mb: 3, backgroundColor: stats.failed > 0 ? '#ffebee' : (stats.passed + stats.skipped === stats.total && stats.total > 0) ? '#e8f5e8' : '#f5f5f5' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
           <Typography variant="h6" component="div" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             {stats.failed > 0 ? (

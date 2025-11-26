@@ -19,10 +19,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  Grid,
   Alert,
   Snackbar,
   Tooltip,
@@ -30,8 +26,6 @@ import {
   CardContent,
   CardActions,
   CardHeader,
-  FormControlLabel,
-  Checkbox,
   useTheme,
   useMediaQuery,
   InputAdornment,
@@ -39,8 +33,6 @@ import {
   Stack,
   Drawer,
   Avatar,
-  Tabs,
-  Tab,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -62,6 +54,7 @@ import { finishedProductsApi, categoriesApi, storageLocationsApi, unitsApi, qual
 import { FinishedProduct, CategoryType, CreateFinishedProductData, UpdateFinishedProductData, ProductStatus, MaterialBreakdown, MaterialAllocation, ApiResponse } from '../types';
 import { formatDate, isExpired, isExpiringSoon, getDaysUntilExpiration, formatCurrency, getErrorMessage } from '../utils/api';
 import { borderRadius } from '../theme/designTokens';
+import EnhancedFinishedProductForm from '../components/EnhancedFinishedProductForm';
 
 // Status display helper functions
 
@@ -262,455 +255,6 @@ const FinishedProducts: React.FC = () => {
   };
 
   // Clear selection when closing form
-
-
-
-  // Form component
-  const ProductForm: React.FC = () => {
-    const [currentTab, setCurrentTab] = useState(0);
-
-    // Listen for external request to jump to materials tab
-    useEffect(() => {
-      const handler = () => setCurrentTab(1);
-      window.addEventListener('open-materials-tab', handler);
-      return () => window.removeEventListener('open-materials-tab', handler);
-    }, []);
-    // Helper function to normalize unit values
-    const normalizeUnit = (unit: string): string => {
-      // Map common full names to their symbols
-      const unitMap: Record<string, string> = {
-        'Piece': 'pcs',
-        'Pieces': 'pcs',
-        'Dozen': 'dz',
-        'Kilogram': 'kg',
-        'Gram': 'g',
-        'Liter': 'L',
-        'Milliliter': 'ml',
-        'Ounce': 'oz',
-        'Pound': 'lb',
-        'Cup': 'cup',
-        'Tablespoon': 'tbsp',
-        'Teaspoon': 'tsp',
-        'Package': 'pkg'
-      };
-      
-      // Return mapped value or original if no mapping exists
-      return unitMap[unit] || unit;
-    };
-
-    const [formData, setFormData] = useState<CreateFinishedProductData>({
-      name: editingProduct?.name || '',
-      sku: editingProduct?.sku || '',
-      categoryId: editingProduct?.categoryId || '',
-      batchNumber: editingProduct?.batchNumber || '',
-      productionDate: editingProduct?.productionDate?.split('T')[0] || '',
-      expirationDate: editingProduct?.expirationDate?.split('T')[0] || '',
-      shelfLife: editingProduct?.shelfLife || 0,
-      quantity: editingProduct?.quantity || 0,
-      unit: normalizeUnit(editingProduct?.unit || ''),
-      salePrice: editingProduct?.salePrice || 0,
-      costToProduce: editingProduct?.costToProduce || undefined,
-      markupPercentage: editingProduct?.markupPercentage || 50, // Default 50% markup
-      packagingInfo: editingProduct?.packagingInfo || '',
-      storageLocationId: editingProduct?.storageLocationId || '',
-      isContaminated: editingProduct?.isContaminated || false, // Default is not contaminated
-      qualityStatusId: editingProduct?.qualityStatusId || getDefaultQualityStatusId(),
-      status: (editingProduct as any)?.status || ProductStatus.IN_PRODUCTION,
-    });
-
-    const handleSubmit = (e: React.FormEvent) => {
-      e.preventDefault();
-
-      if (editingProduct) {
-        updateMutation.mutate({ id: editingProduct.id, data: formData });
-      } else {
-        createMutation.mutate(formData);
-      }
-    };
-
-    return (
-      <Dialog open={openForm} onClose={handleCloseForm} maxWidth="md" fullWidth>
-        <form onSubmit={handleSubmit}>
-          <DialogTitle sx={{ pb: 1 }}>
-            <Box display="flex" justifyContent="space-between" alignItems="center">
-              <Typography variant="h6">
-                {editingProduct ? 'Edit Finished Product' : 'Create Finished Product'}
-              </Typography>
-              <Box>
-                <Button onClick={handleCloseForm} sx={{ mr: 1 }}>Cancel</Button>
-                <Button type="submit" variant="contained">
-                  {editingProduct ? 'Update' : 'Create'}
-                </Button>
-              </Box>
-            </Box>
-          </DialogTitle>
-          
-          {/* Add tabs for editing existing products */}
-          {editingProduct && (
-            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-              <Tabs value={currentTab} onChange={(_, newValue) => setCurrentTab(newValue)} aria-label="product form tabs">
-                <Tab label="Details" />
-                <Tab label="Materials" />
-              </Tabs>
-            </Box>
-          )}
-          
-          <DialogContent>
-            {/* Tab Panel 0: Product Details (always shown) */}
-            <Box hidden={!!editingProduct && currentTab !== 0}>
-              <Grid container spacing={2} sx={{ mt: editingProduct ? 0 : 1 }}>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Product Name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="SKU"
-                  value={formData.sku}
-                  onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Category</InputLabel>
-                  <Select
-                    value={formData.categoryId}
-                    onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                    required
-                  >
-                    {categories?.map((category) => (
-                      <MenuItem key={category.id} value={category.id}>
-                        {category.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Batch Number"
-                  value={formData.batchNumber}
-                  onChange={(e) => setFormData({ ...formData, batchNumber: e.target.value })}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Production Date"
-                  type="date"
-                  value={formData.productionDate}
-                  onChange={(e) => setFormData({ ...formData, productionDate: e.target.value })}
-                  InputLabelProps={{ shrink: true }}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Expiration Date"
-                  type="date"
-                  value={formData.expirationDate}
-                  onChange={(e) => setFormData({ ...formData, expirationDate: e.target.value })}
-                  InputLabelProps={{ shrink: true }}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Shelf Life (days)"
-                  type="number"
-                  value={formData.shelfLife}
-                  onChange={(e) => setFormData({ ...formData, shelfLife: parseInt(e.target.value) || 0 })}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Quantity"
-                  type="number"
-                  value={formData.quantity}
-                  onChange={(e) => setFormData({ ...formData, quantity: parseFloat(e.target.value) || 0 })}
-                  required
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Unit</InputLabel>
-                  <Select
-                    value={formData.unit}
-                    onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                    required
-                  >
-                    {units?.map((unit) => (
-                      <MenuItem key={unit.id} value={unit.symbol}>
-                        {unit.name} ({unit.symbol})
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Sale Price"
-                  type="number"
-                  value={formData.salePrice}
-                  onChange={(e) => setFormData({ ...formData, salePrice: parseFloat(e.target.value) || 0 })}
-                  required
-                  InputProps={{
-                    startAdornment: <InputAdornment position="start">$</InputAdornment>,
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Cost to Produce"
-                  type="number"
-                  value={formData.costToProduce || ''}
-                  onChange={(e) => setFormData({ ...formData, costToProduce: parseFloat(e.target.value) || undefined })}
-                  InputProps={{
-                    startAdornment: <InputAdornment position="start">$</InputAdornment>,
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Markup Percentage"
-                  type="number"
-                  value={formData.markupPercentage || 50}
-                  onChange={(e) => setFormData({ ...formData, markupPercentage: parseFloat(e.target.value) || 50 })}
-                  helperText="Profit margin percentage (e.g., 50 for 50% markup)"
-                  InputProps={{
-                    endAdornment: <InputAdornment position="end">%</InputAdornment>,
-                  }}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Storage Location</InputLabel>
-                  <Select
-                    value={formData.storageLocationId}
-                    onChange={(e) => setFormData({ ...formData, storageLocationId: e.target.value })}
-                  >
-                    <MenuItem value="">None</MenuItem>
-                    {storageLocations?.map((location) => (
-                      <MenuItem key={location.id} value={location.id}>
-                        {location.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Quality Status</InputLabel>
-                  <Select
-                    name="qualityStatusId"
-                    value={formData.qualityStatusId || getDefaultQualityStatusId()}
-                    onChange={(e) => setFormData({ ...formData, qualityStatusId: e.target.value })}
-                    label="Quality Status"
-                  >
-                    <MenuItem value="">
-                      <em>None</em>
-                    </MenuItem>
-                    {qualityStatuses.map((status: any) => (
-                      <MenuItem key={status.id} value={status.id}>
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <Box
-                            sx={{
-                              width: 12,
-                              height: 12,
-                              borderRadius: borderRadius.sm, // 8px - Small rounded box
-                              backgroundColor: status.color || '#gray',
-                              border: '1px solid #ddd',
-                            }}
-                          />
-                          {status.name}
-                        </Box>
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Production Status</InputLabel>
-                  <Select
-                    name="status"
-                    value={formData.status || ''}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                    label="Production Status"
-                  >
-                    <MenuItem value={ProductStatus.IN_PRODUCTION}>In Production</MenuItem>
-                    <MenuItem value={ProductStatus.COMPLETED}>Completed</MenuItem>
-                    <MenuItem value={ProductStatus.ON_HOLD}>On Hold</MenuItem>
-                    <MenuItem value={ProductStatus.DISCARDED}>Discarded</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Packaging Info"
-                  multiline
-                  rows={2}
-                  value={formData.packagingInfo}
-                  onChange={(e) => setFormData({ ...formData, packagingInfo: e.target.value })}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      name="isContaminated"
-                      checked={!!formData.isContaminated}
-                      onChange={(e) => setFormData({ ...formData, isContaminated: e.target.checked })}
-                      color="error"
-                    />
-                  }
-                  label="Mark as contaminated"
-                />
-              </Grid>
-              </Grid>
-            </Box>
-            
-            {/* Tab Panel 1: Materials (inline minimal table) */}
-            {editingProduct && (
-              <Box hidden={currentTab !== 1} sx={{ mt: 2 }}>
-                {(formData.status as any) === (ProductStatus.IN_PRODUCTION as any) && (
-                  <Alert severity="warning" sx={{ mb:2 }} action={
-                    <Button
-                      color="inherit"
-                      size="small"
-                      onClick={() => {
-                        // Quick mark as completed then trigger update
-                        const updated = { ...formData, status: ProductStatus.COMPLETED as any } as unknown as UpdateFinishedProductData;
-                        if (editingProduct) {
-                          updateMutation.mutate({ id: editingProduct.id, data: updated });
-                        }
-                      }}
-                    >
-                      Mark Completed
-                    </Button>
-                  }>
-                    Production is still in progress. Complete the run to ensure costs and material consumption are final.
-                  </Alert>
-                )}
-                {materialLoading && (
-                  <Alert severity="info">Loading material breakdown...</Alert>
-                )}
-                {materialError && !materialLoading && (
-                  <Alert severity={materialError.message.includes('No production run linked') ? 'warning' : 'error'}>
-                    {materialError.message}
-                  </Alert>
-                )}
-                {!materialLoading && !materialError && materialBreakdownResponse?.data && (
-                  <Box>
-                    <Card sx={{ mb:2 }}>
-                      <CardContent>
-                        <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-                          <Typography variant="subtitle1" gutterBottom sx={{ mb: 0 }}>Cost Summary</Typography>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            startIcon={<RefreshIcon fontSize="small" />}
-                            onClick={() => {
-                              if (selectedProductId) {
-                                queryClient.invalidateQueries(['materialBreakdown', selectedProductId]);
-                              }
-                            }}
-                          >
-                            Refresh
-                          </Button>
-                        </Box>
-                        <Grid container spacing={2}>
-                          <Grid item xs={6} sm={2.4}>
-                            <Typography variant="caption" color="text.secondary">Materials</Typography>
-                            <Typography variant="body1" fontWeight="bold">
-                              {materialBreakdownResponse.data.summary?.totalMaterialsUsed}
-                            </Typography>
-                          </Grid>
-                          <Grid item xs={6} sm={2.4}>
-                            <Typography variant="caption" color="text.secondary">Material Cost</Typography>
-                            <Typography variant="body1" fontWeight="bold">{formatCurrency(materialBreakdownResponse.data.summary?.totalMaterialCost || 0)}</Typography>
-                          </Grid>
-                          <Grid item xs={6} sm={2.4}>
-                            <Typography variant="caption" color="text.secondary">Overhead ({materialBreakdownResponse.data.summary?.overheadPercentage || 0}%)</Typography>
-                            <Typography variant="body1" fontWeight="bold">{formatCurrency(materialBreakdownResponse.data.summary?.overheadCost || 0)}</Typography>
-                          </Grid>
-                          <Grid item xs={6} sm={2.4}>
-                            <Typography variant="caption" color="text.secondary">Cost / Unit</Typography>
-                            <Typography variant="body1" fontWeight="bold">{formatCurrency(materialBreakdownResponse.data.summary?.costPerUnit || 0)}</Typography>
-                          </Grid>
-                          <Grid item xs={6} sm={2.4}>
-                            <Typography variant="caption" color="text.secondary">Total Cost</Typography>
-                            <Typography variant="body1" fontWeight="bold">{formatCurrency(materialBreakdownResponse.data.summary?.totalProductionCost || 0)}</Typography>
-                          </Grid>
-                        </Grid>
-                      </CardContent>
-                    </Card>
-                    <TableContainer component={Paper} variant="outlined">
-                      <Table size="small">
-                        <TableHead>
-                          <TableRow>
-                            <TableCell>Name</TableCell>
-                            <TableCell>SKU</TableCell>
-                            <TableCell>Batch</TableCell>
-                            <TableCell align="right">Qty Used</TableCell>
-                            <TableCell align="right">Unit Cost</TableCell>
-                            <TableCell align="right">Total Cost</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {(materialBreakdownResponse.data.materials || []).map((m: MaterialAllocation) => (
-                            <TableRow key={m.id}>
-                              <TableCell>{m.materialName}</TableCell>
-                              <TableCell>{m.materialSku}</TableCell>
-                              <TableCell>{m.materialBatchNumber || '—'}</TableCell>
-                              <TableCell align="right">{(m.quantityConsumed || m.quantityAllocated).toFixed(2)} {m.unit}</TableCell>
-                              <TableCell align="right">{formatCurrency(m.unitCost)}</TableCell>
-                              <TableCell align="right">{formatCurrency(m.totalCost)}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  </Box>
-                )}
-                {!materialLoading && !materialError && materialBreakdownResponse?.data && (!materialBreakdownResponse.data.materials || materialBreakdownResponse.data.materials.length === 0) && (
-                  <Alert severity="warning">
-                    <Typography variant="body2" gutterBottom>
-                      No material allocations recorded for this production run.
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      This may be an older production run created before the material tracking system was implemented.
-                      Future production runs will automatically track material usage and costs.
-                    </Typography>
-                  </Alert>
-                )}
-                {!materialLoading && !materialError && !materialBreakdownResponse?.data && (
-                  <Alert severity="info">No material breakdown data available.</Alert>
-                )}
-              </Box>
-            )}
-          </DialogContent>
-        </form>
-      </Dialog>
-    );
-  };
 
   // Base filter by search attribute/term
   const baseFiltered = products?.data?.filter((product) => {
@@ -1601,7 +1145,23 @@ const FinishedProducts: React.FC = () => {
 
 
 
-      <ProductForm />
+      {/* Enhanced Form Dialog with Smart Defaults */}
+      <EnhancedFinishedProductForm
+        open={openForm}
+        onClose={handleCloseForm}
+        product={editingProduct}
+        categories={categories || []}
+        storageLocations={storageLocations || []}
+        units={units || []}
+        qualityStatuses={qualityStatuses || []}
+        onSubmit={(data) => {
+          if (editingProduct) {
+            updateMutation.mutate({ id: editingProduct.id, data });
+          } else {
+            createMutation.mutate(data);
+          }
+        }}
+      />
 
       <Snackbar
         open={snackbar.open}

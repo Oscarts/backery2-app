@@ -68,7 +68,7 @@ export async function validateOrAssignSku(name: string, incomingSku?: string): P
  */
 export async function getSuggestedSku(partialName: string): Promise<Array<{ name: string; sku: string }>> {
   const searchTerm = partialName.toLowerCase();
-  
+
   // Search in SkuMapping table first
   const skuMappings = await prisma.skuMapping.findMany({
     where: { name: { contains: searchTerm, mode: 'insensitive' } },
@@ -104,7 +104,7 @@ export async function getSuggestedSku(partialName: string): Promise<Array<{ name
   // Combine and deduplicate by name
   const combined = [...skuMappings, ...rawMaterials, ...finishedProducts];
   const uniqueMap = new Map<string, string>();
-  
+
   combined.forEach((item) => {
     if (item.sku && !uniqueMap.has(item.name)) {
       uniqueMap.set(item.name, item.sku);
@@ -263,7 +263,7 @@ export async function isSkuInUse(name: string): Promise<{ inUse: boolean; rawMat
  */
 export async function deleteSkuMapping(name: string): Promise<void> {
   const usage = await isSkuInUse(name);
-  
+
   if (usage.inUse) {
     throw Object.assign(
       new Error(`Cannot delete SKU mapping: ${usage.rawMaterialCount} raw material(s) and ${usage.finishedProductCount} finished product(s) still use this name`),
