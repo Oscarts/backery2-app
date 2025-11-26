@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
+import fs from 'fs';
 import { prisma } from '../app';
 import { Prisma } from '@prisma/client';
 import { generateToken, AuthUser } from '../middleware/auth';
@@ -16,8 +17,23 @@ export const login = async (
   try {
     const { email, password } = req.body;
 
+    // Structured debug log for login attempts (avoid logging passwords)
+    const attemptLog = JSON.stringify({
+      event: 'login_attempt',
+      email,
+      ip: req.ip,
+      time: new Date().toISOString(),
+    });
+    console.log(attemptLog);
+    try {
+      fs.appendFileSync('/tmp/backery-auth.log', attemptLog + '\n');
+    } catch (err) {
+      // ignore file write errors in environments where /tmp is not writable
+    }
+
     // Validate input
     if (!email || !password) {
+      console.log('❌ Missing email or password');
       res.status(400).json({
         success: false,
         error: 'Email and password are required',
@@ -26,23 +42,33 @@ export const login = async (
     }
 
     // Find user with client and role information
-    const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-      include: {
-        client: true,
-        customRole: {
-          include: {
-            permissions: {
-              include: {
-                permission: true,
+    let user;
+    try {
+      user = await prisma.user.findUnique({
+        where: { email: email.toLowerCase() },
+        include: {
+          client: true,
+          customRole: {
+            include: {
+              permissions: {
+                include: {
+                  permission: true,
+                },
               },
             },
           },
         },
-      },
-    });
+      });
+    } catch (findErr) {
+      const errLog = JSON.stringify({ event: 'login_find_error', email, error: String(findErr), time: new Date().toISOString() });
+      console.error(errLog, findErr);
+      try { fs.appendFileSync('/tmp/backery-auth.log', errLog + '\n'); } catch { }
+      res.status(500).json({ success: false, error: 'Internal server error' });
+      return;
+    }
 
     if (!user) {
+      console.log('Login failed: user not found for email', email);
       res.status(401).json({
         success: false,
         error: 'Invalid email or password',
@@ -50,8 +76,19 @@ export const login = async (
       return;
     }
 
+    const foundLog = JSON.stringify({
+      event: 'login_user_found',
+      userId: user.id,
+      email: user.email,
+      clientId: user.clientId,
+      isActive: user.isActive,
+    });
+    console.log(foundLog);
+    try { fs.appendFileSync('/tmp/backery-auth.log', foundLog + '\n'); } catch { }
+
     // Check if user is active
     if (!user.isActive) {
+      console.log('❌ User inactive');
       res.status(401).json({
         success: false,
         error: 'Account is inactive',
@@ -59,8 +96,13 @@ export const login = async (
       return;
     }
 
+    const activeUserLog = JSON.stringify({ event: 'login_user_active', userId: user.id });
+    console.log(activeUserLog);
+    try { fs.appendFileSync('/tmp/backery-auth.log', activeUserLog + '\n'); } catch { }
+
     // Check if client is active
     if (!user.client.isActive) {
+      console.log('❌ Client inactive:', user.client.name);
       res.status(401).json({
         success: false,
         error: 'Organization account is inactive',
@@ -68,10 +110,19 @@ export const login = async (
       return;
     }
 
+    const activeClientLog = JSON.stringify({ event: 'login_client_active', clientId: user.client.id, clientName: user.client.name });
+    console.log(activeClientLog);
+    try { fs.appendFileSync('/tmp/backery-auth.log', activeClientLog + '\n'); } catch { }
+
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 
+    const pwLog = JSON.stringify({ event: 'login_password_check', userId: user.id, valid: isPasswordValid });
+    console.log(pwLog);
+    try { fs.appendFileSync('/tmp/backery-auth.log', pwLog + '\n'); } catch { }
+
     if (!isPasswordValid) {
+      console.log('❌ Invalid password');
       res.status(401).json({
         success: false,
         error: 'Invalid email or password',

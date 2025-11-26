@@ -7,7 +7,18 @@ import { PrismaClient } from '@prisma/client';
  * Automatically filters all Prisma queries by the authenticated user's clientId
  * to ensure users can only access data belonging to their tenant/client.
  * 
- * This middleware must be used AFTER the authentication middleware.
+ * IMPORTANT: This middleware must be used AFTER the authentication middleware.
+ * 
+ * HOW IT WORKS:
+ * - When a user is authenticated, the tenantContext middleware sets (global as any).__currentClientId
+ * - This Prisma middleware then filters all queries to only include records matching that clientId
+ * - During unauthenticated requests (like login), __currentClientId is undefined and isolation is SKIPPED
+ * - This allows the login process to find users before authentication is established
+ * 
+ * PREVENTS:
+ * - Cross-tenant data access
+ * - Accidentally viewing/modifying another tenant's data
+ * - Login failures due to premature tenant filtering
  */
 
 /**
@@ -36,18 +47,21 @@ export const setupTenantIsolation = (prisma: PrismaClient) => {
 
   // Prisma middleware to add clientId filter
   prisma.$use(async (params, next) => {
-    // Only apply to tenant models
-    if (tenantModels.includes(params.model || '')) {
+    const currentClientId = (global as any).__currentClientId;
+
+    // Only apply to tenant models AND when a client context is set
+    // Skip tenant isolation for unauthenticated requests (like login)
+    if (tenantModels.includes(params.model || '') && currentClientId) {
       // Add clientId filter for read operations
       if (params.action === 'findMany' || params.action === 'findFirst') {
         if (params.args.where) {
           // If where clause exists, add clientId to it
           if (!params.args.where.clientId) {
-            params.args.where.clientId = (global as any).__currentClientId;
+            params.args.where.clientId = currentClientId;
           }
         } else {
           // Create where clause with clientId
-          params.args.where = { clientId: (global as any).__currentClientId };
+          params.args.where = { clientId: currentClientId };
         }
       }
 
@@ -55,11 +69,11 @@ export const setupTenantIsolation = (prisma: PrismaClient) => {
       if (params.action === 'count') {
         if (params.args?.where) {
           if (!params.args.where.clientId) {
-            params.args.where.clientId = (global as any).__currentClientId;
+            params.args.where.clientId = currentClientId;
           }
         } else {
           params.args = params.args || {};
-          params.args.where = { clientId: (global as any).__currentClientId };
+          params.args.where = { clientId: currentClientId };
         }
       }
 
@@ -73,7 +87,6 @@ export const setupTenantIsolation = (prisma: PrismaClient) => {
 
       // Add clientId to create operations
       if (params.action === 'create') {
-        const currentClientId = (global as any).__currentClientId;
         console.log(`Prisma middleware - create action for ${params.model}`);
         console.log(`Prisma middleware - Current global clientId:`, currentClientId);
         console.log(`Prisma middleware - params.args.data:`, params.args.data);
@@ -90,7 +103,7 @@ export const setupTenantIsolation = (prisma: PrismaClient) => {
           if (Array.isArray(params.args.data)) {
             params.args.data = params.args.data.map((item: any) => ({
               ...item,
-              clientId: item.clientId || (global as any).__currentClientId,
+              clientId: item.clientId || currentClientId,
             }));
           }
         }
@@ -99,12 +112,13 @@ export const setupTenantIsolation = (prisma: PrismaClient) => {
 
     const result = await next(params);
 
-    // Post-query validation for findUnique
+    // Post-query validation for findUnique - only when client context is set
     if (
       tenantModels.includes(params.model || '') &&
       params.action === 'findUnique' &&
       result &&
-      (result as any).clientId !== (global as any).__currentClientId
+      currentClientId &&
+      (result as any).clientId !== currentClientId
     ) {
       // User tried to access a record from another tenant
       return null;
