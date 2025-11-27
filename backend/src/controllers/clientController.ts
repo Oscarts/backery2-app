@@ -468,7 +468,6 @@ export const createAdminUser = async (
     }
 
     // Hash password
-    const bcrypt = require('bcrypt');
     const passwordHash = await bcrypt.hash(password, 10);
 
     // Create admin user

@@ -5,8 +5,19 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 /**
+ * Helper function to check if user is a super admin (from system client)
+ */
+const isSuperAdmin = async (userId: string): Promise<boolean> => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { client: true },
+  });
+  return user?.client.slug === 'system';
+};
+
+/**
  * GET /api/users
- * Get all users in the current client
+ * Get all users in the current client (or all users for super admin)
  */
 export const getAllUsers = async (
   req: Request,
@@ -60,11 +71,18 @@ export const getUserById = async (
   try {
     const { id } = req.params;
 
+    // Check if current user is super admin
+    const userIsSuperAdmin = await isSuperAdmin(req.user!.id);
+
+    // Build where clause based on permissions
+    const whereClause: any = { id };
+    if (!userIsSuperAdmin) {
+      // Regular users can only view users in their own client
+      whereClause.clientId = req.user!.clientId;
+    }
+
     const user = await prisma.user.findFirst({
-      where: {
-        id,
-        clientId: req.user!.clientId,
-      },
+      where: whereClause,
       include: {
         client: {
           select: {
@@ -143,9 +161,9 @@ export const createUser = async (
       where: isSuperAdmin
         ? { id: roleId } // Super Admin can use any role
         : {
-            id: roleId,
-            clientId: req.user!.clientId, // Regular users only their client's roles
-          },
+          id: roleId,
+          clientId: req.user!.clientId, // Regular users only their client's roles
+        },
     });
 
     if (!role) {
@@ -240,12 +258,19 @@ export const updateUser = async (
     const { id } = req.params;
     const { email, password, firstName, lastName, roleId, isActive } = req.body;
 
-    // Check if user exists and belongs to same client
+    // Check if current user is super admin
+    const userIsSuperAdmin = await isSuperAdmin(req.user!.id);
+
+    // Build where clause based on permissions
+    const whereClause: any = { id };
+    if (!userIsSuperAdmin) {
+      // Regular users can only update users in their own client
+      whereClause.clientId = req.user!.clientId;
+    }
+
+    // Check if user exists (and belongs to same client if not super admin)
     const existingUser = await prisma.user.findFirst({
-      where: {
-        id,
-        clientId: req.user!.clientId,
-      },
+      where: whereClause,
     });
 
     if (!existingUser) {
@@ -282,9 +307,9 @@ export const updateUser = async (
         where: isSuperAdmin
           ? { id: roleId } // Super Admin can use any role
           : {
-              id: roleId,
-              clientId: req.user!.clientId, // Regular users only their client's roles
-            },
+            id: roleId,
+            clientId: req.user!.clientId, // Regular users only their client's roles
+          },
       });
 
       if (!role) {
@@ -349,12 +374,19 @@ export const deleteUser = async (
   try {
     const { id } = req.params;
 
-    // Check if user exists and belongs to same client
+    // Check if current user is super admin
+    const userIsSuperAdmin = await isSuperAdmin(req.user!.id);
+
+    // Build where clause based on permissions
+    const whereClause: any = { id };
+    if (!userIsSuperAdmin) {
+      // Regular users can only delete users in their own client
+      whereClause.clientId = req.user!.clientId;
+    }
+
+    // Check if user exists (and belongs to same client if not super admin)
     const user = await prisma.user.findFirst({
-      where: {
-        id,
-        clientId: req.user!.clientId,
-      },
+      where: whereClause,
     });
 
     if (!user) {
