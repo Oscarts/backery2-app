@@ -186,7 +186,7 @@ const FinishedProducts: React.FC = () => {
     onSuccess: (_data, vars) => {
       queryClient.invalidateQueries(['finishedProducts']);
       // If status became COMPLETED, invalidate material breakdown so cost can refresh
-  if ((vars.data.status as any) === (ProductStatus.COMPLETED as any) && vars.id === selectedProductId) {
+      if ((vars.data.status as any) === (ProductStatus.COMPLETED as any) && vars.id === selectedProductId) {
         queryClient.invalidateQueries(['materialBreakdown', vars.id]);
       }
       handleCloseForm();
@@ -315,7 +315,7 @@ const FinishedProducts: React.FC = () => {
         gap={2}
       >
         <Box>
-          <Typography 
+          <Typography
             variant={isMobile ? "h4" : "h3"}
             sx={{
               fontWeight: 'bold',
@@ -721,9 +721,9 @@ const FinishedProducts: React.FC = () => {
                                 <Typography
                                   sx={{
                                     fontWeight: 'bold',
-                                    color: (product.quantity - product.reservedQuantity) <= 5 ? 'error.main' : 
-                                           (product.quantity - product.reservedQuantity) <= 10 ? 'warning.main' : 
-                                           'success.main',
+                                    color: (product.quantity - product.reservedQuantity) <= 5 ? 'error.main' :
+                                      (product.quantity - product.reservedQuantity) <= 10 ? 'warning.main' :
+                                        'success.main',
                                     fontSize: '1rem'
                                   }}
                                 >
@@ -874,246 +874,246 @@ const FinishedProducts: React.FC = () => {
         <Box sx={{ mt: 2 }}>
           <Grid container spacing={2}>
             {paginatedProducts.map((product) => (
-                <Grid item xs={12} sm={6} md={4} key={product.id}>
-                  <Card
-                    elevation={2}
-                    sx={{
-                      cursor: 'pointer',
-                      '&:hover': { boxShadow: 6 },
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      borderLeft: product.isContaminated ? '4px solid #d32f2f' : 'none',
-                      position: 'relative',
-                      borderRadius: borderRadius.md // 16px - Modern rounded cards
-                    }}
-                    onClick={() => handleOpenForm(product)}
-                  >
-                    <CardHeader
-                      avatar={
-                        <Avatar sx={{ bgcolor: theme.palette.success.main, width: 40, height: 40 }}>
-                          <LocalDiningIcon fontSize="small" />
-                        </Avatar>
-                      }
-                      title={
-                        <Typography
-                          variant="subtitle1"
-                          fontWeight="medium"
-                          sx={{
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                            lineHeight: 1.2,
-                            height: 'auto',
-                          }}
-                        >
-                          {product.name}
+              <Grid item xs={12} sm={6} md={4} key={product.id}>
+                <Card
+                  elevation={2}
+                  sx={{
+                    cursor: 'pointer',
+                    '&:hover': { boxShadow: 6 },
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    borderLeft: product.isContaminated ? '4px solid #d32f2f' : 'none',
+                    position: 'relative',
+                    borderRadius: borderRadius.md // 16px - Modern rounded cards
+                  }}
+                  onClick={() => handleOpenForm(product)}
+                >
+                  <CardHeader
+                    avatar={
+                      <Avatar sx={{ bgcolor: theme.palette.success.main, width: 40, height: 40 }}>
+                        <LocalDiningIcon fontSize="small" />
+                      </Avatar>
+                    }
+                    title={
+                      <Typography
+                        variant="subtitle1"
+                        fontWeight="medium"
+                        sx={{
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          lineHeight: 1.2,
+                          height: 'auto',
+                        }}
+                      >
+                        {product.name}
+                      </Typography>
+                    }
+                    subheader={
+                      <Box sx={{ mt: 0.5 }}>
+                        <Typography variant="caption" color="text.secondary" display="block">
+                          SKU: {product.sku} • Batch: {product.batchNumber}
                         </Typography>
-                      }
-                      subheader={
-                        <Box sx={{ mt: 0.5 }}>
-                          <Typography variant="caption" color="text.secondary" display="block">
-                            SKU: {product.sku} • Batch: {product.batchNumber}
-                          </Typography>
-                        </Box>
-                      }
-                      action={
-                        <Tooltip title="Show Material Breakdown">
-                          <IconButton
-                            size="small"
-                            color="primary"
-                            aria-label="Show material breakdown"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOpenMaterialTab(product);
-                            }}
-                          >
-                            <IngredientsIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      }
-                      sx={{ pb: 1 }}
-                    />
-
-                    <Divider />
-
-                    <CardContent sx={{ pt: 2, pb: 1, flexGrow: 1 }}>
-                      <Grid container spacing={2}>
-                        <Grid item xs={12}>
-                          <Box sx={{ 
-                            bgcolor: 'background.paper', 
-                            border: 1, 
-                            borderColor: 'divider',
-                            borderRadius: 1,
-                            p: 1.5
-                          }}>
-                            <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                              Inventory Status
-                            </Typography>
-                            <Stack spacing={1}>
-                              <Box display="flex" justifyContent="space-between" alignItems="center">
-                                <Typography variant="body2" color="text.secondary">
-                                  Available
-                                </Typography>
-                                <Typography
-                                  variant="h6"
-                                  sx={{
-                                    fontWeight: 'bold',
-                                    color: (product.quantity - product.reservedQuantity) <= 5 ? 'error.main' : 
-                                           (product.quantity - product.reservedQuantity) <= 10 ? 'warning.main' : 
-                                           'success.main',
-                                  }}
-                                >
-                                  {(product.quantity - product.reservedQuantity).toLocaleString()}
-                                  <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
-                                    {cleanUnit(product.unit, product.sku)}
-                                  </Typography>
-                                </Typography>
-                              </Box>
-                              {product.reservedQuantity > 0 && (
-                                <>
-                                  <Divider />
-                                  <Box display="flex" justifyContent="space-between" alignItems="center">
-                                    <Typography variant="body2" color="text.secondary">
-                                      Reserved
-                                    </Typography>
-                                    <Typography
-                                      variant="body1"
-                                      sx={{
-                                        fontWeight: 'medium',
-                                        color: 'info.main',
-                                      }}
-                                    >
-                                      {product.reservedQuantity.toLocaleString()}
-                                      <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
-                                        {cleanUnit(product.unit, product.sku)}
-                                      </Typography>
-                                    </Typography>
-                                  </Box>
-                                </>
-                              )}
-                              <Divider />
-                              <Box display="flex" justifyContent="space-between" alignItems="center">
-                                <Typography variant="body2" color="text.secondary" fontWeight="medium">
-                                  Total Inventory
-                                </Typography>
-                                <Typography variant="body1" fontWeight="medium">
-                                  {product.quantity.toLocaleString()}
-                                  <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
-                                    {cleanUnit(product.unit, product.sku)}
-                                  </Typography>
-                                </Typography>
-                              </Box>
-                            </Stack>
-                          </Box>
-                        </Grid>
-
-                        <Grid item xs={6}>
-                          <Typography variant="subtitle2" color="text.secondary">
-                            Price
-                          </Typography>
-                          <Typography variant="body1">
-                            {formatCurrency(product.salePrice)}
-                          </Typography>
-                        </Grid>
-
-                        <Grid item xs={6}>
-                          <Typography variant="subtitle2" color="text.secondary">
-                            Expires
-                          </Typography>
-                          <Typography variant="body2">
-                            {formatDate(product.expirationDate)}
-                          </Typography>
-                        </Grid>
-
-                        <Grid item xs={6}>
-                          <Typography variant="subtitle2" color="text.secondary">
-                            Category
-                          </Typography>
-                          <Typography variant="body2" noWrap>
-                            {product.category?.name || 'N/A'}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="subtitle2" color="text.secondary">
-                            Storage
-                          </Typography>
-                          <Typography variant="body2" noWrap>
-                            {product.storageLocation?.name || 'N/A'}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="subtitle2" color="text.secondary">
-                            Production
-                          </Typography>
-                          <Typography variant="body2" noWrap>
-                            {formatDate(product.productionDate)}
-                          </Typography>
-                        </Grid>
-                      </Grid>
-                    </CardContent>
-
-                    <CardActions sx={{ px: 2, py: 1, justifyContent: 'space-between', bgcolor: 'background.default' }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        {getExpirationBadge(product.expirationDate)}
-                        {product.qualityStatus && (
-                          <Chip
-                            label={product.qualityStatus.name}
-                            size="small"
-                            variant="outlined"
-                            sx={{
-                              borderColor: product.qualityStatus.color || '#gray',
-                              color: product.qualityStatus.color || '#gray',
-                              borderWidth: 1.5,
-                              fontWeight: 'medium'
-                            }}
-                          />
-                        )}
-                        {product.isContaminated && (
-                          <Chip
-                            label="CONTAMINATED"
-                            color="error"
-                            size="small"
-                            sx={{ fontWeight: 'medium' }}
-                          />
-                        )}
-                        {(() => {
-                          const meta = getProductionStatusMeta(product.status as any);
-                          return meta ? (
-                            <Tooltip title={meta.description} arrow>
-                              <Box
-                                component="span"
-                                sx={(theme) => ({
-                                  display: 'inline-block',
-                                  width: 10,
-                                  height: 10,
-                                  borderRadius: '50%',
-                                  bgcolor: meta.getColor(theme),
-                                  ml: 0.5,
-                                })}
-                                aria-label={`${meta.label} status`}
-                              />
-                            </Tooltip>
-                          ) : null;
-                        })()}
                       </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    }
+                    action={
+                      <Tooltip title="Show Material Breakdown">
                         <IconButton
                           size="small"
-                          color="error"
-                          onClick={() => handleDelete(product.id)}
-                          aria-label="Delete product"
+                          color="primary"
+                          aria-label="Show material breakdown"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenMaterialTab(product);
+                          }}
                         >
-                          <Tooltip title="Delete product">
-                            <DeleteIcon fontSize="small" />
-                          </Tooltip>
+                          <IngredientsIcon fontSize="small" />
                         </IconButton>
-                      </Box>
-                    </CardActions>
-                  </Card>
-                </Grid>
+                      </Tooltip>
+                    }
+                    sx={{ pb: 1 }}
+                  />
+
+                  <Divider />
+
+                  <CardContent sx={{ pt: 2, pb: 1, flexGrow: 1 }}>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12}>
+                        <Box sx={{
+                          bgcolor: 'background.paper',
+                          border: 1,
+                          borderColor: 'divider',
+                          borderRadius: 1,
+                          p: 1.5
+                        }}>
+                          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                            Inventory Status
+                          </Typography>
+                          <Stack spacing={1}>
+                            <Box display="flex" justifyContent="space-between" alignItems="center">
+                              <Typography variant="body2" color="text.secondary">
+                                Available
+                              </Typography>
+                              <Typography
+                                variant="h6"
+                                sx={{
+                                  fontWeight: 'bold',
+                                  color: (product.quantity - product.reservedQuantity) <= 5 ? 'error.main' :
+                                    (product.quantity - product.reservedQuantity) <= 10 ? 'warning.main' :
+                                      'success.main',
+                                }}
+                              >
+                                {(product.quantity - product.reservedQuantity).toLocaleString()}
+                                <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                                  {cleanUnit(product.unit, product.sku)}
+                                </Typography>
+                              </Typography>
+                            </Box>
+                            {product.reservedQuantity > 0 && (
+                              <>
+                                <Divider />
+                                <Box display="flex" justifyContent="space-between" alignItems="center">
+                                  <Typography variant="body2" color="text.secondary">
+                                    Reserved
+                                  </Typography>
+                                  <Typography
+                                    variant="body1"
+                                    sx={{
+                                      fontWeight: 'medium',
+                                      color: 'info.main',
+                                    }}
+                                  >
+                                    {product.reservedQuantity.toLocaleString()}
+                                    <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                                      {cleanUnit(product.unit, product.sku)}
+                                    </Typography>
+                                  </Typography>
+                                </Box>
+                              </>
+                            )}
+                            <Divider />
+                            <Box display="flex" justifyContent="space-between" alignItems="center">
+                              <Typography variant="body2" color="text.secondary" fontWeight="medium">
+                                Total Inventory
+                              </Typography>
+                              <Typography variant="body1" fontWeight="medium">
+                                {product.quantity.toLocaleString()}
+                                <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 0.5 }}>
+                                  {cleanUnit(product.unit, product.sku)}
+                                </Typography>
+                              </Typography>
+                            </Box>
+                          </Stack>
+                        </Box>
+                      </Grid>
+
+                      <Grid item xs={6}>
+                        <Typography variant="subtitle2" color="text.secondary">
+                          Price
+                        </Typography>
+                        <Typography variant="body1">
+                          {formatCurrency(product.salePrice)}
+                        </Typography>
+                      </Grid>
+
+                      <Grid item xs={6}>
+                        <Typography variant="subtitle2" color="text.secondary">
+                          Expires
+                        </Typography>
+                        <Typography variant="body2">
+                          {formatDate(product.expirationDate)}
+                        </Typography>
+                      </Grid>
+
+                      <Grid item xs={6}>
+                        <Typography variant="subtitle2" color="text.secondary">
+                          Category
+                        </Typography>
+                        <Typography variant="body2" noWrap>
+                          {product.category?.name || 'N/A'}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="subtitle2" color="text.secondary">
+                          Storage
+                        </Typography>
+                        <Typography variant="body2" noWrap>
+                          {product.storageLocation?.name || 'N/A'}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="subtitle2" color="text.secondary">
+                          Production
+                        </Typography>
+                        <Typography variant="body2" noWrap>
+                          {formatDate(product.productionDate)}
+                        </Typography>
+                      </Grid>
+                    </Grid>
+                  </CardContent>
+
+                  <CardActions sx={{ px: 2, py: 1, justifyContent: 'space-between', bgcolor: 'background.default' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {getExpirationBadge(product.expirationDate)}
+                      {product.qualityStatus && (
+                        <Chip
+                          label={product.qualityStatus.name}
+                          size="small"
+                          variant="outlined"
+                          sx={{
+                            borderColor: product.qualityStatus.color || '#gray',
+                            color: product.qualityStatus.color || '#gray',
+                            borderWidth: 1.5,
+                            fontWeight: 'medium'
+                          }}
+                        />
+                      )}
+                      {product.isContaminated && (
+                        <Chip
+                          label="CONTAMINATED"
+                          color="error"
+                          size="small"
+                          sx={{ fontWeight: 'medium' }}
+                        />
+                      )}
+                      {(() => {
+                        const meta = getProductionStatusMeta(product.status as any);
+                        return meta ? (
+                          <Tooltip title={meta.description} arrow>
+                            <Box
+                              component="span"
+                              sx={(theme) => ({
+                                display: 'inline-block',
+                                width: 10,
+                                height: 10,
+                                borderRadius: '50%',
+                                bgcolor: meta.getColor(theme),
+                                ml: 0.5,
+                              })}
+                              aria-label={`${meta.label} status`}
+                            />
+                          </Tooltip>
+                        ) : null;
+                      })()}
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => handleDelete(product.id)}
+                        aria-label="Delete product"
+                      >
+                        <Tooltip title="Delete product">
+                          <DeleteIcon fontSize="small" />
+                        </Tooltip>
+                      </IconButton>
+                    </Box>
+                  </CardActions>
+                </Card>
+              </Grid>
             ))}
           </Grid>
 

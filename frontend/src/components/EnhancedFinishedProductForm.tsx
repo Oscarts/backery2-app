@@ -187,7 +187,7 @@ const EnhancedFinishedProductForm: React.FC<EnhancedFinishedProductFormProps> = 
       const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
       const randomSeq = Math.floor(Math.random() * 900 + 100); // 100-999
       const generatedBatch = `FP-${dateStr}-${randomSeq}`;
-      
+
       setFormData((prev) => ({ ...prev, batchNumber: generatedBatch }));
       setAutoFilledFields((prev) => new Set(prev).add('batchNumber'));
     }
@@ -199,7 +199,7 @@ const EnhancedFinishedProductForm: React.FC<EnhancedFinishedProductFormProps> = 
       const prodDate = new Date(formData.productionDate);
       prodDate.setDate(prodDate.getDate() + formData.shelfLife);
       const expirationDateStr = prodDate.toISOString().split('T')[0];
-      
+
       setFormData((prev) => ({ ...prev, expirationDate: expirationDateStr }));
       setAutoFilledFields((prev) => new Set(prev).add('expirationDate'));
     }
@@ -280,8 +280,8 @@ const EnhancedFinishedProductForm: React.FC<EnhancedFinishedProductFormProps> = 
     const value = (event.target as HTMLInputElement).value;
     setFormData((prev) => ({
       ...prev,
-      [field]: ['quantity', 'salePrice', 'costToProduce', 'markupPercentage', 'shelfLife'].includes(field) 
-        ? parseFloat(value) || 0 
+      [field]: ['quantity', 'salePrice', 'costToProduce', 'markupPercentage', 'shelfLife'].includes(field)
+        ? parseFloat(value) || 0
         : value,
     }));
 
@@ -295,13 +295,13 @@ const EnhancedFinishedProductForm: React.FC<EnhancedFinishedProductFormProps> = 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate required fields
     if (!formData.storageLocationId) {
       alert('Please select a storage location');
       return;
     }
-    
+
     onSubmit(formData);
   };
 

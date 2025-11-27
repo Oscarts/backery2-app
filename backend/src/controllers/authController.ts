@@ -43,9 +43,14 @@ export const login = async (
 
     // Find user with client and role information
     let user;
+    const searchEmail = email.toLowerCase();
+    const searchLog = JSON.stringify({ event: 'login_search_email', originalEmail: email, searchEmail, time: new Date().toISOString() });
+    console.log(searchLog);
+    try { fs.appendFileSync('/tmp/backery-auth.log', searchLog + '\n'); } catch { }
+
     try {
       user = await prisma.user.findUnique({
-        where: { email: email.toLowerCase() },
+        where: { email: searchEmail },
         include: {
           client: true,
           customRole: {
@@ -59,6 +64,10 @@ export const login = async (
           },
         },
       });
+
+      const queryLog = JSON.stringify({ event: 'login_query_result', searchEmail, userFound: !!user, userId: user?.id, time: new Date().toISOString() });
+      console.log(queryLog);
+      try { fs.appendFileSync('/tmp/backery-auth.log', queryLog + '\n'); } catch { }
     } catch (findErr) {
       const errLog = JSON.stringify({ event: 'login_find_error', email, error: String(findErr), time: new Date().toISOString() });
       console.error(errLog, findErr);
