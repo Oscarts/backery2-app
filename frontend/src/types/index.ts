@@ -605,7 +605,7 @@ export interface CustomerOrder {
   notes?: string;
   createdAt: string;
   updatedAt: string;
-  
+
   // Relations
   customer?: Customer;
   items?: OrderItem[];

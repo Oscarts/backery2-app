@@ -146,11 +146,16 @@ const EnhancedFinishedProductForm: React.FC<EnhancedFinishedProductFormProps> = 
       defaultExpiration.setDate(defaultExpiration.getDate() + (defaults.shelfLife || 7));
       const expirationDateStr = defaultExpiration.toISOString().split('T')[0];
 
+      // Auto-generate batch number
+      const dateStr = today.replace(/-/g, '');
+      const randomSeq = Math.floor(Math.random() * 900 + 100); // 100-999
+      const generatedBatch = `FP-${dateStr}-${randomSeq}`;
+
       const initialData: CreateFinishedProductData = {
         name: '',
         sku: '',
         categoryId: defaults?.categoryId || '',
-        batchNumber: defaults?.batchNumber || '',
+        batchNumber: generatedBatch,
         productionDate: today,
         expirationDate: expirationDateStr,
         shelfLife: defaults?.shelfLife || 7,
@@ -176,13 +181,14 @@ const EnhancedFinishedProductForm: React.FC<EnhancedFinishedProductFormProps> = 
       if (defaults?.markupPercentage) autoFilled.add('markupPercentage');
       autoFilled.add('productionDate');
       autoFilled.add('expirationDate');
+      autoFilled.add('batchNumber');
       setAutoFilledFields(autoFilled);
     }
   }, [product, open, defaults]);
 
   // Auto-generate batch number when production date changes
   useEffect(() => {
-    if (!product && formData.productionDate && open) {
+    if (!product && formData.productionDate && open && !formData.batchNumber) {
       const date = new Date(formData.productionDate);
       const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
       const randomSeq = Math.floor(Math.random() * 900 + 100); // 100-999
@@ -191,7 +197,7 @@ const EnhancedFinishedProductForm: React.FC<EnhancedFinishedProductFormProps> = 
       setFormData((prev) => ({ ...prev, batchNumber: generatedBatch }));
       setAutoFilledFields((prev) => new Set(prev).add('batchNumber'));
     }
-  }, [formData.productionDate, product, open]);
+  }, [formData.productionDate, product, open, formData.batchNumber]);
 
   // Auto-calculate expiration date based on shelf life
   useEffect(() => {
