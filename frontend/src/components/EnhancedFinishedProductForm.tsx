@@ -98,7 +98,7 @@ const EnhancedFinishedProductForm: React.FC<EnhancedFinishedProductFormProps> = 
     storageLocationId: '',
     isContaminated: false,
     qualityStatusId: '',
-    status: ProductStatus.IN_PRODUCTION as any,
+    status: ProductStatus.IN_PROGRESS as any,
   });
 
   const [skuSuggestions, setSkuSuggestions] = useState<SkuSuggestion[]>([]);
@@ -136,7 +136,7 @@ const EnhancedFinishedProductForm: React.FC<EnhancedFinishedProductFormProps> = 
         storageLocationId: product.storageLocationId || '',
         isContaminated: product.isContaminated || false,
         qualityStatusId: product.qualityStatusId || '',
-        status: (product as any)?.status || ProductStatus.IN_PRODUCTION,
+        status: (product as any)?.status || ProductStatus.IN_PROGRESS,
       });
       setAutoFilledFields(new Set());
     } else if (defaults) {
@@ -163,7 +163,7 @@ const EnhancedFinishedProductForm: React.FC<EnhancedFinishedProductFormProps> = 
         storageLocationId: defaults?.storageLocationId || '',
         isContaminated: false,
         qualityStatusId: defaults?.qualityStatusId || '',
-        status: ProductStatus.IN_PRODUCTION as any,
+        status: ProductStatus.IN_PROGRESS as any,
       };
       setFormData(initialData);
 
@@ -695,10 +695,11 @@ const EnhancedFinishedProductForm: React.FC<EnhancedFinishedProductFormProps> = 
                     label="Production Status"
                     onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
                   >
-                    <MenuItem value={ProductStatus.IN_PRODUCTION}>In Production</MenuItem>
+                    <MenuItem value={ProductStatus.PLANNED}>Planned</MenuItem>
+                    <MenuItem value={ProductStatus.IN_PROGRESS}>In Progress</MenuItem>
                     <MenuItem value={ProductStatus.COMPLETED}>Completed</MenuItem>
+                    <MenuItem value={ProductStatus.CANCELLED}>Cancelled</MenuItem>
                     <MenuItem value={ProductStatus.ON_HOLD}>On Hold</MenuItem>
-                    <MenuItem value={ProductStatus.DISCARDED}>Discarded</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>

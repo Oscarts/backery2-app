@@ -64,16 +64,18 @@ const getProductionStatusMeta = (status?: typeof ProductStatus[keyof typeof Prod
   if (!status) return null;
   const label = status.replace('_', ' ');
   const descriptionMap: Record<string, string> = {
-    IN_PRODUCTION: 'Currently in production',
+    PLANNED: 'Planned for production',
+    IN_PROGRESS: 'Currently in production',
     COMPLETED: 'Production completed',
-    ON_HOLD: 'Production paused',
-    DISCARDED: 'Discarded and not for use'
+    CANCELLED: 'Production cancelled',
+    ON_HOLD: 'Production paused'
   };
   const colorMap: Record<string, (theme: any) => string> = {
-    IN_PRODUCTION: (theme) => theme.palette.primary.main,
+    PLANNED: (theme) => theme.palette.info.main,
+    IN_PROGRESS: (theme) => theme.palette.primary.main,
     COMPLETED: (theme) => theme.palette.success.main,
+    CANCELLED: (theme) => theme.palette.error.main,
     ON_HOLD: (theme) => theme.palette.warning.main,
-    DISCARDED: (theme) => theme.palette.error.main,
   };
   return {
     label,

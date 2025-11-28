@@ -65,10 +65,11 @@ export interface Unit {
 }
 
 export enum ProductStatus {
-  IN_PRODUCTION = 'IN_PRODUCTION',
+  PLANNED = 'PLANNED',
+  IN_PROGRESS = 'IN_PROGRESS',
   COMPLETED = 'COMPLETED',
-  ON_HOLD = 'ON_HOLD',
-  DISCARDED = 'DISCARDED'
+  CANCELLED = 'CANCELLED',
+  ON_HOLD = 'ON_HOLD'
 }
 
 // Raw Material types

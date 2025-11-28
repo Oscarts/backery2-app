@@ -31,7 +31,7 @@ const createFinishedProductSchema = Joi.object({
   storageLocationId: Joi.string().optional(),
   qualityStatusId: Joi.string().optional().allow('').allow(null),
   isContaminated: Joi.boolean().optional().default(false),
-  status: Joi.string().valid('IN_PRODUCTION', 'COMPLETED', 'ON_HOLD', 'DISCARDED').optional(),
+  status: Joi.string().valid('PLANNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'ON_HOLD').optional(),
 });
 
 const updateFinishedProductSchema = createFinishedProductSchema.fork([
@@ -40,7 +40,7 @@ const updateFinishedProductSchema = createFinishedProductSchema.fork([
   'markupPercentage', 'packagingInfo', 'storageLocationId', 'qualityStatusId', 'isContaminated'
 ], (schema) => schema.optional()).keys({
   reservedQuantity: Joi.number().optional().min(0),
-  status: Joi.string().valid('IN_PRODUCTION', 'COMPLETED', 'ON_HOLD', 'DISCARDED').optional(),
+  status: Joi.string().valid('PLANNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'ON_HOLD').optional(),
 });
 
 const reserveQuantitySchema = Joi.object({

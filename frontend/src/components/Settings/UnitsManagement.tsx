@@ -98,20 +98,20 @@ const UnitsManagement: React.FC = () => {
   };
 
   const checkForDuplicates = (name: string, symbol: string, currentId?: string): string | null => {
-    const duplicateName = units.find(unit => 
-      unit.name.toLowerCase() === name.toLowerCase() && 
+    const duplicateName = units.find(unit =>
+      unit.name.toLowerCase() === name.toLowerCase() &&
       unit.id !== currentId
     );
-    
-    const duplicateSymbol = units.find(unit => 
-      unit.symbol.toLowerCase() === symbol.toLowerCase() && 
+
+    const duplicateSymbol = units.find(unit =>
+      unit.symbol.toLowerCase() === symbol.toLowerCase() &&
       unit.id !== currentId
     );
 
     if (duplicateName) {
       return `A unit with the name "${name}" already exists`;
     }
-    
+
     if (duplicateSymbol) {
       return `A unit with the symbol "${symbol}" already exists`;
     }
