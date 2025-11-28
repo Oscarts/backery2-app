@@ -136,7 +136,7 @@ export const createClient = async (
 
     // Check if admin email is already used
     const existingUser = await prisma.user.findUnique({
-      where: { email: adminEmail },
+      where: { email: adminEmail.toLowerCase() },
     });
 
     if (existingUser) {
@@ -232,7 +232,7 @@ export const createClient = async (
     // Create admin user
     const adminUser = await prisma.user.create({
       data: {
-        email: adminEmail,
+        email: adminEmail.toLowerCase(),
         passwordHash,
         firstName: adminFirstName,
         lastName: adminLastName,
@@ -442,7 +442,7 @@ export const createAdminUser = async (
 
     // Check if user with this email already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email },
+      where: { email: email.toLowerCase() },
     });
 
     if (existingUser) {
@@ -473,7 +473,7 @@ export const createAdminUser = async (
     // Create admin user
     const user = await prisma.user.create({
       data: {
-        email,
+        email: email.toLowerCase(),
         passwordHash,
         firstName,
         lastName,

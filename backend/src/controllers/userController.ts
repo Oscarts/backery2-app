@@ -139,7 +139,7 @@ export const createUser = async (
 
     // Check if email already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email },
+      where: { email: email.toLowerCase() },
     });
 
     if (existingUser) {
@@ -210,7 +210,7 @@ export const createUser = async (
     // Create user in the target client
     const user = await prisma.user.create({
       data: {
-        email,
+        email: email.toLowerCase(),
         passwordHash: hashedPassword,
         firstName,
         lastName,
@@ -283,7 +283,7 @@ export const updateUser = async (
     // If email is being changed, check it's not taken
     if (email && email !== existingUser.email) {
       const emailTaken = await prisma.user.findUnique({
-        where: { email },
+        where: { email: email.toLowerCase() },
       });
 
       if (emailTaken) {
@@ -322,7 +322,7 @@ export const updateUser = async (
 
     // Build update data
     const updateData: any = {};
-    if (email) updateData.email = email;
+    if (email) updateData.email = email.toLowerCase();
     if (firstName) updateData.firstName = firstName;
     if (lastName) updateData.lastName = lastName;
     if (roleId) updateData.roleId = roleId;
