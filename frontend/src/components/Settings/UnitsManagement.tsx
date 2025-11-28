@@ -164,10 +164,10 @@ const UnitsManagement: React.FC = () => {
   };
 
   const getCategoryColor = (category: string) => {
-    switch (category) {
-      case 'weight': return 'primary';
-      case 'volume': return 'secondary';
-      case 'count': return 'success';
+    switch (category.toUpperCase()) {
+      case 'WEIGHT': return 'primary';
+      case 'VOLUME': return 'secondary';
+      case 'COUNT': return 'success';
       default: return 'default';
     }
   };
@@ -292,9 +292,9 @@ const UnitsManagement: React.FC = () => {
                       defaultValue={editingUnit?.category || ''}
                       label="Category"
                     >
-                      <MenuItem value="weight">Weight</MenuItem>
-                      <MenuItem value="volume">Volume</MenuItem>
-                      <MenuItem value="count">Count</MenuItem>
+                      <MenuItem value="WEIGHT">Weight</MenuItem>
+                      <MenuItem value="VOLUME">Volume</MenuItem>
+                      <MenuItem value="COUNT">Count</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>

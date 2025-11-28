@@ -204,31 +204,53 @@ export async function ensureCommonUnits(): Promise<void> {
         return;
     }
 
-    console.log('⚠️  No units found, creating common units...');
+    console.log('⚠️  No units found, creating standard units...');
 
-    const commonUnits = [
-        // Weight units
-        { name: 'Kilogram', symbol: 'kg', category: 'weight', description: 'Standard unit of mass' },
-        { name: 'Gram', symbol: 'g', category: 'weight', description: 'Small unit of mass' },
-        { name: 'Pound', symbol: 'lb', category: 'weight', description: 'Imperial unit of mass' },
-        { name: 'Ounce', symbol: 'oz', category: 'weight', description: 'Small imperial unit of mass' },
+    const standardUnits = [
+        // ========================================
+        // WEIGHT UNITS (10)
+        // ========================================
+        { name: 'Kilogram', symbol: 'kg', category: 'WEIGHT', description: 'Standard metric unit of mass (1000g)', isActive: true },
+        { name: 'Gram', symbol: 'g', category: 'WEIGHT', description: 'Metric unit of mass', isActive: true },
+        { name: 'Milligram', symbol: 'mg', category: 'WEIGHT', description: 'Very small metric unit of mass', isActive: true },
+        { name: 'Pound', symbol: 'lb', category: 'WEIGHT', description: 'Imperial unit of mass (~454g)', isActive: true },
+        { name: 'Ounce', symbol: 'oz', category: 'WEIGHT', description: 'Imperial unit of mass (~28g)', isActive: true },
+        { name: 'Ton', symbol: 't', category: 'WEIGHT', description: 'Metric ton (1000kg)', isActive: true },
 
-        // Volume units
-        { name: 'Liter', symbol: 'L', category: 'volume', description: 'Standard unit of volume' },
-        { name: 'Milliliter', symbol: 'ml', category: 'volume', description: 'Small unit of volume' },
-        { name: 'Cup', symbol: 'cup', category: 'volume', description: 'Cooking measurement' },
-        { name: 'Tablespoon', symbol: 'tbsp', category: 'volume', description: 'Small cooking measurement' },
-        { name: 'Teaspoon', symbol: 'tsp', category: 'volume', description: 'Smallest cooking measurement' },
+        // ========================================
+        // VOLUME UNITS (13)
+        // ========================================
+        { name: 'Liter', symbol: 'L', category: 'VOLUME', description: 'Standard metric unit of volume', isActive: true },
+        { name: 'Milliliter', symbol: 'mL', category: 'VOLUME', description: 'Metric unit of volume (1/1000 L)', isActive: true },
+        { name: 'Cup', symbol: 'cup', category: 'VOLUME', description: 'US customary cooking measurement (~237mL)', isActive: true },
+        { name: 'Tablespoon', symbol: 'tbsp', category: 'VOLUME', description: 'Cooking measurement (~15mL)', isActive: true },
+        { name: 'Teaspoon', symbol: 'tsp', category: 'VOLUME', description: 'Cooking measurement (~5mL)', isActive: true },
+        { name: 'Fluid Ounce', symbol: 'fl oz', category: 'VOLUME', description: 'US customary unit of volume (~30mL)', isActive: true },
+        { name: 'Gallon', symbol: 'gal', category: 'VOLUME', description: 'US customary unit of volume (~3.78L)', isActive: true },
+        { name: 'Quart', symbol: 'qt', category: 'VOLUME', description: 'US customary unit of volume (~946mL)', isActive: true },
+        { name: 'Pint', symbol: 'pt', category: 'VOLUME', description: 'US customary unit of volume (~473mL)', isActive: true },
+        { name: 'Cubic Meter', symbol: 'm³', category: 'VOLUME', description: 'Large volume unit (1000L)', isActive: true },
+        { name: 'Cubic Centimeter', symbol: 'cm³', category: 'VOLUME', description: 'Small volume unit (1mL)', isActive: true },
 
-        // Count units
-        { name: 'Piece', symbol: 'pcs', category: 'count', description: 'Individual items' },
-        { name: 'Dozen', symbol: 'dz', category: 'count', description: 'Group of 12 items' },
-        { name: 'Package', symbol: 'pkg', category: 'count', description: 'Packaged items' },
+        // ========================================
+        // COUNT UNITS (6)
+        // ========================================
+        { name: 'Piece', symbol: 'pc', category: 'COUNT', description: 'Individual items', isActive: true },
+        { name: 'Each', symbol: 'ea', category: 'COUNT', description: 'Individual items (alternative)', isActive: true },
+        { name: 'Dozen', symbol: 'dz', category: 'COUNT', description: '12 pieces', isActive: true },
+        { name: 'Pack', symbol: 'pk', category: 'COUNT', description: 'Package of items', isActive: true },
+        { name: 'Box', symbol: 'bx', category: 'COUNT', description: 'Box of items', isActive: true },
+        { name: 'Case', symbol: 'cs', category: 'COUNT', description: 'Case of items', isActive: true },
     ];
 
-    for (const unit of commonUnits) {
+    console.log(`   Creating ${standardUnits.length} standard units...`);
+
+    for (const unit of standardUnits) {
         await prisma.unit.create({ data: unit });
     }
 
-    console.log(`✅ Created ${commonUnits.length} common units`);
+    console.log(`✅ Created ${standardUnits.length} standard units`);
+    console.log(`   - Weight: 6 units`);
+    console.log(`   - Volume: 11 units`);
+    console.log(`   - Count: 6 units`);
 }
