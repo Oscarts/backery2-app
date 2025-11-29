@@ -13,13 +13,16 @@ export const getCustomers = async (req: Request, res: Response) => {
 
     const where = search
       ? {
+        clientId: req.user!.clientId, // CRITICAL: Filter by tenant
         OR: [
           { name: { contains: search as string, mode: 'insensitive' as const } },
           { email: { contains: search as string, mode: 'insensitive' as const } },
           { phone: { contains: search as string, mode: 'insensitive' as const } },
         ],
       }
-      : {};
+      : {
+        clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+      };
 
     const customers = await prisma.customer.findMany({
       where,
@@ -53,8 +56,11 @@ export const getCustomerById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const customer = await prisma.customer.findUnique({
-      where: { id },
+    const customer = await prisma.customer.findFirst({
+      where: {
+        id,
+        clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+      },
       include: {
         _count: {
           select: { orders: true },
@@ -102,7 +108,10 @@ export const createCustomer = async (req: Request, res: Response) => {
     // Check for duplicate email if provided
     if (email) {
       const existingCustomer = await prisma.customer.findFirst({
-        where: { email: email.toLowerCase() },
+        where: {
+          email: email.toLowerCase(),
+          clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+        },
       });
 
       if (existingCustomer) {
@@ -160,8 +169,11 @@ export const updateCustomer = async (req: Request, res: Response) => {
     const { name, email, phone, address, isActive } = req.body;
 
     // Check if customer exists
-    const existingCustomer = await prisma.customer.findUnique({
-      where: { id },
+    const existingCustomer = await prisma.customer.findFirst({
+      where: {
+        id,
+        clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+      },
     });
 
     if (!existingCustomer) {
@@ -185,6 +197,7 @@ export const updateCustomer = async (req: Request, res: Response) => {
         where: {
           email: email.toLowerCase(),
           id: { not: id },
+          clientId: req.user!.clientId, // CRITICAL: Filter by tenant
         },
       });
 
@@ -231,8 +244,11 @@ export const deleteCustomer = async (req: Request, res: Response) => {
     const { id } = req.params;
 
     // Check if customer exists
-    const customer = await prisma.customer.findUnique({
-      where: { id },
+    const customer = await prisma.customer.findFirst({
+      where: {
+        id,
+        clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+      },
       include: {
         _count: {
           select: { orders: true },

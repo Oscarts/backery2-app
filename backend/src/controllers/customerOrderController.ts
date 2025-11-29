@@ -168,8 +168,11 @@ export const createOrder = async (req: Request, res: Response) => {
     }
 
     // Verify customer exists
-    const customer = await prisma.customer.findUnique({
-      where: { id: customerId },
+    const customer = await prisma.customer.findFirst({
+      where: {
+        id: customerId,
+        clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+      },
     });
 
     if (!customer) {
