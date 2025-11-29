@@ -114,6 +114,17 @@ export const createRecipe = async (req: Request, res: Response) => {
       });
     }
 
+    // Get clientId from authenticated user (required for multi-tenant isolation)
+    const clientId = (req.user as any)?.clientId || (global as any).__currentClientId;
+
+    if (!clientId) {
+      console.error('POST /api/recipes - No clientId available!');
+      return res.status(500).json({
+        success: false,
+        error: 'Client ID not found in request'
+      });
+    }
+
     // Create recipe with ingredients in a transaction
     const recipe = await prisma.$transaction(async (tx) => {
       // Create the recipe
@@ -133,8 +144,9 @@ export const createRecipe = async (req: Request, res: Response) => {
           estimatedTotalTime: estimatedTotalTime ? Number(estimatedTotalTime) : null,
           imageUrl: imageUrl || null,
           overheadPercentage: overheadPercentage !== undefined ? Number(overheadPercentage) : 20,
-          version: 1 // Default version
-        } as any // clientId added by Prisma middleware
+          version: 1, // Default version
+          clientId // Explicitly add clientId for transaction
+        }
       });
 
       // Create ingredients if provided
