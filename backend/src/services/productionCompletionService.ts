@@ -158,7 +158,7 @@ export class ProductionCompletionService {
             const finalExpirationDate = expirationDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
             // Get default storage location
-            const defaultLocation = await this.getOrCreateDefaultStorageLocation();
+            const defaultLocation = await this.getOrCreateDefaultStorageLocation(clientId);
 
             // Derive/reuse stable SKU (independent of batch)
             const sku = await getOrCreateSkuForName(productionRun.recipe.name);
@@ -166,6 +166,12 @@ export class ProductionCompletionService {
             // Calculate production cost and sale price from recipe
             const productionCostCalc = await this.calculateProductionCost(productionRun);
             const salePriceCalc = await this.calculateSalePrice(productionRun.recipeId, productionCostCalc);
+
+            // Get clientId from production run (required for multi-tenant isolation)
+            const clientId = productionRun.clientId;
+            if (!clientId) {
+                throw new Error('Production run must have a clientId for tenant isolation');
+            }
 
             let finishedProduct;
             try {
@@ -189,8 +195,9 @@ export class ProductionCompletionService {
                         status: 'COMPLETED',
                         packagingInfo: `Produced via ${productionRun.name}`,
                         isContaminated: false,
-                        reservedQuantity: 0
-                    } as any // clientId added by Prisma middleware
+                        reservedQuantity: 0,
+                        clientId // Explicitly add clientId from production run
+                    }
                 });
             } catch (err: any) {
                 // If a unique constraint on SKU still exists in the database (legacy schema),
@@ -338,9 +345,10 @@ export class ProductionCompletionService {
     }
 
     // Get default storage location or create one
-    private async getOrCreateDefaultStorageLocation() {
+    private async getOrCreateDefaultStorageLocation(clientId: string) {
         let location = await prisma.storageLocation.findFirst({
             where: {
+                clientId, // Filter by tenant
                 OR: [
                     { name: { contains: 'warehouse' } },
                     { name: { contains: 'storage' } },
@@ -355,8 +363,9 @@ export class ProductionCompletionService {
                     name: 'Default Warehouse',
                     type: 'WAREHOUSE',
                     description: 'Default storage location for finished products',
-                    capacity: '1000 units'
-                } as any // clientId added by Prisma middleware
+                    capacity: '1000 units',
+                    clientId // Explicitly add clientId for tenant isolation
+                }
             });
         }
 
