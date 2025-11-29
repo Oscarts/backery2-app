@@ -3,11 +3,22 @@ import { prisma } from '../app';
 
 export const getSummary = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // Get basic counts
+    // Get clientId for tenant filtering (added for multi-tenant isolation)
+    const clientId = (req.user as any)?.clientId || (global as any).__currentClientId;
+
+    if (!clientId) {
+      console.error('Dashboard summary - No clientId available!');
+      return res.status(500).json({
+        success: false,
+        error: 'Client ID not found in request'
+      });
+    }
+
+    // Get basic counts with proper tenant filtering
     const [rawMaterialsCount, finishedProductsCount, recipesCount] = await Promise.all([
-      prisma.rawMaterial.count(),
-      prisma.finishedProduct.count(),
-      prisma.recipe.count({ where: { isActive: true } }),
+      prisma.rawMaterial.count({ where: { clientId } }),
+      prisma.finishedProduct.count({ where: { clientId } }),
+      prisma.recipe.count({ where: { clientId, isActive: true } }),
     ]);
 
     const summary = {
