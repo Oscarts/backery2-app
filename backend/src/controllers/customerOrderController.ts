@@ -208,6 +208,17 @@ export const createOrder = async (req: Request, res: Response) => {
       })
     );
 
+    // Get clientId from authenticated user (required for multi-tenant isolation)  
+    const clientId = (req.user as any)?.clientId || (global as any).__currentClientId;
+
+    if (!clientId) {
+      console.error('POST /api/customer-orders - No clientId available!');
+      return res.status(500).json({
+        success: false,
+        error: 'Client ID not found in request'
+      });
+    }
+
     // Create order with items
     const order = await prisma.customerOrder.create({
       data: {
@@ -217,13 +228,14 @@ export const createOrder = async (req: Request, res: Response) => {
         notes,
         totalProductionCost,
         totalPrice,
+        clientId, // Explicitly add clientId for nested creation
         customer: {
           connect: { id: customerId },
         },
         items: {
           create: orderItems,
         },
-      } as any, // clientId added by Prisma middleware
+      },
       include: {
         customer: true,
         items: true,

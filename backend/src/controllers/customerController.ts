@@ -113,6 +113,17 @@ export const createCustomer = async (req: Request, res: Response) => {
       }
     }
 
+    // Get clientId from authenticated user (required for multi-tenant isolation)
+    const clientId = (req.user as any)?.clientId || (global as any).__currentClientId;
+
+    if (!clientId) {
+      console.error('POST /api/customers - No clientId available!');
+      return res.status(500).json({
+        success: false,
+        error: 'Client ID not found in request'
+      });
+    }
+
     const customer = await prisma.customer.create({
       data: {
         name: name.trim(),
@@ -120,7 +131,8 @@ export const createCustomer = async (req: Request, res: Response) => {
         phone: phone?.trim() || null,
         address: address?.trim() || null,
         isActive: isActive ?? true,
-      } as any, // clientId added by Prisma middleware
+        clientId, // Explicitly add clientId
+      },
     });
 
     res.json({
