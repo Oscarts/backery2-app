@@ -161,7 +161,7 @@ export class ProductionCompletionService {
             const defaultLocation = await this.getOrCreateDefaultStorageLocation(clientId);
 
             // Derive/reuse stable SKU (independent of batch)
-            const sku = await getOrCreateSkuForName(productionRun.recipe.name);
+            const sku = await getOrCreateSkuForName(productionRun.recipe.name, clientId);
 
             // Calculate production cost and sale price from recipe
             const productionCostCalc = await this.calculateProductionCost(productionRun);

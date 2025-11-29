@@ -46,9 +46,19 @@ export const categoryController = {
         });
       }
 
-      // Note: clientId is automatically added by tenant isolation Prisma middleware
+      // Get clientId from authenticated user (required for multi-tenant isolation)
+      const clientId = (req.user as any)?.clientId || (global as any).__currentClientId;
+
+      if (!clientId) {
+        console.error('POST /api/categories - No clientId available!');
+        return res.status(500).json({
+          success: false,
+          error: 'Client ID not found in request'
+        });
+      }
+
       const category = await prisma.category.create({
-        data: { name, type, description }
+        data: { name, type, description, clientId }
       });
 
       res.status(201).json({ success: true, data: category });
@@ -56,9 +66,9 @@ export const categoryController = {
       console.error('Error creating category:', error);
       if (error.code === 'P2002') {
         // Unique constraint violation
-        res.status(400).json({ 
-          success: false, 
-          error: 'A category with this name already exists' 
+        res.status(400).json({
+          success: false,
+          error: 'A category with this name already exists'
         });
       } else {
         res.status(500).json({ success: false, error: 'Failed to create category' });
@@ -89,9 +99,9 @@ export const categoryController = {
         res.status(404).json({ success: false, error: 'Category not found' });
       } else if (error.code === 'P2002') {
         // Unique constraint violation
-        res.status(400).json({ 
-          success: false, 
-          error: 'A category with this name already exists' 
+        res.status(400).json({
+          success: false,
+          error: 'A category with this name already exists'
         });
       } else {
         res.status(500).json({ success: false, error: 'Failed to update category' });

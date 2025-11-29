@@ -13,7 +13,9 @@ export const getProductionRuns = async (req: Request, res: Response) => {
     try {
         const { status, recipeId, limit = '50', offset = '0' } = req.query;
 
-        const where: any = {};
+        const where: any = {
+            clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+        };
         if (status) where.status = status;
         if (recipeId) where.recipeId = recipeId;
 
@@ -261,7 +263,7 @@ export const createProductionRun = async (req: Request, res: Response) => {
         });
     } catch (error: any) {
         console.error('Error creating production run:', error);
-        
+
         // Check for specific database errors
         if (error.code === 'P2003') {
             return res.status(400).json({
@@ -294,6 +296,7 @@ export const getDashboardProductionRuns = async (req: Request, res: Response) =>
 
         const activeRuns = await prisma.productionRun.findMany({
             where: {
+                clientId: req.user!.clientId, // CRITICAL: Filter by tenant
                 OR: [
                     // Active productions
                     { status: { in: [ProductionStatus.PLANNED, ProductionStatus.IN_PROGRESS, ProductionStatus.ON_HOLD] } },
@@ -342,16 +345,21 @@ export const getProductionStats = async (req: Request, res: Response) => {
         const [activeCount, onHoldCount, completedTodayCount] = await Promise.all([
             prisma.productionRun.count({
                 where: {
+                    clientId: req.user!.clientId, // CRITICAL: Filter by tenant
                     status: {
                         in: [ProductionStatus.PLANNED, ProductionStatus.IN_PROGRESS]
                     }
                 }
             }),
             prisma.productionRun.count({
-                where: { status: ProductionStatus.ON_HOLD }
+                where: {
+                    clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+                    status: ProductionStatus.ON_HOLD
+                }
             }),
             prisma.productionRun.count({
                 where: {
+                    clientId: req.user!.clientId, // CRITICAL: Filter by tenant
                     status: ProductionStatus.COMPLETED,
                     completedAt: {
                         gte: startOfDay,
@@ -364,6 +372,7 @@ export const getProductionStats = async (req: Request, res: Response) => {
         // Get total items produced today (sum of target quantities from completed runs)
         const completedProductionsToday = await prisma.productionRun.findMany({
             where: {
+                clientId: req.user!.clientId, // CRITICAL: Filter by tenant
                 status: ProductionStatus.COMPLETED,
                 completedAt: {
                     gte: startOfDay,
@@ -406,6 +415,7 @@ export const getCompletedProductionRuns = async (req: Request, res: Response) =>
 
         const completedRuns = await prisma.productionRun.findMany({
             where: {
+                clientId: req.user!.clientId, // CRITICAL: Filter by tenant
                 status: ProductionStatus.COMPLETED
             },
             include: {
@@ -426,7 +436,10 @@ export const getCompletedProductionRuns = async (req: Request, res: Response) =>
         });
 
         const total = await prisma.productionRun.count({
-            where: { status: ProductionStatus.COMPLETED }
+            where: {
+                clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+                status: ProductionStatus.COMPLETED
+            }
         });
 
         res.json({
@@ -452,8 +465,11 @@ export const getProductionRunById = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
 
-        const productionRun = await prisma.productionRun.findUnique({
-            where: { id },
+        const productionRun = await prisma.productionRun.findFirst({
+            where: {
+                id,
+                clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+            },
             include: {
                 recipe: true,
                 steps: {
@@ -574,7 +590,10 @@ export const updateProductionRun = async (req: Request, res: Response) => {
 
         // Regular update (not a completion or completion failed)
         const updatedRun = await prisma.productionRun.update({
-            where: { id },
+            where: {
+                id,
+                clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+            },
             data: {
                 ...(name && { name }),
                 ...(targetQuantity && { targetQuantity }),
@@ -620,7 +639,10 @@ export const deleteProductionRun = async (req: Request, res: Response) => {
 
         // Delete the production run
         await prisma.productionRun.delete({
-            where: { id }
+            where: {
+                id,
+                clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+            }
         });
 
         res.json({
@@ -645,8 +667,11 @@ export const allocateProductionMaterials = async (req: Request, res: Response) =
         console.log(`🔄 Allocating materials for production run: ${productionRunId}`);
 
         // Get production run details
-        const productionRun = await prisma.productionRun.findUnique({
-            where: { id: productionRunId },
+        const productionRun = await prisma.productionRun.findFirst({
+            where: {
+                id: productionRunId,
+                clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+            },
             include: { recipe: true }
         });
 
@@ -775,8 +800,11 @@ export const getFinishedProductMaterials = async (req: Request, res: Response) =
         console.log(`🔍 Getting material traceability for finished product: ${finishedProductId}`);
 
         // Get finished product with linked production run
-        const finishedProduct = await prisma.finishedProduct.findUnique({
-            where: { id: finishedProductId },
+        const finishedProduct = await prisma.finishedProduct.findFirst({
+            where: {
+                id: finishedProductId,
+                clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+            },
             include: {
                 productionRun: {
                     include: {
@@ -868,8 +896,11 @@ export const checkIngredientAvailability = async (req: Request, res: Response) =
         console.log(`🔍 Checking ingredient availability for recipe ${recipeId}, quantity: ${targetQuantity}`);
 
         // Get recipe to calculate multiplier
-        const recipe = await prisma.recipe.findUnique({
-            where: { id: recipeId },
+        const recipe = await prisma.recipe.findFirst({
+            where: {
+                id: recipeId,
+                clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+            },
             select: { yieldQuantity: true, name: true }
         });
 

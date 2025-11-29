@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../app';
 import Joi from 'joi';
-import { getOrCreateSkuForName, resolveSkuOnRename, validateOrAssignSku, ensureSkuMappingExists } from '../services/skuService';
+import { getOrCreateSkuForName, resolveSkuOnRename, validateOrAssignSku } from '../services/skuService';
 
 // Helper function to get the default quality status (first item by sortOrder)
 const getDefaultQualityStatus = async () => {
@@ -64,7 +64,9 @@ export const finishedProductController = {
       const skip = (page - 1) * limit;
 
       // Build where clause
-      const where: any = {};
+      const where: any = {
+        clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+      };
 
       if (search) {
         where.OR = [
@@ -127,8 +129,11 @@ export const finishedProductController = {
     try {
       const { id } = req.params;
 
-      const finishedProduct = await prisma.finishedProduct.findUnique({
-        where: { id },
+      const finishedProduct = await prisma.finishedProduct.findFirst({
+        where: {
+          id,
+          clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+        },
         include: {
           category: true,
           storageLocation: true,
@@ -165,7 +170,7 @@ export const finishedProductController = {
       }
 
       // Derive/reuse SKU based on name (ignore provided sku if any)
-      const derivedSku = await validateOrAssignSku(value.name, value.sku);
+      const derivedSku = await validateOrAssignSku(value.name, req.user!.clientId, value.sku);
 
       // Verify related entities exist
       let category = null;
@@ -199,6 +204,17 @@ export const finishedProductController = {
       // Prepare create data
       const defaultQualityStatusId = value.qualityStatusId || await getDefaultQualityStatus();
 
+      // Get clientId from authenticated user (required for multi-tenant isolation)
+      const clientId = (req.user as any)?.clientId || (global as any).__currentClientId;
+
+      if (!clientId) {
+        console.error('POST /api/finished-products - No clientId available!');
+        return res.status(500).json({
+          success: false,
+          error: 'Client ID not found in request'
+        });
+      }
+
       const createData = {
         ...value,
         sku: derivedSku,
@@ -206,6 +222,7 @@ export const finishedProductController = {
         expirationDate: new Date(value.expirationDate),
         reservedQuantity: 0, // Default reserved quantity
         qualityStatusId: defaultQualityStatusId, // Use provided or default quality status
+        clientId // Explicitly add clientId
       };
 
       const finishedProduct = await prisma.finishedProduct.create({
@@ -217,12 +234,7 @@ export const finishedProductController = {
         },
       });
 
-      // Create persistent SKU mapping to preserve it even if this product is deleted
-      await ensureSkuMappingExists(
-        finishedProduct.name,
-        finishedProduct.sku || '',
-        category?.name || undefined
-      );
+      // SKU mapping is now handled internally, no need for explicit mapping persistence
 
       res.status(201).json({
         success: true,
@@ -263,7 +275,7 @@ export const finishedProductController = {
       if (value.name && value.name !== existingProduct.name) {
         (value as any).sku = await resolveSkuOnRename(value.name);
       } else if (value.sku) {
-        (value as any).sku = await validateOrAssignSku(value.name || existingProduct.name, value.sku);
+        (value as any).sku = await validateOrAssignSku(value.name || existingProduct.name, req.user!.clientId, value.sku);
       }
 
       // Verify storage location exists if being updated
@@ -347,7 +359,10 @@ export const finishedProductController = {
       }
 
       await prisma.finishedProduct.delete({
-        where: { id },
+        where: {
+          id,
+          clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+        },
       });
 
       res.json({
@@ -368,6 +383,7 @@ export const finishedProductController = {
 
       const finishedProducts = await prisma.finishedProduct.findMany({
         where: {
+          clientId: req.user!.clientId, // CRITICAL: Filter by tenant
           expirationDate: {
             lte: targetDate,
             gte: new Date(),
@@ -396,6 +412,7 @@ export const finishedProductController = {
 
       const finishedProducts = await prisma.finishedProduct.findMany({
         where: {
+          clientId: req.user!.clientId, // CRITICAL: Filter by tenant
           quantity: {
             lte: threshold,
           },
@@ -450,7 +467,10 @@ export const finishedProductController = {
       }
 
       const finishedProduct = await prisma.finishedProduct.update({
-        where: { id },
+        where: {
+          id,
+          clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+        },
         data: {
           reservedQuantity: existingProduct.reservedQuantity + value.quantity
         },
@@ -505,7 +525,10 @@ export const finishedProductController = {
       }
 
       const finishedProduct = await prisma.finishedProduct.update({
-        where: { id },
+        where: {
+          id,
+          clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+        },
         data: {
           reservedQuantity: existingProduct.reservedQuantity - value.quantity
         },
@@ -530,6 +553,9 @@ export const finishedProductController = {
     try {
       // Get first storage location (alphabetically)
       const firstStorageLocation = await prisma.storageLocation.findFirst({
+        where: {
+          clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+        },
         orderBy: { name: 'asc' },
       });
 
@@ -539,6 +565,7 @@ export const finishedProductController = {
       // Get "Finished Products" or similar category as default
       const finishedCategory = await prisma.category.findFirst({
         where: {
+          clientId: req.user!.clientId, // CRITICAL: Filter by tenant
           OR: [
             { name: { contains: 'Finished', mode: 'insensitive' } },
             { name: { contains: 'Product', mode: 'insensitive' } },

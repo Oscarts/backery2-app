@@ -8,6 +8,9 @@ const prisma = new PrismaClient();
 export const getRecipes = async (req: Request, res: Response) => {
   try {
     const recipes = await prisma.recipe.findMany({
+      where: {
+        clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+      },
       include: {
         category: true,
         ingredients: {
@@ -45,8 +48,11 @@ export const getRecipeById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const recipe = await prisma.recipe.findUnique({
-      where: { id },
+    const recipe = await prisma.recipe.findFirst({
+      where: {
+        id,
+        clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+      },
       include: {
         category: true,
         ingredients: {
@@ -263,7 +269,10 @@ export const updateRecipe = async (req: Request, res: Response) => {
     const recipe = await prisma.$transaction(async (tx) => {
       // Update the recipe
       const updatedRecipe = await tx.recipe.update({
-        where: { id },
+        where: {
+          id,
+          clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+        },
         data: {
           name,
           description,
@@ -369,7 +378,12 @@ export const deleteRecipe = async (req: Request, res: Response) => {
     const { id } = req.params;
 
     // Check if recipe exists
-    const recipe = await prisma.recipe.findUnique({ where: { id } });
+    const recipe = await prisma.recipe.findFirst({
+      where: {
+        id,
+        clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+      }
+    });
     if (!recipe) {
       return res.status(404).json({
         success: false,
@@ -380,7 +394,10 @@ export const deleteRecipe = async (req: Request, res: Response) => {
     const result = await prisma.$transaction(async (tx) => {
       // Gather production runs referencing this recipe
       const productionRuns = await tx.productionRun.findMany({
-        where: { recipeId: id },
+        where: {
+          recipeId: id,
+          clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+        },
         select: { id: true }
       });
 
@@ -403,7 +420,12 @@ export const deleteRecipe = async (req: Request, res: Response) => {
       await tx.recipeIngredient.deleteMany({ where: { recipeId: id } });
 
       // Finally delete the recipe
-      await tx.recipe.delete({ where: { id } });
+      await tx.recipe.delete({
+        where: {
+          id,
+          clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+        }
+      });
 
       return { removedRuns };
     });
@@ -466,7 +488,10 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
 
     // Get all active recipes with only raw material ingredients
     const recipes = await prisma.recipe.findMany({
-      where: { isActive: true },
+      where: {
+        clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+        isActive: true
+      },
       include: {
         category: true,
         ingredients: {
@@ -481,8 +506,16 @@ export const getWhatCanIMake = async (req: Request, res: Response) => {
     console.log(`Found ${recipes.length} active recipes`);
 
     // Get raw material inventory
-    const rawMaterials = await prisma.rawMaterial.findMany();
-    const finishedProducts = await prisma.finishedProduct.findMany();
+    const rawMaterials = await prisma.rawMaterial.findMany({
+      where: {
+        clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+      },
+    });
+    const finishedProducts = await prisma.finishedProduct.findMany({
+      where: {
+        clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+      },
+    });
     const inventory = new Map();
     const now = new Date();
 

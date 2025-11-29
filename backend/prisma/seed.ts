@@ -21,38 +21,66 @@ async function main() {
   await prisma.unit.deleteMany();
   await prisma.supplier.deleteMany();
   await prisma.category.deleteMany();
+  await prisma.client.deleteMany();
   console.log('✅ Cleaned existing data');
+
+  // Create client first (required for multi-tenant isolation)
+  console.log('🏢 Creating test client...');
+  const client = await prisma.client.create({
+    data: {
+      name: 'Demo Bakery',
+      email: 'admin@demobakery.com',
+      subscriptionPlan: 'TRIAL',
+      slug: 'demo-bakery'
+    }
+  });
+  console.log('✅ Created test client:', client.id);
+
+  // Create test user for this client
+  console.log('👤 Creating test user...');
+  const testUser = await prisma.user.create({
+    data: {
+      email: 'admin@demobakery.com',
+      passwordHash: '$2a$12$rFp1Y7/yQv99sRnLbyPqDeQzqQRrvrs6upuDvn9KI7rzAWOtL769m', // hashed version of 'admin123'
+      firstName: 'Demo',
+      lastName: 'Admin',
+      role: 'ADMIN',
+      clientId: client.id,
+      isActive: true
+    }
+  });
+  console.log('✅ Created test user:', testUser.email);
 
   // Create categories
   const categories = await Promise.all([
     // Raw Material Categories
     prisma.category.create({
-      data: { name: 'Flour', type: 'RAW_MATERIAL', description: 'Various types of flour' }
+      data: { name: 'Flour', type: 'RAW_MATERIAL', description: 'Various types of flour', clientId: client.id }
     }),
     prisma.category.create({
-      data: { name: 'Sugar', type: 'RAW_MATERIAL', description: 'Sweeteners and sugars' }
+      data: { name: 'Sugar', type: 'RAW_MATERIAL', description: 'Sweeteners and sugars', clientId: client.id }
     }),
     prisma.category.create({
-      data: { name: 'Dairy', type: 'RAW_MATERIAL', description: 'Milk, butter, cream' }
+      data: { name: 'Dairy', type: 'RAW_MATERIAL', description: 'Milk, butter, cream', clientId: client.id }
     }),
     prisma.category.create({
-      data: { name: 'Ingredients', type: 'RAW_MATERIAL', description: 'General baking ingredients' }
+      data: { name: 'Ingredients', type: 'RAW_MATERIAL', description: 'General baking ingredients', clientId: client.id }
     }),
 
     // Finished Product Categories
     prisma.category.create({
-      data: { name: 'Breads', type: 'FINISHED_PRODUCT', description: 'All types of bread' }
+      data: { name: 'Breads', type: 'FINISHED_PRODUCT', description: 'All types of bread', clientId: client.id }
     }),
     prisma.category.create({
-      data: { name: 'Pastries', type: 'FINISHED_PRODUCT', description: 'Croissants, danishes, etc.' }
+      data: { name: 'Pastries', type: 'FINISHED_PRODUCT', description: 'Croissants, danishes, etc.', clientId: client.id }
     }),
     prisma.category.create({
-      data: { name: 'Cakes', type: 'FINISHED_PRODUCT', description: 'Cakes and layer cakes' }
+      data: { name: 'Cakes', type: 'FINISHED_PRODUCT', description: 'Cakes and layer cakes', clientId: client.id }
     }),
 
     // Recipe Categories
     prisma.category.create({
-      data: { name: 'Baking', type: 'RECIPE', description: 'Baked goods recipes' }
+      data: { name: 'Baking', type: 'RECIPE', description: 'Baked goods recipes', clientId: client.id }
     })
   ]);
 
@@ -65,7 +93,8 @@ async function main() {
         name: 'Premium Flour Co.',
         contactInfo: { email: 'contact@premiumflour.com', phone: '+1-555-0101' },
         address: '123 Mill St, Wheat Valley, CA 90210',
-        isActive: true
+        isActive: true,
+        clientId: client.id
       }
     }),
     prisma.supplier.create({
@@ -73,7 +102,8 @@ async function main() {
         name: 'Sweet Supply Inc.',
         contactInfo: { email: 'info@sweetsupply.com', phone: '+1-555-0202' },
         address: '456 Sugar Ave, Sweettown, TX 75001',
-        isActive: true
+        isActive: true,
+        clientId: client.id
       }
     }),
     prisma.supplier.create({
@@ -81,7 +111,8 @@ async function main() {
         name: 'Dairy Fresh Ltd.',
         contactInfo: { email: 'sales@dairyfresh.com', phone: '+1-555-0303' },
         address: '789 Cream Blvd, Milktown, WI 53001',
-        isActive: true
+        isActive: true,
+        clientId: client.id
       }
     })
   ]);
@@ -95,7 +126,8 @@ async function main() {
         name: 'Dry Storage A',
         type: 'Dry',
         description: 'Temperature controlled dry storage',
-        capacity: '500kg'
+        capacity: '500kg',
+        clientId: client.id
       }
     }),
     prisma.storageLocation.create({
@@ -103,7 +135,8 @@ async function main() {
         name: 'Refrigerator B',
         type: 'Cold',
         description: 'Refrigerated storage 2-4°C',
-        capacity: '200kg'
+        capacity: '200kg',
+        clientId: client.id
       }
     }),
     prisma.storageLocation.create({
@@ -111,7 +144,8 @@ async function main() {
         name: 'Freezer C',
         type: 'Frozen',
         description: 'Frozen storage -18°C',
-        capacity: '150kg'
+        capacity: '150kg',
+        clientId: client.id
       }
     }),
     prisma.storageLocation.create({
@@ -119,7 +153,8 @@ async function main() {
         name: 'Production Area',
         type: 'Work',
         description: 'Active production workspace',
-        capacity: '50kg'
+        capacity: '50kg',
+        clientId: client.id
       }
     })
   ]);
@@ -173,13 +208,43 @@ async function main() {
 
   console.log(`✅ Created ${units.length} units`);
 
+  // Create quality statuses
+  const qualityStatuses = await Promise.all([
+    prisma.qualityStatus.create({
+      data: {
+        name: 'Good',
+        description: 'Good quality, ready for use',
+        color: '#4CAF50',
+        clientId: client.id
+      }
+    }),
+    prisma.qualityStatus.create({
+      data: {
+        name: 'Acceptable',
+        description: 'Acceptable quality with minor issues',
+        color: '#FF9800',
+        clientId: client.id
+      }
+    }),
+    prisma.qualityStatus.create({
+      data: {
+        name: 'Poor',
+        description: 'Poor quality, needs inspection',
+        color: '#F44336',
+        clientId: client.id
+      }
+    })
+  ]);
+
+  console.log(`✅ Created ${qualityStatuses.length} quality statuses`);
+
   // Create recipes
   const recipes = await Promise.all([
     prisma.recipe.create({
       data: {
         name: 'Basic Bread Dough Recipe',
         description: 'Standard bread dough for various bread types',
-        categoryId: categories[3].id, // Dough category
+        categoryId: categories[7].id, // Recipe category (Baking)
         yieldQuantity: 10,
         yieldUnit: 'kg',
         prepTime: 45,
@@ -198,14 +263,15 @@ async function main() {
           'Kitchen scale',
           'Proofing baskets',
           'Oven with steam capability'
-        ]
+        ],
+        clientId: client.id
       }
     }),
     prisma.recipe.create({
       data: {
         name: 'Vanilla Pastry Cream Recipe',
         description: 'Classic pastry cream for various applications',
-        categoryId: categories[4].id, // Fillings category
+        categoryId: categories[7].id, // Recipe category (Baking)
         yieldQuantity: 5,
         yieldUnit: 'L',
         prepTime: 30,
@@ -224,17 +290,13 @@ async function main() {
           'Whisk',
           'Strainer',
           'Digital thermometer'
-        ]
+        ],
+        clientId: client.id
       }
     })
   ]);
 
   console.log(`✅ Created ${recipes.length} recipes`);
-
-  // Get default quality status
-  const defaultQualityStatus = await prisma.qualityStatus.findFirst({
-    where: { name: 'Good' },
-  }) || await prisma.qualityStatus.findFirst();
 
   // Create some raw materials
   const rawMaterials = await Promise.all([
@@ -252,8 +314,9 @@ async function main() {
         unitPrice: 2.50,
         reorderLevel: 10,
         storageLocationId: storageLocations[0].id,
-        qualityStatusId: defaultQualityStatus?.id,
-        isContaminated: false
+        qualityStatusId: qualityStatuses[0].id,
+        isContaminated: false,
+        clientId: client.id
       }
     }),
     prisma.rawMaterial.create({
@@ -270,8 +333,9 @@ async function main() {
         unitPrice: 1.80,
         reorderLevel: 5,
         storageLocationId: storageLocations[0].id,
-        qualityStatusId: defaultQualityStatus?.id,
-        isContaminated: false
+        qualityStatusId: qualityStatuses[0].id,
+        isContaminated: false,
+        clientId: client.id
       }
     }),
     prisma.rawMaterial.create({
@@ -288,8 +352,9 @@ async function main() {
         unitPrice: 5.50,
         reorderLevel: 2,
         storageLocationId: storageLocations[1].id,
-        qualityStatusId: defaultQualityStatus?.id,
-        isContaminated: false
+        qualityStatusId: qualityStatuses[0].id,
+        isContaminated: false,
+        clientId: client.id
       }
     })
   ]);
@@ -313,8 +378,9 @@ async function main() {
         salePrice: 6.99,
         costToProduce: 2.50,
         storageLocationId: storageLocations[0].id,
-        qualityStatusId: defaultQualityStatus?.id,
-        status: 'COMPLETED'
+        qualityStatusId: qualityStatuses[0].id,
+        status: 'COMPLETED',
+        clientId: client.id
       }
     }),
     prisma.finishedProduct.create({
@@ -332,8 +398,9 @@ async function main() {
         salePrice: 3.99,
         costToProduce: 1.20,
         storageLocationId: storageLocations[0].id,
-        qualityStatusId: defaultQualityStatus?.id,
-        status: 'COMPLETED'
+        qualityStatusId: qualityStatuses[0].id,
+        status: 'COMPLETED',
+        clientId: client.id
       }
     }),
     prisma.finishedProduct.create({
@@ -351,8 +418,9 @@ async function main() {
         salePrice: 4.50,
         costToProduce: 1.50,
         storageLocationId: storageLocations[0].id,
-        qualityStatusId: defaultQualityStatus?.id,
-        status: 'COMPLETED'
+        qualityStatusId: qualityStatuses[0].id,
+        status: 'COMPLETED',
+        clientId: client.id
       }
     })
   ]);

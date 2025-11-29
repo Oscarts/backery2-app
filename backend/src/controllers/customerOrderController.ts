@@ -13,12 +13,15 @@ const prisma = new PrismaClient();
  * Generate unique order number
  * Format: ORD-YYYYMM-####
  */
-const generateOrderNumber = async (): Promise<string> => {
+const generateOrderNumber = async (clientId: string): Promise<string> => {
   const today = new Date();
   const prefix = `ORD-${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}`;
 
   const lastOrder = await prisma.customerOrder.findFirst({
-    where: { orderNumber: { startsWith: prefix } },
+    where: {
+      orderNumber: { startsWith: prefix },
+      clientId, // CRITICAL: Filter by tenant for unique numbering
+    },
     orderBy: { orderNumber: 'desc' },
   });
 
@@ -35,7 +38,9 @@ export const getOrders = async (req: Request, res: Response) => {
   try {
     const { status, customerId, startDate, endDate, search } = req.query;
 
-    const where: any = {};
+    const where: any = {
+      clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+    };
 
     // Status filter
     if (status) {
@@ -100,8 +105,11 @@ export const getOrderById = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const order = await prisma.customerOrder.findUnique({
-      where: { id },
+    const order = await prisma.customerOrder.findFirst({
+      where: {
+        id,
+        clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+      },
       include: {
         customer: true,
         items: true,
@@ -171,8 +179,19 @@ export const createOrder = async (req: Request, res: Response) => {
       });
     }
 
-    // Generate order number
-    const orderNumber = await generateOrderNumber();
+    // Get clientId from authenticated user (required for multi-tenant isolation)  
+    const clientId = (req.user as any)?.clientId || (global as any).__currentClientId;
+
+    if (!clientId) {
+      console.error('POST /api/customer-orders - No clientId available!');
+      return res.status(500).json({
+        success: false,
+        error: 'Client ID not found in request'
+      });
+    }
+
+    // Generate order number (tenant-specific)
+    const orderNumber = await generateOrderNumber(clientId);
 
     // Calculate totals and fetch product details
     let totalProductionCost = 0;
@@ -180,9 +199,12 @@ export const createOrder = async (req: Request, res: Response) => {
 
     const orderItems = await Promise.all(
       items.map(async (item: any) => {
-        // Fetch product details from database
-        const product = await prisma.finishedProduct.findUnique({
-          where: { id: item.productId },
+        // Fetch product details from database (with tenant filtering)
+        const product = await prisma.finishedProduct.findFirst({
+          where: {
+            id: item.productId,
+            clientId, // CRITICAL: Filter by tenant
+          },
         });
 
         if (!product) {
@@ -207,17 +229,6 @@ export const createOrder = async (req: Request, res: Response) => {
         };
       })
     );
-
-    // Get clientId from authenticated user (required for multi-tenant isolation)  
-    const clientId = (req.user as any)?.clientId || (global as any).__currentClientId;
-
-    if (!clientId) {
-      console.error('POST /api/customer-orders - No clientId available!');
-      return res.status(500).json({
-        success: false,
-        error: 'Client ID not found in request'
-      });
-    }
 
     // Create order with items
     const order = await prisma.customerOrder.create({
@@ -266,9 +277,12 @@ export const updateOrder = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { expectedDeliveryDate, priceMarkupPercentage, notes, totalPrice, items } = req.body;
 
-    // Get existing order
-    const existingOrder = await prisma.customerOrder.findUnique({
-      where: { id },
+    // Get existing order (with tenant filtering)
+    const existingOrder = await prisma.customerOrder.findFirst({
+      where: {
+        id,
+        clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+      },
       include: { items: true },
     });
 
@@ -290,7 +304,10 @@ export const updateOrder = async (req: Request, res: Response) => {
     // CONFIRMED orders can only update price and notes
     if (existingOrder.status === 'CONFIRMED') {
       const order = await prisma.customerOrder.update({
-        where: { id },
+        where: {
+          id,
+          clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+        },
         data: {
           totalPrice: totalPrice !== undefined ? totalPrice : undefined,
           notes: notes !== undefined ? notes : undefined,
@@ -344,8 +361,11 @@ export const updateOrder = async (req: Request, res: Response) => {
         let productSku = item.productSku;
 
         if (!unitProductionCost || !productName) {
-          const product = await prisma.finishedProduct.findUnique({
-            where: { id: item.productId },
+          const product = await prisma.finishedProduct.findFirst({
+            where: {
+              id: item.productId,
+              clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+            },
             select: {
               name: true,
               sku: true,
@@ -393,7 +413,10 @@ export const updateOrder = async (req: Request, res: Response) => {
     }
 
     const order = await prisma.customerOrder.update({
-      where: { id },
+      where: {
+        id,
+        clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+      },
       data: updateData,
       include: {
         customer: true,
@@ -424,8 +447,11 @@ export const deleteOrder = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
 
-    const order = await prisma.customerOrder.findUnique({
-      where: { id },
+    const order = await prisma.customerOrder.findFirst({
+      where: {
+        id,
+        clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+      },
     });
 
     if (!order) {
@@ -443,7 +469,10 @@ export const deleteOrder = async (req: Request, res: Response) => {
     }
 
     await prisma.customerOrder.delete({
-      where: { id },
+      where: {
+        id,
+        clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+      },
     });
 
     res.json({
@@ -470,8 +499,11 @@ export const confirmOrder = async (req: Request, res: Response) => {
 
     const result = await reserveInventory(id);
 
-    const order = await prisma.customerOrder.findUnique({
-      where: { id },
+    const order = await prisma.customerOrder.findFirst({
+      where: {
+        id,
+        clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+      },
       include: {
         customer: true,
         items: true,
@@ -502,8 +534,11 @@ export const revertToDraft = async (req: Request, res: Response) => {
 
     const result = await releaseInventory(id);
 
-    const order = await prisma.customerOrder.findUnique({
-      where: { id },
+    const order = await prisma.customerOrder.findFirst({
+      where: {
+        id,
+        clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+      },
       include: {
         customer: true,
         items: true,
@@ -534,8 +569,11 @@ export const fulfillOrder = async (req: Request, res: Response) => {
 
     const result = await consumeInventory(id);
 
-    const order = await prisma.customerOrder.findUnique({
-      where: { id },
+    const order = await prisma.customerOrder.findFirst({
+      where: {
+        id,
+        clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+      },
       include: {
         customer: true,
         items: true,

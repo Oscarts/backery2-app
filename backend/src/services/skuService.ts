@@ -18,10 +18,10 @@ export function generateSkuFromName(name: string): string {
  * Retrieve existing SKU for a name across raw materials and finished products, or generate a new one.
  * Priority: finished products (stable) then raw materials.
  */
-export async function getOrCreateSkuForName(name: string): Promise<string> {
-  const existingFinished = await prisma.finishedProduct.findFirst({ where: { name }, select: { sku: true } });
+export async function getOrCreateSkuForName(name: string, clientId: string): Promise<string> {
+  const existingFinished = await prisma.finishedProduct.findFirst({ where: { name, clientId }, select: { sku: true } });
   if (existingFinished?.sku) return existingFinished.sku;
-  const existingRaw: any = await prisma.rawMaterial.findFirst({ where: { name } });
+  const existingRaw: any = await prisma.rawMaterial.findFirst({ where: { name, clientId } });
   if (existingRaw?.sku) return existingRaw.sku as string;
   return generateSkuFromName(name);
 }
@@ -29,8 +29,8 @@ export async function getOrCreateSkuForName(name: string): Promise<string> {
 /**
  * Ensure SKU consistency when name changes: if another entity with new name has a SKU use that; else generate.
  */
-export async function resolveSkuOnRename(newName: string): Promise<string> {
-  return getOrCreateSkuForName(newName);
+export async function resolveSkuOnRename(newName: string, clientId: string): Promise<string> {
+  return getOrCreateSkuForName(newName, clientId);
 }
 
 /**
@@ -41,11 +41,11 @@ export async function resolveSkuOnRename(newName: string): Promise<string> {
  *  - If no mapping and no incoming sku, generate one.
  *  - If mapping exists but incoming differs, throw conflict error.
  */
-export async function validateOrAssignSku(name: string, incomingSku?: string): Promise<string> {
-  const existingSku = await getOrCreateSkuForName(name);
+export async function validateOrAssignSku(name: string, clientId: string, incomingSku?: string): Promise<string> {
+  const existingSku = await getOrCreateSkuForName(name, clientId);
   // If there was already a mapping (found among finished or raw materials)
-  const raw: any = await prisma.rawMaterial.findFirst({ where: { name } });
-  const finished: any = await prisma.finishedProduct.findFirst({ where: { name } });
+  const raw: any = await prisma.rawMaterial.findFirst({ where: { name, clientId } });
+  const finished: any = await prisma.finishedProduct.findFirst({ where: { name, clientId } });
   const mappingAlreadyExisted = !!(raw?.sku || finished?.sku);
 
   if (mappingAlreadyExisted) {
@@ -66,22 +66,15 @@ export async function validateOrAssignSku(name: string, incomingSku?: string): P
  * Get suggested SKU for autocomplete based on partial name.
  * Returns matching name/SKU pairs from existing raw materials, finished products, and SkuMappings.
  */
-export async function getSuggestedSku(partialName: string): Promise<Array<{ name: string; sku: string }>> {
+export async function getSuggestedSku(partialName: string, clientId: string): Promise<Array<{ name: string; sku: string }>> {
   const searchTerm = partialName.toLowerCase();
 
-  // Search in SkuMapping table first
-  const skuMappings = await prisma.skuMapping.findMany({
-    where: { name: { contains: searchTerm, mode: 'insensitive' } },
-    select: { name: true, sku: true },
-    orderBy: { name: 'asc' },
-    take: 10,
-  });
-
-  // Search raw materials
+  // Search raw materials (tenant-filtered)
   const rawMaterials = await prisma.rawMaterial.findMany({
     where: {
       name: { contains: searchTerm, mode: 'insensitive' },
       sku: { not: null },
+      clientId
     },
     select: { name: true, sku: true },
     distinct: ['name'],
@@ -89,11 +82,12 @@ export async function getSuggestedSku(partialName: string): Promise<Array<{ name
     take: 10,
   });
 
-  // Search finished products
+  // Search finished products (tenant-filtered)
   const finishedProducts = await prisma.finishedProduct.findMany({
     where: {
       name: { contains: searchTerm, mode: 'insensitive' },
       sku: { not: '' },
+      clientId
     },
     select: { name: true, sku: true },
     distinct: ['name'],
@@ -102,7 +96,7 @@ export async function getSuggestedSku(partialName: string): Promise<Array<{ name
   });
 
   // Combine and deduplicate by name
-  const combined = [...skuMappings, ...rawMaterials, ...finishedProducts];
+  const combined = [...rawMaterials, ...finishedProducts];
   const uniqueMap = new Map<string, string>();
 
   combined.forEach((item) => {
@@ -119,26 +113,20 @@ export async function getSuggestedSku(partialName: string): Promise<Array<{ name
 
 /**
  * Get all SKU mappings for the reference page.
- * Returns comprehensive list from SkuMapping table and existing products.
+ * Returns comprehensive list from existing products within the client.
  */
-export async function getAllSkuMappings(): Promise<Array<{ name: string; sku: string; source: string }>> {
-  // Get from SkuMapping table
-  const skuMappings = await prisma.skuMapping.findMany({
-    select: { name: true, sku: true, category: true },
-    orderBy: { name: 'asc' },
-  });
-
-  // Get from raw materials
+export async function getAllSkuMappings(clientId: string): Promise<Array<{ name: string; sku: string; source: string }>> {
+  // Get from raw materials (tenant-filtered)
   const rawMaterials = await prisma.rawMaterial.findMany({
-    where: { sku: { not: null } },
+    where: { sku: { not: null }, clientId },
     select: { name: true, sku: true },
     distinct: ['name'],
     orderBy: { name: 'asc' },
   });
 
-  // Get from finished products
+  // Get from finished products (tenant-filtered)
   const finishedProducts = await prisma.finishedProduct.findMany({
-    where: { sku: { not: '' } },
+    where: { sku: { not: '' }, clientId },
     select: { name: true, sku: true },
     distinct: ['name'],
     orderBy: { name: 'asc' },
@@ -179,10 +167,10 @@ export async function getAllSkuMappings(): Promise<Array<{ name: string; sku: st
  * Generate batch number in format: SUPPLIER_CODE-YYYYMMDD-SEQ
  * Example: SUP1-20251101-001
  */
-export async function generateBatchNumber(supplierId: string, date: Date = new Date()): Promise<string> {
+export async function generateBatchNumber(supplierId: string, clientId: string, date: Date = new Date()): Promise<string> {
   // Get supplier code
   const supplier = await prisma.supplier.findUnique({
-    where: { id: supplierId },
+    where: { id: supplierId, clientId },
     select: { name: true },
   });
 
@@ -205,6 +193,7 @@ export async function generateBatchNumber(supplierId: string, date: Date = new D
   const existingBatches = await prisma.rawMaterial.findMany({
     where: {
       supplierId,
+      clientId,
       batchNumber: { startsWith: datePrefix },
     },
     select: { batchNumber: true },
@@ -229,40 +218,11 @@ export async function generateBatchNumber(supplierId: string, date: Date = new D
 }
 
 /**
- * Create or update a persistent SKU mapping in the SkuMapping table.
- * This ensures SKU references persist even when all products using them are deleted.
- */
-export async function ensureSkuMappingExists(name: string, sku: string, category?: string): Promise<void> {
-  await prisma.skuMapping.upsert({
-    where: { name },
-    update: { sku, category: category || null },
-    create: { name, sku, category: category || null },
-  });
-}
-
-/**
- * Check if a SKU is currently in use by any raw materials or finished products.
- * Returns true if the SKU is actively used, false otherwise.
- */
-export async function isSkuInUse(name: string): Promise<{ inUse: boolean; rawMaterialCount: number; finishedProductCount: number }> {
-  const [rawMaterialCount, finishedProductCount] = await Promise.all([
-    prisma.rawMaterial.count({ where: { name } }),
-    prisma.finishedProduct.count({ where: { name } }),
-  ]);
-
-  return {
-    inUse: rawMaterialCount > 0 || finishedProductCount > 0,
-    rawMaterialCount,
-    finishedProductCount,
-  };
-}
-
-/**
  * Safely delete a SKU mapping only if it's not in use by any products.
  * Throws an error if the SKU is still in use.
  */
-export async function deleteSkuMapping(name: string): Promise<void> {
-  const usage = await isSkuInUse(name);
+export async function deleteSkuMapping(name: string, clientId: string): Promise<void> {
+  const usage = await isSkuInUse(name, clientId);
 
   if (usage.inUse) {
     throw Object.assign(
@@ -271,7 +231,6 @@ export async function deleteSkuMapping(name: string): Promise<void> {
     );
   }
 
-  await prisma.skuMapping.delete({
-    where: { name },
-  });
+  // Note: Not deleting from SkuMapping table since it's global and other tenants might use it
+  // Just validate that this tenant is not using it anymore
 }

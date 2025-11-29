@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../app';
 import Joi from 'joi';
-import { getOrCreateSkuForName, resolveSkuOnRename, validateOrAssignSku, getSuggestedSku, getAllSkuMappings, generateBatchNumber, ensureSkuMappingExists, deleteSkuMapping, isSkuInUse } from '../services/skuService';
+import { getOrCreateSkuForName, resolveSkuOnRename, validateOrAssignSku, getSuggestedSku, getAllSkuMappings, generateBatchNumber, deleteSkuMapping, isSkuInUse } from '../services/skuService';
 
 // Helper function to get the default quality status (first item by sortOrder)
 const getDefaultQualityStatus = async () => {
@@ -53,7 +53,9 @@ export const rawMaterialController = {
       const skip = (page - 1) * limit;
 
       // Build where clause
-      const where: any = {};
+      const where: any = {
+        clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+      };
 
       if (search) {
         where.OR = [
@@ -100,6 +102,7 @@ export const rawMaterialController = {
       // Get unit details for all used unit symbols
       const unitDetails = await prisma.unit.findMany({
         where: {
+          clientId: req.user!.clientId, // CRITICAL: Filter by tenant
           symbol: {
             in: Array.from(unitSymbols)
           }
@@ -142,8 +145,11 @@ export const rawMaterialController = {
     try {
       const { id } = req.params;
 
-      const rawMaterial = await prisma.rawMaterial.findUnique({
-        where: { id },
+      const rawMaterial = await prisma.rawMaterial.findFirst({
+        where: {
+          id,
+          clientId: req.user!.clientId, // CRITICAL: Filter by tenant
+        },
         include: {
           category: true,
           supplier: true,
@@ -241,7 +247,18 @@ export const rawMaterialController = {
       // Prepare create data with field mapping
       const defaultQualityStatusId = value.qualityStatusId || await getDefaultQualityStatus();
 
-      const derivedSku = await validateOrAssignSku(value.name, value.sku);
+      const derivedSku = await validateOrAssignSku(value.name, req.user!.clientId, value.sku);
+      // Get clientId from authenticated user (required for multi-tenant isolation)
+      const clientId = (req.user as any)?.clientId || (global as any).__currentClientId;
+
+      if (!clientId) {
+        console.error('POST /api/raw-materials - No clientId available!');
+        return res.status(500).json({
+          success: false,
+          error: 'Client ID not found in request'
+        });
+      }
+
       const createData = {
         ...value,
         sku: derivedSku,
@@ -249,6 +266,7 @@ export const rawMaterialController = {
         expirationDate: new Date(value.expirationDate),
         unitPrice: value.costPerUnit, // Map costPerUnit to unitPrice
         qualityStatusId: defaultQualityStatusId, // Use provided or default quality status
+        clientId // Explicitly add clientId
       };
       delete createData.costPerUnit; // Remove the frontend field
 
@@ -262,12 +280,7 @@ export const rawMaterialController = {
         },
       });
 
-      // Create persistent SKU mapping to preserve it even if this material is deleted
-      await ensureSkuMappingExists(
-        rawMaterial.name,
-        rawMaterial.sku || '',
-        category?.name || undefined
-      );
+      // SKU mapping is now handled internally, no need for explicit mapping persistence
 
       // Get unit details
       let unitDetails = null;
@@ -339,7 +352,7 @@ export const rawMaterialController = {
         updateData.sku = await resolveSkuOnRename(value.name);
       } else if (value.sku) {
         // Validate provided SKU against name mapping
-        updateData.sku = await validateOrAssignSku(value.name || existingRawMaterial.name, value.sku);
+        updateData.sku = await validateOrAssignSku(value.name || existingRawMaterial.name, req.user!.clientId, value.sku);
       }
       if (value.purchaseDate) updateData.purchaseDate = new Date(value.purchaseDate);
       if (value.expirationDate) updateData.expirationDate = new Date(value.expirationDate);
@@ -429,6 +442,7 @@ export const rawMaterialController = {
 
       const rawMaterials = await prisma.rawMaterial.findMany({
         where: {
+          clientId: req.user!.clientId, // CRITICAL: Filter by tenant
           expirationDate: {
             lte: targetDate,
             gte: new Date(),
@@ -459,6 +473,7 @@ export const rawMaterialController = {
 
       const rawMaterials = await prisma.rawMaterial.findMany({
         where: {
+          clientId: req.user!.clientId, // CRITICAL: Filter by tenant
           quantity: {
             lte: threshold,
           },
@@ -540,7 +555,7 @@ export const rawMaterialController = {
         });
       }
 
-      const suggestions = await getSuggestedSku(name);
+      const suggestions = await getSuggestedSku(name, req.user!.clientId);
 
       res.json({
         success: true,
@@ -554,7 +569,7 @@ export const rawMaterialController = {
   // GET /api/raw-materials/sku-mappings
   getSkuMappings: async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const mappings = await getAllSkuMappings();
+      const mappings = await getAllSkuMappings(req.user!.clientId);
 
       res.json({
         success: true,
@@ -632,7 +647,7 @@ export const rawMaterialController = {
         });
       }
 
-      const batchNumber = await generateBatchNumber(supplierId, date);
+      const batchNumber = await generateBatchNumber(supplierId, req.user!.clientId, date);
 
       res.json({
         success: true,
@@ -648,7 +663,7 @@ export const rawMaterialController = {
     try {
       const { name } = req.params;
 
-      const usage = await isSkuInUse(name);
+      const usage = await isSkuInUse(name, req.user!.clientId);
 
       res.json({
         success: true,

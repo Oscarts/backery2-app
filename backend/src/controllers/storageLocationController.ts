@@ -46,8 +46,19 @@ export const storageLocationController = {
         });
       }
 
+      // Get clientId from authenticated user (required for multi-tenant isolation)
+      const clientId = (req.user as any)?.clientId || (global as any).__currentClientId;
+
+      if (!clientId) {
+        console.error('POST /api/storage-locations - No clientId available!');
+        return res.status(500).json({
+          success: false,
+          error: 'Client ID not found in request'
+        });
+      }
+
       const location = await prisma.storageLocation.create({
-        data: { name, type, description, capacity }
+        data: { name, type, description, capacity, clientId }
       });
 
       res.status(201).json({ success: true, data: location });

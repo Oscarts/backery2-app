@@ -44,16 +44,16 @@ async function getValidUnits(): Promise<string[]> {
  */
 function normalizeUnitSync(unit: string, validUnits: string[]): string | null {
   const trimmed = unit.trim();
-  
+
   // First try exact match
   if (validUnits.includes(trimmed)) {
     return trimmed;
   }
-  
+
   // Try case-insensitive match
   const lowerUnit = trimmed.toLowerCase();
   const matched = validUnits.find(u => u.toLowerCase() === lowerUnit);
-  
+
   return matched || null;
 }
 
@@ -100,7 +100,7 @@ export const normalizeUnitsMiddleware = async (
     if (req.body.ingredients && Array.isArray(req.body.ingredients)) {
       for (let i = 0; i < req.body.ingredients.length; i++) {
         const ingredient = req.body.ingredients[i];
-        
+
         if (ingredient.unit) {
           const normalized = normalizeUnitSync(ingredient.unit, validUnits);
 
@@ -139,8 +139,6 @@ export async function isValidUnitCached(unit: string): Promise<boolean> {
   const validUnits = await getValidUnits();
   const normalized = normalizeUnitSync(unit, validUnits);
   return normalized !== null;
-}
-  return validUnitsCache.includes(normalized);
 }
 
 /**
