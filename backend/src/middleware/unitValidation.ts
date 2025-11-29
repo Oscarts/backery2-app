@@ -40,10 +40,10 @@ async function getValidUnits(): Promise<string[]> {
 
 /**
  * Normalize a unit by trimming whitespace and finding case-insensitive match
+ * Requires validUnits array to be passed in to avoid repeated async calls
  */
-async function normalizeUnit(unit: string): Promise<string | null> {
+function normalizeUnitSync(unit: string, validUnits: string[]): string | null {
   const trimmed = unit.trim();
-  const validUnits = await getValidUnits();
   
   // First try exact match
   if (validUnits.includes(trimmed)) {
@@ -72,7 +72,7 @@ export const normalizeUnitsMiddleware = async (
   next: NextFunction
 ) => {
   try {
-    // Get valid units from database
+    // Get valid units from database ONCE
     const validUnits = await getValidUnits();
 
     // List of fields that might contain units
@@ -81,7 +81,7 @@ export const normalizeUnitsMiddleware = async (
     // Validate unit fields in body
     for (const field of unitFields) {
       if (req.body[field]) {
-        const normalized = await normalizeUnit(req.body[field]);
+        const normalized = normalizeUnitSync(req.body[field], validUnits);
 
         if (!normalized) {
           return res.status(400).json({
@@ -98,22 +98,13 @@ export const normalizeUnitsMiddleware = async (
 
     // Validate units in nested ingredients array (for recipes)
     if (req.body.ingredients && Array.isArray(req.body.ingredients)) {
-      console.log('🔍 Validating ingredient units...');
-      console.log('   Valid units:', validUnits);
-      console.log('   Number of ingredients:', req.body.ingredients.length);
-      
       for (let i = 0; i < req.body.ingredients.length; i++) {
         const ingredient = req.body.ingredients[i];
-        console.log(`   Ingredient ${i}:`, JSON.stringify(ingredient, null, 2));
         
         if (ingredient.unit) {
-          const normalized = await normalizeUnit(ingredient.unit);
-          console.log(`   - Original unit: "${ingredient.unit}"`);
-          console.log(`   - Normalized unit: "${normalized}"`);
-          console.log(`   - Is valid? ${normalized !== null}`);
+          const normalized = normalizeUnitSync(ingredient.unit, validUnits);
 
           if (!normalized) {
-            console.error(`   ❌ INVALID UNIT: "${ingredient.unit}"`);
             return res.status(400).json({
               success: false,
               error: `Invalid unit "${ingredient.unit}" for ingredient ${i + 1}`,
@@ -124,7 +115,6 @@ export const normalizeUnitsMiddleware = async (
           req.body.ingredients[i].unit = normalized;
         }
       }
-      console.log('✅ All ingredient units validated successfully');
     }
 
     next();
@@ -137,7 +127,8 @@ export const normalizeUnitsMiddleware = async (
  * Validate a single unit value against database
  */
 export async function validateUnit(unit: string): Promise<boolean> {
-  const normalized = await normalizeUnit(unit);
+  const validUnits = await getValidUnits();
+  const normalized = normalizeUnitSync(unit, validUnits);
   return normalized !== null;
 }
 
@@ -145,7 +136,8 @@ export async function validateUnit(unit: string): Promise<boolean> {
  * Check if a unit is valid (sync version using cache)
  */
 export async function isValidUnitCached(unit: string): Promise<boolean> {
-  const normalized = await normalizeUnit(unit);
+  const validUnits = await getValidUnits();
+  const normalized = normalizeUnitSync(unit, validUnits);
   return normalized !== null;
 }
   return validUnitsCache.includes(normalized);
