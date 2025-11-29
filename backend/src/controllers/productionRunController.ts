@@ -173,6 +173,17 @@ export const createProductionRun = async (req: Request, res: Response) => {
             ];
         }
 
+        // Get clientId from authenticated user (required for multi-tenant isolation)
+        const clientId = (req.user as any)?.clientId || (global as any).__currentClientId;
+
+        if (!clientId) {
+            console.error('POST /api/production - No clientId available!');
+            return res.status(500).json({
+                success: false,
+                error: 'Client ID not found in request'
+            });
+        }
+
         // Create production run with steps
         const productionRun = await prisma.productionRun.create({
             data: {
@@ -182,10 +193,11 @@ export const createProductionRun = async (req: Request, res: Response) => {
                 targetUnit,
                 notes,
                 status: ProductionStatus.PLANNED,
+                clientId, // Explicitly add clientId 
                 steps: {
                     create: stepsToCreate
                 }
-            } as any, // clientId added by Prisma middleware
+            },
             include: {
                 recipe: {
                     include: {
@@ -247,11 +259,28 @@ export const createProductionRun = async (req: Request, res: Response) => {
             success: true,
             data: productionRun
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error creating production run:', error);
+        
+        // Check for specific database errors
+        if (error.code === 'P2003') {
+            return res.status(400).json({
+                success: false,
+                error: `Foreign key constraint failed - Invalid ${error.meta?.field_name || 'ID'}`
+            });
+        }
+
+        if (error.code === 'P2002') {
+            return res.status(400).json({
+                success: false,
+                error: `A production run with this name already exists`
+            });
+        }
+
         res.status(500).json({
             success: false,
-            error: 'Failed to create production run'
+            error: 'Failed to create production run',
+            details: error.message || 'Unknown error'
         });
     }
 };
