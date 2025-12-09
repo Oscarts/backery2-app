@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+// ...existing code...
 
 /**
  * Fix Super Admin permissions - Following CODE_GUIDELINES.md
@@ -79,6 +79,9 @@ async function fixSuperAdminPermissions() {
             { resource: 'roles', action: 'delete' },
             // Permission viewing (1 permission)
             { resource: 'permissions', action: 'view' },
+            // User management (2 permissions)
+            { resource: 'users', action: 'view' },
+            { resource: 'users', action: 'delete' },
         ];
 
         console.log(`\n📋 Setting Super Admin to have ONLY ${correctPermissions.length} permissions...`);
