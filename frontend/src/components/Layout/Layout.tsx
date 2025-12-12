@@ -110,33 +110,50 @@ const Layout: React.FC = () => {
 
 
 
-  const drawer = (
+  const drawer = (showLabels: boolean = drawerOpen) => (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: 'background.paper' }}>
-      {/* Sidebar Header - Collapse/Expand control */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: drawerOpen ? 'flex-end' : 'center',
-          minHeight: '64px',
-          px: 1,
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-        }}
-      >
-        <Tooltip title={drawerOpen ? 'Collapse menu' : 'Expand menu'} placement="right">
-          <IconButton
-            onClick={handleDrawerCollapse}
-            size="small"
-            sx={{
-              color: 'text.secondary',
-              '&:hover': { bgcolor: 'action.hover', color: 'primary.main' },
-            }}
-          >
-            {drawerOpen ? <ChevronLeftIcon /> : <ChevronRightIcon />}
-          </IconButton>
-        </Tooltip>
-      </Box>
+      {/* Sidebar Header - Collapse/Expand control (only on desktop) */}
+      {!isMobile && (
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: showLabels ? 'flex-end' : 'center',
+            minHeight: '64px',
+            px: 1,
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Tooltip title={showLabels ? 'Collapse menu' : 'Expand menu'} placement="right">
+            <IconButton
+              onClick={handleDrawerCollapse}
+              size="small"
+              sx={{
+                color: 'text.secondary',
+                '&:hover': { bgcolor: 'action.hover', color: 'primary.main' },
+              }}
+            >
+              {showLabels ? <ChevronLeftIcon /> : <ChevronRightIcon />}
+            </IconButton>
+          </Tooltip>
+        </Box>
+      )}
+      {/* Mobile header spacer */}
+      {isMobile && (
+        <Box
+          sx={{
+            minHeight: '64px',
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+            display: 'flex',
+            alignItems: 'center',
+            px: 2,
+          }}
+        >
+          <RapidProLogo size="small" variant="full" />
+        </Box>
+      )}
       <List dense sx={{ py: 0.5, flexGrow: 1 }}>
         {menuItems
           .filter((item) => {
@@ -153,7 +170,7 @@ const Layout: React.FC = () => {
           })
           .map((item) => (
             <ListItem key={item.text} disablePadding>
-              <Tooltip title={drawerOpen ? '' : item.text} placement="right">
+              <Tooltip title={showLabels ? '' : item.text} placement="right">
                 <ListItemButton
                   selected={location.pathname === item.path}
                   onClick={() => {
@@ -163,14 +180,14 @@ const Layout: React.FC = () => {
                     }
                   }}
                   sx={{
-                    px: drawerOpen ? 2 : 1.5,
+                    px: showLabels ? 2 : 1.5,
                     py: 1,
-                    justifyContent: drawerOpen ? 'flex-start' : 'center',
-                    borderRadius: drawerOpen ? 1 : 0,
-                    mx: drawerOpen ? 1 : 0,
+                    justifyContent: showLabels ? 'flex-start' : 'center',
+                    borderRadius: showLabels ? 1 : 0,
+                    mx: showLabels ? 1 : 0,
                     '&.Mui-selected': {
                       bgcolor: alpha(theme.palette.primary.main, 0.08),
-                      borderLeft: drawerOpen ? 'none' : `3px solid ${theme.palette.primary.main}`,
+                      borderLeft: showLabels ? 'none' : `3px solid ${theme.palette.primary.main}`,
                       '&:hover': {
                         bgcolor: alpha(theme.palette.primary.main, 0.12),
                       },
@@ -181,13 +198,13 @@ const Layout: React.FC = () => {
                   }}
                 >
                   <ListItemIcon sx={{
-                    minWidth: drawerOpen ? 40 : 'auto',
+                    minWidth: showLabels ? 40 : 'auto',
                     justifyContent: 'center',
                     color: location.pathname === item.path ? 'primary.main' : 'text.secondary',
                   }}>
                     {item.icon}
                   </ListItemIcon>
-                  {drawerOpen && (
+                  {showLabels && (
                     <ListItemText
                       primary={item.text}
                       primaryTypographyProps={{
@@ -432,7 +449,7 @@ const Layout: React.FC = () => {
             },
           }}
         >
-          {drawer}
+          {drawer(true)}
         </Drawer>
         <Drawer
           variant="permanent"
@@ -451,7 +468,7 @@ const Layout: React.FC = () => {
           }}
           open
         >
-          {drawer}
+          {drawer(drawerOpen)}
         </Drawer>
       </Box>
       <Box
