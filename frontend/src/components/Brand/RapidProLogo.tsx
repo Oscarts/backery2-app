@@ -7,10 +7,10 @@ interface RapidProLogoProps {
   sx?: SxProps<Theme>;
 }
 
-const RapidProLogo: React.FC<RapidProLogoProps> = ({ 
-  size = 'medium', 
+const RapidProLogo: React.FC<RapidProLogoProps> = ({
+  size = 'medium',
   variant = 'full',
-  sx 
+  sx
 }) => {
   const sizes = {
     small: {
@@ -56,13 +56,13 @@ const RapidProLogo: React.FC<RapidProLogoProps> = ({
           <stop offset="100%" style={{ stopColor: '#FF8A5C', stopOpacity: 1 }} />
         </linearGradient>
       </defs>
-      
+
       {/* Hexagonal background - represents structure and organization */}
       <path
         d="M50 5L86.6 27.5V72.5L50 95L13.4 72.5V27.5L50 5Z"
         fill="url(#bgGradient)"
       />
-      
+
       {/* Clock circle outline - subtle */}
       <circle
         cx="50"
@@ -73,7 +73,7 @@ const RapidProLogo: React.FC<RapidProLogoProps> = ({
         fill="none"
         opacity="0.4"
       />
-      
+
       {/* Clock arc - representing time and speed */}
       <path
         d="M50 28C38.95 28 30 36.95 30 48C30 52.5 31.4 56.7 33.8 60.2"
@@ -82,7 +82,7 @@ const RapidProLogo: React.FC<RapidProLogoProps> = ({
         strokeLinecap="round"
         fill="none"
       />
-      
+
       {/* Clock hand forming ascending arrow - rapid production */}
       <path
         d="M50 50L65 33"
@@ -90,7 +90,7 @@ const RapidProLogo: React.FC<RapidProLogoProps> = ({
         strokeWidth="3.5"
         strokeLinecap="round"
       />
-      
+
       {/* Arrow head - represents growth and forward movement */}
       <path
         d="M62 33L65 28L68 33"
@@ -100,13 +100,13 @@ const RapidProLogo: React.FC<RapidProLogoProps> = ({
         strokeLinejoin="round"
         fill="none"
       />
-      
+
       {/* Production graph bars - ascending for productivity */}
       <rect x="32" y="62" width="7" height="13" rx="1.5" fill="url(#accentGradient)" opacity="0.8" />
       <rect x="43" y="58" width="7" height="17" rx="1.5" fill="url(#accentGradient)" opacity="0.85" />
       <rect x="54" y="54" width="7" height="21" rx="1.5" fill="url(#accentGradient)" opacity="0.9" />
       <rect x="65" y="50" width="7" height="25" rx="1.5" fill="url(#accentGradient)" />
-      
+
       {/* Subtle motion lines for dynamism */}
       <path d="M72 38L78 35" stroke="#FF6B35" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
       <path d="M75 45L82 43" stroke="#FF6B35" strokeWidth="2" strokeLinecap="round" opacity="0.4" />

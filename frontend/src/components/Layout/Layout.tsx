@@ -20,7 +20,6 @@ import {
   MenuItem,
   Avatar,
   Typography,
-  Chip,
   alpha,
 } from '@mui/material';
 import {
@@ -109,58 +108,34 @@ const Layout: React.FC = () => {
     setDrawerOpen(!drawerOpen);
   };
 
-  // Get current page title based on path
-  const getPageTitle = () => {
-    const currentItem = menuItems.find(item => item.path === location.pathname);
-    return currentItem?.text || 'Dashboard';
-  };
+
 
   const drawer = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: 'background.paper' }}>
-      {/* Logo Section - Modern gradient background */}
+      {/* Sidebar Header - Collapse/Expand control */}
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #1E4687 0%, #2962B3 100%)',
-          p: drawerOpen ? 2 : 1.5,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: drawerOpen ? 'space-between' : 'center',
+          justifyContent: drawerOpen ? 'flex-end' : 'center',
           minHeight: '64px',
-          position: 'relative',
+          px: 1,
+          borderBottom: '1px solid',
+          borderColor: 'divider',
         }}
       >
-        {drawerOpen ? (
-          <RapidProLogo size="small" variant="full" sx={{ '& .MuiTypography-root': { color: 'white !important' }, '& .MuiTypography-caption': { color: 'rgba(255,255,255,0.8) !important' } }} />
-        ) : (
-          <RapidProLogo size="small" variant="icon-only" />
-        )}
-        {/* Collapse/Expand button */}
-        {drawerOpen ? (
-          <IconButton onClick={handleDrawerCollapse} size="small" sx={{ color: 'white', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
-            <ChevronLeftIcon />
-          </IconButton>
-        ) : (
+        <Tooltip title={drawerOpen ? 'Collapse menu' : 'Expand menu'} placement="right">
           <IconButton
             onClick={handleDrawerCollapse}
             size="small"
             sx={{
-              position: 'absolute',
-              right: -12,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              bgcolor: 'primary.main',
-              color: 'white',
-              border: '2px solid white',
-              boxShadow: 2,
-              '&:hover': { bgcolor: 'primary.dark' },
-              zIndex: 1201,
-              width: 24,
-              height: 24,
+              color: 'text.secondary',
+              '&:hover': { bgcolor: 'action.hover', color: 'primary.main' },
             }}
           >
-            <ChevronRightIcon fontSize="small" />
+            {drawerOpen ? <ChevronLeftIcon /> : <ChevronRightIcon />}
           </IconButton>
-        )}
+        </Tooltip>
       </Box>
       <List dense sx={{ py: 0.5, flexGrow: 1 }}>
         {menuItems
@@ -213,8 +188,8 @@ const Layout: React.FC = () => {
                     {item.icon}
                   </ListItemIcon>
                   {drawerOpen && (
-                    <ListItemText 
-                      primary={item.text} 
+                    <ListItemText
+                      primary={item.text}
                       primaryTypographyProps={{
                         fontWeight: location.pathname === item.path ? 600 : 400,
                         color: location.pathname === item.path ? 'primary.main' : 'text.primary',
@@ -261,33 +236,8 @@ const Layout: React.FC = () => {
             <MenuIcon />
           </IconButton>
 
-          {/* Page Title & Breadcrumb - Modern Design */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography
-              variant="h5"
-              sx={{
-                fontWeight: 700,
-                background: 'linear-gradient(135deg, #1E4687 0%, #2962B3 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                letterSpacing: '-0.5px',
-              }}
-            >
-              {getPageTitle()}
-            </Typography>
-            <Chip
-              label="Pro"
-              size="small"
-              sx={{
-                bgcolor: alpha(theme.palette.primary.main, 0.1),
-                color: 'primary.main',
-                fontWeight: 600,
-                fontSize: '0.7rem',
-                height: 22,
-                display: { xs: 'none', sm: 'flex' },
-              }}
-            />
-          </Box>
+          {/* Logo in Header */}
+          <RapidProLogo size="small" variant="full" />
 
           {/* Spacer */}
           <Box sx={{ flexGrow: 1 }} />
@@ -377,8 +327,8 @@ const Layout: React.FC = () => {
           }}
           sx={{
             display: { xs: 'block', md: 'none' },
-            '& .MuiDrawer-paper': { 
-              boxSizing: 'border-box', 
+            '& .MuiDrawer-paper': {
+              boxSizing: 'border-box',
               width: drawerWidth,
               border: 'none',
             },
