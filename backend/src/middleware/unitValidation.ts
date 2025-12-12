@@ -11,14 +11,19 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 // Cache valid units to avoid repeated database queries
-let validUnitsCache: string[] = [];
+interface UnitInfo {
+  symbol: string;
+  name: string;
+}
+let validUnitsCache: UnitInfo[] = [];
 let cacheTimestamp: number = 0;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 /**
- * Get valid unit symbols from database (with caching)
+ * Get valid units from database (with caching)
+ * Returns both symbol and name for flexible matching
  */
-async function getValidUnits(): Promise<string[]> {
+async function getValidUnits(): Promise<UnitInfo[]> {
   const now = Date.now();
 
   // Return cached value if still valid
@@ -26,35 +31,44 @@ async function getValidUnits(): Promise<string[]> {
     return validUnitsCache;
   }
 
-  // Fetch from database
+  // Fetch from database - get both symbol and name
   const units = await prisma.unit.findMany({
     where: { isActive: true },
-    select: { symbol: true }
+    select: { symbol: true, name: true }
   });
 
-  validUnitsCache = units.map(u => u.symbol);
+  validUnitsCache = units.map(u => ({ symbol: u.symbol, name: u.name }));
   cacheTimestamp = now;
 
   return validUnitsCache;
 }
 
 /**
- * Normalize a unit by trimming whitespace and finding case-insensitive match
- * Requires validUnits array to be passed in to avoid repeated async calls
+ * Normalize a unit by matching against both symbol and name
+ * Returns the symbol (canonical form) if a match is found
+ * Accepts either unit symbol (kg) or name (Kilogram)
  */
-function normalizeUnitSync(unit: string, validUnits: string[]): string | null {
+function normalizeUnitSync(unit: string, validUnits: UnitInfo[]): string | null {
   const trimmed = unit.trim();
-
-  // First try exact match
-  if (validUnits.includes(trimmed)) {
-    return trimmed;
-  }
-
-  // Try case-insensitive match
   const lowerUnit = trimmed.toLowerCase();
-  const matched = validUnits.find(u => u.toLowerCase() === lowerUnit);
 
-  return matched || null;
+  // First try exact match against symbol
+  const exactSymbol = validUnits.find(u => u.symbol === trimmed);
+  if (exactSymbol) return exactSymbol.symbol;
+
+  // Try case-insensitive match against symbol
+  const caseInsensitiveSymbol = validUnits.find(u => u.symbol.toLowerCase() === lowerUnit);
+  if (caseInsensitiveSymbol) return caseInsensitiveSymbol.symbol;
+
+  // Try exact match against name
+  const exactName = validUnits.find(u => u.name === trimmed);
+  if (exactName) return exactName.symbol;
+
+  // Try case-insensitive match against name
+  const caseInsensitiveName = validUnits.find(u => u.name.toLowerCase() === lowerUnit);
+  if (caseInsensitiveName) return caseInsensitiveName.symbol;
+
+  return null;
 }
 
 /**
@@ -74,6 +88,7 @@ export const normalizeUnitsMiddleware = async (
   try {
     // Get valid units from database ONCE
     const validUnits = await getValidUnits();
+    const validSymbols = validUnits.map(u => u.symbol);
 
     // List of fields that might contain units
     const unitFields = ['unit', 'yieldUnit', 'targetUnit'];
@@ -87,7 +102,7 @@ export const normalizeUnitsMiddleware = async (
           return res.status(400).json({
             success: false,
             error: `Invalid unit "${req.body[field]}" for field "${field}"`,
-            validUnits: validUnits,
+            validUnits: validSymbols,
             suggestion: 'Please use one of the valid unit symbols from the Units settings'
           });
         }
@@ -108,7 +123,7 @@ export const normalizeUnitsMiddleware = async (
             return res.status(400).json({
               success: false,
               error: `Invalid unit "${ingredient.unit}" for ingredient ${i + 1}`,
-              validUnits: validUnits,
+              validUnits: validSymbols,
             });
           }
 
