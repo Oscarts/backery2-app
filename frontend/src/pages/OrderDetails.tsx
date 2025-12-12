@@ -402,15 +402,6 @@ const OrderDetails: React.FC = () => {
                 >
                   Revert to Draft
                 </Button>
-                <Button
-                  variant="outlined"
-                  size="large"
-                  startIcon={<InventoryIcon />}
-                  onClick={handleCheckInventory}
-                  sx={{ flexGrow: 1, minWidth: 180 }}
-                >
-                  Check Inventory
-                </Button>
               </>
             )}
 
