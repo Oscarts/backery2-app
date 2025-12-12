@@ -150,6 +150,12 @@ export class ProductionCompletionService {
     // Create finished product from production run
     private async createFinishedProduct(productionRun: any, quantity: number, expirationDate?: Date) {
         try {
+            // Get clientId from production run FIRST (required for multi-tenant isolation)
+            const clientId = productionRun.clientId;
+            if (!clientId) {
+                throw new Error('Production run must have a clientId for tenant isolation');
+            }
+
             // Generate batch number
             const batchNumber = `BATCH-${Date.now()}`;
             const productionDate = new Date();
@@ -166,12 +172,6 @@ export class ProductionCompletionService {
             // Calculate production cost and sale price from recipe
             const productionCostCalc = await this.calculateProductionCost(productionRun);
             const salePriceCalc = await this.calculateSalePrice(productionRun.recipeId, productionCostCalc);
-
-            // Get clientId from production run (required for multi-tenant isolation)
-            const clientId = productionRun.clientId;
-            if (!clientId) {
-                throw new Error('Production run must have a clientId for tenant isolation');
-            }
 
             let finishedProduct;
             try {
