@@ -56,6 +56,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Recipe,
   Category,
+  CategoryType,
   RawMaterial,
   CreateRecipeData,
   WhatCanIMakeAnalysis,
@@ -296,13 +297,12 @@ const Recipes: React.FC = () => {
 
   // Debug log to track data
   React.useEffect(() => {
-    console.log('Current recipes:', recipes);
     console.log('All categories:', categories);
-    console.log('Recipe categories:', categories.filter(cat => cat.type === 'RECIPE'));
-  }, [recipes, categories]);
+    console.log('Recipe categories (filtered):', categories.filter(cat => cat.type === CategoryType.RECIPE));
+  }, [categories]);
 
-  // Filter categories for recipes (RECIPE type)
-  const recipeCategories = categories.filter(cat => cat.type === 'RECIPE');
+  // Filter categories for recipes (RECIPE type only)
+  const recipeCategories = categories.filter(cat => cat.type === CategoryType.RECIPE);
 
   // We're now filtering recipes directly in the UI render
 
@@ -405,19 +405,19 @@ const Recipes: React.FC = () => {
           quantity: ing.quantity,
           unit: ing.unit
         };
-        
+
         // Add the appropriate ID field based on what's present
         if (ing.rawMaterialId) {
           cleaned.rawMaterialId = ing.rawMaterialId;
         } else if (ing.finishedProductId) {
           cleaned.finishedProductId = ing.finishedProductId;
         }
-        
+
         // Add notes if present
         if (ing.notes) {
           cleaned.notes = ing.notes;
         }
-        
+
         return cleaned;
       })
     };
@@ -471,7 +471,7 @@ const Recipes: React.FC = () => {
         unit: ingredientForm.unit,
         notes: ingredientForm.notes
       };
-      
+
       // Add the appropriate ID field
       if (ingredientForm.type === 'RAW') {
         newIngredient.rawMaterialId = ingredientForm.itemId;
@@ -480,13 +480,13 @@ const Recipes: React.FC = () => {
         newIngredient.finishedProductId = ingredientForm.itemId;
         console.log('🔵 ADDING FINISHED PRODUCT - finishedProductId:', ingredientForm.itemId);
       }
-      
+
       // Store ingredientType only for UI display purposes
       newIngredient.ingredientType = ingredientForm.type;
-      
+
       console.log('✅ New ingredient object:', JSON.stringify(newIngredient, null, 2));
       console.log('✅ Object keys:', Object.keys(newIngredient));
-      
+
       setFormData(prev => ({
         ...prev,
         ingredients: [...(prev.ingredients || []), newIngredient]
@@ -810,8 +810,8 @@ const Recipes: React.FC = () => {
                         <CardHeader
                           avatar={
                             recipe.imageUrl ? (
-                              <Avatar 
-                                src={recipe.imageUrl} 
+                              <Avatar
+                                src={recipe.imageUrl}
                                 sx={{ width: 40, height: 40 }}
                                 alt={recipe.name}
                               />
@@ -1341,9 +1341,9 @@ const Recipes: React.FC = () => {
                     </Button>
                   </label>
                   {formData.imageUrl && (
-                    <Button 
-                      variant="text" 
-                      color="error" 
+                    <Button
+                      variant="text"
+                      color="error"
                       onClick={() => setFormData(prev => ({ ...prev, imageUrl: '' }))}
                       sx={{ ml: 1 }}
                     >
@@ -1353,16 +1353,16 @@ const Recipes: React.FC = () => {
                 </Box>
                 {formData.imageUrl && (
                   <Box sx={{ ml: 2 }}>
-                    <img 
-                      src={formData.imageUrl} 
-                      alt="Recipe preview" 
-                      style={{ 
-                        width: 100, 
-                        height: 100, 
-                        objectFit: 'cover', 
+                    <img
+                      src={formData.imageUrl}
+                      alt="Recipe preview"
+                      style={{
+                        width: 100,
+                        height: 100,
+                        objectFit: 'cover',
                         borderRadius: 8,
                         border: '1px solid #ddd'
-                      }} 
+                      }}
                     />
                   </Box>
                 )}
@@ -1527,7 +1527,7 @@ const Recipes: React.FC = () => {
                       fullWidth
                       label="Unit"
                       value={ingredientForm.unit}
-                      InputProps={{ 
+                      InputProps={{
                         readOnly: true,
                         style: { backgroundColor: '#f5f5f5', cursor: 'not-allowed' }
                       }}
