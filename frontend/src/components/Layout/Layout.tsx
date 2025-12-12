@@ -220,6 +220,7 @@ const Layout: React.FC = () => {
           background: 'linear-gradient(135deg, #1E4687 0%, #2962B3 100%)',
           color: 'white',
           boxShadow: '0 4px 20px rgba(30, 70, 135, 0.25)',
+          borderRadius: 0,
         }}
       >
         <Toolbar sx={{ minHeight: '64px !important' }}>
@@ -256,7 +257,7 @@ const Layout: React.FC = () => {
               cursor: 'pointer',
               bgcolor: 'rgba(255, 255, 255, 0.15)',
               backdropFilter: 'blur(10px)',
-              borderRadius: 3,
+              borderRadius: '50px',
               px: 1.5,
               py: 0.75,
               border: '1px solid rgba(255, 255, 255, 0.2)',
