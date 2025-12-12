@@ -452,18 +452,21 @@ export const createAdminUser = async (
       });
     }
 
-    // Find the Admin role for this client
+    // Find the Admin role for this client (supports both "Admin" and "Organization Admin" naming)
     const adminRole = await prisma.role.findFirst({
       where: {
         clientId,
-        name: 'Admin',
+        OR: [
+          { name: 'Admin' },
+          { name: 'Organization Admin' },
+        ],
       },
     });
 
     if (!adminRole) {
       return res.status(404).json({
         success: false,
-        error: 'Admin role not found for this client',
+        error: 'Admin role not found for this client. Please ensure the client has an "Admin" or "Organization Admin" role.',
       });
     }
 
