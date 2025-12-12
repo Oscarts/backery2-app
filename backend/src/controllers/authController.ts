@@ -17,6 +17,10 @@ export const login = async (
   try {
     const { email, password } = req.body;
 
+    // CRITICAL: Clear tenant context before login to prevent filtering by previous user's client
+    // This ensures the login query can find users from ANY client (including Super Admin in System)
+    (global as any).__currentClientId = undefined;
+
     // Structured debug log for login attempts (avoid logging passwords)
     const attemptLog = JSON.stringify({
       event: 'login_attempt',
