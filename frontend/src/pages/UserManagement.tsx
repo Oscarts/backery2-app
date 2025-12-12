@@ -38,7 +38,7 @@ import {
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usersApi, rolesApi } from '../services/realApi';
-import { AdminUser, CreateUserData, UpdateUserData, Role } from '../types';
+import { AdminUser, CreateUserData, UpdateUserData } from '../types';
 import { borderRadius } from '../theme/designTokens';
 
 const UserManagement: React.FC = () => {

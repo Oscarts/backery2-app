@@ -66,9 +66,9 @@ const createApp = (): Application => {
 
   // Public routes (no authentication required)
   app.use('/api/auth', authRoutes);
-  app.use('/api/units', unitRoutes); // Public reference data
 
   // Protected routes (require authentication and tenant isolation)
+  app.use('/api/units', authenticate, unitRoutes); // Global reference data - Super Admin only for write operations
   app.use('/api/categories', authenticate, tenantContext, categoryRoutes);
   app.use('/api/raw-materials', authenticate, tenantContext, rawMaterialRoutes);
   app.use('/api/finished-products', authenticate, tenantContext, finishedProductRoutes);

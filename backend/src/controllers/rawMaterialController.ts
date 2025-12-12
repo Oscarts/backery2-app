@@ -100,9 +100,9 @@ export const rawMaterialController = {
       });
 
       // Get unit details for all used unit symbols
+      // NOTE: Units are global (not tenant-specific) as they're standard measurement units
       const unitDetails = await prisma.unit.findMany({
         where: {
-          clientId: req.user!.clientId, // CRITICAL: Filter by tenant
           symbol: {
             in: Array.from(unitSymbols)
           }

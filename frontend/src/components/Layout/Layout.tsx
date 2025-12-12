@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet, useNavigate as useRouterNavigate } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import {
   AppBar,
   Box,
@@ -35,7 +35,6 @@ import {
   People as PeopleIcon,
   ShoppingCart as OrderIcon,
   Label as LabelIcon,
-  AccountCircle as AccountCircleIcon,
   Logout as LogoutIcon,
   Shield as ShieldIcon,
   Business as BusinessIcon,
@@ -72,6 +71,7 @@ const menuItems: MenuItem[] = [
   { text: 'Roles', icon: <ShieldIcon />, path: '/settings/roles', resource: 'roles' },
   { text: 'Role Templates', icon: <ShieldIcon />, path: '/settings/role-templates', resource: 'roles' }, // Super Admin only
   { text: 'Clients', icon: <BusinessIcon />, path: '/settings/clients', resource: 'clients' },
+  { text: 'Global Settings', icon: <SettingsIcon />, path: '/settings/global', resource: 'clients' }, // Super Admin only - platform settings
   { text: 'Settings', icon: <SettingsIcon />, path: '/settings', resource: 'settings' },
 ];
 
@@ -122,10 +122,10 @@ const Layout: React.FC = () => {
         )}
         {/* Show expand button when collapsed - positioned absolutely */}
         {!drawerOpen && (
-          <IconButton 
-            onClick={handleDrawerCollapse} 
+          <IconButton
+            onClick={handleDrawerCollapse}
             size="small"
-            sx={{ 
+            sx={{
               position: 'absolute',
               right: -12,
               top: '50%',
@@ -149,12 +149,12 @@ const Layout: React.FC = () => {
           .filter((item) => {
             // If no resource is specified, show the item to everyone
             if (!item.resource) return true;
-            
+
             // Roles and Role Templates pages are only for Super Admin
             if (item.path === '/settings/roles' || item.path === '/settings/role-templates') {
               return user?.client?.slug === 'system';
             }
-            
+
             // Check if user has permission to view this resource
             return hasPermission(item.resource, item.action || 'view');
           })
@@ -169,13 +169,13 @@ const Layout: React.FC = () => {
                       setMobileOpen(false);
                     }
                   }}
-                  sx={{ 
+                  sx={{
                     px: drawerOpen ? 2 : 1.5,
                     py: 1,
                     justifyContent: drawerOpen ? 'flex-start' : 'center',
                   }}
                 >
-                  <ListItemIcon sx={{ 
+                  <ListItemIcon sx={{
                     minWidth: drawerOpen ? 40 : 'auto',
                     justifyContent: 'center',
                   }}>
@@ -219,17 +219,17 @@ const Layout: React.FC = () => {
           >
             <MenuIcon />
           </IconButton>
-          <RapidProLogo 
-            size="medium" 
+          <RapidProLogo
+            size="medium"
             variant="full"
             sx={{ display: { xs: 'none', sm: 'flex' } }}
           />
-          <RapidProLogo 
-            size="small" 
+          <RapidProLogo
+            size="small"
             variant="icon-only"
             sx={{ display: { xs: 'flex', sm: 'none' } }}
           />
-          
+
           {/* User Menu */}
           <Box sx={{ flexGrow: 1 }} />
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

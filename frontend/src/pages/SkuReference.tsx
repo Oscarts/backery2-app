@@ -42,19 +42,19 @@ const SkuReference: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch SKU mappings
-  const { data, isLoading, refetch } = useQuery<SkuMapping[]>(
-    ['skuMappings'],
-    async () => {
+  const { data, isLoading, refetch } = useQuery<SkuMapping[]>({
+    queryKey: ['skuMappings'],
+    queryFn: async () => {
       const response = await rawMaterialsApi.getSkuMappings();
-      return response.data;
+      return response.data || [];
     }
-  );
+  });
 
-  const mappings = data || [];
+  const mappings: SkuMapping[] = data || [];
 
   // Filter mappings based on search
   const filteredMappings = mappings.filter(
-    (mapping) =>
+    (mapping: SkuMapping) =>
       mapping.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       mapping.sku.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -71,10 +71,10 @@ const SkuReference: React.FC = () => {
   const handleExport = () => {
     // Convert to CSV
     const headers = ['Name', 'SKU', 'Source'];
-    const rows = filteredMappings.map((m) => [m.name, m.sku, m.source]);
+    const rows = filteredMappings.map((m: SkuMapping) => [m.name, m.sku, m.source]);
     const csv = [
       headers.join(','),
-      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
+      ...rows.map((row: string[]) => row.map((cell: string) => `"${cell}"`).join(',')),
     ].join('\n');
 
     // Download
@@ -171,7 +171,7 @@ const SkuReference: React.FC = () => {
                 <TableBody>
                   {filteredMappings
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((mapping, index) => {
+                    .map((mapping: SkuMapping, index: number) => {
                       const sourceInfo = getSourceLabel(mapping.source);
                       return (
                         <TableRow key={`${mapping.sku}-${index}`} hover>

@@ -34,7 +34,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { unitsApi } from '../../services/realApi';
 import { Unit } from '../../types';
 
-const UnitsManagement: React.FC = () => {
+interface UnitsManagementProps {
+  readOnly?: boolean;
+}
+
+const UnitsManagement: React.FC<UnitsManagementProps> = ({ readOnly: _readOnly = false }) => {
   const [openForm, setOpenForm] = useState(false);
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({

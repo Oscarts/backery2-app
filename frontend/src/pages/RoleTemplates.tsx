@@ -44,7 +44,7 @@ const RoleTemplates: React.FC = () => {
     setDetailsOpen(true);
   };
 
-  const handleEditTemplate = (template: Role) => {
+  const handleEditTemplate = (_template: Role) => {
     // Navigate to the regular roles page which has full edit functionality
     navigate('/settings/roles');
   };

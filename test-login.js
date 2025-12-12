@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 async function testLogin() {
   try {
     const user = await prisma.user.findUnique({
-      where: { email: 'admin@abcbakery.com' },
+      where: { email: 'oscar@test.com' },
       include: {
         client: true
       }
@@ -19,10 +19,10 @@ async function testLogin() {
       console.log('Client active:', user.client.isActive);
       console.log('Password hash exists:', !!user.passwordHash);
       console.log('Hash starts with:', user.passwordHash.substring(0, 7));
-      
+
       const isValid = await bcrypt.compare('password123', user.passwordHash);
       console.log('\nPassword "password123" is valid:', isValid);
-      
+
       if (!isValid) {
         // Try testing the hash directly
         const testHash = await bcrypt.hash('password123', 10);

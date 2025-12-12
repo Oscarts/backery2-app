@@ -50,9 +50,8 @@ import {
   Insights as IngredientsIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import RefreshIcon from '@mui/icons-material/Refresh';
 import { finishedProductsApi, categoriesApi, storageLocationsApi, unitsApi, qualityStatusApi } from '../services/realApi';
-import { FinishedProduct, CategoryType, CreateFinishedProductData, UpdateFinishedProductData, ProductStatus, MaterialBreakdown, MaterialAllocation, ApiResponse } from '../types';
+import { FinishedProduct, CategoryType, UpdateFinishedProductData, ProductStatus } from '../types';
 import { formatDate, isExpired, isExpiringSoon, getDaysUntilExpiration, formatCurrency, getErrorMessage } from '../utils/api';
 import { borderRadius } from '../theme/designTokens';
 import EnhancedFinishedProductForm from '../components/EnhancedFinishedProductForm';
@@ -152,24 +151,10 @@ const FinishedProducts: React.FC = () => {
   const { data: unitsResponse } = useQuery(['units'], unitsApi.getAll);
   const { data: qualityStatusResponse } = useQuery(['qualityStatuses'], qualityStatusApi.getAll);
 
-  // Fetch material breakdown for selected product
-  const { data: materialBreakdownResponse, isLoading: materialLoading, error: materialError } = useQuery<ApiResponse<MaterialBreakdown> | null, Error>(
-    ['materialBreakdown', selectedProductId],
-    () => selectedProductId ? finishedProductsApi.getMaterialBreakdown(selectedProductId) : Promise.resolve(null),
-    { enabled: !!selectedProductId, retry: false }
-  );
-
   const categories = categoriesResponse?.data?.filter(c => c.type === CategoryType.FINISHED_PRODUCT);
   const storageLocations = storageLocationsResponse?.data;
   const units = unitsResponse?.data;
   const qualityStatuses = (qualityStatusResponse?.data as any[]) || [];
-
-  // Get default quality status (first in list)
-  const getDefaultQualityStatusId = () => {
-    return qualityStatuses.length > 0 ? qualityStatuses[0].id : '';
-  };
-
-  // Get default quality status (first in list)
 
   // Mutations
   const createMutation = useMutation(finishedProductsApi.create, {

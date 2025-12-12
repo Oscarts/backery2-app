@@ -84,6 +84,8 @@ const mockMaterialBreakdown: MaterialBreakdown = {
     totalMaterialCost: 5.50,
     totalProductionCost: 6.60,
     costPerUnit: 3.30,
+    overheadPercentage: 20,
+    overheadCost: 1.10,
   },
 };
 

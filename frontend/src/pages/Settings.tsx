@@ -41,13 +41,11 @@ import {
     Category as CategoryIcon,
     LocalShipping as SupplierIcon,
     Warehouse as StorageIcon,
-    Straighten as UnitsIcon,
     CheckCircle as QualityIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { categoriesApi, suppliersApi, storageLocationsApi } from '../services/realApi';
 import { Category, CategoryType, Supplier, StorageLocation } from '../types';
-import UnitsManagement from '../components/Settings/UnitsManagement';
 import QualityStatusManagement from '../components/Settings/QualityStatusManagement';
 
 interface SettingsSectionProps {
@@ -618,7 +616,7 @@ const Settings: React.FC = () => {
                     </Typography>
                 </Box>
                 <Typography variant="body1" color="text.secondary">
-                    Manage system settings including categories, suppliers, storage locations, units, and quality status.
+                    Manage your bakery's settings including categories, suppliers, storage locations, and quality status.
                 </Typography>
             </Box>
 
@@ -671,33 +669,6 @@ const Settings: React.FC = () => {
             >
                 {renderStorageLocationsTable()}
             </SettingsSection>
-
-            {/* Units Section */}
-            <Accordion sx={{ mb: 2, borderRadius: 2, '&:before': { display: 'none' } }} elevation={2}>
-                <AccordionSummary
-                    expandIcon={<ExpandMoreIcon />}
-                    sx={{
-                        bgcolor: 'primary.50',
-                        '&:hover': { bgcolor: 'primary.100' },
-                        borderRadius: 2,
-                    }}
-                >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <UnitsIcon color="primary" />
-                        <Box>
-                            <Typography variant="h6" fontWeight="medium">
-                                Units of Measurement
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                                Manage units for ingredients and products
-                            </Typography>
-                        </Box>
-                    </Box>
-                </AccordionSummary>
-                <AccordionDetails>
-                    <UnitsManagement />
-                </AccordionDetails>
-            </Accordion>
 
             {/* Quality Status Section */}
             <Accordion sx={{ mb: 2, borderRadius: 2, '&:before': { display: 'none' } }} elevation={2}>

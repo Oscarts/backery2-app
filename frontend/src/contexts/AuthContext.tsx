@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { apiPost, apiGet } from '../utils/api';
+import { apiPost } from '../utils/api';
 
 // Types
 export interface Permission {

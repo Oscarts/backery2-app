@@ -17,20 +17,20 @@ const prisma = new PrismaClient();
 async function createMissingTemplates() {
     console.log('🎨 CREATING MISSING ROLE TEMPLATES');
     console.log('='.repeat(60));
-    
+
     try {
         // Get System client
         const systemClient = await prisma.client.findFirst({
             where: { slug: 'system' }
         });
-        
+
         if (!systemClient) {
             console.log('❌ System client not found');
             return;
         }
-        
+
         console.log(`✅ Found System client: ${systemClient.name}`);
-        
+
         // Define template roles with their permissions
         const roleTemplates = [
             {
@@ -160,13 +160,13 @@ async function createMissingTemplates() {
                 ],
             },
         ];
-        
+
         console.log(`\n📋 Processing ${roleTemplates.length} role templates...\n`);
-        
+
         let created = 0;
         let updated = 0;
         let skipped = 0;
-        
+
         for (const template of roleTemplates) {
             // Check if template already exists
             const existingRole = await prisma.role.findFirst({
@@ -178,13 +178,13 @@ async function createMissingTemplates() {
                     permissions: true
                 }
             });
-            
+
             if (existingRole && existingRole.permissions.length === template.permissions.length) {
                 console.log(`⏭️  ${template.name}: Already exists with ${template.permissions.length} permissions`);
                 skipped++;
                 continue;
             }
-            
+
             // Create or update role
             let role;
             if (existingRole) {
@@ -205,7 +205,7 @@ async function createMissingTemplates() {
                 });
                 console.log(`✨ ${template.name}: Creating...`);
             }
-            
+
             // Create/find permissions and assign to role
             for (const perm of template.permissions) {
                 let permission = await prisma.permission.findFirst({
@@ -214,7 +214,7 @@ async function createMissingTemplates() {
                         action: perm.action
                     }
                 });
-                
+
                 if (!permission) {
                     permission = await prisma.permission.create({
                         data: {
@@ -224,7 +224,7 @@ async function createMissingTemplates() {
                         }
                     });
                 }
-                
+
                 await prisma.rolePermission.create({
                     data: {
                         roleId: role.id,
@@ -232,7 +232,7 @@ async function createMissingTemplates() {
                     }
                 });
             }
-            
+
             if (existingRole) {
                 updated++;
                 console.log(`   ✅ Updated with ${template.permissions.length} permissions`);
@@ -241,13 +241,13 @@ async function createMissingTemplates() {
                 console.log(`   ✅ Created with ${template.permissions.length} permissions`);
             }
         }
-        
+
         console.log('\n' + '='.repeat(60));
         console.log('📊 SUMMARY:');
         console.log(`   ✨ Created: ${created} templates`);
         console.log(`   🔄 Updated: ${updated} templates`);
         console.log(`   ⏭️  Skipped: ${skipped} templates (already correct)`);
-        
+
         // Show final state
         const allTemplates = await prisma.role.findMany({
             where: {
@@ -259,16 +259,16 @@ async function createMissingTemplates() {
             },
             orderBy: { name: 'asc' }
         });
-        
+
         console.log('\n✅ ROLE TEMPLATES IN SYSTEM CLIENT:');
         console.log('='.repeat(60));
         allTemplates.forEach(role => {
             console.log(`   ${role.name}: ${role.permissions.length} permissions`);
         });
-        
+
         console.log('\n💡 These templates will be automatically copied to new clients.');
         console.log('💡 Existing clients are not affected - they keep their current roles.');
-        
+
     } catch (error) {
         console.error('❌ Error:', error);
         throw error;
