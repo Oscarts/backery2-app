@@ -136,15 +136,7 @@ export async function getAllSkuMappings(clientId: string): Promise<Array<{ name:
   const combined: Array<{ name: string; sku: string; source: string }> = [];
   const seenNames = new Set<string>();
 
-  // Priority: SkuMapping table first
-  skuMappings.forEach((item: { name: string; sku: string; category: string | null }) => {
-    if (!seenNames.has(item.name)) {
-      combined.push({ name: item.name, sku: item.sku, source: 'mapping' });
-      seenNames.add(item.name);
-    }
-  });
-
-  // Then finished products
+  // Priority: Finished products first (more stable SKUs)
   finishedProducts.forEach((item) => {
     if (item.sku && !seenNames.has(item.name)) {
       combined.push({ name: item.name, sku: item.sku, source: 'finished_product' });
@@ -152,7 +144,7 @@ export async function getAllSkuMappings(clientId: string): Promise<Array<{ name:
     }
   });
 
-  // Finally raw materials
+  // Then raw materials
   rawMaterials.forEach((item) => {
     if (item.sku && !seenNames.has(item.name)) {
       combined.push({ name: item.name, sku: item.sku, source: 'raw_material' });
