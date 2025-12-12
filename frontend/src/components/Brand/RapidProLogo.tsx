@@ -156,7 +156,7 @@ const RapidProLogo: React.FC<RapidProLogoProps> = ({
             fontStyle: 'italic',
           }}
         >
-          Productividad en tiempo real
+          Smart Production Hub
         </Typography>
       </Box>
     );
@@ -194,10 +194,9 @@ const RapidProLogo: React.FC<RapidProLogoProps> = ({
             fontWeight: 500,
             letterSpacing: '0.5px',
             mt: -0.5,
-            fontStyle: 'italic',
           }}
         >
-          Gestión de Producción
+          Smart Production Hub
         </Typography>
       </Box>
     </Box>

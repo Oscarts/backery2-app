@@ -20,6 +20,8 @@ import {
   MenuItem,
   Avatar,
   Typography,
+  Chip,
+  alpha,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -107,21 +109,37 @@ const Layout: React.FC = () => {
     setDrawerOpen(!drawerOpen);
   };
 
+  // Get current page title based on path
+  const getPageTitle = () => {
+    const currentItem = menuItems.find(item => item.path === location.pathname);
+    return currentItem?.text || 'Dashboard';
+  };
+
   const drawer = (
-    <div>
-      <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, minHeight: '64px' }}>
-        {/* Always show just the icon in the sidebar */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexGrow: drawerOpen ? 0 : 1 }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: 'background.paper' }}>
+      {/* Logo Section - Modern gradient background */}
+      <Box
+        sx={{
+          background: 'linear-gradient(135deg, #1E4687 0%, #2962B3 100%)',
+          p: drawerOpen ? 2 : 1.5,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: drawerOpen ? 'space-between' : 'center',
+          minHeight: '64px',
+          position: 'relative',
+        }}
+      >
+        {drawerOpen ? (
+          <RapidProLogo size="small" variant="full" sx={{ '& .MuiTypography-root': { color: 'white !important' }, '& .MuiTypography-caption': { color: 'rgba(255,255,255,0.8) !important' } }} />
+        ) : (
           <RapidProLogo size="small" variant="icon-only" />
-        </Box>
-        {/* Show collapse button only when drawer is open */}
-        {drawerOpen && (
-          <IconButton onClick={handleDrawerCollapse} size="small">
+        )}
+        {/* Collapse/Expand button */}
+        {drawerOpen ? (
+          <IconButton onClick={handleDrawerCollapse} size="small" sx={{ color: 'white', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
             <ChevronLeftIcon />
           </IconButton>
-        )}
-        {/* Show expand button when collapsed - positioned absolutely */}
-        {!drawerOpen && (
+        ) : (
           <IconButton
             onClick={handleDrawerCollapse}
             size="small"
@@ -130,21 +148,21 @@ const Layout: React.FC = () => {
               right: -12,
               top: '50%',
               transform: 'translateY(-50%)',
-              bgcolor: 'background.paper',
-              border: 1,
-              borderColor: 'divider',
-              '&:hover': {
-                bgcolor: 'action.hover',
-              },
+              bgcolor: 'primary.main',
+              color: 'white',
+              border: '2px solid white',
+              boxShadow: 2,
+              '&:hover': { bgcolor: 'primary.dark' },
               zIndex: 1201,
+              width: 24,
+              height: 24,
             }}
           >
             <ChevronRightIcon fontSize="small" />
           </IconButton>
         )}
-      </Toolbar>
-      <Divider />
-      <List dense sx={{ py: 0.5 }}>
+      </Box>
+      <List dense sx={{ py: 0.5, flexGrow: 1 }}>
         {menuItems
           .filter((item) => {
             // If no resource is specified, show the item to everyone
@@ -173,25 +191,46 @@ const Layout: React.FC = () => {
                     px: drawerOpen ? 2 : 1.5,
                     py: 1,
                     justifyContent: drawerOpen ? 'flex-start' : 'center',
+                    borderRadius: drawerOpen ? 1 : 0,
+                    mx: drawerOpen ? 1 : 0,
+                    '&.Mui-selected': {
+                      bgcolor: alpha(theme.palette.primary.main, 0.08),
+                      borderLeft: drawerOpen ? 'none' : `3px solid ${theme.palette.primary.main}`,
+                      '&:hover': {
+                        bgcolor: alpha(theme.palette.primary.main, 0.12),
+                      },
+                    },
+                    '&:hover': {
+                      bgcolor: alpha(theme.palette.primary.main, 0.04),
+                    },
                   }}
                 >
                   <ListItemIcon sx={{
                     minWidth: drawerOpen ? 40 : 'auto',
                     justifyContent: 'center',
+                    color: location.pathname === item.path ? 'primary.main' : 'text.secondary',
                   }}>
                     {item.icon}
                   </ListItemIcon>
-                  {drawerOpen && <ListItemText primary={item.text} />}
+                  {drawerOpen && (
+                    <ListItemText 
+                      primary={item.text} 
+                      primaryTypographyProps={{
+                        fontWeight: location.pathname === item.path ? 600 : 400,
+                        color: location.pathname === item.path ? 'primary.main' : 'text.primary',
+                      }}
+                    />
+                  )}
                 </ListItemButton>
               </Tooltip>
             </ListItem>
           ))}
       </List>
-    </div>
+    </Box>
   );
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#f8fafc' }}>
       <CssBaseline />
       <AppBar
         position="fixed"
@@ -203,13 +242,15 @@ const Layout: React.FC = () => {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.enteringScreen,
           }),
-          background: 'white',
+          background: 'rgba(255, 255, 255, 0.8)',
+          backdropFilter: 'blur(10px)',
           color: 'text.primary',
           borderBottom: '1px solid',
-          borderColor: 'divider',
+          borderColor: alpha(theme.palette.divider, 0.08),
         }}
       >
-        <Toolbar>
+        <Toolbar sx={{ minHeight: '64px !important' }}>
+          {/* Mobile menu button */}
           <IconButton
             color="inherit"
             aria-label="open drawer"
@@ -219,25 +260,55 @@ const Layout: React.FC = () => {
           >
             <MenuIcon />
           </IconButton>
-          <RapidProLogo
-            size="medium"
-            variant="full"
-            sx={{ display: { xs: 'none', sm: 'flex' } }}
-          />
-          <RapidProLogo
-            size="small"
-            variant="icon-only"
-            sx={{ display: { xs: 'flex', sm: 'none' } }}
-          />
 
-          {/* User Menu */}
-          <Box sx={{ flexGrow: 1 }} />
+          {/* Page Title & Breadcrumb - Modern Design */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #1E4687 0%, #2962B3 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                letterSpacing: '-0.5px',
+              }}
+            >
+              {getPageTitle()}
+            </Typography>
+            <Chip
+              label="Pro"
+              size="small"
+              sx={{
+                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                color: 'primary.main',
+                fontWeight: 600,
+                fontSize: '0.7rem',
+                height: 22,
+                display: { xs: 'none', sm: 'flex' },
+              }}
+            />
+          </Box>
+
+          {/* Spacer */}
+          <Box sx={{ flexGrow: 1 }} />
+
+          {/* User Section - Modern Card Style */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box
+              sx={{
+                display: { xs: 'none', sm: 'flex' },
+                flexDirection: 'column',
+                alignItems: 'flex-end',
+                px: 2,
+                py: 0.5,
+                borderRadius: 2,
+                bgcolor: alpha(theme.palette.primary.main, 0.04),
+              }}
+            >
+              <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', lineHeight: 1.3 }}>
                 {user?.firstName} {user?.lastName}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography variant="caption" sx={{ color: 'text.secondary', lineHeight: 1.2 }}>
                 {user?.client.name}
               </Typography>
             </Box>
@@ -306,7 +377,11 @@ const Layout: React.FC = () => {
           }}
           sx={{
             display: { xs: 'block', md: 'none' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+            '& .MuiDrawer-paper': { 
+              boxSizing: 'border-box', 
+              width: drawerWidth,
+              border: 'none',
+            },
           }}
         >
           {drawer}
@@ -322,6 +397,8 @@ const Layout: React.FC = () => {
                 easing: theme.transitions.easing.sharp,
                 duration: theme.transitions.duration.enteringScreen,
               }),
+              border: 'none',
+              boxShadow: '4px 0 24px rgba(0, 0, 0, 0.04)',
             },
           }}
           open
@@ -333,7 +410,7 @@ const Layout: React.FC = () => {
         component="main"
         sx={{
           flexGrow: 1,
-          p: { xs: 2, sm: 2.5 },  // Reduced padding from 3
+          p: { xs: 2, sm: 3 },
           width: {
             xs: '100%',
             md: `calc(100% - ${drawerOpen ? drawerWidth : drawerCollapsedWidth}px)`
@@ -342,6 +419,8 @@ const Layout: React.FC = () => {
             easing: theme.transitions.easing.easeOut,
             duration: theme.transitions.duration.enteringScreen,
           }),
+          bgcolor: '#f8fafc',
+          minHeight: '100vh',
         }}
       >
         <Toolbar />

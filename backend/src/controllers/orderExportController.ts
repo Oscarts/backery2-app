@@ -7,9 +7,9 @@ import * as orderExportService from '../services/orderExportService';
 export const exportOrderPDF = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    
+
     const pdfBuffer = await orderExportService.generateOrderPDF(id);
-    
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=order-${id}.pdf`);
     res.send(pdfBuffer);
@@ -28,9 +28,9 @@ export const exportOrderPDF = async (req: Request, res: Response): Promise<void>
 export const exportOrderExcel = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
-    
+
     const excelBuffer = await orderExportService.generateOrderExcel(id);
-    
+
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename=order-${id}.xlsx`);
     res.send(excelBuffer);
@@ -49,9 +49,9 @@ export const exportOrderExcel = async (req: Request, res: Response): Promise<voi
 export const exportBulkExcel = async (req: Request, res: Response): Promise<void> => {
   try {
     const filters = req.body;
-    
+
     const excelBuffer = await orderExportService.generateBulkExcel(filters);
-    
+
     const timestamp = new Date().toISOString().split('T')[0];
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename=orders-export-${timestamp}.xlsx`);
@@ -74,13 +74,13 @@ export const exportOrderWord = async (req: Request, res: Response): Promise<void
   try {
     const { id } = req.params;
     const language = (req.query.lang as string) || 'fr';
-    
+
     // Validate language
     const supportedLanguages = ['fr', 'en', 'es'];
     const lang = supportedLanguages.includes(language) ? language : 'fr';
-    
+
     const wordBuffer = await orderExportService.generateOrderWord(id, lang as 'fr' | 'en' | 'es');
-    
+
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.setHeader('Content-Disposition', `attachment; filename=order-${id}.docx`);
     res.send(wordBuffer);

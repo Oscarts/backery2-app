@@ -211,15 +211,15 @@ export const generateOrderExcel = async (orderId: string): Promise<Buffer> => {
 export const generateBulkExcel = async (filters: OrderExportFilters): Promise<Buffer> => {
   // Build query
   const where: any = {};
-  
+
   if (filters.status) {
     where.status = filters.status;
   }
-  
+
   if (filters.customerId) {
     where.customerId = filters.customerId;
   }
-  
+
   if (filters.startDate || filters.endDate) {
     where.expectedDeliveryDate = {};
     if (filters.startDate) {
@@ -413,7 +413,7 @@ const translations = {
  */
 export const generateOrderWord = async (orderId: string, language: 'fr' | 'en' | 'es' = 'fr'): Promise<Buffer> => {
   const t = translations[language];
-  
+
   // Fetch order with all related data
   const order = await prisma.customerOrder.findUnique({
     where: { id: orderId },
@@ -494,29 +494,29 @@ export const generateOrderWord = async (orderId: string, language: 'fr' | 'en' |
 
           ...(order.customer.address
             ? [
-                new Paragraph({
-                  text: order.customer.address,
-                  spacing: { after: 100 },
-                }),
-              ]
+              new Paragraph({
+                text: order.customer.address,
+                spacing: { after: 100 },
+              }),
+            ]
             : []),
 
           ...(order.customer.email
             ? [
-                new Paragraph({
-                  text: `${t.email}: ${order.customer.email}`,
-                  spacing: { after: 100 },
-                }),
-              ]
+              new Paragraph({
+                text: `${t.email}: ${order.customer.email}`,
+                spacing: { after: 100 },
+              }),
+            ]
             : []),
 
           ...(order.customer.phone
             ? [
-                new Paragraph({
-                  text: `${t.phone}: ${order.customer.phone}`,
-                  spacing: { after: 400 },
-                }),
-              ]
+              new Paragraph({
+                text: `${t.phone}: ${order.customer.phone}`,
+                spacing: { after: 400 },
+              }),
+            ]
             : []),
 
           // Items Table Header
@@ -670,16 +670,16 @@ export const generateOrderWord = async (orderId: string, language: 'fr' | 'en' |
           // Notes Section (if any)
           ...(order.notes
             ? [
-                new Paragraph({
-                  text: t.notes,
-                  heading: HeadingLevel.HEADING_2,
-                  spacing: { before: 400, after: 200 },
-                }),
-                new Paragraph({
-                  text: order.notes,
-                  spacing: { after: 400 },
-                }),
-              ]
+              new Paragraph({
+                text: t.notes,
+                heading: HeadingLevel.HEADING_2,
+                spacing: { before: 400, after: 200 },
+              }),
+              new Paragraph({
+                text: order.notes,
+                spacing: { after: 400 },
+              }),
+            ]
             : []),
 
           // Payment Terms and Conditions

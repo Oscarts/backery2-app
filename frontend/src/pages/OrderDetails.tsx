@@ -347,10 +347,10 @@ const OrderDetails: React.FC = () => {
 
       {/* Quick Actions - Prominent placement at top */}
       {order.status !== OrderStatus.FULFILLED && (
-        <Paper 
-          sx={{ 
-            p: 3, 
-            mb: 3, 
+        <Paper
+          sx={{
+            p: 3,
+            mb: 3,
             bgcolor: 'primary.50',
             border: '1px solid',
             borderColor: 'primary.main'

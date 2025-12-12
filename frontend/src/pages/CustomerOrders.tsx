@@ -228,7 +228,7 @@ const CustomerOrders: React.FC = () => {
     setExportDialogOpen(false);
     try {
       const blob = await customerOrdersApi.exportWord(orderToExport.id, language);
-      
+
       // Create download link
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -239,7 +239,7 @@ const CustomerOrders: React.FC = () => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      
+
       showSnackbar('Export successful', 'success');
       setOrderToExport(null);
     } catch (error) {
@@ -269,8 +269,8 @@ const CustomerOrders: React.FC = () => {
   const fulfilledOrders = orders.filter(o => o.status === OrderStatus.FULFILLED).length;
 
   // Apply status filter
-  const filteredOrders = statusFilter === 'all' 
-    ? orders 
+  const filteredOrders = statusFilter === 'all'
+    ? orders
     : orders.filter(o => o.status === statusFilter);
 
   const paginatedOrders = filteredOrders.slice(
@@ -320,7 +320,7 @@ const CustomerOrders: React.FC = () => {
         gap={2}
       >
         <Box>
-          <Typography 
+          <Typography
             variant={isMobile ? "h4" : "h3"}
             sx={{
               fontWeight: 'bold',
@@ -721,97 +721,97 @@ const CustomerOrders: React.FC = () => {
         <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
           <TableContainer>
             <Table size="small" sx={{ '& .MuiTableCell-root': { px: 2, py: 1.5 } }}>
-          <TableHead>
-            <TableRow>
-              <TableCell>Order Number</TableCell>
-              <TableCell>Customer</TableCell>
-              <TableCell>Delivery Date</TableCell>
-              <TableCell align="center">Status</TableCell>
-              <TableCell align="right">Total Price</TableCell>
-              <TableCell align="center">Items</TableCell>
-              <TableCell align="right">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center">
-                  Loading orders...
-                </TableCell>
-              </TableRow>
-            ) : paginatedOrders.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center">
-                  No orders found
-                </TableCell>
-              </TableRow>
-            ) : (
-              paginatedOrders.map((order) => (
-                <TableRow 
-                  key={order.id} 
-                  hover
-                  onClick={() => handleViewOrder(order.id)}
-                  sx={{ cursor: 'pointer' }}
-                >
-                  <TableCell>
-                    <Typography variant="body2" fontWeight="medium">
-                      {order.orderNumber}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    {order.customer?.name || 'Unknown Customer'}
-                  </TableCell>
-                  <TableCell>
-                    {formatDate(order.expectedDeliveryDate)}
-                  </TableCell>
-                  <TableCell align="center">
-                    <Chip
-                      label={order.status}
-                      color={getStatusColor(order.status)}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell align="right">
-                    ${order.totalPrice?.toFixed(2) || '0.00'}
-                  </TableCell>
-                  <TableCell align="center">
-                    <Chip
-                      label={order.items?.length || 0}
-                      variant="outlined"
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell align="right">
-                    <IconButton
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleMenuOpen(e, order);
-                      }}
-                    >
-                      <MoreVertIcon />
-                    </IconButton>
-                  </TableCell>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Order Number</TableCell>
+                  <TableCell>Customer</TableCell>
+                  <TableCell>Delivery Date</TableCell>
+                  <TableCell align="center">Status</TableCell>
+                  <TableCell align="right">Total Price</TableCell>
+                  <TableCell align="center">Items</TableCell>
+                  <TableCell align="right">Actions</TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-      <TablePagination
-        component="div"
-        count={filteredOrders.length}
-        page={page}
-        onPageChange={(_, newPage) => setPage(newPage)}
-        rowsPerPage={rowsPerPage}
-        onRowsPerPageChange={(e) => {
-          setRowsPerPage(parseInt(e.target.value, 10));
-          setPage(0);
-        }}
-        labelRowsPerPage={isMobile ? "Items:" : "Items per page:"}
-        sx={{ px: 2 }}
-      />
-    </Paper>
+              </TableHead>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center">
+                      Loading orders...
+                    </TableCell>
+                  </TableRow>
+                ) : paginatedOrders.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center">
+                      No orders found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  paginatedOrders.map((order) => (
+                    <TableRow
+                      key={order.id}
+                      hover
+                      onClick={() => handleViewOrder(order.id)}
+                      sx={{ cursor: 'pointer' }}
+                    >
+                      <TableCell>
+                        <Typography variant="body2" fontWeight="medium">
+                          {order.orderNumber}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        {order.customer?.name || 'Unknown Customer'}
+                      </TableCell>
+                      <TableCell>
+                        {formatDate(order.expectedDeliveryDate)}
+                      </TableCell>
+                      <TableCell align="center">
+                        <Chip
+                          label={order.status}
+                          color={getStatusColor(order.status)}
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        ${order.totalPrice?.toFixed(2) || '0.00'}
+                      </TableCell>
+                      <TableCell align="center">
+                        <Chip
+                          label={order.items?.length || 0}
+                          variant="outlined"
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMenuOpen(e, order);
+                          }}
+                        >
+                          <MoreVertIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <TablePagination
+            component="div"
+            count={filteredOrders.length}
+            page={page}
+            onPageChange={(_, newPage) => setPage(newPage)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPage(parseInt(e.target.value, 10));
+              setPage(0);
+            }}
+            labelRowsPerPage={isMobile ? "Items:" : "Items per page:"}
+            sx={{ px: 2 }}
+          />
+        </Paper>
       )}
 
       {/* Card View */}
@@ -835,7 +835,7 @@ const CustomerOrders: React.FC = () => {
                 >
                   <CardHeader
                     avatar={
-                      <Avatar 
+                      <Avatar
                         sx={{ bgcolor: getAvatarColor(order.customer?.name || 'Unknown'), width: 40, height: 40 }}
                       >
                         {getCustomerInitials(order.customer?.name || 'UK')}
@@ -907,9 +907,9 @@ const CustomerOrders: React.FC = () => {
                           <Typography variant="subtitle2" color="text.secondary">
                             Notes
                           </Typography>
-                          <Typography 
-                            variant="body2" 
-                            sx={{ 
+                          <Typography
+                            variant="body2"
+                            sx={{
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
                               display: '-webkit-box',
