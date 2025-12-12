@@ -15,19 +15,19 @@ const RapidProLogo: React.FC<RapidProLogoProps> = ({
   const sizes = {
     small: {
       icon: '2rem',
-      iconSize: 32,
-      title: '1.25rem',
-      subtitle: '0.7rem',
+      iconSize: 40,
+      title: '1.15rem',
+      subtitle: '0.65rem',
     },
     medium: {
       icon: '2.5rem',
-      iconSize: 40,
-      title: '1.75rem',
-      subtitle: '0.8rem',
+      iconSize: 48,
+      title: '1.5rem',
+      subtitle: '0.75rem',
     },
     large: {
       icon: '3rem',
-      iconSize: 48,
+      iconSize: 56,
       title: '2rem',
       subtitle: '0.875rem',
     },
@@ -35,8 +35,8 @@ const RapidProLogo: React.FC<RapidProLogoProps> = ({
 
   const currentSize = sizes[size];
 
-  // SVG Logo Icon - Modern and Dynamic
-  // Concept: Clock with ascending arrow representing "Productividad en tiempo real"
+  // SVG Logo Icon - Designed for blue background
+  // White hexagon with orange accents for visibility
   const LogoIcon = ({ size: iconSize }: { size: number }) => (
     <svg
       width={iconSize}
@@ -45,71 +45,75 @@ const RapidProLogo: React.FC<RapidProLogoProps> = ({
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Dynamic Hexagonal background with gradient */}
       <defs>
-        <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style={{ stopColor: '#1E4687', stopOpacity: 1 }} />
-          <stop offset="100%" style={{ stopColor: '#2962B3', stopOpacity: 1 }} />
+        <linearGradient id="whiteBg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style={{ stopColor: '#FFFFFF', stopOpacity: 1 }} />
+          <stop offset="100%" style={{ stopColor: '#F0F4F8', stopOpacity: 1 }} />
         </linearGradient>
-        <linearGradient id="accentGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="orangeAccent" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" style={{ stopColor: '#FF6B35', stopOpacity: 1 }} />
           <stop offset="100%" style={{ stopColor: '#FF8A5C', stopOpacity: 1 }} />
         </linearGradient>
+        <linearGradient id="blueAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style={{ stopColor: '#1E4687', stopOpacity: 1 }} />
+          <stop offset="100%" style={{ stopColor: '#2962B3', stopOpacity: 1 }} />
+        </linearGradient>
+        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#000" floodOpacity="0.15"/>
+        </filter>
       </defs>
 
-      {/* Hexagonal background - represents structure and organization */}
+      {/* White hexagonal background with subtle shadow */}
       <path
         d="M50 5L86.6 27.5V72.5L50 95L13.4 72.5V27.5L50 5Z"
-        fill="url(#bgGradient)"
+        fill="url(#whiteBg)"
+        filter="url(#shadow)"
       />
 
-      {/* Clock circle outline - subtle */}
-      <circle
-        cx="50"
-        cy="50"
-        r="22"
-        stroke="#5A88C4"
-        strokeWidth="1.5"
-        fill="none"
-        opacity="0.4"
-      />
-
-      {/* Clock arc - representing time and speed */}
+      {/* Inner hexagon border - blue accent */}
       <path
-        d="M50 28C38.95 28 30 36.95 30 48C30 52.5 31.4 56.7 33.8 60.2"
-        stroke="url(#accentGradient)"
+        d="M50 12L80 31V69L50 88L20 69V31L50 12Z"
+        fill="none"
+        stroke="url(#blueAccent)"
+        strokeWidth="1.5"
+        opacity="0.3"
+      />
+
+      {/* Speedometer arc - orange */}
+      <path
+        d="M50 25C36 25 25 36 25 50C25 57 27.5 63.5 31.5 68.5"
+        stroke="url(#orangeAccent)"
         strokeWidth="4"
         strokeLinecap="round"
         fill="none"
       />
 
-      {/* Clock hand forming ascending arrow - rapid production */}
+      {/* Speed needle pointing up-right */}
       <path
-        d="M50 50L65 33"
-        stroke="url(#accentGradient)"
-        strokeWidth="3.5"
+        d="M50 50L68 30"
+        stroke="url(#blueAccent)"
+        strokeWidth="4"
         strokeLinecap="round"
       />
 
-      {/* Arrow head - represents growth and forward movement */}
+      {/* Arrow tip */}
       <path
-        d="M62 33L65 28L68 33"
-        stroke="url(#accentGradient)"
+        d="M64 32L68 25L72 32"
+        stroke="url(#orangeAccent)"
         strokeWidth="3"
         strokeLinecap="round"
         strokeLinejoin="round"
         fill="none"
       />
 
-      {/* Production graph bars - ascending for productivity */}
-      <rect x="32" y="62" width="7" height="13" rx="1.5" fill="url(#accentGradient)" opacity="0.8" />
-      <rect x="43" y="58" width="7" height="17" rx="1.5" fill="url(#accentGradient)" opacity="0.85" />
-      <rect x="54" y="54" width="7" height="21" rx="1.5" fill="url(#accentGradient)" opacity="0.9" />
-      <rect x="65" y="50" width="7" height="25" rx="1.5" fill="url(#accentGradient)" />
+      {/* Center dot */}
+      <circle cx="50" cy="50" r="5" fill="url(#blueAccent)" />
 
-      {/* Subtle motion lines for dynamism */}
-      <path d="M72 38L78 35" stroke="#FF6B35" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
-      <path d="M75 45L82 43" stroke="#FF6B35" strokeWidth="2" strokeLinecap="round" opacity="0.4" />
+      {/* Growth bars - ascending */}
+      <rect x="30" y="62" width="8" height="14" rx="2" fill="url(#blueAccent)" opacity="0.5" />
+      <rect x="42" y="56" width="8" height="20" rx="2" fill="url(#blueAccent)" opacity="0.7" />
+      <rect x="54" y="50" width="8" height="26" rx="2" fill="url(#orangeAccent)" opacity="0.9" />
+      <rect x="66" y="44" width="8" height="32" rx="2" fill="url(#orangeAccent)" />
     </svg>
   );
 
