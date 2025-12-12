@@ -1,0 +1,97 @@
+# Automated Database Backup Workflow
+# Runs weekly and creates SQL dumps stored as GitHub releases
+# Also supports manual triggers for on-demand backups
+
+name: 📦 Database Backup
+
+on:
+  schedule:
+    # Runs every Sunday at 2:00 AM UTC
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+    inputs:
+      backup_reason:
+        description: 'Reason for manual backup'
+        required: false
+        default: 'Manual backup'
+
+env:
+  BACKUP_RETENTION_DAYS: 30
+
+jobs:
+  backup:
+    name: Create Database Backup
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐘 Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: 📅 Generate backup filename
+        id: filename
+        run: |
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          echo "timestamp=$TIMESTAMP" >> $GITHUB_OUTPUT
+          echo "filename=rapidpro_backup_${TIMESTAMP}.sql" >> $GITHUB_OUTPUT
+
+      - name: 🔐 Create database backup
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          # Parse DATABASE_URL and create backup
+          pg_dump "$DATABASE_URL" \
+            --no-owner \
+            --no-privileges \
+            --clean \
+            --if-exists \
+            --format=plain \
+            > ${{ steps.filename.outputs.filename }}
+          
+          # Compress the backup
+          gzip ${{ steps.filename.outputs.filename }}
+          
+          # Show backup size
+          ls -lh ${{ steps.filename.outputs.filename }}.gz
+
+      - name: 📊 Generate backup report
+        run: |
+          echo "## 📦 Backup Report" > backup_report.md
+          echo "" >> backup_report.md
+          echo "- **Date**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> backup_report.md
+          echo "- **File**: ${{ steps.filename.outputs.filename }}.gz" >> backup_report.md
+          echo "- **Size**: $(ls -lh ${{ steps.filename.outputs.filename }}.gz | awk '{print $5}')" >> backup_report.md
+          echo "- **Trigger**: ${{ github.event_name }}" >> backup_report.md
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "- **Reason**: ${{ github.event.inputs.backup_reason }}" >> backup_report.md
+          fi
+          cat backup_report.md
+
+      - name: 🏷️ Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: backup-${{ steps.filename.outputs.timestamp }}
+          name: "Database Backup - ${{ steps.filename.outputs.timestamp }}"
+          body_path: backup_report.md
+          files: ${{ steps.filename.outputs.filename }}.gz
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🧹 Cleanup old backups
+        uses: dev-drprasad/delete-older-releases@v0.3.2
+        with:
+          keep_latest: 4
+          delete_tag_pattern: backup-
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: ✅ Backup completed
+        run: |
+          echo "✅ Database backup completed successfully!"
+          echo "📁 Backup stored as GitHub release: backup-${{ steps.filename.outputs.timestamp }}"

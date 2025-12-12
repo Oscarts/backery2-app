@@ -1,0 +1,143 @@
+# CI/CD Pipeline for RapidPro Bakery App
+# Triggers on push to main branch
+# Runs tests, builds, and deploys to production
+
+name: 🚀 CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '20.x'
+
+jobs:
+  # ============================================
+  # Job 1: Lint and Type Check
+  # ============================================
+  lint:
+    name: 🔍 Lint & Type Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📥 Install dependencies
+        run: npm ci
+
+      - name: 🔍 Type check backend
+        run: cd backend && npx tsc --noEmit
+
+      - name: 🔍 Type check frontend
+        run: cd frontend && npx tsc --noEmit
+
+  # ============================================
+  # Job 2: Run Tests
+  # ============================================
+  test:
+    name: 🧪 Run Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📥 Install dependencies
+        run: npm ci
+
+      - name: 🗄️ Generate Prisma Client
+        run: cd backend && npx prisma generate
+
+      - name: 🧪 Run backend tests
+        run: cd backend && npm test -- --passWithNoTests
+        
+      - name: 🧪 Run frontend tests
+        run: cd frontend && npm test -- --passWithNoTests
+
+  # ============================================
+  # Job 3: Build
+  # ============================================
+  build:
+    name: 🏗️ Build
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📥 Install dependencies
+        run: npm ci
+
+      - name: 🗄️ Generate Prisma Client
+        run: cd backend && npx prisma generate
+
+      - name: 🏗️ Build backend
+        run: cd backend && npm run build
+
+      - name: 🏗️ Build frontend
+        run: cd frontend && npm run build
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL || 'https://rapidpro-api.onrender.com' }}
+
+      - name: 📤 Upload frontend build
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/dist
+          retention-days: 1
+
+  # ============================================
+  # Job 4: Deploy (only on main branch push)
+  # ============================================
+  deploy:
+    name: 🚀 Deploy
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔔 Trigger Render Deploy
+        run: |
+          if [ -n "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" ]; then
+            curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+            echo "✅ Render deployment triggered"
+          else
+            echo "⚠️ RENDER_DEPLOY_HOOK_URL not set, skipping Render deploy"
+          fi
+
+      - name: ✅ Deployment initiated
+        run: |
+          echo "🚀 Deployment pipeline completed!"
+          echo ""
+          echo "📱 Frontend: Vercel auto-deploys from GitHub"
+          echo "🖥️ Backend: Render deploy hook triggered"
+          echo ""
+          echo "Check deployment status:"
+          echo "- Vercel: https://vercel.com/dashboard"
+          echo "- Render: https://dashboard.render.com"
