@@ -34,7 +34,7 @@ import {
   MenuBook as MenuBookIcon
 } from '@mui/icons-material';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Recipe } from '../types';
+import { Recipe, CategoryType } from '../types';
 import { recipesApi, categoriesApi, rawMaterialsApi, finishedProductsApi, unitsApi } from '../services/realApi';
 import { EnhancedRecipeCard } from '../components/Recipe/EnhancedRecipeCard';
 import { RecipeDetailView } from '../components/Recipe/RecipeDetailView';
@@ -106,6 +106,9 @@ const EnhancedRecipes: React.FC = () => {
   const finishedProducts = finishedProductsResponse?.data || [];
   const units = unitsResponse?.data || [];
   const recipeCost = recipeCostResponse?.data || null;
+
+  // Filter categories for recipe form (only RECIPE type)
+  const recipeCategories = categories.filter((cat: any) => cat.type === CategoryType.RECIPE);
 
   // Load favorites from localStorage
   useEffect(() => {
@@ -247,8 +250,8 @@ const EnhancedRecipes: React.FC = () => {
   return (
     <Box sx={{ p: 3 }}>
       {/* Header Section */}
-      <Box 
-        sx={{ 
+      <Box
+        sx={{
           display: 'flex',
           flexDirection: { xs: 'column', sm: 'row' },
           justifyContent: 'space-between',
@@ -258,7 +261,7 @@ const EnhancedRecipes: React.FC = () => {
         }}
       >
         <Box>
-          <Typography 
+          <Typography
             variant={isMobile ? "h4" : "h3"}
             sx={{
               fontWeight: 'bold',
@@ -275,7 +278,7 @@ const EnhancedRecipes: React.FC = () => {
             Create, manage, and analyze your bakery recipes with detailed cost breakdowns
           </Typography>
         </Box>
-        
+
         <Button
           variant="contained"
           size="large"
@@ -335,116 +338,116 @@ const EnhancedRecipes: React.FC = () => {
       </Grid>
 
       {/* Search and Filter Bar */}
-      <Paper 
-          elevation={2}
-          sx={{ 
-            p: 2,
-            mb: 3,
-            borderRadius: borderRadius.lg, // 20px - Modern rounded search bar
-            bgcolor: alpha(theme.palette.background.paper, 0.8),
-            backdropFilter: 'blur(10px)'
-          }}
-        >
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                placeholder="Search recipes..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon color="action" />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: borderRadius.md, // 16px - Modern rounded inputs
-                    bgcolor: theme.palette.background.paper
-                  }
-                }}
-              />
-            </Grid>
-            
-            <Grid item xs={12} sm={6} md={2}>
-              <FormControl fullWidth>
-                <InputLabel>Category</InputLabel>
-                <Select
-                  value={selectedCategory}
-                  label="Category"
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  sx={{ borderRadius: borderRadius.md }} // 16px - Modern rounded select
-                >
-                  <MenuItem value="">All Categories</MenuItem>
-                  {categories.map((category: any) => (
-                    <MenuItem key={category.id} value={category.id}>
-                      {category.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={2}>
-              <FormControl fullWidth>
-                <InputLabel>Sort By</InputLabel>
-                <Select
-                  value={sortBy}
-                  label="Sort By"
-                  onChange={(e) => setSortBy(e.target.value as SortOption)}
-                  sx={{ borderRadius: borderRadius.md }} // 16px - Modern rounded select
-                >
-                  <MenuItem value="name">Name</MenuItem>
-                  <MenuItem value="created">Recently Created</MenuItem>
-                  <MenuItem value="cost">Cost</MenuItem>
-                  <MenuItem value="difficulty">Difficulty</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} md={2}>
-              <Button
-                fullWidth
-                variant={showFavoritesOnly ? 'contained' : 'outlined'}
-                onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-                startIcon={showFavoritesOnly ? <StarIcon /> : <StarBorderIcon />}
-                sx={{ borderRadius: borderRadius.md, py: 1.7 }} // 16px - Modern rounded button
-              >
-                Favorites
-              </Button>
-            </Grid>
-
-            <Grid item xs={12} md={2}>
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <ToggleButtonGroup
-                  value={viewMode}
-                  exclusive
-                  onChange={(_, newMode) => newMode && setViewMode(newMode)}
-                  size="small"
-                >
-                  <ToggleButton value="card" aria-label="card view">
-                    <CardViewIcon />
-                  </ToggleButton>
-                  <ToggleButton value="list" aria-label="list view">
-                    <ListViewIcon />
-                  </ToggleButton>
-                </ToggleButtonGroup>
-                
-                <IconButton 
-                  onClick={() => refetchRecipes()}
-                  sx={{ 
-                    bgcolor: alpha(theme.palette.primary.main, 0.1),
-                    '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.2) }
-                  }}
-                >
-                  <RefreshIcon />
-                </IconButton>
-              </Box>
-            </Grid>
+      <Paper
+        elevation={2}
+        sx={{
+          p: 2,
+          mb: 3,
+          borderRadius: borderRadius.lg, // 20px - Modern rounded search bar
+          bgcolor: alpha(theme.palette.background.paper, 0.8),
+          backdropFilter: 'blur(10px)'
+        }}
+      >
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={4}>
+            <TextField
+              fullWidth
+              placeholder="Search recipes..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon color="action" />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: borderRadius.md, // 16px - Modern rounded inputs
+                  bgcolor: theme.palette.background.paper
+                }
+              }}
+            />
           </Grid>
-        </Paper>
+
+          <Grid item xs={12} sm={6} md={2}>
+            <FormControl fullWidth>
+              <InputLabel>Category</InputLabel>
+              <Select
+                value={selectedCategory}
+                label="Category"
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                sx={{ borderRadius: borderRadius.md }} // 16px - Modern rounded select
+              >
+                <MenuItem value="">All Categories</MenuItem>
+                {recipeCategories.map((category: any) => (
+                  <MenuItem key={category.id} value={category.id}>
+                    {category.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={2}>
+            <FormControl fullWidth>
+              <InputLabel>Sort By</InputLabel>
+              <Select
+                value={sortBy}
+                label="Sort By"
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                sx={{ borderRadius: borderRadius.md }} // 16px - Modern rounded select
+              >
+                <MenuItem value="name">Name</MenuItem>
+                <MenuItem value="created">Recently Created</MenuItem>
+                <MenuItem value="cost">Cost</MenuItem>
+                <MenuItem value="difficulty">Difficulty</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} md={2}>
+            <Button
+              fullWidth
+              variant={showFavoritesOnly ? 'contained' : 'outlined'}
+              onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+              startIcon={showFavoritesOnly ? <StarIcon /> : <StarBorderIcon />}
+              sx={{ borderRadius: borderRadius.md, py: 1.7 }} // 16px - Modern rounded button
+            >
+              Favorites
+            </Button>
+          </Grid>
+
+          <Grid item xs={12} md={2}>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <ToggleButtonGroup
+                value={viewMode}
+                exclusive
+                onChange={(_, newMode) => newMode && setViewMode(newMode)}
+                size="small"
+              >
+                <ToggleButton value="card" aria-label="card view">
+                  <CardViewIcon />
+                </ToggleButton>
+                <ToggleButton value="list" aria-label="list view">
+                  <ListViewIcon />
+                </ToggleButton>
+              </ToggleButtonGroup>
+
+              <IconButton
+                onClick={() => refetchRecipes()}
+                sx={{
+                  bgcolor: alpha(theme.palette.primary.main, 0.1),
+                  '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.2) }
+                }}
+              >
+                <RefreshIcon />
+              </IconButton>
+            </Box>
+          </Grid>
+        </Grid>
+      </Paper>
 
       {/* Recipes Display */}
       <Box sx={{ mb: 3 }}>
@@ -457,8 +460,8 @@ const EnhancedRecipes: React.FC = () => {
         ) : filteredAndSortedRecipes.length === 0 ? (
           <Card sx={{ textAlign: 'center', py: 8, bgcolor: alpha(theme.palette.grey[50], 0.5) }}>
             <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
-              {searchTerm || selectedCategory || showFavoritesOnly 
-                ? 'No recipes match your filters' 
+              {searchTerm || selectedCategory || showFavoritesOnly
+                ? 'No recipes match your filters'
                 : 'No recipes found'}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
@@ -467,8 +470,8 @@ const EnhancedRecipes: React.FC = () => {
                 : 'Try adjusting your search or filters'}
             </Typography>
             {!searchTerm && !selectedCategory && !showFavoritesOnly && (
-              <Button 
-                variant="contained" 
+              <Button
+                variant="contained"
                 startIcon={<AddIcon />}
                 onClick={handleCreateRecipe}
               >
@@ -480,11 +483,11 @@ const EnhancedRecipes: React.FC = () => {
           <Fade in>
             <Grid container spacing={3}>
               {filteredAndSortedRecipes.map((recipe: Recipe) => (
-                <Grid 
-                  item 
-                  xs={12} 
-                  sm={viewMode === 'card' ? 6 : 12} 
-                  md={viewMode === 'card' ? 4 : 12} 
+                <Grid
+                  item
+                  xs={12}
+                  sm={viewMode === 'card' ? 6 : 12}
+                  md={viewMode === 'card' ? 4 : 12}
                   lg={viewMode === 'card' ? 3 : 12}
                   key={recipe.id}
                 >
@@ -540,7 +543,7 @@ const EnhancedRecipes: React.FC = () => {
       <EnhancedRecipeForm
         open={formOpen}
         recipe={editingRecipe}
-        categories={categories}
+        categories={recipeCategories}
         rawMaterials={rawMaterials}
         finishedProducts={finishedProducts}
         units={units}
@@ -560,9 +563,9 @@ const EnhancedRecipes: React.FC = () => {
         onClose={() => setErrorMessage(null)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert 
-          onClose={() => setErrorMessage(null)} 
-          severity="error" 
+        <Alert
+          onClose={() => setErrorMessage(null)}
+          severity="error"
           sx={{ width: '100%' }}
         >
           {errorMessage}
