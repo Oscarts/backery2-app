@@ -59,7 +59,7 @@ const RapidProLogo: React.FC<RapidProLogoProps> = ({
           <stop offset="100%" style={{ stopColor: '#2962B3', stopOpacity: 1 }} />
         </linearGradient>
         <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#000" floodOpacity="0.15"/>
+          <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#000" floodOpacity="0.15" />
         </filter>
       </defs>
 

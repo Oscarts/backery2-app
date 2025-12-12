@@ -235,24 +235,24 @@ const Layout: React.FC = () => {
           </IconButton>
 
           {/* Logo in Header */}
-          <RapidProLogo 
-            size="small" 
-            variant="full" 
-            sx={{ 
-              '& .MuiTypography-root': { color: 'white !important' }, 
-              '& .MuiTypography-caption': { color: 'rgba(255,255,255,0.85) !important' } 
-            }} 
+          <RapidProLogo
+            size="small"
+            variant="full"
+            sx={{
+              '& .MuiTypography-root': { color: 'white !important' },
+              '& .MuiTypography-caption': { color: 'rgba(255,255,255,0.85) !important' }
+            }}
           />
 
           {/* Spacer */}
           <Box sx={{ flexGrow: 1 }} />
 
           {/* User Section - Modern Glassmorphism Style */}
-          <Box 
+          <Box
             onClick={handleMenuOpen}
-            sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
               gap: 1.5,
               cursor: 'pointer',
               bgcolor: 'rgba(255, 255, 255, 0.15)',
@@ -272,10 +272,10 @@ const Layout: React.FC = () => {
             aria-haspopup="true"
             aria-expanded={anchorEl ? 'true' : undefined}
           >
-            <Avatar 
-              sx={{ 
-                width: 36, 
-                height: 36, 
+            <Avatar
+              sx={{
+                width: 36,
+                height: 36,
                 bgcolor: '#FF6B35',
                 fontWeight: 600,
                 fontSize: '0.875rem',
@@ -291,21 +291,21 @@ const Layout: React.FC = () => {
                 alignItems: 'flex-start',
               }}
             >
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  fontWeight: 600, 
-                  color: 'white', 
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 600,
+                  color: 'white',
                   lineHeight: 1.3,
                   fontSize: '0.875rem',
                 }}
               >
                 {user?.firstName} {user?.lastName}
               </Typography>
-              <Typography 
-                variant="caption" 
-                sx={{ 
-                  color: 'rgba(255, 255, 255, 0.75)', 
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'rgba(255, 255, 255, 0.75)',
                   lineHeight: 1.2,
                   fontSize: '0.7rem',
                 }}
@@ -346,19 +346,19 @@ const Layout: React.FC = () => {
             }}
           >
             {/* User Profile Header */}
-            <Box 
-              sx={{ 
-                px: 2, 
-                py: 2, 
+            <Box
+              sx={{
+                px: 2,
+                py: 2,
                 background: 'linear-gradient(135deg, #1E4687 0%, #2962B3 100%)',
                 borderRadius: '8px 8px 0 0',
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <Avatar 
-                  sx={{ 
-                    width: 48, 
-                    height: 48, 
+                <Avatar
+                  sx={{
+                    width: 48,
+                    height: 48,
                     bgcolor: '#FF6B35',
                     fontWeight: 700,
                     fontSize: '1rem',
@@ -389,10 +389,10 @@ const Layout: React.FC = () => {
               </Typography>
             </Box>
             <Divider />
-            <MenuItem 
+            <MenuItem
               onClick={handleLogout}
-              sx={{ 
-                py: 1.5, 
+              sx={{
+                py: 1.5,
                 color: 'error.main',
                 '&:hover': { bgcolor: alpha(theme.palette.error.main, 0.08) },
               }}
