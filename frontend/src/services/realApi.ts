@@ -639,10 +639,12 @@ export const customerOrdersApi = {
   },
 
   exportBulkExcel: async (filters: OrderExportFilters): Promise<Blob> => {
+    const token = localStorage.getItem('authToken');
     const response = await fetch(`${API_BASE_URL}/customer-orders/export/excel`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
       },
       body: JSON.stringify(filters),
     });
@@ -652,9 +654,14 @@ export const customerOrdersApi = {
     return response.blob();
   },
 
-  // Export as professional Word document (DOCX) - French proforma/devis with TVA
-  exportWord: async (id: string): Promise<Blob> => {
-    const response = await fetch(`${API_BASE_URL}/customer-orders/${id}/export/word`);
+  // Export as professional Word document (DOCX) with multi-language support
+  exportWord: async (id: string, language: 'fr' | 'en' | 'es' = 'fr'): Promise<Blob> => {
+    const token = localStorage.getItem('authToken');
+    const response = await fetch(`${API_BASE_URL}/customer-orders/${id}/export/word?lang=${language}`, {
+      headers: {
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+    });
     if (!response.ok) {
       throw new Error(`Failed to export Word: ${response.statusText}`);
     }

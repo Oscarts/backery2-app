@@ -24,6 +24,11 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import {
   ArrowBack as BackIcon,
@@ -41,6 +46,13 @@ import { customerOrdersApi } from '../services/realApi';
 import { OrderStatus } from '../types';
 import { formatDate } from '../utils/api';
 
+// Language options for export
+const exportLanguages = [
+  { code: 'fr' as const, name: 'Français', flag: '🇫🇷' },
+  { code: 'en' as const, name: 'English', flag: '🇬🇧' },
+  { code: 'es' as const, name: 'Español', flag: '🇪🇸' },
+];
+
 const OrderDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -51,6 +63,7 @@ const OrderDetails: React.FC = () => {
   const [revertDialogOpen, setRevertDialogOpen] = useState(false);
   const [fulfillDialogOpen, setFulfillDialogOpen] = useState(false);
   const [inventoryCheckOpen, setInventoryCheckOpen] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
   // Snackbar state
   const [snackbar, setSnackbar] = useState<{
@@ -141,15 +154,17 @@ const OrderDetails: React.FC = () => {
     }
   };
 
-  // Export order as Word document (DOCX)
-  const handleExportOrder = async () => {
+  // Export order as Word document (DOCX) with language selection
+  const handleExportOrder = async (language: 'fr' | 'en' | 'es') => {
     if (!id || !orderData?.data) return;
+    setExportDialogOpen(false);
     try {
-      const blob = await customerOrdersApi.exportWord(id);
+      const blob = await customerOrdersApi.exportWord(id, language);
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `commande-${orderData.data.orderNumber}.docx`;
+      const langSuffix = language === 'fr' ? 'commande' : language === 'es' ? 'pedido' : 'order';
+      link.download = `${langSuffix}-${orderData.data.orderNumber}.docx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -405,12 +420,12 @@ const OrderDetails: React.FC = () => {
               </>
             )}
 
-            {/* Export action available for non-fulfilled orders */}
+            {/* Export action available for all orders */}
             <Button
               variant="outlined"
               size="large"
               startIcon={<DownloadIcon />}
-              onClick={handleExportOrder}
+              onClick={() => setExportDialogOpen(true)}
               sx={{ flexGrow: 1, minWidth: 180 }}
             >
               Export Word
@@ -420,11 +435,24 @@ const OrderDetails: React.FC = () => {
       )}
 
       {order.status === OrderStatus.FULFILLED && (
-        <Alert severity="success" icon={<FulfillIcon />} sx={{ mb: 3 }}>
-          <Typography variant="body1" fontWeight="medium">
-            This order has been fulfilled and delivered to the customer.
-          </Typography>
-        </Alert>
+        <Paper elevation={2} sx={{ p: 3, mb: 3, borderRadius: 2 }}>
+          <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+            <Alert severity="success" icon={<FulfillIcon />} sx={{ flexGrow: 1 }}>
+              <Typography variant="body1" fontWeight="medium">
+                This order has been fulfilled and delivered to the customer.
+              </Typography>
+            </Alert>
+            <Button
+              variant="outlined"
+              size="large"
+              startIcon={<DownloadIcon />}
+              onClick={() => setExportDialogOpen(true)}
+              sx={{ minWidth: 180 }}
+            >
+              Export Word
+            </Button>
+          </Stack>
+        </Paper>
       )}
 
       {/* Order Summary */}
@@ -604,6 +632,48 @@ const OrderDetails: React.FC = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setInventoryCheckOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Export Language Selection Dialog */}
+      <Dialog open={exportDialogOpen} onClose={() => setExportDialogOpen(false)}>
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <DownloadIcon />
+            Export Order
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            Select the language for your export document:
+          </DialogContentText>
+          <List>
+            {exportLanguages.map((lang) => (
+              <ListItem key={lang.code} disablePadding>
+                <ListItemButton
+                  onClick={() => handleExportOrder(lang.code)}
+                  sx={{
+                    borderRadius: 1,
+                    mb: 0.5,
+                    '&:hover': {
+                      backgroundColor: 'action.hover',
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ fontSize: '1.5rem', minWidth: 40 }}>
+                    {lang.flag}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={lang.name}
+                    primaryTypographyProps={{ fontWeight: 'medium' }}
+                  />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setExportDialogOpen(false)}>Cancel</Button>
         </DialogActions>
       </Dialog>
 

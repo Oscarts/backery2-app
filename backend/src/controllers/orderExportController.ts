@@ -67,13 +67,19 @@ export const exportBulkExcel = async (req: Request, res: Response): Promise<void
 
 /**
  * Export single order as professional Word document (DOCX)
- * French-style proforma/devis with TVA - excludes production costs
+ * Supports multiple languages: French (fr), English (en), Spanish (es)
+ * Proforma/devis format with TVA - excludes production costs
  */
 export const exportOrderWord = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
+    const language = (req.query.lang as string) || 'fr';
     
-    const wordBuffer = await orderExportService.generateOrderWord(id);
+    // Validate language
+    const supportedLanguages = ['fr', 'en', 'es'];
+    const lang = supportedLanguages.includes(language) ? language : 'fr';
+    
+    const wordBuffer = await orderExportService.generateOrderWord(id, lang as 'fr' | 'en' | 'es');
     
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.setHeader('Content-Disposition', `attachment; filename=order-${id}.docx`);

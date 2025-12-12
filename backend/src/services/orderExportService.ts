@@ -316,11 +316,104 @@ export const generateBulkExcel = async (filters: OrderExportFilters): Promise<Bu
 };
 
 /**
+ * Multi-language translations for order export
+ */
+const translations = {
+  fr: {
+    quote: 'DEVIS',
+    proforma: 'PROFORMA',
+    orderNumber: 'N°',
+    date: 'Date',
+    expectedDelivery: 'Date de livraison prévue',
+    client: 'CLIENT',
+    email: 'Email',
+    phone: 'Téléphone',
+    orderDetails: 'DÉTAIL DE LA COMMANDE',
+    designation: 'Désignation',
+    reference: 'Référence',
+    quantity: 'Quantité',
+    unitPriceHT: 'Prix Unit. HT',
+    totalHT: 'Total HT',
+    subtotalHT: 'Total HT (Hors Taxes)',
+    vat: 'TVA',
+    totalTTC: 'Total TTC (Toutes Taxes Comprises)',
+    notes: 'NOTES',
+    paymentTerms: 'CONDITIONS DE PAIEMENT',
+    paymentOnReceipt: 'Paiement à réception de facture.',
+    deliveryTerms: 'Modalités de livraison: Selon accord avec le client.',
+    quoteValidity: 'Validité du devis: 30 jours.',
+    generatedOn: 'Document généré le',
+    at: 'à',
+    currency: '€',
+    dateLocale: 'fr-FR',
+  },
+  en: {
+    quote: 'QUOTE',
+    proforma: 'PROFORMA INVOICE',
+    orderNumber: 'No.',
+    date: 'Date',
+    expectedDelivery: 'Expected delivery date',
+    client: 'CUSTOMER',
+    email: 'Email',
+    phone: 'Phone',
+    orderDetails: 'ORDER DETAILS',
+    designation: 'Description',
+    reference: 'Reference',
+    quantity: 'Quantity',
+    unitPriceHT: 'Unit Price (excl. tax)',
+    totalHT: 'Total (excl. tax)',
+    subtotalHT: 'Subtotal (excl. tax)',
+    vat: 'VAT',
+    totalTTC: 'Total (incl. tax)',
+    notes: 'NOTES',
+    paymentTerms: 'PAYMENT TERMS',
+    paymentOnReceipt: 'Payment upon receipt of invoice.',
+    deliveryTerms: 'Delivery terms: As agreed with customer.',
+    quoteValidity: 'Quote valid for 30 days.',
+    generatedOn: 'Document generated on',
+    at: 'at',
+    currency: '€',
+    dateLocale: 'en-GB',
+  },
+  es: {
+    quote: 'PRESUPUESTO',
+    proforma: 'FACTURA PROFORMA',
+    orderNumber: 'N°',
+    date: 'Fecha',
+    expectedDelivery: 'Fecha de entrega prevista',
+    client: 'CLIENTE',
+    email: 'Correo',
+    phone: 'Teléfono',
+    orderDetails: 'DETALLE DEL PEDIDO',
+    designation: 'Descripción',
+    reference: 'Referencia',
+    quantity: 'Cantidad',
+    unitPriceHT: 'Precio Unit. (sin IVA)',
+    totalHT: 'Total (sin IVA)',
+    subtotalHT: 'Subtotal (sin IVA)',
+    vat: 'IVA',
+    totalTTC: 'Total (IVA incluido)',
+    notes: 'NOTAS',
+    paymentTerms: 'CONDICIONES DE PAGO',
+    paymentOnReceipt: 'Pago a la recepción de la factura.',
+    deliveryTerms: 'Condiciones de entrega: Según acuerdo con el cliente.',
+    quoteValidity: 'Validez del presupuesto: 30 días.',
+    generatedOn: 'Documento generado el',
+    at: 'a las',
+    currency: '€',
+    dateLocale: 'es-ES',
+  },
+};
+
+/**
  * Generate professional Word document (DOCX) for a single order
- * French-style proforma/devis format with TVA calculation
+ * Multi-language support: French (fr), English (en), Spanish (es)
+ * Proforma/devis format with TVA calculation
  * Excludes production costs - only shows sale prices
  */
-export const generateOrderWord = async (orderId: string): Promise<Buffer> => {
+export const generateOrderWord = async (orderId: string, language: 'fr' | 'en' | 'es' = 'fr'): Promise<Buffer> => {
+  const t = translations[language];
+  
   // Fetch order with all related data
   const order = await prisma.customerOrder.findUnique({
     where: { id: orderId },
@@ -347,7 +440,7 @@ export const generateOrderWord = async (orderId: string): Promise<Buffer> => {
         children: [
           // Document Title - DEVIS/PROFORMA
           new Paragraph({
-            text: order.status === OrderStatus.DRAFT ? 'DEVIS' : 'PROFORMA',
+            text: order.status === OrderStatus.DRAFT ? t.quote : t.proforma,
             heading: HeadingLevel.HEADING_1,
             alignment: AlignmentType.CENTER,
             spacing: {
@@ -359,12 +452,12 @@ export const generateOrderWord = async (orderId: string): Promise<Buffer> => {
           new Paragraph({
             children: [
               new TextRun({
-                text: `N° ${order.orderNumber}`,
+                text: `${t.orderNumber} ${order.orderNumber}`,
                 bold: true,
                 size: 24,
               }),
               new TextRun({
-                text: `          Date: ${order.createdAt.toLocaleDateString('fr-FR')}`,
+                text: `          ${t.date}: ${order.createdAt.toLocaleDateString(t.dateLocale)}`,
                 size: 22,
               }),
             ],
@@ -374,7 +467,7 @@ export const generateOrderWord = async (orderId: string): Promise<Buffer> => {
           new Paragraph({
             children: [
               new TextRun({
-                text: `Date de livraison prévue: ${order.expectedDeliveryDate.toLocaleDateString('fr-FR')}`,
+                text: `${t.expectedDelivery}: ${order.expectedDeliveryDate.toLocaleDateString(t.dateLocale)}`,
                 size: 22,
               }),
             ],
@@ -383,7 +476,7 @@ export const generateOrderWord = async (orderId: string): Promise<Buffer> => {
 
           // Customer Information Section
           new Paragraph({
-            text: 'CLIENT',
+            text: t.client,
             heading: HeadingLevel.HEADING_2,
             spacing: { before: 300, after: 200 },
           }),
@@ -411,7 +504,7 @@ export const generateOrderWord = async (orderId: string): Promise<Buffer> => {
           ...(order.customer.email
             ? [
                 new Paragraph({
-                  text: `Email: ${order.customer.email}`,
+                  text: `${t.email}: ${order.customer.email}`,
                   spacing: { after: 100 },
                 }),
               ]
@@ -420,7 +513,7 @@ export const generateOrderWord = async (orderId: string): Promise<Buffer> => {
           ...(order.customer.phone
             ? [
                 new Paragraph({
-                  text: `Téléphone: ${order.customer.phone}`,
+                  text: `${t.phone}: ${order.customer.phone}`,
                   spacing: { after: 400 },
                 }),
               ]
@@ -428,7 +521,7 @@ export const generateOrderWord = async (orderId: string): Promise<Buffer> => {
 
           // Items Table Header
           new Paragraph({
-            text: 'DÉTAIL DE LA COMMANDE',
+            text: t.orderDetails,
             heading: HeadingLevel.HEADING_2,
             spacing: { before: 400, after: 200 },
           }),
@@ -453,27 +546,27 @@ export const generateOrderWord = async (orderId: string): Promise<Buffer> => {
                 tableHeader: true,
                 children: [
                   new TableCell({
-                    children: [new Paragraph({ text: 'Désignation', alignment: AlignmentType.LEFT })],
+                    children: [new Paragraph({ text: t.designation, alignment: AlignmentType.LEFT })],
                     shading: { fill: 'E0E0E0' },
                     width: { size: 40, type: WidthType.PERCENTAGE },
                   }),
                   new TableCell({
-                    children: [new Paragraph({ text: 'Référence', alignment: AlignmentType.CENTER })],
+                    children: [new Paragraph({ text: t.reference, alignment: AlignmentType.CENTER })],
                     shading: { fill: 'E0E0E0' },
                     width: { size: 15, type: WidthType.PERCENTAGE },
                   }),
                   new TableCell({
-                    children: [new Paragraph({ text: 'Quantité', alignment: AlignmentType.CENTER })],
+                    children: [new Paragraph({ text: t.quantity, alignment: AlignmentType.CENTER })],
                     shading: { fill: 'E0E0E0' },
                     width: { size: 15, type: WidthType.PERCENTAGE },
                   }),
                   new TableCell({
-                    children: [new Paragraph({ text: 'Prix Unit. HT', alignment: AlignmentType.RIGHT })],
+                    children: [new Paragraph({ text: t.unitPriceHT, alignment: AlignmentType.RIGHT })],
                     shading: { fill: 'E0E0E0' },
                     width: { size: 15, type: WidthType.PERCENTAGE },
                   }),
                   new TableCell({
-                    children: [new Paragraph({ text: 'Total HT', alignment: AlignmentType.RIGHT })],
+                    children: [new Paragraph({ text: t.totalHT, alignment: AlignmentType.RIGHT })],
                     shading: { fill: 'E0E0E0' },
                     width: { size: 15, type: WidthType.PERCENTAGE },
                   }),
@@ -497,7 +590,7 @@ export const generateOrderWord = async (orderId: string): Promise<Buffer> => {
                       new TableCell({
                         children: [
                           new Paragraph({
-                            text: `${(item.unitPrice / (1 + order.tvaRate / 100)).toFixed(2)} €`,
+                            text: `${(item.unitPrice / (1 + order.tvaRate / 100)).toFixed(2)} ${t.currency}`,
                             alignment: AlignmentType.RIGHT,
                           }),
                         ],
@@ -505,7 +598,7 @@ export const generateOrderWord = async (orderId: string): Promise<Buffer> => {
                       new TableCell({
                         children: [
                           new Paragraph({
-                            text: `${(item.linePrice / (1 + order.tvaRate / 100)).toFixed(2)} €`,
+                            text: `${(item.linePrice / (1 + order.tvaRate / 100)).toFixed(2)} ${t.currency}`,
                             alignment: AlignmentType.RIGHT,
                           }),
                         ],
@@ -526,11 +619,11 @@ export const generateOrderWord = async (orderId: string): Promise<Buffer> => {
           new Paragraph({
             children: [
               new TextRun({
-                text: 'Total HT (Hors Taxes):',
+                text: `${t.subtotalHT}:`,
                 size: 24,
               }),
               new TextRun({
-                text: `${' '.repeat(50)}${subtotalHT.toFixed(2)} €`,
+                text: `${' '.repeat(50)}${subtotalHT.toFixed(2)} ${t.currency}`,
                 size: 24,
                 bold: false,
               }),
@@ -543,11 +636,11 @@ export const generateOrderWord = async (orderId: string): Promise<Buffer> => {
           new Paragraph({
             children: [
               new TextRun({
-                text: `TVA (${order.tvaRate.toFixed(1)}%):`,
+                text: `${t.vat} (${order.tvaRate.toFixed(1)}%):`,
                 size: 24,
               }),
               new TextRun({
-                text: `${' '.repeat(50)}${tvaAmount.toFixed(2)} €`,
+                text: `${' '.repeat(50)}${tvaAmount.toFixed(2)} ${t.currency}`,
                 size: 24,
                 bold: false,
               }),
@@ -560,12 +653,12 @@ export const generateOrderWord = async (orderId: string): Promise<Buffer> => {
           new Paragraph({
             children: [
               new TextRun({
-                text: 'Total TTC (Toutes Taxes Comprises):',
+                text: `${t.totalTTC}:`,
                 size: 26,
                 bold: true,
               }),
               new TextRun({
-                text: `${' '.repeat(30)}${totalTTC.toFixed(2)} €`,
+                text: `${' '.repeat(30)}${totalTTC.toFixed(2)} ${t.currency}`,
                 size: 26,
                 bold: true,
               }),
@@ -578,7 +671,7 @@ export const generateOrderWord = async (orderId: string): Promise<Buffer> => {
           ...(order.notes
             ? [
                 new Paragraph({
-                  text: 'NOTES',
+                  text: t.notes,
                   heading: HeadingLevel.HEADING_2,
                   spacing: { before: 400, after: 200 },
                 }),
@@ -591,23 +684,23 @@ export const generateOrderWord = async (orderId: string): Promise<Buffer> => {
 
           // Payment Terms and Conditions
           new Paragraph({
-            text: 'CONDITIONS DE PAIEMENT',
+            text: t.paymentTerms,
             heading: HeadingLevel.HEADING_2,
             spacing: { before: 400, after: 200 },
           }),
 
           new Paragraph({
-            text: 'Paiement à réception de facture.',
+            text: t.paymentOnReceipt,
             spacing: { after: 100 },
           }),
 
           new Paragraph({
-            text: 'Modalités de livraison: Selon accord avec le client.',
+            text: t.deliveryTerms,
             spacing: { after: 100 },
           }),
 
           new Paragraph({
-            text: 'Validité du devis: 30 jours.',
+            text: t.quoteValidity,
             spacing: { after: 400 },
           }),
 
@@ -620,7 +713,7 @@ export const generateOrderWord = async (orderId: string): Promise<Buffer> => {
           new Paragraph({
             children: [
               new TextRun({
-                text: `Document généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`,
+                text: `${t.generatedOn} ${new Date().toLocaleDateString(t.dateLocale)} ${t.at} ${new Date().toLocaleTimeString(t.dateLocale)}`,
                 size: 18,
                 italics: true,
               }),
