@@ -119,6 +119,7 @@ const Settings: React.FC = () => {
     const { data: categoriesData, isLoading: categoriesLoading } = useQuery({
         queryKey: ['categories'],
         queryFn: () => categoriesApi.getAll(),
+        staleTime: 0 // Always refetch fresh data
     });
 
     const { data: suppliersData, isLoading: suppliersLoading } = useQuery({

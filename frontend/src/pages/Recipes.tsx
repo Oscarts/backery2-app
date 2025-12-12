@@ -158,7 +158,8 @@ const Recipes: React.FC = () => {
 
   const { data: categoriesResponse } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => categoriesApi.getAll()
+    queryFn: () => categoriesApi.getAll(),
+    staleTime: 0 // Always refetch to sync with Settings
   });
 
   const { data: rawMaterialsResponse } = useQuery({
@@ -293,10 +294,12 @@ const Recipes: React.FC = () => {
   const recipeCost = recipeCostResponse?.data || null;
   const selectedRecipeDetails = selectedRecipeDetailsResponse?.data || null;
 
-  // Debug log to track recipes data
+  // Debug log to track data
   React.useEffect(() => {
     console.log('Current recipes:', recipes);
-  }, [recipes]);
+    console.log('All categories:', categories);
+    console.log('Recipe categories:', categories.filter(cat => cat.type === 'RECIPE'));
+  }, [recipes, categories]);
 
   // Filter categories for recipes (RECIPE type)
   const recipeCategories = categories.filter(cat => cat.type === 'RECIPE');
