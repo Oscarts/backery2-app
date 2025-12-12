@@ -7,24 +7,27 @@ import {
   CardContent,
   Box,
   Alert,
-  Button,
   IconButton,
   Tooltip,
   CircularProgress,
   LinearProgress,
   useTheme,
-  useMediaQuery,
+  alpha,
 } from '@mui/material';
 import {
   Inventory as InventoryIcon,
   Refresh as RefreshIcon,
-  Science as ScienceIcon,
   LocalDining as LocalDiningIcon,
   MenuBook as MenuBookIcon,
-  Dashboard as DashboardIcon,
+  Factory as FactoryIcon,
+  People as PeopleIcon,
+  ShoppingCart as OrderIcon,
+  TrendingUp as TrendingUpIcon,
+  ArrowForward as ArrowForwardIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
+import { useAuth } from '../contexts/AuthContext';
 
 interface DashboardSummary {
   inventoryCounts: {
@@ -36,10 +39,149 @@ interface DashboardSummary {
   message?: string;
 }
 
+// Stat card component for reusability
+interface StatCardProps {
+  title: string;
+  value: number;
+  icon: React.ReactNode;
+  color: string;
+  bgColor: string;
+  onClick?: () => void;
+}
+
+const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color, bgColor, onClick }) => {
+  const theme = useTheme();
+  
+  return (
+    <Card
+      onClick={onClick}
+      sx={{
+        cursor: onClick ? 'pointer' : 'default',
+        transition: 'all 0.2s ease',
+        border: '1px solid',
+        borderColor: alpha(color, 0.1),
+        '&:hover': onClick ? {
+          transform: 'translateY(-4px)',
+          boxShadow: `0 12px 24px ${alpha(color, 0.15)}`,
+          borderColor: alpha(color, 0.3),
+        } : {},
+      }}
+    >
+      <CardContent sx={{ p: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <Box>
+            <Typography 
+              variant="h3" 
+              sx={{ 
+                fontWeight: 700, 
+                color: color,
+                lineHeight: 1,
+                mb: 0.5,
+              }}
+            >
+              {value}
+            </Typography>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: 'text.secondary',
+                fontWeight: 500,
+              }}
+            >
+              {title}
+            </Typography>
+          </Box>
+          <Box
+            sx={{
+              width: 48,
+              height: 48,
+              borderRadius: 2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: bgColor,
+              color: color,
+            }}
+          >
+            {icon}
+          </Box>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Quick action card component
+interface QuickActionProps {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  color: string;
+  onClick: () => void;
+}
+
+const QuickActionCard: React.FC<QuickActionProps> = ({ title, description, icon, color, onClick }) => {
+  const theme = useTheme();
+  
+  return (
+    <Card
+      onClick={onClick}
+      sx={{
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+        '&:hover': {
+          transform: 'translateX(4px)',
+          bgcolor: alpha(color, 0.04),
+          '& .arrow-icon': {
+            transform: 'translateX(4px)',
+            opacity: 1,
+          },
+        },
+      }}
+    >
+      <CardContent sx={{ p: 2.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box
+            sx={{
+              width: 44,
+              height: 44,
+              borderRadius: 1.5,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: alpha(color, 0.1),
+              color: color,
+            }}
+          >
+            {icon}
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+              {title}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              {description}
+            </Typography>
+          </Box>
+          <ArrowForwardIcon 
+            className="arrow-icon"
+            sx={{ 
+              color: 'text.disabled', 
+              fontSize: 18,
+              transition: 'all 0.2s ease',
+              opacity: 0.5,
+            }} 
+          />
+        </Box>
+      </CardContent>
+    </Card>
+  );
+};
+
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const { user } = useAuth();
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,191 +211,207 @@ const Dashboard: React.FC = () => {
     fetchDashboardData();
   };
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  // Get greeting based on time of day
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
   };
 
   if (loading && !summary) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
-          <CircularProgress size={60} />
+          <CircularProgress size={48} />
         </Box>
       </Container>
     );
   }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box 
-        display="flex" 
-        flexDirection={{ xs: 'column', sm: 'row' }}
-        justifyContent="space-between" 
-        alignItems={{ xs: 'flex-start', sm: 'center' }}
-        mb={3}
-        gap={2}
-      >
-        <Box>
-          <Typography 
-            variant={isMobile ? "h4" : "h3"}
-            sx={{
-              fontWeight: 'bold',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              mb: 1
-            }}
-          >
-            <DashboardIcon sx={{ fontSize: '1.2em', color: 'primary.main' }} />
-            Dashboard
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
-            Real-time overview of your bakery operations
-          </Typography>
-        </Box>
-        <Box display="flex" alignItems="center" gap={2}>
-          <Typography variant="body2" color="text.secondary">
-            Last updated: {formatDate(lastRefresh)}
-          </Typography>
-          <Tooltip title="Refresh data">
-            <IconButton onClick={handleRefresh} disabled={loading}>
-              <RefreshIcon />
-            </IconButton>
-          </Tooltip>
+    <Container maxWidth="lg" sx={{ py: 3 }}>
+      {/* Header */}
+      <Box sx={{ mb: 4 }}>
+        <Box 
+          sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'flex-start',
+            mb: 1,
+          }}
+        >
+          <Box>
+            <Typography 
+              variant="h4"
+              sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}
+            >
+              {getGreeting()}, {user?.firstName} 👋
+            </Typography>
+            <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+              Here's what's happening with your bakery today
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="caption" sx={{ color: 'text.disabled' }}>
+              Updated {formatTime(lastRefresh)}
+            </Typography>
+            <Tooltip title="Refresh">
+              <IconButton 
+                onClick={handleRefresh} 
+                disabled={loading}
+                size="small"
+                sx={{ 
+                  bgcolor: alpha(theme.palette.primary.main, 0.08),
+                  '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.15) },
+                }}
+              >
+                <RefreshIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
         </Box>
       </Box>
 
-      {loading && <LinearProgress sx={{ mb: 2 }} />}
+      {loading && <LinearProgress sx={{ mb: 3, borderRadius: 1 }} />}
 
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+        <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }} onClose={() => setError(null)}>
           {error}
         </Alert>
       )}
 
       {summary && (
         <Grid container spacing={3}>
-          {/* Inventory Overview */}
-          <Grid item xs={12} md={8}>
-            <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center" mb={2}>
-                  <InventoryIcon color="primary" sx={{ mr: 1 }} />
-                  <Typography variant="h6">Inventory Overview</Typography>
-                </Box>
-                
-                {summary.message && (
-                  <Alert severity="info" sx={{ mb: 2 }}>
-                    {summary.message}
-                  </Alert>
-                )}
-
-                <Grid container spacing={2}>
-                  <Grid item xs={6} sm={3}>
-                    <Box textAlign="center" p={2}>
-                      <Typography variant="h4" color="primary" gutterBottom>
-                        {summary.inventoryCounts.rawMaterials}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Raw Materials
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={6} sm={3}>
-                    <Box textAlign="center" p={2}>
-                      <Typography variant="h4" color="secondary" gutterBottom>
-                        {summary.inventoryCounts.finishedProducts}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Finished Products
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={6} sm={3}>
-                    <Box textAlign="center" p={2}>
-                      <Typography variant="h4" color="success.main" gutterBottom>
-                        {summary.inventoryCounts.recipes}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Recipes
-                      </Typography>
-                    </Box>
-                  </Grid>
-                  <Grid item xs={6} sm={3}>
-                    <Box textAlign="center" p={2}>
-                      <Typography variant="h4" color="warning.main" gutterBottom>
-                        {summary.inventoryCounts.total}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Total Items
-                      </Typography>
-                    </Box>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
+          {/* Stats Row */}
+          <Grid item xs={6} sm={6} md={3}>
+            <StatCard
+              title="Raw Materials"
+              value={summary.inventoryCounts.rawMaterials}
+              icon={<InventoryIcon />}
+              color={theme.palette.primary.main}
+              bgColor={alpha(theme.palette.primary.main, 0.1)}
+              onClick={() => navigate('/raw-materials')}
+            />
+          </Grid>
+          <Grid item xs={6} sm={6} md={3}>
+            <StatCard
+              title="Finished Products"
+              value={summary.inventoryCounts.finishedProducts}
+              icon={<LocalDiningIcon />}
+              color="#10B981"
+              bgColor={alpha('#10B981', 0.1)}
+              onClick={() => navigate('/finished-products')}
+            />
+          </Grid>
+          <Grid item xs={6} sm={6} md={3}>
+            <StatCard
+              title="Active Recipes"
+              value={summary.inventoryCounts.recipes}
+              icon={<MenuBookIcon />}
+              color="#F59E0B"
+              bgColor={alpha('#F59E0B', 0.1)}
+              onClick={() => navigate('/recipes')}
+            />
+          </Grid>
+          <Grid item xs={6} sm={6} md={3}>
+            <StatCard
+              title="Total Items"
+              value={summary.inventoryCounts.total}
+              icon={<TrendingUpIcon />}
+              color="#8B5CF6"
+              bgColor={alpha('#8B5CF6', 0.1)}
+            />
           </Grid>
 
           {/* Quick Actions */}
-          <Grid item xs={12} md={4}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
+          <Grid item xs={12} md={6}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent sx={{ p: 3 }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                   Quick Actions
                 </Typography>
-                <Box display="flex" flexDirection="column" gap={2}>
-                  <Button
-                    variant="outlined"
-                    startIcon={<ScienceIcon />}
-                    onClick={() => navigate('/raw-materials')}
-                    fullWidth
-                  >
-                    Manage Raw Materials
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    startIcon={<LocalDiningIcon />}
-                    onClick={() => navigate('/finished-products')}
-                    fullWidth
-                  >
-                    Manage Products
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    startIcon={<MenuBookIcon />}
-                    onClick={() => navigate('/recipes')}
-                    fullWidth
-                  >
-                    View Recipes
-                  </Button>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  <QuickActionCard
+                    title="Start Production"
+                    description="Create a new production batch"
+                    icon={<FactoryIcon />}
+                    color={theme.palette.primary.main}
+                    onClick={() => navigate('/production')}
+                  />
+                  <QuickActionCard
+                    title="New Order"
+                    description="Create a customer order"
+                    icon={<OrderIcon />}
+                    color="#10B981"
+                    onClick={() => navigate('/customer-orders')}
+                  />
+                  <QuickActionCard
+                    title="Manage Customers"
+                    description="View and edit customers"
+                    icon={<PeopleIcon />}
+                    color="#F59E0B"
+                    onClick={() => navigate('/customers')}
+                  />
                 </Box>
               </CardContent>
             </Card>
           </Grid>
 
-          {/* System Status */}
-          <Grid item xs={12}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  System Status
+          {/* Welcome Card */}
+          <Grid item xs={12} md={6}>
+            <Card 
+              sx={{ 
+                height: '100%',
+                background: 'linear-gradient(135deg, #1E4687 0%, #2962B3 100%)',
+                color: 'white',
+              }}
+            >
+              <CardContent sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                  Welcome to RapidPro
                 </Typography>
-                <Alert severity="success">
-                  <Typography variant="body2">
-                    ✅ Bakery Inventory System is running successfully
-                  </Typography>
-                  <Typography variant="body2">
-                    🔄 Intermediate products have been removed and simplified
-                  </Typography>
-                  <Typography variant="body2">
-                    📊 Dashboard data is loading from simplified backend
-                  </Typography>
-                </Alert>
+                <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)', mb: 2, flex: 1 }}>
+                  Your smart production hub for managing bakery operations efficiently. 
+                  Track inventory, manage recipes, and streamline your production workflow.
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                  <Box sx={{ 
+                    bgcolor: 'rgba(255,255,255,0.15)', 
+                    borderRadius: 1.5, 
+                    px: 2, 
+                    py: 1,
+                    backdropFilter: 'blur(10px)',
+                  }}>
+                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                      Organization
+                    </Typography>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      {user?.client?.name}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ 
+                    bgcolor: 'rgba(255,255,255,0.15)', 
+                    borderRadius: 1.5, 
+                    px: 2, 
+                    py: 1,
+                    backdropFilter: 'blur(10px)',
+                  }}>
+                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                      Role
+                    </Typography>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      {user?.customRole?.name || 'User'}
+                    </Typography>
+                  </Box>
+                </Box>
               </CardContent>
             </Card>
           </Grid>
