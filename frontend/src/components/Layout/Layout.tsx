@@ -236,8 +236,26 @@ const Layout: React.FC = () => {
             <MenuIcon />
           </IconButton>
 
-          {/* Logo in Header */}
-          <RapidProLogo size="small" variant="full" />
+          {/* Logo in Header with Blue Background */}
+          <Box
+            sx={{
+              background: 'linear-gradient(135deg, #1E4687 0%, #2962B3 100%)',
+              px: 2,
+              py: 1,
+              borderRadius: 2,
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <RapidProLogo 
+              size="small" 
+              variant="full" 
+              sx={{ 
+                '& .MuiTypography-root': { color: 'white !important' }, 
+                '& .MuiTypography-caption': { color: 'rgba(255,255,255,0.85) !important' } 
+              }} 
+            />
+          </Box>
 
           {/* Spacer */}
           <Box sx={{ flexGrow: 1 }} />
