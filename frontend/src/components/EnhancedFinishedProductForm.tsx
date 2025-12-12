@@ -20,9 +20,28 @@ import {
   Checkbox,
   Tabs,
   Tab,
+  Typography,
+  Card,
+  CardContent,
+  Divider,
+  Skeleton,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
 } from '@mui/material';
-import { AutoAwesome as AutoIcon, CheckCircle as CheckIcon } from '@mui/icons-material';
-import { CreateFinishedProductData, FinishedProduct, ProductStatus } from '../types';
+import {
+  AutoAwesome as AutoIcon,
+  CheckCircle as CheckIcon,
+  Inventory2 as IngredientIcon,
+  AttachMoney as CostIcon,
+  Receipt as RecipeIcon,
+  Scale as ScaleIcon,
+} from '@mui/icons-material';
+import { CreateFinishedProductData, FinishedProduct, ProductStatus, MaterialBreakdown } from '../types';
 import api from '../utils/api';
 import { borderRadius } from '../theme/designTokens';
 
@@ -107,6 +126,9 @@ const EnhancedFinishedProductForm: React.FC<EnhancedFinishedProductFormProps> = 
   const [loadingDefaults, setLoadingDefaults] = useState(false);
   const [autoFilledFields, setAutoFilledFields] = useState<Set<string>>(new Set());
   const [currentTab, setCurrentTab] = useState(0);
+  const [materialBreakdown, setMaterialBreakdown] = useState<MaterialBreakdown | null>(null);
+  const [loadingMaterials, setLoadingMaterials] = useState(false);
+  const [materialsError, setMaterialsError] = useState<string | null>(null);
 
   // Load defaults on mount
   useEffect(() => {
@@ -323,6 +345,50 @@ const EnhancedFinishedProductForm: React.FC<EnhancedFinishedProductFormProps> = 
     window.addEventListener('open-materials-tab', handler);
     return () => window.removeEventListener('open-materials-tab', handler);
   }, []);
+
+  // Fetch material breakdown when editing a product
+  useEffect(() => {
+    const fetchMaterialBreakdown = async () => {
+      if (!product?.id) {
+        setMaterialBreakdown(null);
+        return;
+      }
+
+      setLoadingMaterials(true);
+      setMaterialsError(null);
+
+      try {
+        const response = await api.get(`/production/finished-products/${product.id}/materials`);
+        if (response.data?.success && response.data?.data) {
+          setMaterialBreakdown(response.data.data);
+        } else {
+          setMaterialsError(response.data?.error || 'No material data available');
+        }
+      } catch (error: any) {
+        console.error('Error fetching material breakdown:', error);
+        // Check if the error indicates no production run linked
+        if (error?.response?.data?.error?.includes('No production run')) {
+          setMaterialsError('This product was not created from a production run');
+        } else {
+          setMaterialsError('Unable to load material breakdown');
+        }
+      } finally {
+        setLoadingMaterials(false);
+      }
+    };
+
+    if (open && product) {
+      fetchMaterialBreakdown();
+    }
+  }, [open, product?.id]);
+
+  // Format currency helper
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
+  };
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
@@ -738,12 +804,171 @@ const EnhancedFinishedProductForm: React.FC<EnhancedFinishedProductFormProps> = 
             </Grid>
           </Box>
 
-          {/* Tab Panel 1: Materials (placeholder for future enhancement) */}
+          {/* Tab Panel 1: Materials */}
           {product && (
             <Box hidden={currentTab !== 1} sx={{ mt: 2 }}>
-              <Alert severity="info">
-                Material breakdown will be displayed here when available.
-              </Alert>
+              {loadingMaterials ? (
+                <Box>
+                  <Skeleton variant="rectangular" height={100} sx={{ mb: 2, borderRadius: 2 }} />
+                  <Skeleton variant="rectangular" height={200} sx={{ borderRadius: 2 }} />
+                </Box>
+              ) : materialsError ? (
+                <Alert severity="info" icon={<IngredientIcon />}>
+                  {materialsError}
+                </Alert>
+              ) : materialBreakdown ? (
+                <Box>
+                  {/* Cost Summary Card */}
+                  <Card sx={{ mb: 3, bgcolor: 'primary.50', border: '1px solid', borderColor: 'primary.200' }}>
+                    <CardContent>
+                      <Box display="flex" alignItems="center" gap={1} mb={2}>
+                        <CostIcon color="primary" />
+                        <Typography variant="h6" fontWeight="bold">
+                          Cost Summary
+                        </Typography>
+                      </Box>
+                      <Grid container spacing={2}>
+                        <Grid item xs={6} sm={3}>
+                          <Typography variant="caption" color="text.secondary">
+                            Material Cost
+                          </Typography>
+                          <Typography variant="h6" color="primary.main">
+                            {formatCurrency(materialBreakdown.summary.totalMaterialCost)}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={6} sm={3}>
+                          <Typography variant="caption" color="text.secondary">
+                            Overhead ({materialBreakdown.summary.overheadPercentage}%)
+                          </Typography>
+                          <Typography variant="h6">
+                            {formatCurrency(materialBreakdown.summary.overheadCost)}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={6} sm={3}>
+                          <Typography variant="caption" color="text.secondary">
+                            Total Production Cost
+                          </Typography>
+                          <Typography variant="h6" color="success.main">
+                            {formatCurrency(materialBreakdown.summary.totalProductionCost)}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={6} sm={3}>
+                          <Typography variant="caption" color="text.secondary">
+                            Cost per Unit
+                          </Typography>
+                          <Typography variant="h6" fontWeight="bold">
+                            {formatCurrency(materialBreakdown.summary.costPerUnit)}
+                          </Typography>
+                        </Grid>
+                      </Grid>
+                    </CardContent>
+                  </Card>
+
+                  {/* Production Info */}
+                  {materialBreakdown.productionRun && (
+                    <Card sx={{ mb: 3 }}>
+                      <CardContent>
+                        <Box display="flex" alignItems="center" gap={1} mb={2}>
+                          <RecipeIcon color="secondary" />
+                          <Typography variant="h6" fontWeight="bold">
+                            Production Details
+                          </Typography>
+                        </Box>
+                        <Grid container spacing={2}>
+                          <Grid item xs={12} sm={6}>
+                            <Typography variant="caption" color="text.secondary">
+                              Recipe
+                            </Typography>
+                            <Typography variant="body1" fontWeight="medium">
+                              {materialBreakdown.productionRun.recipe?.name || 'N/A'}
+                            </Typography>
+                          </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <Typography variant="caption" color="text.secondary">
+                              Completed At
+                            </Typography>
+                            <Typography variant="body1">
+                              {materialBreakdown.productionRun.completedAt
+                                ? new Date(materialBreakdown.productionRun.completedAt).toLocaleString()
+                                : 'N/A'}
+                            </Typography>
+                          </Grid>
+                        </Grid>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Materials Table */}
+                  <Card>
+                    <CardContent>
+                      <Box display="flex" alignItems="center" gap={1} mb={2}>
+                        <IngredientIcon color="info" />
+                        <Typography variant="h6" fontWeight="bold">
+                          Materials Used ({materialBreakdown.summary.totalMaterialsUsed})
+                        </Typography>
+                      </Box>
+                      {materialBreakdown.materials && materialBreakdown.materials.length > 0 ? (
+                        <TableContainer component={Paper} variant="outlined">
+                          <Table size="small">
+                            <TableHead>
+                              <TableRow sx={{ bgcolor: 'grey.100' }}>
+                                <TableCell><strong>Material</strong></TableCell>
+                                <TableCell><strong>SKU</strong></TableCell>
+                                <TableCell><strong>Batch</strong></TableCell>
+                                <TableCell align="right"><strong>Quantity</strong></TableCell>
+                                <TableCell align="right"><strong>Unit Cost</strong></TableCell>
+                                <TableCell align="right"><strong>Total Cost</strong></TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {materialBreakdown.materials.map((material, index) => (
+                                <TableRow key={material.id || index} hover>
+                                  <TableCell>
+                                    <Typography variant="body2" fontWeight="medium">
+                                      {material.materialName}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Chip label={material.materialSku} size="small" variant="outlined" />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Typography variant="body2" color="text.secondary">
+                                      {material.materialBatchNumber || 'N/A'}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell align="right">
+                                    <Typography variant="body2">
+                                      {material.quantityUsed?.toFixed(2) || material.quantity?.toFixed(2) || '0'} {material.unit}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell align="right">
+                                    <Typography variant="body2">
+                                      {formatCurrency(material.unitCost || 0)}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell align="right">
+                                    <Typography variant="body2" fontWeight="medium" color="primary.main">
+                                      {formatCurrency(material.totalCost || 0)}
+                                    </Typography>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+                      ) : (
+                        <Alert severity="info">
+                          No materials were recorded for this production.
+                        </Alert>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Box>
+              ) : (
+                <Alert severity="info">
+                  No material breakdown available for this product.
+                </Alert>
+              )}
             </Box>
           )}
         </DialogContent>
