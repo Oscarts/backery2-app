@@ -14,16 +14,16 @@ const RapidProLogo: React.FC<RapidProLogoProps> = ({
 }) => {
   const sizes = {
     small: {
-      icon: '1.5rem',
-      iconSize: 24,
-      title: '1rem',
-      subtitle: '0.65rem',
+      icon: '2rem',
+      iconSize: 32,
+      title: '1.25rem',
+      subtitle: '0.7rem',
     },
     medium: {
-      icon: '2.2rem',
-      iconSize: 35,
-      title: '1.5rem',
-      subtitle: '0.75rem',
+      icon: '2.5rem',
+      iconSize: 40,
+      title: '1.75rem',
+      subtitle: '0.8rem',
     },
     large: {
       icon: '3rem',
