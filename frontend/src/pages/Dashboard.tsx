@@ -51,7 +51,7 @@ interface StatCardProps {
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color, bgColor, onClick }) => {
   const theme = useTheme();
-  
+
   return (
     <Card
       onClick={onClick}
@@ -70,10 +70,10 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color, bgColor,
       <CardContent sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <Box>
-            <Typography 
-              variant="h3" 
-              sx={{ 
-                fontWeight: 700, 
+            <Typography
+              variant="h3"
+              sx={{
+                fontWeight: 700,
                 color: color,
                 lineHeight: 1,
                 mb: 0.5,
@@ -81,9 +81,9 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color, bgColor,
             >
               {value}
             </Typography>
-            <Typography 
-              variant="body2" 
-              sx={{ 
+            <Typography
+              variant="body2"
+              sx={{
                 color: 'text.secondary',
                 fontWeight: 500,
               }}
@@ -122,7 +122,7 @@ interface QuickActionProps {
 
 const QuickActionCard: React.FC<QuickActionProps> = ({ title, description, icon, color, onClick }) => {
   const theme = useTheme();
-  
+
   return (
     <Card
       onClick={onClick}
@@ -163,14 +163,14 @@ const QuickActionCard: React.FC<QuickActionProps> = ({ title, description, icon,
               {description}
             </Typography>
           </Box>
-          <ArrowForwardIcon 
+          <ArrowForwardIcon
             className="arrow-icon"
-            sx={{ 
-              color: 'text.disabled', 
+            sx={{
+              color: 'text.disabled',
               fontSize: 18,
               transition: 'all 0.2s ease',
               opacity: 0.5,
-            }} 
+            }}
           />
         </Box>
       </CardContent>
@@ -240,16 +240,16 @@ const Dashboard: React.FC = () => {
     <Container maxWidth="lg" sx={{ py: 3 }}>
       {/* Header */}
       <Box sx={{ mb: 4 }}>
-        <Box 
-          sx={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
             alignItems: 'flex-start',
             mb: 1,
           }}
         >
           <Box>
-            <Typography 
+            <Typography
               variant="h4"
               sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}
             >
@@ -264,11 +264,11 @@ const Dashboard: React.FC = () => {
               Updated {formatTime(lastRefresh)}
             </Typography>
             <Tooltip title="Refresh">
-              <IconButton 
-                onClick={handleRefresh} 
+              <IconButton
+                onClick={handleRefresh}
                 disabled={loading}
                 size="small"
-                sx={{ 
+                sx={{
                   bgcolor: alpha(theme.palette.primary.main, 0.08),
                   '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.15) },
                 }}
@@ -367,8 +367,8 @@ const Dashboard: React.FC = () => {
 
           {/* Welcome Card */}
           <Grid item xs={12} md={6}>
-            <Card 
-              sx={{ 
+            <Card
+              sx={{
                 height: '100%',
                 background: 'linear-gradient(135deg, #1E4687 0%, #2962B3 100%)',
                 color: 'white',
@@ -379,14 +379,14 @@ const Dashboard: React.FC = () => {
                   Welcome to RapidPro
                 </Typography>
                 <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)', mb: 2, flex: 1 }}>
-                  Your smart production hub for managing bakery operations efficiently. 
+                  Your smart production hub for managing bakery operations efficiently.
                   Track inventory, manage recipes, and streamline your production workflow.
                 </Typography>
                 <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                  <Box sx={{ 
-                    bgcolor: 'rgba(255,255,255,0.15)', 
-                    borderRadius: 1.5, 
-                    px: 2, 
+                  <Box sx={{
+                    bgcolor: 'rgba(255,255,255,0.15)',
+                    borderRadius: 1.5,
+                    px: 2,
                     py: 1,
                     backdropFilter: 'blur(10px)',
                   }}>
@@ -397,10 +397,10 @@ const Dashboard: React.FC = () => {
                       {user?.client?.name}
                     </Typography>
                   </Box>
-                  <Box sx={{ 
-                    bgcolor: 'rgba(255,255,255,0.15)', 
-                    borderRadius: 1.5, 
-                    px: 2, 
+                  <Box sx={{
+                    bgcolor: 'rgba(255,255,255,0.15)',
+                    borderRadius: 1.5,
+                    px: 2,
                     py: 1,
                     backdropFilter: 'blur(10px)',
                   }}>
