@@ -63,6 +63,29 @@ export async function validateOrAssignSku(name: string, clientId: string, incomi
 }
 
 /**
+ * Persist a SKU mapping to the SkuMapping table.
+ * This ensures the SKU reference remains even if all items with this name are deleted.
+ * Uses upsert to avoid duplicates.
+ */
+export async function persistSkuMapping(name: string, sku: string, category?: string): Promise<void> {
+  try {
+    await prisma.skuMapping.upsert({
+      where: { name },
+      update: { sku, category: category || null, updatedAt: new Date() },
+      create: { name, sku, category: category || null },
+    });
+  } catch (error: any) {
+    // If there's a unique constraint error on SKU, try with just the name
+    if (error.code === 'P2002' && error.meta?.target?.includes('sku')) {
+      // SKU already exists for different name, skip persistence
+      console.warn(`SKU ${sku} already mapped to different name, skipping persistence for ${name}`);
+    } else {
+      throw error;
+    }
+  }
+}
+
+/**
  * Get suggested SKU for autocomplete based on partial name.
  * Returns matching name/SKU pairs from existing raw materials, finished products, and SkuMappings.
  */
@@ -113,7 +136,8 @@ export async function getSuggestedSku(partialName: string, clientId: string): Pr
 
 /**
  * Get all SKU mappings for the reference page.
- * Returns comprehensive list from existing products within the client.
+ * Returns comprehensive list from existing products within the client,
+ * plus persisted SKU mappings from the SkuMapping table.
  */
 export async function getAllSkuMappings(clientId: string): Promise<Array<{ name: string; sku: string; source: string }>> {
   // Get from raw materials (tenant-filtered)
@@ -129,6 +153,12 @@ export async function getAllSkuMappings(clientId: string): Promise<Array<{ name:
     where: { sku: { not: '' }, clientId },
     select: { name: true, sku: true },
     distinct: ['name'],
+    orderBy: { name: 'asc' },
+  });
+
+  // Get from persisted SkuMapping table (global reference)
+  const persistedMappings = await prisma.skuMapping.findMany({
+    select: { name: true, sku: true },
     orderBy: { name: 'asc' },
   });
 
@@ -152,7 +182,15 @@ export async function getAllSkuMappings(clientId: string): Promise<Array<{ name:
     }
   });
 
-  return combined;
+  // Finally, add persisted mappings that aren't already in the list
+  persistedMappings.forEach((item) => {
+    if (item.sku && !seenNames.has(item.name)) {
+      combined.push({ name: item.name, sku: item.sku, source: 'sku_mapping' });
+      seenNames.add(item.name);
+    }
+  });
+
+  return combined.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /**

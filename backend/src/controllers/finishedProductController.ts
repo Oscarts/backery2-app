@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../app';
 import Joi from 'joi';
-import { getOrCreateSkuForName, resolveSkuOnRename, validateOrAssignSku } from '../services/skuService';
+import { getOrCreateSkuForName, resolveSkuOnRename, validateOrAssignSku, persistSkuMapping } from '../services/skuService';
 
 // Helper function to get the default quality status (first item by sortOrder)
 const getDefaultQualityStatus = async () => {
@@ -234,7 +234,8 @@ export const finishedProductController = {
         },
       });
 
-      // SKU mapping is now handled internally, no need for explicit mapping persistence
+      // Persist SKU mapping to ensure it remains even if this finished product is deleted
+      await persistSkuMapping(finishedProduct.name, finishedProduct.sku, finishedProduct.category?.name);
 
       res.status(201).json({
         success: true,
@@ -323,6 +324,11 @@ export const finishedProductController = {
           qualityStatus: true,
         },
       });
+
+      // Persist SKU mapping to ensure it remains even if this finished product is deleted
+      if (finishedProduct.sku) {
+        await persistSkuMapping(finishedProduct.name, finishedProduct.sku, finishedProduct.category?.name);
+      }
 
       res.json({
         success: true,

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../app';
 import Joi from 'joi';
-import { getOrCreateSkuForName, resolveSkuOnRename, validateOrAssignSku, getSuggestedSku, getAllSkuMappings, generateBatchNumber, deleteSkuMapping, isSkuInUse } from '../services/skuService';
+import { getOrCreateSkuForName, resolveSkuOnRename, validateOrAssignSku, getSuggestedSku, getAllSkuMappings, generateBatchNumber, deleteSkuMapping, isSkuInUse, persistSkuMapping } from '../services/skuService';
 
 // Helper function to get the default quality status (first item by sortOrder)
 const getDefaultQualityStatus = async () => {
@@ -280,7 +280,8 @@ export const rawMaterialController = {
         },
       });
 
-      // SKU mapping is now handled internally, no need for explicit mapping persistence
+      // Persist SKU mapping to ensure it remains even if this raw material is deleted
+      await persistSkuMapping(rawMaterial.name, rawMaterial.sku || derivedSku, rawMaterial.category?.name);
 
       // Get unit details
       let unitDetails = null;
@@ -382,6 +383,11 @@ export const rawMaterialController = {
           qualityStatus: true,
         },
       });
+
+      // Persist SKU mapping to ensure it remains even if this raw material is deleted
+      if (rawMaterial.sku) {
+        await persistSkuMapping(rawMaterial.name, rawMaterial.sku, rawMaterial.category?.name);
+      }
 
       // Get unit details
       let unitDetails = null;
