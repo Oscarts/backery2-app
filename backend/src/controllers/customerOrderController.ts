@@ -215,8 +215,11 @@ export const createOrder = async (req: Request, res: Response) => {
         }
 
         const unitProductionCost = product.costToProduce || 0;
+        // Calculate unit price based on production cost and markup percentage
+        // If unitPrice is provided in the request, use it; otherwise calculate from markup
+        const unitPrice = item.unitPrice ?? (unitProductionCost * (1 + (priceMarkupPercentage || 30) / 100));
         const lineProductionCost = unitProductionCost * item.quantity;
-        const linePrice = item.unitPrice * item.quantity;
+        const linePrice = unitPrice * item.quantity;
         totalProductionCost += lineProductionCost;
         totalPrice += linePrice;
 
@@ -226,7 +229,7 @@ export const createOrder = async (req: Request, res: Response) => {
           productSku: product.sku || null,
           quantity: item.quantity,
           unitProductionCost,
-          unitPrice: item.unitPrice,
+          unitPrice,
           lineProductionCost,
           linePrice,
         };
@@ -242,7 +245,9 @@ export const createOrder = async (req: Request, res: Response) => {
         notes,
         totalProductionCost,
         totalPrice,
-        clientId, // Explicitly add clientId for nested creation
+        client: {
+          connect: { id: clientId },
+        },
         customer: {
           connect: { id: customerId },
         },
