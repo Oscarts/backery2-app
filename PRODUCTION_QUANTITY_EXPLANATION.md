@@ -13,35 +13,35 @@ Ingredient Needed = Ingredient Quantity × Production Multiplier
 
 **Recipe Definition:**
 - Name: Arepas
-- Yield: 10 kg (makes 10 kg of final product)
+- Yield: 10 pieces (pcs) - makes 10 individual arepas
 - Ingredients:
   - Areparina: 1 kg
   - Agua: 1 L
 
-**Scenario 1: Produce Full Recipe (10 kg)**
+**Scenario 1: Produce Full Recipe (10 pieces)**
 ```
-Target Quantity: 10 kg
-Production Multiplier: 10 kg ÷ 10 kg = 1.0
+Target Quantity: 10 pcs
+Production Multiplier: 10 pcs ÷ 10 pcs = 1.0
 
 Materials Needed:
 - Areparina: 1 kg × 1.0 = 1 kg ✅
 - Agua: 1 L × 1.0 = 1 L ✅
 ```
 
-**Scenario 2: Produce Half Recipe (5 kg)**
+**Scenario 2: Produce Half Recipe (5 pieces)**
 ```
-Target Quantity: 5 kg
-Production Multiplier: 5 kg ÷ 10 kg = 0.5
+Target Quantity: 5 pcs
+Production Multiplier: 5 pcs ÷ 10 pcs = 0.5
 
 Materials Needed:
 - Areparina: 1 kg × 0.5 = 0.5 kg ✅
 - Agua: 1 L × 0.5 = 0.5 L ✅
 ```
 
-**Scenario 3: Produce 1 kg Only**
+**Scenario 3: Produce 1 Piece Only**
 ```
-Target Quantity: 1 kg
-Production Multiplier: 1 kg ÷ 10 kg = 0.1
+Target Quantity: 1 pcs
+Production Multiplier: 1 pcs ÷ 10 pcs = 0.1
 
 Materials Needed:
 - Areparina: 1 kg × 0.1 = 0.1 kg ✅ (CORRECT!)
@@ -50,21 +50,23 @@ Materials Needed:
 
 ## Why 0.1 kg is Correct
 
-If your recipe yields 10 kg and uses 1 kg of flour, then:
-- To make 10 kg, you need 1 kg of flour
-- To make 1 kg, you need 0.1 kg of flour (10% of the recipe)
+If your recipe yields 10 pieces and uses 1 kg of flour, then:
+- To make 10 pieces, you need 1 kg of flour
+- To make 1 piece, you need 0.1 kg of flour (10% of the recipe)
+- Each arepa uses 0.1 kg = 100 grams of Areparina
 
 This is **mathematically correct** and represents proper scaling.
 
 ## Common Misconceptions
 
-❌ **WRONG:** "I want to produce 1 kg, so I should use 1 kg of each ingredient"
+❌ **WRONG:** "I want to produce 1 piece, so I should use 1 kg of each ingredient"
 - This ignores the recipe yield ratio
-- Would produce way more than 1 kg if recipe yields 10 kg
+- Would produce 10 pieces if recipe yields 10 pieces from 1 kg
 
-✅ **CORRECT:** "I want to produce 1 kg, so I need to scale down the recipe"
+✅ **CORRECT:** "I want to produce 1 piece, so I need to scale down the recipe"
 - Production multiplier accounts for recipe yield
-- Results in exact amount requested
+- 1 piece needs 1/10 of ingredients = 0.1 kg Areparina
+- Results in exact amount requested: 1 arepa
 
 ## Reserved Quantity Visibility
 
@@ -91,8 +93,8 @@ Available: 8 kg   ← Calculated: Total - Reserved
 
 ### Step 1: Start Production
 ```
-Recipe: Arepas (yields 10 kg)
-Target: 10 kg
+Recipe: Arepas (yields 10 pieces)
+Target: 10 pieces
 
 Materials Before:
 - Areparina: 10 kg total, 2 kg reserved, 8 kg available
@@ -101,7 +103,7 @@ Materials Before:
 
 ### Step 2: Materials Allocated (Reserved)
 ```
-Allocating: 1 kg Areparina, 1 L Agua
+Allocating: 1 kg Areparina, 1 L Agua for 10 pieces
 
 Materials After Allocation:
 - Areparina: 10 kg total, 3 kg reserved, 7 kg available ✅
@@ -123,7 +125,7 @@ Status: CONSUMED (deducted from inventory)
 
 ### Step 4: Finished Product Created
 ```
-Created: Arepas - 10 kg ✅
+Created: Arepas - 10 pieces ✅
 
 Inventory accurate:
 ✓ Raw materials deducted correctly
