@@ -87,6 +87,7 @@ export interface RawMaterial {
   unit: string;
   unitPrice: number;
   reorderLevel: number;
+  reservedQuantity: number; // Amount allocated to active production runs
   storageLocationId: string;
   qualityStatusId?: string;
   isContaminated: boolean;

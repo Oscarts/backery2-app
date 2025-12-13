@@ -661,15 +661,22 @@ const RawMaterials: React.FC = () => {
                         )}
                         {!isMobile && <TableCell>{material.supplier?.name || 'Unknown'}</TableCell>}
                         <TableCell align="center">
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: isLowStock ? 'error.main' : 'text.primary',
-                              fontWeight: isLowStock ? 'medium' : 'regular',
-                            }}
-                          >
-                            {material.quantity.toLocaleString()} {cleanUnit((material as any).unitDetails?.symbol || material.unit, material.sku)}
-                          </Typography>
+                          <Box>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                color: isLowStock ? 'error.main' : 'text.primary',
+                                fontWeight: isLowStock ? 'medium' : 'regular',
+                              }}
+                            >
+                              {material.quantity.toLocaleString()} {cleanUnit((material as any).unitDetails?.symbol || material.unit, material.sku)}
+                            </Typography>
+                            {material.reservedQuantity > 0 && (
+                              <Typography variant="caption" color="info.main" sx={{ display: 'block' }}>
+                                ({material.reservedQuantity.toLocaleString()} reserved)
+                              </Typography>
+                            )}
+                          </Box>
                         </TableCell>
                         {!isMobile && (
                           <TableCell align="center">
@@ -825,7 +832,7 @@ const RawMaterials: React.FC = () => {
                         <Grid container spacing={2}>
                           <Grid item xs={6}>
                             <Typography variant="subtitle2" color="text.secondary">
-                              Available
+                              Total Qty
                             </Typography>
                             <Typography
                               variant="body1"
@@ -845,6 +852,40 @@ const RawMaterials: React.FC = () => {
                               )}
                             </Typography>
                           </Grid>
+
+                          {material.reservedQuantity > 0 && (
+                            <>
+                              <Grid item xs={6}>
+                                <Typography variant="subtitle2" color="text.secondary">
+                                  Reserved
+                                </Typography>
+                                <Typography
+                                  variant="body1"
+                                  sx={{
+                                    fontWeight: 'medium',
+                                    color: 'info.main',
+                                  }}
+                                >
+                                  {material.reservedQuantity.toLocaleString()} {cleanUnit((material as any).unitDetails?.symbol || material.unit, material.sku)}
+                                </Typography>
+                              </Grid>
+
+                              <Grid item xs={6}>
+                                <Typography variant="subtitle2" color="text.secondary">
+                                  Available
+                                </Typography>
+                                <Typography
+                                  variant="body1"
+                                  sx={{
+                                    fontWeight: 'medium',
+                                    color: (material.quantity - material.reservedQuantity) <= material.reorderLevel ? 'warning.main' : 'success.main',
+                                  }}
+                                >
+                                  {(material.quantity - material.reservedQuantity).toLocaleString()} {cleanUnit((material as any).unitDetails?.symbol || material.unit, material.sku)}
+                                </Typography>
+                              </Grid>
+                            </>
+                          )}
 
                           <Grid item xs={6}>
                             <Typography variant="subtitle2" color="text.secondary">
