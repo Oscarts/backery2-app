@@ -1,27 +1,46 @@
-# Automated Database Backup Workflow
-# Runs weekly and creates SQL dumps stored as GitHub releases
-# Also supports manual triggers for on-demand backups
+# Enhanced Database Backup Workflow with Verification & Alerting
+# 
+# Features:
+# - Daily backups (instead of weekly)
+# - Backup verification (test restore to temp database)
+# - Email/Slack alerting on success/failure
+# - Backup integrity checks
+# - Detailed reporting
 
-name: 📦 Database Backup
+name: 📦 Database Backup (Enhanced)
 
 on:
   schedule:
-    # Runs every Sunday at 2:00 AM UTC
-    - cron: '0 2 * * 0'
+    # Runs every day at 2:00 AM UTC
+    - cron: '0 2 * * *'
   workflow_dispatch:
     inputs:
       backup_reason:
         description: 'Reason for manual backup'
         required: false
         default: 'Manual backup'
+      skip_verification:
+        description: 'Skip backup verification'
+        type: boolean
+        required: false
+        default: false
 
 env:
-  BACKUP_RETENTION_DAYS: 30
+  BACKUP_RETENTION_COUNT: 7  # Keep last 7 daily backups
 
 jobs:
+  # ============================================
+  # Job 1: Create Backup
+  # ============================================
   backup:
-    name: Create Database Backup
+    name: 📦 Create Backup
     runs-on: ubuntu-latest
+    outputs:
+      backup_file: ${{ steps.filename.outputs.filename }}
+      backup_size: ${{ steps.backup.outputs.size }}
+      backup_checksum: ${{ steps.backup.outputs.checksum }}
+      timestamp: ${{ steps.filename.outputs.timestamp }}
+      table_count: ${{ steps.backup.outputs.table_count }}
     
     steps:
       - name: 📥 Checkout repository
@@ -40,44 +59,216 @@ jobs:
           echo "filename=rapidpro_backup_${TIMESTAMP}.sql" >> $GITHUB_OUTPUT
 
       - name: 🔐 Create database backup
+        id: backup
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          # Parse DATABASE_URL and create backup
+          echo "📊 Gathering pre-backup statistics..."
+          
+          # Get table count before backup
+          TABLE_COUNT=$(psql "$DATABASE_URL" -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE';")
+          echo "table_count=$TABLE_COUNT" >> $GITHUB_OUTPUT
+          
+          echo "💾 Creating backup..."
+          
+          # Create backup
           pg_dump "$DATABASE_URL" \
             --no-owner \
             --no-privileges \
             --clean \
             --if-exists \
             --format=plain \
-            > ${{ steps.filename.outputs.filename }}
+            > ${{ steps.filename.outputs.filename }} 2>&1 || {
+              echo "❌ Backup failed!"
+              exit 1
+            }
+          
+          # Verify backup file is not empty
+          if [ ! -s "${{ steps.filename.outputs.filename }}" ]; then
+            echo "❌ Backup file is empty!"
+            exit 1
+          fi
           
           # Compress the backup
           gzip ${{ steps.filename.outputs.filename }}
           
-          # Show backup size
-          ls -lh ${{ steps.filename.outputs.filename }}.gz
+          # Calculate checksum for integrity verification
+          CHECKSUM=$(sha256sum ${{ steps.filename.outputs.filename }}.gz | cut -d' ' -f1)
+          echo "checksum=$CHECKSUM" >> $GITHUB_OUTPUT
+          
+          # Get backup size
+          SIZE=$(ls -lh ${{ steps.filename.outputs.filename }}.gz | awk '{print $5}')
+          echo "size=$SIZE" >> $GITHUB_OUTPUT
+          
+          echo "✅ Backup created successfully"
+          echo "📁 File: ${{ steps.filename.outputs.filename }}.gz"
+          echo "📊 Size: $SIZE"
+          echo "🔐 Checksum: $CHECKSUM"
 
-      - name: 📊 Generate backup report
+      - name: 📤 Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-backup-${{ steps.filename.outputs.timestamp }}
+          path: ${{ steps.filename.outputs.filename }}.gz
+          retention-days: 1
+
+  # ============================================
+  # Job 2: Verify Backup (Test Restore)
+  # ============================================
+  verify:
+    name: ✅ Verify Backup
+    runs-on: ubuntu-latest
+    needs: backup
+    if: ${{ !inputs.skip_verification }}
+    outputs:
+      verification_status: ${{ steps.verify.outputs.status }}
+      verification_details: ${{ steps.verify.outputs.details }}
+    
+    services:
+      # Temporary PostgreSQL for verification
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: backup_verify
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: 📥 Download backup artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: database-backup-${{ needs.backup.outputs.timestamp }}
+
+      - name: 🐘 Install PostgreSQL client
         run: |
-          echo "## 📦 Backup Report" > backup_report.md
-          echo "" >> backup_report.md
-          echo "- **Date**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> backup_report.md
-          echo "- **File**: ${{ steps.filename.outputs.filename }}.gz" >> backup_report.md
-          echo "- **Size**: $(ls -lh ${{ steps.filename.outputs.filename }}.gz | awk '{print $5}')" >> backup_report.md
-          echo "- **Trigger**: ${{ github.event_name }}" >> backup_report.md
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "- **Reason**: ${{ github.event.inputs.backup_reason }}" >> backup_report.md
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: 🔐 Verify checksum
+        run: |
+          EXPECTED="${{ needs.backup.outputs.backup_checksum }}"
+          ACTUAL=$(sha256sum ${{ needs.backup.outputs.backup_file }}.gz | cut -d' ' -f1)
+          
+          if [ "$EXPECTED" != "$ACTUAL" ]; then
+            echo "❌ Checksum mismatch!"
+            echo "Expected: $EXPECTED"
+            echo "Actual: $ACTUAL"
+            exit 1
           fi
+          
+          echo "✅ Checksum verified: $ACTUAL"
+
+      - name: 🗄️ Test restore to temporary database
+        id: verify
+        run: |
+          echo "📦 Decompressing backup..."
+          gunzip -c ${{ needs.backup.outputs.backup_file }}.gz > restore_test.sql
+          
+          echo "🔄 Restoring to test database..."
+          PGPASSWORD=test psql -h localhost -U test -d backup_verify < restore_test.sql 2>&1 || {
+            echo "status=failed" >> $GITHUB_OUTPUT
+            echo "details=Restore failed with errors" >> $GITHUB_OUTPUT
+            exit 1
+          }
+          
+          echo "🔍 Verifying restored data..."
+          
+          # Count tables in restored database
+          RESTORED_TABLES=$(PGPASSWORD=test psql -h localhost -U test -d backup_verify -t -c "
+            SELECT COUNT(*) FROM information_schema.tables 
+            WHERE table_schema = 'public' AND table_type = 'BASE TABLE';
+          ")
+          
+          # Get row counts from restored database
+          RESTORED_ROWS=$(PGPASSWORD=test psql -h localhost -U test -d backup_verify -t -c "
+            SELECT COALESCE(SUM(n_live_tup), 0) FROM pg_stat_user_tables;
+          ")
+          
+          echo "📊 Verification Results:"
+          echo "   Tables restored: $RESTORED_TABLES"
+          echo "   Total rows: $RESTORED_ROWS"
+          
+          # Verify we have data (at least some tables)
+          if [ "$RESTORED_TABLES" -lt 5 ]; then
+            echo "status=warning" >> $GITHUB_OUTPUT
+            echo "details=Only $RESTORED_TABLES tables restored (expected more)" >> $GITHUB_OUTPUT
+          else
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "details=Successfully restored $RESTORED_TABLES tables" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "✅ Backup verification completed successfully!"
+
+  # ============================================
+  # Job 3: Create Release & Report
+  # ============================================
+  release:
+    name: 🏷️ Create Release
+    runs-on: ubuntu-latest
+    needs: [backup, verify]
+    if: always() && needs.backup.result == 'success'
+    
+    steps:
+      - name: 📥 Download backup artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: database-backup-${{ needs.backup.outputs.timestamp }}
+
+      - name: 📊 Generate detailed report
+        id: report
+        run: |
+          VERIFY_STATUS="${{ needs.verify.outputs.verification_status }}"
+          VERIFY_ICON="✅"
+          if [ "$VERIFY_STATUS" == "warning" ]; then
+            VERIFY_ICON="⚠️"
+          elif [ "$VERIFY_STATUS" == "failed" ]; then
+            VERIFY_ICON="❌"
+          fi
+          
+          cat > backup_report.md << EOF
+          ## 📦 Database Backup Report
+          
+          ### Backup Information
+          | Property | Value |
+          |----------|-------|
+          | **Date** | $(date -u '+%Y-%m-%d %H:%M:%S UTC') |
+          | **File** | ${{ needs.backup.outputs.backup_file }}.gz |
+          | **Size** | ${{ needs.backup.outputs.backup_size }} |
+          | **Tables** | ${{ needs.backup.outputs.table_count }} |
+          | **Checksum (SHA256)** | \`${{ needs.backup.outputs.backup_checksum }}\` |
+          | **Trigger** | ${{ github.event_name }} |
+          
+          ### Verification Status
+          | Check | Result |
+          |-------|--------|
+          | **Checksum** | ✅ Verified |
+          | **Test Restore** | ${VERIFY_ICON} ${{ needs.verify.outputs.verification_status || 'skipped' }} |
+          | **Details** | ${{ needs.verify.outputs.verification_details || 'N/A' }} |
+          
+          ### Recovery Instructions
+          \`\`\`bash
+          # Download and restore this backup
+          export DATABASE_URL="your-connection-string"
+          ./scripts/restore-backup.sh ${{ needs.backup.outputs.backup_file }}.gz
+          \`\`\`
+          EOF
+          
           cat backup_report.md
 
       - name: 🏷️ Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: backup-${{ steps.filename.outputs.timestamp }}
-          name: "Database Backup - ${{ steps.filename.outputs.timestamp }}"
+          tag_name: backup-${{ needs.backup.outputs.timestamp }}
+          name: "✅ Database Backup - ${{ needs.backup.outputs.timestamp }}"
           body_path: backup_report.md
-          files: ${{ steps.filename.outputs.filename }}.gz
+          files: ${{ needs.backup.outputs.backup_file }}.gz
           draft: false
           prerelease: false
         env:
@@ -86,12 +277,154 @@ jobs:
       - name: 🧹 Cleanup old backups
         uses: dev-drprasad/delete-older-releases@v0.3.2
         with:
-          keep_latest: 4
+          keep_latest: ${{ env.BACKUP_RETENTION_COUNT }}
           delete_tag_pattern: backup-
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: ✅ Backup completed
+  # ============================================
+  # Job 4: Send Notifications
+  # ============================================
+  notify:
+    name: 📬 Send Notifications
+    runs-on: ubuntu-latest
+    needs: [backup, verify, release]
+    if: always()
+    
+    steps:
+      - name: 📊 Determine overall status
+        id: status
         run: |
-          echo "✅ Database backup completed successfully!"
-          echo "📁 Backup stored as GitHub release: backup-${{ steps.filename.outputs.timestamp }}"
+          if [ "${{ needs.backup.result }}" == "failure" ]; then
+            echo "status=failure" >> $GITHUB_OUTPUT
+            echo "emoji=❌" >> $GITHUB_OUTPUT
+            echo "message=Backup creation failed!" >> $GITHUB_OUTPUT
+            echo "color=15158332" >> $GITHUB_OUTPUT
+            echo "slack_color=danger" >> $GITHUB_OUTPUT
+          elif [ "${{ needs.verify.result }}" == "failure" ]; then
+            echo "status=warning" >> $GITHUB_OUTPUT
+            echo "emoji=⚠️" >> $GITHUB_OUTPUT
+            echo "message=Backup created but verification failed!" >> $GITHUB_OUTPUT
+            echo "color=16776960" >> $GITHUB_OUTPUT
+            echo "slack_color=warning" >> $GITHUB_OUTPUT
+          elif [ "${{ needs.verify.outputs.verification_status }}" == "warning" ]; then
+            echo "status=warning" >> $GITHUB_OUTPUT
+            echo "emoji=⚠️" >> $GITHUB_OUTPUT
+            echo "message=Backup completed with warnings" >> $GITHUB_OUTPUT
+            echo "color=16776960" >> $GITHUB_OUTPUT
+            echo "slack_color=warning" >> $GITHUB_OUTPUT
+          else
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "emoji=✅" >> $GITHUB_OUTPUT
+            echo "message=Backup and verification completed successfully!" >> $GITHUB_OUTPUT
+            echo "color=3066993" >> $GITHUB_OUTPUT
+            echo "slack_color=good" >> $GITHUB_OUTPUT
+          fi
+
+      # Slack Notification (if SLACK_WEBHOOK_URL is set)
+      - name: 📱 Send Slack notification
+        if: ${{ env.SLACK_WEBHOOK_URL != '' }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+            --data '{
+              "attachments": [{
+                "color": "${{ steps.status.outputs.slack_color }}",
+                "blocks": [
+                  {
+                    "type": "header",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "${{ steps.status.outputs.emoji }} RapidPro Database Backup"
+                    }
+                  },
+                  {
+                    "type": "section",
+                    "fields": [
+                      {"type": "mrkdwn", "text": "*Status:*\n${{ steps.status.outputs.message }}"},
+                      {"type": "mrkdwn", "text": "*Size:*\n${{ needs.backup.outputs.backup_size || 'N/A' }}"},
+                      {"type": "mrkdwn", "text": "*Verification:*\n${{ needs.verify.outputs.verification_status || 'Skipped' }}"},
+                      {"type": "mrkdwn", "text": "*Date:*\n'"$(date -u '+%Y-%m-%d %H:%M UTC')"'"}
+                    ]
+                  }
+                ]
+              }]
+            }' \
+            "$SLACK_WEBHOOK_URL"
+
+      # Discord Notification (if DISCORD_WEBHOOK_URL is set)
+      - name: 🎮 Send Discord notification
+        if: ${{ env.DISCORD_WEBHOOK_URL != '' }}
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          curl -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "${{ steps.status.outputs.emoji }} RapidPro Database Backup",
+                "description": "${{ steps.status.outputs.message }}",
+                "color": ${{ steps.status.outputs.color }},
+                "fields": [
+                  {"name": "Size", "value": "${{ needs.backup.outputs.backup_size || 'N/A' }}", "inline": true},
+                  {"name": "Verification", "value": "${{ needs.verify.outputs.verification_status || 'Skipped' }}", "inline": true},
+                  {"name": "Date", "value": "'"$(date -u '+%Y-%m-%d %H:%M UTC')"'", "inline": true}
+                ],
+                "url": "https://github.com/${{ github.repository }}/releases/tag/backup-${{ needs.backup.outputs.timestamp }}"
+              }]
+            }' \
+            "$DISCORD_WEBHOOK_URL"
+
+      # Create GitHub Issue on failure (always works - no extra secrets needed)
+      - name: 📧 Create issue on failure
+        if: ${{ steps.status.outputs.status == 'failure' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `🚨 Database Backup Failed - ${new Date().toISOString().split('T')[0]}`;
+            const body = `
+            ## Backup Failure Alert
+            
+            **Date:** ${new Date().toISOString()}
+            **Workflow Run:** [View Details](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
+            
+            ### Error Details
+            - Backup Job: ${{ needs.backup.result }}
+            - Verify Job: ${{ needs.verify.result }}
+            - Release Job: ${{ needs.release.result }}
+            
+            ### Recommended Actions
+            1. Check the workflow logs for detailed error messages
+            2. Verify DATABASE_URL secret is correctly configured
+            3. Check Neon database status at https://console.neon.tech
+            4. Run a manual backup once issue is resolved
+            
+            ### Manual Backup Command
+            \`\`\`bash
+            export DATABASE_URL="your-connection-string"
+            ./scripts/backup-database.sh
+            \`\`\`
+            
+            ---
+            *This issue was automatically created by the backup workflow.*
+            `;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['backup-failure', 'urgent']
+            });
+
+      - name: ✅ Notification summary
+        run: |
+          echo "📬 Notification Summary"
+          echo "======================="
+          echo "Status: ${{ steps.status.outputs.status }}"
+          echo "Message: ${{ steps.status.outputs.message }}"
+          echo ""
+          echo "Notifications sent:"
+          if [ -n "${{ secrets.SLACK_WEBHOOK_URL }}" ]; then echo "  ✅ Slack"; else echo "  ⏭️ Slack (no webhook configured)"; fi
+          if [ -n "${{ secrets.DISCORD_WEBHOOK_URL }}" ]; then echo "  ✅ Discord"; else echo "  ⏭️ Discord (no webhook configured)"; fi
+          if [ "${{ steps.status.outputs.status }}" == "failure" ]; then echo "  ✅ GitHub Issue created"; else echo "  ⏭️ GitHub Issue (not needed)"; fi

@@ -194,29 +194,67 @@ In Render dashboard → Environment:
 
 The backup workflow is already configured in `.github/workflows/backup-database.yml`
 
-### Step 4.2: Add GitHub Secret
+### Step 4.2: Add GitHub Secrets for Backups
 
 1. Go to GitHub → Repository → **Settings** → **Secrets and variables** → **Actions**
-2. Add secret:
-   - **Name**: `DATABASE_URL`
-   - **Value**: `[Your Neon connection string]`
+2. Add the following secrets:
 
-### Step 4.3: Test Backup Manually
+| Secret Name | Required | Description |
+|-------------|----------|-------------|
+| `DATABASE_URL` | ✅ Yes | Your Neon PostgreSQL connection string |
+| `SLACK_WEBHOOK_URL` | Optional | Slack incoming webhook for notifications |
+| `DISCORD_WEBHOOK_URL` | Optional | Discord webhook for notifications |
+
+### Step 4.3: Configure Slack Notifications (Optional)
+
+1. Go to [Slack API](https://api.slack.com/apps)
+2. Create a new app → "From scratch"
+3. Enable **Incoming Webhooks**
+4. Create a webhook for your channel
+5. Copy the webhook URL and add as `SLACK_WEBHOOK_URL` secret
+
+### Step 4.4: Configure Discord Notifications (Optional)
+
+1. In Discord, go to **Server Settings → Integrations → Webhooks**
+2. Create a new webhook
+3. Copy the webhook URL and add as `DISCORD_WEBHOOK_URL` secret
+
+### Step 4.5: Test Backup Manually
 
 1. Go to **Actions** tab in GitHub
-2. Select **"📦 Database Backup"** workflow
+2. Select **"📦 Database Backup (Enhanced)"** workflow
 3. Click **"Run workflow"**
-4. Verify backup appears in **Releases**
+4. Verify:
+   - ✅ Backup job completes
+   - ✅ Verification job passes (test restore)
+   - ✅ Release created in GitHub Releases
+   - ✅ Notification received (if configured)
 
-### Step 4.4: Backup Schedule
+### Step 4.6: Backup Schedule & Features
 
-| Backup Type | Frequency | Retention | Provider |
-|-------------|-----------|-----------|----------|
-| Point-in-time Recovery | Continuous | 7 days | Neon (automatic) |
-| SQL Dump to GitHub | Weekly (Sunday 2AM UTC) | 4 backups | GitHub Actions |
-| Manual Backup | On-demand | Unlimited | Local script |
+| Feature | Description |
+|---------|-------------|
+| **Frequency** | Daily at 2:00 AM UTC |
+| **Retention** | Last 7 backups kept |
+| **Verification** | Automatic test restore to temp database |
+| **Checksum** | SHA256 integrity verification |
+| **Alerting** | Slack, Discord, or GitHub Issues |
 
-✅ **Checkpoint**: Check GitHub Releases for backup file
+| Backup Type | Frequency | Retention | Recovery Time |
+|-------------|-----------|-----------|---------------|
+| Neon PITR | Continuous | 7 days | ~5 min |
+| GitHub Releases | Daily | 7 backups | ~15 min |
+| Manual Script | On-demand | Unlimited | ~15 min |
+
+### Step 4.7: Alert Behavior
+
+| Event | Slack/Discord | GitHub Issue |
+|-------|---------------|--------------|
+| ✅ Success | Notification sent | No |
+| ⚠️ Warning | Notification sent | No |
+| ❌ Failure | Notification sent | **Auto-created** with label `backup-failure` |
+
+✅ **Checkpoint**: Run manual backup and verify notification received
 
 ---
 
