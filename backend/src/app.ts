@@ -2,6 +2,8 @@ import express, { Application } from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import { PrismaClient } from '@prisma/client';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './config/swagger';
 
 // Middleware
 import { notFound } from './middleware/notFound';
@@ -62,6 +64,19 @@ const createApp = (): Application => {
       timestamp: new Date().toISOString(),
       uptime: process.uptime()
     });
+  });
+
+  // API Documentation - available without authentication
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    explorer: true,
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'RapidPro API Documentation',
+  }));
+  
+  // Serve OpenAPI spec as JSON
+  app.get('/api-docs.json', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(swaggerSpec);
   });
 
   // Public routes (no authentication required)
