@@ -128,6 +128,110 @@ RapidPro features a modern, rounded design system with consistent styling across
 - Update development progress tracking after every completed feature
 - When viewing a Finished Product's Materials tab while status is IN_PRODUCTION, costs may be provisional; complete production to finalize.
 - Use the Refresh button in the Materials tab after completing production to pull definitive cost breakdown.
+
+## � User Roles
+
+### Super Admin (Platform Administrator)
+**Purpose**: Manage the multi-tenant platform and clients
+
+**Credentials**:
+- Email: `superadmin@system.local`
+- Password: `super123`
+- Client: System
+
+**Can Do**:
+- ✅ Manage all bakery clients (create, edit, delete)
+- ✅ Manage users across all clients
+- ✅ Create and edit roles with custom permissions
+- ✅ Configure platform-wide settings
+
+**Cannot Do**:
+- ❌ Access bakery operations (raw materials, recipes, production)
+- ❌ View dashboards or reports
+- ❌ Manage customer orders or inventory
+
+### Bakery Admin (Bakery Operations)
+**Purpose**: Full access to bakery operations within their client
+
+**Credentials**:
+- Email: `admin@demobakery.com`
+- Password: `admin123`
+- Client: Demo Bakery
+
+**Can Do**:
+- ✅ Full access to all bakery operations
+- ✅ Manage inventory, recipes, production
+- ✅ Create and manage customer orders
+- ✅ View dashboards and generate reports
+- ✅ Manage users within their bakery
+
+**📖 Full Documentation**: See [SUPER_ADMIN_GUIDE.md](./SUPER_ADMIN_GUIDE.md) for complete role comparison.
+
+---
+## 🎨 Role Templates System
+
+**Role templates** are standardized roles that are automatically copied to every new bakery client.
+
+### How It Works
+
+1. **Templates live in System client** - marked with `isSystem: true`
+2. **New clients get copies** - All templates (except Super Admin) are copied automatically
+3. **4 Standard Templates:**
+   - **Admin** (33 permissions) - Full bakery operations
+   - **Sales Manager** (14 permissions) - Customers & orders
+   - **Inventory Manager** (12 permissions) - Raw materials & finished products
+   - **Production Manager** (12 permissions) - Recipes & production
+
+### Managing Templates
+
+```bash
+# Create/update templates in System client
+npm run setup:role-templates
+
+# Templates are automatically created during seed
+npm run db:seed
+
+# Templates are copied when creating new clients
+# (happens automatically via clientController.ts)
+```
+
+### Customizing Templates
+
+Edit templates to change what permissions new clients get:
+
+1. **Option A: Edit Script** - Modify `backend/scripts/create-role-templates.ts`
+2. **Option B: Edit Seed** - Modify `createRoleTemplates()` function in `backend/prisma/seed.ts`
+3. Run `npm run setup:role-templates` to apply changes
+
+**Important**: Changes to templates only affect NEW clients. Existing clients keep their current roles.
+
+**📖 Full Guide**: See [ROLE_TEMPLATE_SYSTEM_COMPLETE.md](./ROLE_TEMPLATE_SYSTEM_COMPLETE.md) for details.
+
+---
+## �🔒 Database Safety & Backups
+
+**⚠️ IMPORTANT**: Your database is protected from accidental data loss!
+
+- **Automatic Backups**: Daily at 2:00 AM ✅
+- **Retention**: Last 7 days of backups
+- **Location**: `/Users/oscar/backups/bakery_inventory/`
+
+**Quick Commands:**
+```bash
+# Manual backup NOW
+npm run db:backup
+
+# List available backups
+npm run db:restore
+
+# Restore from backup
+npm run db:restore /Users/oscar/backups/bakery_inventory/backup_YYYYMMDD_HHMMSS.sql.gz
+
+# Safe development seed (no data loss)
+npm run db:seed:dev
+```
+
+**📖 Full Documentation**: See [DATABASE_SAFETY.md](./DATABASE_SAFETY.md) for complete backup/restore procedures, emergency recovery, and safety features.
 - API Testing Dashboard now includes traceability and production health checks—run regularly after backend changes.
 
 ## 🧪 API Testing Dashboard Enhancements

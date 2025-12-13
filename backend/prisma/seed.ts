@@ -1,9 +1,338 @@
 import { PrismaClient } from '@prisma/client';
+import * as readline from 'readline';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
+/**
+ * Creates Super Admin role in System client with platform management permissions.
+ * Also creates the superadmin@system.local user.
+ */
+async function createSuperAdminRole(systemClientId: string) {
+  console.log('\n👑 Creating Super Admin role...');
+
+  const superAdminPermissions = [
+    { resource: 'clients', action: 'view' },
+    { resource: 'clients', action: 'create' },
+    { resource: 'clients', action: 'edit' },
+    { resource: 'clients', action: 'delete' },
+    { resource: 'users', action: 'view' },
+    { resource: 'users', action: 'create' },
+    { resource: 'users', action: 'edit' },
+    { resource: 'users', action: 'delete' },
+    { resource: 'roles', action: 'view' },
+    { resource: 'roles', action: 'create' },
+    { resource: 'roles', action: 'edit' },
+    { resource: 'roles', action: 'delete' },
+    { resource: 'permissions', action: 'view' },
+    { resource: 'settings', action: 'view' },
+    { resource: 'settings', action: 'edit' },
+  ];
+
+  // Create Super Admin role
+  let superAdminRole = await prisma.role.findFirst({
+    where: {
+      clientId: systemClientId,
+      name: 'Super Admin',
+    },
+  });
+
+  if (superAdminRole) {
+    // Clear old permissions
+    await prisma.rolePermission.deleteMany({
+      where: { roleId: superAdminRole.id },
+    });
+  } else {
+    superAdminRole = await prisma.role.create({
+      data: {
+        name: 'Super Admin',
+        description: 'Platform administrator - manages clients, users, and roles across the entire system',
+        clientId: systemClientId,
+        isSystem: true,
+      },
+    });
+  }
+
+  // Add permissions
+  let addedCount = 0;
+  for (const permDef of superAdminPermissions) {
+    let permission = await prisma.permission.findFirst({
+      where: {
+        resource: permDef.resource,
+        action: permDef.action,
+      },
+    });
+
+    if (!permission) {
+      permission = await prisma.permission.create({
+        data: {
+          resource: permDef.resource,
+          action: permDef.action,
+          description: `${permDef.action} ${permDef.resource}`,
+        },
+      });
+    }
+
+    await prisma.rolePermission.create({
+      data: {
+        roleId: superAdminRole.id,
+        permissionId: permission.id,
+      },
+    });
+    addedCount++;
+  }
+
+  console.log(`   ✅ Super Admin role: ${addedCount} permissions`);
+
+  // Create superadmin user
+  console.log('👤 Creating superadmin user...');
+  const superAdminUser = await prisma.user.create({
+    data: {
+      email: 'superadmin@system.local',
+      passwordHash: await bcrypt.hash('super123', 12),
+      firstName: 'Super',
+      lastName: 'Admin',
+      role: 'ADMIN',
+      roleId: superAdminRole.id,
+      clientId: systemClientId,
+      isActive: true,
+    },
+  });
+  console.log('✅ Created superadmin@system.local (Super Admin role)');
+}
+
+/**
+ * Creates role templates in System client.
+ * These templates are copied to all new clients automatically.
+ * 
+ * Template Roles:
+ * - Admin (33 permissions): Full bakery operations
+ * - Sales Manager (14 permissions): Customers & orders
+ * - Inventory Manager (12 permissions): Inventory management
+ * - Production Manager (12 permissions): Production & recipes
+ */
+async function createRoleTemplates(systemClientId: string) {
+  console.log('\n🎨 Creating role templates in System client...');
+
+  // Define template roles with their permissions
+  const roleTemplates = [
+    {
+      name: 'Admin',
+      description: 'Full access to all bakery operations and settings',
+      permissions: [
+        { resource: 'dashboard', action: 'view' },
+        { resource: 'raw-materials', action: 'view' },
+        { resource: 'raw-materials', action: 'create' },
+        { resource: 'raw-materials', action: 'edit' },
+        { resource: 'raw-materials', action: 'delete' },
+        { resource: 'finished-products', action: 'view' },
+        { resource: 'finished-products', action: 'create' },
+        { resource: 'finished-products', action: 'edit' },
+        { resource: 'finished-products', action: 'delete' },
+        { resource: 'recipes', action: 'view' },
+        { resource: 'recipes', action: 'create' },
+        { resource: 'recipes', action: 'edit' },
+        { resource: 'recipes', action: 'delete' },
+        { resource: 'production', action: 'view' },
+        { resource: 'production', action: 'create' },
+        { resource: 'production', action: 'edit' },
+        { resource: 'production', action: 'delete' },
+        { resource: 'customers', action: 'view' },
+        { resource: 'customers', action: 'create' },
+        { resource: 'customers', action: 'edit' },
+        { resource: 'customers', action: 'delete' },
+        { resource: 'customer-orders', action: 'view' },
+        { resource: 'customer-orders', action: 'create' },
+        { resource: 'customer-orders', action: 'edit' },
+        { resource: 'customer-orders', action: 'delete' },
+        { resource: 'settings', action: 'view' },
+        { resource: 'settings', action: 'edit' },
+        { resource: 'users', action: 'view' },
+        { resource: 'users', action: 'create' },
+        { resource: 'users', action: 'edit' },
+        { resource: 'users', action: 'delete' },
+        { resource: 'roles', action: 'view' },
+        { resource: 'reports', action: 'view' },
+      ],
+    },
+    {
+      name: 'Sales Manager',
+      description: 'Manage customers, orders, and view inventory',
+      permissions: [
+        { resource: 'dashboard', action: 'view' },
+        { resource: 'raw-materials', action: 'view' },
+        { resource: 'finished-products', action: 'view' },
+        { resource: 'recipes', action: 'view' },
+        { resource: 'production', action: 'view' },
+        { resource: 'customers', action: 'view' },
+        { resource: 'customers', action: 'create' },
+        { resource: 'customers', action: 'edit' },
+        { resource: 'customers', action: 'delete' },
+        { resource: 'customer-orders', action: 'view' },
+        { resource: 'customer-orders', action: 'create' },
+        { resource: 'customer-orders', action: 'edit' },
+        { resource: 'customer-orders', action: 'delete' },
+        { resource: 'reports', action: 'view' },
+      ],
+    },
+    {
+      name: 'Inventory Manager',
+      description: 'Manage raw materials and finished products inventory',
+      permissions: [
+        { resource: 'dashboard', action: 'view' },
+        { resource: 'raw-materials', action: 'view' },
+        { resource: 'raw-materials', action: 'create' },
+        { resource: 'raw-materials', action: 'edit' },
+        { resource: 'raw-materials', action: 'delete' },
+        { resource: 'finished-products', action: 'view' },
+        { resource: 'finished-products', action: 'create' },
+        { resource: 'finished-products', action: 'edit' },
+        { resource: 'finished-products', action: 'delete' },
+        { resource: 'recipes', action: 'view' },
+        { resource: 'production', action: 'view' },
+        { resource: 'reports', action: 'view' },
+      ],
+    },
+    {
+      name: 'Production Manager',
+      description: 'Manage production, recipes, and view inventory',
+      permissions: [
+        { resource: 'dashboard', action: 'view' },
+        { resource: 'raw-materials', action: 'view' },
+        { resource: 'finished-products', action: 'view' },
+        { resource: 'recipes', action: 'view' },
+        { resource: 'recipes', action: 'create' },
+        { resource: 'recipes', action: 'edit' },
+        { resource: 'recipes', action: 'delete' },
+        { resource: 'production', action: 'view' },
+        { resource: 'production', action: 'create' },
+        { resource: 'production', action: 'edit' },
+        { resource: 'production', action: 'delete' },
+        { resource: 'reports', action: 'view' },
+      ],
+    },
+  ];
+
+  for (const template of roleTemplates) {
+    // Check if template role already exists
+    let role = await prisma.role.findFirst({
+      where: {
+        clientId: systemClientId,
+        name: template.name,
+      },
+    });
+
+    if (role) {
+      // Update existing role to be a template
+      await prisma.role.update({
+        where: { id: role.id },
+        data: {
+          description: template.description,
+          isSystem: true,
+        },
+      });
+      // Delete existing permissions
+      await prisma.rolePermission.deleteMany({
+        where: { roleId: role.id },
+      });
+    } else {
+      // Create new template role
+      role = await prisma.role.create({
+        data: {
+          name: template.name,
+          description: template.description,
+          clientId: systemClientId,
+          isSystem: true,
+        },
+      });
+    }
+
+    // Add permissions
+    let addedCount = 0;
+    for (const permDef of template.permissions) {
+      const permission = await prisma.permission.findFirst({
+        where: {
+          resource: permDef.resource,
+          action: permDef.action,
+        },
+      });
+
+      if (permission) {
+        await prisma.rolePermission.create({
+          data: {
+            roleId: role.id,
+            permissionId: permission.id,
+          },
+        });
+        addedCount++;
+      }
+    }
+
+    console.log(`   ✅ ${template.name}: ${addedCount} permissions`);
+  }
+
+  console.log('✅ Role templates created in System client');
+}
+
+/**
+ * SAFETY CHECK: Prevent accidental data loss
+ * This seed script WIPES ALL DATA - use with caution!
+ */
+async function confirmDataWipe(): Promise<boolean> {
+  const dbUrl = process.env.DATABASE_URL || '';
+  const isProduction = dbUrl.includes('neon.tech') || dbUrl.includes('railway') || dbUrl.includes('render');
+  const isLocalhost = dbUrl.includes('localhost') || dbUrl.includes('127.0.0.1');
+
+  // Allow automatic seeding in production/CI environments
+  if (process.env.CI === 'true' || process.env.RAILWAY_ENVIRONMENT || process.env.RENDER) {
+    console.log('🤖 CI/Production environment detected - proceeding automatically');
+    return true;
+  }
+
+  // Force confirmation flag
+  if (process.argv.includes('--force') || process.argv.includes('-f')) {
+    console.log('⚠️  --force flag detected - skipping confirmation');
+    return true;
+  }
+
+  // For localhost, require explicit confirmation
+  if (isLocalhost) {
+    console.log('\n⚠️  ═══════════════════════════════════════════════════════════');
+    console.log('⚠️  WARNING: You are about to DELETE ALL DATA in your database!');
+    console.log('⚠️  Database:', dbUrl.split('@')[1]?.split('?')[0] || 'local');
+    console.log('⚠️  ═══════════════════════════════════════════════════════════\n');
+
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+
+    return new Promise((resolve) => {
+      rl.question('Type "DELETE ALL DATA" to confirm: ', (answer) => {
+        rl.close();
+        if (answer === 'DELETE ALL DATA') {
+          console.log('✅ Confirmed - proceeding with seed\n');
+          resolve(true);
+        } else {
+          console.log('❌ Cancelled - your data is safe');
+          resolve(false);
+        }
+      });
+    });
+  }
+
+  return true;
+}
+
 async function main() {
   console.log('🌱 Starting seed...');
+
+  // SAFETY CHECK
+  const confirmed = await confirmDataWipe();
+  if (!confirmed) {
+    console.log('\n✋ Seed cancelled - no changes made');
+    process.exit(0);
+  }
 
   // Delete existing data in reverse order (to respect foreign keys)
   console.log('🗑️  Cleaning existing data...');
@@ -24,8 +353,27 @@ async function main() {
   await prisma.client.deleteMany();
   console.log('✅ Cleaned existing data');
 
-  // Create client first (required for multi-tenant isolation)
-  console.log('🏢 Creating test client...');
+  // Create System client for Super Admin (platform management)
+  console.log('🏢 Creating System client...');
+  const systemClient = await prisma.client.create({
+    data: {
+      name: 'System',
+      email: 'system@rapidpro.local',
+      subscriptionPlan: 'ENTERPRISE',
+      slug: 'system',
+      isActive: true,
+    }
+  });
+  console.log('✅ Created System client:', systemClient.id);
+
+  // Create role templates in System client (will be copied to new clients)
+  await createRoleTemplates(systemClient.id);
+
+  // Create Super Admin role and user
+  await createSuperAdminRole(systemClient.id);
+
+  // Create Demo Bakery client (for bakery operations)
+  console.log('🏢 Creating Demo Bakery client...');
   const client = await prisma.client.create({
     data: {
       name: 'Demo Bakery',
@@ -34,10 +382,62 @@ async function main() {
       slug: 'demo-bakery'
     }
   });
-  console.log('✅ Created test client:', client.id);
+  console.log('✅ Created Demo Bakery client:', client.id);
 
-  // Create test user for this client
-  console.log('👤 Creating test user...');
+  // Copy role templates from System client to Demo Bakery
+  console.log('\n📋 Copying role templates to Demo Bakery...');
+  const roleTemplates = await prisma.role.findMany({
+    where: {
+      clientId: systemClient.id,
+      isSystem: true,
+      NOT: { name: 'Super Admin' }, // Don't copy Super Admin role
+    },
+    include: {
+      permissions: {
+        include: { permission: true },
+      },
+    },
+  });
+
+  for (const template of roleTemplates) {
+    // Create role copy for this client
+    const newRole = await prisma.role.create({
+      data: {
+        name: template.name,
+        description: template.description,
+        isSystem: false, // Client role, not template
+        clientId: client.id,
+      },
+    });
+
+    // Copy all permissions
+    for (const rp of template.permissions) {
+      await prisma.rolePermission.create({
+        data: {
+          roleId: newRole.id,
+          permissionId: rp.permission.id,
+        },
+      });
+    }
+
+    console.log(`   ✅ Copied role: ${template.name} (${template.permissions.length} permissions)`);
+  }
+  console.log('✅ Role templates copied to Demo Bakery');
+
+  // Get the Admin role for this client
+  const adminRole = await prisma.role.findFirst({
+    where: {
+      clientId: client.id,
+      name: 'Admin',
+    },
+  });
+
+  if (!adminRole) {
+    throw new Error('Admin role not found for Demo Bakery client');
+  }
+
+  // Create bakery admin user (for bakery operations)
+  console.log('👤 Creating bakery admin user...');
   const testUser = await prisma.user.create({
     data: {
       email: 'admin@demobakery.com',
@@ -45,11 +445,12 @@ async function main() {
       firstName: 'Demo',
       lastName: 'Admin',
       role: 'ADMIN',
+      roleId: adminRole.id, // Assign Admin role from templates
       clientId: client.id,
       isActive: true
     }
   });
-  console.log('✅ Created test user:', testUser.email);
+  console.log('✅ Created test user:', testUser.email, '(Role: Admin)');
 
   // Create categories
   const categories = await Promise.all([
@@ -427,7 +828,122 @@ async function main() {
 
   console.log(`✅ Created ${finishedProducts.length} finished products`);
 
+  // Verify created users
+  await verifySeededUsers();
+
   console.log('🎉 Seed completed successfully!');
+}
+
+/**
+ * Verify that seeded users can authenticate and have correct permissions
+ */
+async function verifySeededUsers() {
+  console.log('\n🧪 Verifying seeded users...');
+
+  try {
+    // Test admin@demobakery.com
+    const bakeryAdmin = await prisma.user.findUnique({
+      where: { email: 'admin@demobakery.com' },
+      include: {
+        client: true,
+        customRole: {
+          include: {
+            permissions: true,
+          },
+        },
+      },
+    });
+
+    if (!bakeryAdmin) {
+      throw new Error('❌ Bakery admin user not found!');
+    }
+
+    // Verify password hash exists
+    if (!bakeryAdmin.passwordHash || bakeryAdmin.passwordHash.length < 10) {
+      throw new Error('❌ Bakery admin has invalid password hash!');
+    }
+
+    // Verify role assignment
+    if (!bakeryAdmin.roleId) {
+      throw new Error('❌ Bakery admin has no roleId assigned!');
+    }
+
+    // Verify permissions
+    if (!bakeryAdmin.customRole) {
+      throw new Error('❌ Bakery admin has no customRole!');
+    }
+
+    const bakeryAdminPermCount = bakeryAdmin.customRole.permissions.length;
+    if (bakeryAdminPermCount !== 33) {
+      throw new Error(`❌ Bakery admin should have 33 permissions, has ${bakeryAdminPermCount}!`);
+    }
+
+    // Verify password works
+    const passwordValid = await bcrypt.compare('admin123', bakeryAdmin.passwordHash);
+    if (!passwordValid) {
+      throw new Error('❌ Bakery admin password verification failed!');
+    }
+
+    console.log('   ✅ admin@demobakery.com');
+    console.log(`      • Client: ${bakeryAdmin.client.name}`);
+    console.log(`      • Role: ${bakeryAdmin.customRole.name}`);
+    console.log(`      • Permissions: ${bakeryAdminPermCount}`);
+    console.log(`      • Password: Valid`);
+
+    // Test superadmin@system.local
+    const superAdmin = await prisma.user.findUnique({
+      where: { email: 'superadmin@system.local' },
+      include: {
+        client: true,
+        customRole: {
+          include: {
+            permissions: true,
+          },
+        },
+      },
+    });
+
+    if (!superAdmin) {
+      throw new Error('❌ Super admin user not found!');
+    }
+
+    // Verify password hash exists
+    if (!superAdmin.passwordHash || superAdmin.passwordHash.length < 10) {
+      throw new Error('❌ Super admin has invalid password hash!');
+    }
+
+    // Verify role assignment
+    if (!superAdmin.roleId) {
+      throw new Error('❌ Super admin has no roleId assigned!');
+    }
+
+    // Verify permissions
+    if (!superAdmin.customRole) {
+      throw new Error('❌ Super admin has no customRole!');
+    }
+
+    const superAdminPermCount = superAdmin.customRole.permissions.length;
+    if (superAdminPermCount !== 15) {
+      throw new Error(`❌ Super admin should have 15 permissions, has ${superAdminPermCount}!`);
+    }
+
+    // Verify password works
+    const superPasswordValid = await bcrypt.compare('super123', superAdmin.passwordHash);
+    if (!superPasswordValid) {
+      throw new Error('❌ Super admin password verification failed!');
+    }
+
+    console.log('   ✅ superadmin@system.local');
+    console.log(`      • Client: ${superAdmin.client.name}`);
+    console.log(`      • Role: ${superAdmin.customRole.name}`);
+    console.log(`      • Permissions: ${superAdminPermCount}`);
+    console.log(`      • Password: Valid`);
+
+    console.log('\n✅ All seeded users verified successfully!');
+  } catch (error) {
+    console.error('\n❌ User verification failed:', error);
+    throw error;
+  }
 }
 
 main()

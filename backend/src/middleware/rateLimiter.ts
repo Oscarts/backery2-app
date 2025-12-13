@@ -7,12 +7,16 @@ import rateLimit from 'express-rate-limit';
  * - Brute force attacks on authentication endpoints
  * - DDoS attacks
  * - API abuse
+ * 
+ * Development mode: Rate limiting is relaxed for easier testing
  */
 
-// General API rate limiter - 100 requests per 15 minutes
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
+// General API rate limiter - 100 requests per 15 minutes (1000 in dev)
 export const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs
+    max: isDevelopment ? 1000 : 100, // More lenient in development
     message: {
         error: 'Too many requests',
         message: 'You have exceeded the rate limit. Please try again later.',
@@ -26,10 +30,10 @@ export const generalLimiter = rateLimit({
     },
 });
 
-// Strict rate limiter for authentication endpoints - 5 requests per 15 minutes
+// Strict rate limiter for authentication endpoints - 5 requests per 15 minutes (50 in dev)
 export const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // Limit each IP to 5 login/signup attempts per windowMs
+    max: isDevelopment ? 50 : 5, // More lenient in development for testing
     message: {
         error: 'Too many authentication attempts',
         message: 'Too many login attempts. Please try again after 15 minutes.',
@@ -40,10 +44,10 @@ export const authLimiter = rateLimit({
     skipSuccessfulRequests: false, // Count all requests, not just failed ones
 });
 
-// Signup rate limiter - 3 signups per hour per IP
+// Signup rate limiter - 3 signups per hour per IP (30 in dev)
 export const signupLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: 3, // Limit each IP to 3 signup attempts per hour
+    max: isDevelopment ? 30 : 3, // More lenient in development
     message: {
         error: 'Too many signup attempts',
         message: 'Too many accounts created from this IP. Please try again later.',
@@ -53,10 +57,10 @@ export const signupLimiter = rateLimit({
     legacyHeaders: false,
 });
 
-// Password reset rate limiter - 3 requests per hour
+// Password reset rate limiter - 3 requests per hour (30 in dev)
 export const passwordResetLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: 3, // Limit each IP to 3 password reset attempts per hour
+    max: isDevelopment ? 30 : 3, // More lenient in development
     message: {
         error: 'Too many password reset attempts',
         message: 'Too many password reset requests. Please try again later.',
@@ -66,10 +70,10 @@ export const passwordResetLimiter = rateLimit({
     legacyHeaders: false,
 });
 
-// API creation limiter for expensive operations - 30 per 15 minutes
+// API creation limiter for expensive operations - 30 per 15 minutes (300 in dev)
 export const createLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 30, // Limit create operations
+    max: isDevelopment ? 300 : 30, // More lenient in development
     message: {
         error: 'Too many create requests',
         message: 'You are creating resources too quickly. Please slow down.',
