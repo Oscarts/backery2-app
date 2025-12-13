@@ -3,6 +3,7 @@ import { login, register, getProfile, logout } from '../controllers/authControll
 import { authenticate } from '../middleware/auth';
 import { requirePermission } from '../middleware/permissions';
 import normalizeRequest from '../middleware/normalizeRequest';
+import { authLimiter, signupLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
 
@@ -46,7 +47,8 @@ router.post('/debug/echo-login', (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/login', login);
+// Apply strict rate limiting to login endpoint (5 attempts per 15 min)
+router.post('/login', authLimiter, login);
 
 /**
  * @swagger
@@ -122,6 +124,7 @@ router.get('/profile', authenticate, getProfile);
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
-router.post('/register', authenticate, requirePermission('users', 'create'), register);
+// Apply signup rate limiting (3 signups per hour per IP) + auth required
+router.post('/register', signupLimiter, authenticate, requirePermission('users', 'create'), register);
 
 export default router;

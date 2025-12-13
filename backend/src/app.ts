@@ -11,6 +11,7 @@ import { errorHandler } from './middleware/errorHandler';
 import { setupTenantIsolation } from './middleware/tenantIsolation';
 import { authenticate, optionalAuthenticate } from './middleware/auth';
 import { tenantContext } from './middleware/tenantIsolation';
+import { generalLimiter, authLimiter, signupLimiter } from './middleware/rateLimiter';
 
 // Routes  
 import categoryRoutes from './routes/categories';
@@ -55,6 +56,11 @@ const createApp = (): Application => {
   // Only use morgan in development to avoid cluttering test output
   if (process.env.NODE_ENV !== 'test') {
     app.use(morgan('combined'));
+  }
+
+  // Apply rate limiting (skip in test environment)
+  if (process.env.NODE_ENV !== 'test') {
+    app.use('/api/', generalLimiter);
   }
 
   // Routes

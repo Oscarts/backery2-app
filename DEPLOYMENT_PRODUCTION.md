@@ -29,23 +29,22 @@
 | **Repair skipped tests** | ✅ Done | `feature/repair-integration-tests` | Multi-tenant test fixtures, 13 tests passing |
 | **Test fixtures module** | ✅ Done | `feature/repair-integration-tests` | Reusable test utilities for multi-tenant DB |
 | **API documentation** | ✅ Done | `feature/repair-integration-tests` | Swagger/OpenAPI at `/api-docs` |
+| **Swagger route docs** | ✅ Done | `main` | All major routes documented (auth, rawMaterials, finishedProducts, recipes, production, customer-orders) |
+| **E2E test framework** | ✅ Done | `main` | Playwright with 44 tests (auth, raw-materials, recipes, production, orders) |
+| **Rate limiting** | ✅ Done | `main` | express-rate-limit for auth (5/15min) and general API (100/15min) |
 
 ### 🔄 Pending Tasks (Post-Deployment)
 
 | Priority | Task | Description | Estimated Time |
 |----------|------|-------------|----------------|
-| 🟡 Medium | **E2E tests** | Add Playwright/Cypress E2E tests for critical paths | 4-6 hours |
 | 🟡 Medium | **Additional integration tests** | Expand test coverage for other services | 3-4 hours |
-| 🟡 Medium | **Document more routes** | Add Swagger JSDoc to remaining route files | 1-2 hours |
 | 🟢 Low | **Performance monitoring** | Add application monitoring (Sentry, LogRocket) | 1-2 hours |
-| 🟢 Low | **Rate limiting** | Implement API rate limiting for production | 1-2 hours |
 
 ### ⚠️ Known Technical Debt
 
 | Item | Location | Impact | Notes |
 |------|----------|--------|-------|
 | SKU service refactor | `backend/src/services/skuService.ts` | Low | Consider extracting `isSkuInUse` to separate validation module |
-| Incomplete Swagger docs | Various route files | Low | Auth and Raw Materials documented, others pending |
 
 ### 📁 Key Files Changed (This Session)
 
