@@ -26,15 +26,16 @@
 | TypeScript errors fixed | ✅ Done | `1f6438d` | skuService, controllers |
 | Vite environment types | ✅ Done | `1f6438d` | vite-env.d.ts created |
 | Unused variable warnings | ✅ Done | `1f6438d` | Dashboard, form components |
+| **Repair skipped tests** | ✅ Done | `feature/repair-integration-tests` | Multi-tenant test fixtures, 13 tests passing |
+| **Test fixtures module** | ✅ Done | `feature/repair-integration-tests` | Reusable test utilities for multi-tenant DB |
 
 ### 🔄 Pending Tasks (Post-Deployment)
 
 | Priority | Task | Description | Estimated Time |
 |----------|------|-------------|----------------|
-| 🔴 High | **Repair skipped tests** | Update `productionCostCalculation.test.ts` with full multi-tenant fixtures | 2-3 hours |
-| 🔴 High | **Integration tests** | Add integration tests for recipeCostService with proper DB setup | 3-4 hours |
 | 🟡 Medium | **E2E tests** | Add Playwright/Cypress E2E tests for critical paths | 4-6 hours |
 | 🟡 Medium | **API documentation** | Generate OpenAPI/Swagger docs from routes | 2-3 hours |
+| 🟡 Medium | **Additional integration tests** | Expand test coverage for other services | 3-4 hours |
 | 🟢 Low | **Performance monitoring** | Add application monitoring (Sentry, LogRocket) | 1-2 hours |
 | 🟢 Low | **Rate limiting** | Implement API rate limiting for production | 1-2 hours |
 
@@ -42,7 +43,6 @@
 
 | Item | Location | Impact | Notes |
 |------|----------|--------|-------|
-| Simplified unit tests | `backend/src/__tests__/productionCostCalculation.test.ts` | Low | Removed DB-dependent tests to fix build; needs proper multi-tenant test fixtures |
 | SKU service refactor | `backend/src/services/skuService.ts` | Low | Consider extracting `isSkuInUse` to separate validation module |
 | Unused theme imports | Various frontend files | None | Cleaned up, but watch for new occurrences |
 
@@ -52,7 +52,9 @@
 backend/
 ├── src/
 │   ├── __tests__/
-│   │   └── productionCostCalculation.test.ts  # Simplified (DB tests removed)
+│   │   ├── productionCostCalculation.test.ts  # RESTORED: Full integration tests
+│   │   └── utils/
+│   │       └── testFixtures.ts                # NEW: Multi-tenant test utilities
 │   ├── controllers/
 │   │   ├── finishedProductController.ts       # Fixed resolveSkuOnRename call
 │   │   └── rawMaterialController.ts           # Fixed clientId params
