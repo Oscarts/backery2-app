@@ -68,7 +68,7 @@ export class ProductionCompletionService {
             }
 
             // Allocate materials if not already done
-            const existingAllocations = await prisma.productionAllocation.findMany({
+            let existingAllocations = await prisma.productionAllocation.findMany({
                 where: { productionRunId }
             });
 
@@ -89,6 +89,11 @@ export class ProductionCompletionService {
                     fs.appendFileSync('/tmp/production-debug.log',
                         `${new Date().toISOString()} SERVICE: Allocated ${allocations.length} materials\n`
                     );
+                    
+                    // Refresh allocations list
+                    existingAllocations = await prisma.productionAllocation.findMany({
+                        where: { productionRunId }
+                    });
                 } catch (allocError) {
                     console.warn('⚠️ Material allocation failed:', allocError);
                     fs.appendFileSync('/tmp/production-debug.log',
@@ -98,6 +103,45 @@ export class ProductionCompletionService {
                 }
             } else {
                 console.log(`✓ Materials already allocated (${existingAllocations.length} items)`);
+            }
+
+            // CRITICAL FIX: Consume allocated materials to deduct them from inventory
+            // This was the missing piece - materials were reserved but never consumed
+            if (existingAllocations.length > 0) {
+                console.log('📦 Consuming allocated materials...');
+                fs.appendFileSync('/tmp/production-debug.log',
+                    `${new Date().toISOString()} SERVICE: Starting material consumption\n`
+                );
+
+                try {
+                    // Only consume allocations that haven't been consumed yet
+                    const unconsumedAllocations = existingAllocations.filter(
+                        alloc => alloc.status === 'ALLOCATED'
+                    );
+
+                    if (unconsumedAllocations.length > 0) {
+                        const consumptions = unconsumedAllocations.map(alloc => ({
+                            allocationId: alloc.id,
+                            quantityConsumed: alloc.quantityAllocated,
+                            notes: `Consumed for production completion`
+                        }));
+
+                        await inventoryAllocationService.recordMaterialConsumption(consumptions);
+                        
+                        console.log(`✅ Consumed ${consumptions.length} materials successfully`);
+                        fs.appendFileSync('/tmp/production-debug.log',
+                            `${new Date().toISOString()} SERVICE: Consumed ${consumptions.length} materials\n`
+                        );
+                    } else {
+                        console.log('✓ Materials already consumed');
+                    }
+                } catch (consumeError) {
+                    console.error('❌ Material consumption failed:', consumeError);
+                    fs.appendFileSync('/tmp/production-debug.log',
+                        `${new Date().toISOString()} SERVICE ERROR: Material consumption failed - ${consumeError}\n`
+                    );
+                    // Continue with completion but log the error
+                }
             }
 
             // Use actual quantity if provided, otherwise use target quantity
