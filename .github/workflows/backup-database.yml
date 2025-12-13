@@ -1,7 +1,7 @@
 # Enhanced Database Backup Workflow with Verification & Alerting
-# 
+#
 # Features:
-# - Daily backups (instead of weekly)
+# - Weekly backups (every Sunday at 2:00 AM UTC)
 # - Backup verification (test restore to temp database)
 # - Email/Slack alerting on success/failure
 # - Backup integrity checks
@@ -11,22 +11,22 @@ name: 📦 Database Backup (Enhanced)
 
 on:
   schedule:
-    # Runs every day at 2:00 AM UTC
-    - cron: '0 2 * * *'
+    # Runs every Sunday at 2:00 AM UTC
+    - cron: "0 2 * * 0"
   workflow_dispatch:
     inputs:
       backup_reason:
-        description: 'Reason for manual backup'
+        description: "Reason for manual backup"
         required: false
-        default: 'Manual backup'
+        default: "Manual backup"
       skip_verification:
-        description: 'Skip backup verification'
+        description: "Skip backup verification"
         type: boolean
         required: false
         default: false
 
 env:
-  BACKUP_RETENTION_COUNT: 7  # Keep last 7 daily backups
+  BACKUP_RETENTION_COUNT: 4 # Keep last 4 weekly backups
 
 jobs:
   # ============================================
@@ -41,7 +41,7 @@ jobs:
       backup_checksum: ${{ steps.backup.outputs.checksum }}
       timestamp: ${{ steps.filename.outputs.timestamp }}
       table_count: ${{ steps.backup.outputs.table_count }}
-    
+
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
@@ -64,13 +64,13 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           echo "📊 Gathering pre-backup statistics..."
-          
+
           # Get table count before backup
           TABLE_COUNT=$(psql "$DATABASE_URL" -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE';")
           echo "table_count=$TABLE_COUNT" >> $GITHUB_OUTPUT
-          
+
           echo "💾 Creating backup..."
-          
+
           # Create backup
           pg_dump "$DATABASE_URL" \
             --no-owner \
@@ -82,24 +82,24 @@ jobs:
               echo "❌ Backup failed!"
               exit 1
             }
-          
+
           # Verify backup file is not empty
           if [ ! -s "${{ steps.filename.outputs.filename }}" ]; then
             echo "❌ Backup file is empty!"
             exit 1
           fi
-          
+
           # Compress the backup
           gzip ${{ steps.filename.outputs.filename }}
-          
+
           # Calculate checksum for integrity verification
           CHECKSUM=$(sha256sum ${{ steps.filename.outputs.filename }}.gz | cut -d' ' -f1)
           echo "checksum=$CHECKSUM" >> $GITHUB_OUTPUT
-          
+
           # Get backup size
           SIZE=$(ls -lh ${{ steps.filename.outputs.filename }}.gz | awk '{print $5}')
           echo "size=$SIZE" >> $GITHUB_OUTPUT
-          
+
           echo "✅ Backup created successfully"
           echo "📁 File: ${{ steps.filename.outputs.filename }}.gz"
           echo "📊 Size: $SIZE"
@@ -123,7 +123,7 @@ jobs:
     outputs:
       verification_status: ${{ steps.verify.outputs.status }}
       verification_details: ${{ steps.verify.outputs.details }}
-    
+
     services:
       # Temporary PostgreSQL for verification
       postgres:
@@ -155,14 +155,14 @@ jobs:
         run: |
           EXPECTED="${{ needs.backup.outputs.backup_checksum }}"
           ACTUAL=$(sha256sum ${{ needs.backup.outputs.backup_file }}.gz | cut -d' ' -f1)
-          
+
           if [ "$EXPECTED" != "$ACTUAL" ]; then
             echo "❌ Checksum mismatch!"
             echo "Expected: $EXPECTED"
             echo "Actual: $ACTUAL"
             exit 1
           fi
-          
+
           echo "✅ Checksum verified: $ACTUAL"
 
       - name: 🗄️ Test restore to temporary database
@@ -170,31 +170,31 @@ jobs:
         run: |
           echo "📦 Decompressing backup..."
           gunzip -c ${{ needs.backup.outputs.backup_file }}.gz > restore_test.sql
-          
+
           echo "🔄 Restoring to test database..."
           PGPASSWORD=test psql -h localhost -U test -d backup_verify < restore_test.sql 2>&1 || {
             echo "status=failed" >> $GITHUB_OUTPUT
             echo "details=Restore failed with errors" >> $GITHUB_OUTPUT
             exit 1
           }
-          
+
           echo "🔍 Verifying restored data..."
-          
+
           # Count tables in restored database
           RESTORED_TABLES=$(PGPASSWORD=test psql -h localhost -U test -d backup_verify -t -c "
             SELECT COUNT(*) FROM information_schema.tables 
             WHERE table_schema = 'public' AND table_type = 'BASE TABLE';
           ")
-          
+
           # Get row counts from restored database
           RESTORED_ROWS=$(PGPASSWORD=test psql -h localhost -U test -d backup_verify -t -c "
             SELECT COALESCE(SUM(n_live_tup), 0) FROM pg_stat_user_tables;
           ")
-          
+
           echo "📊 Verification Results:"
           echo "   Tables restored: $RESTORED_TABLES"
           echo "   Total rows: $RESTORED_ROWS"
-          
+
           # Verify we have data (at least some tables)
           if [ "$RESTORED_TABLES" -lt 5 ]; then
             echo "status=warning" >> $GITHUB_OUTPUT
@@ -203,7 +203,7 @@ jobs:
             echo "status=success" >> $GITHUB_OUTPUT
             echo "details=Successfully restored $RESTORED_TABLES tables" >> $GITHUB_OUTPUT
           fi
-          
+
           echo "✅ Backup verification completed successfully!"
 
   # ============================================
@@ -214,7 +214,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [backup, verify]
     if: always() && needs.backup.result == 'success'
-    
+
     steps:
       - name: 📥 Download backup artifact
         uses: actions/download-artifact@v4
@@ -231,10 +231,10 @@ jobs:
           elif [ "$VERIFY_STATUS" == "failed" ]; then
             VERIFY_ICON="❌"
           fi
-          
+
           cat > backup_report.md << EOF
           ## 📦 Database Backup Report
-          
+
           ### Backup Information
           | Property | Value |
           |----------|-------|
@@ -244,14 +244,14 @@ jobs:
           | **Tables** | ${{ needs.backup.outputs.table_count }} |
           | **Checksum (SHA256)** | \`${{ needs.backup.outputs.backup_checksum }}\` |
           | **Trigger** | ${{ github.event_name }} |
-          
+
           ### Verification Status
           | Check | Result |
           |-------|--------|
           | **Checksum** | ✅ Verified |
           | **Test Restore** | ${VERIFY_ICON} ${{ needs.verify.outputs.verification_status || 'skipped' }} |
           | **Details** | ${{ needs.verify.outputs.verification_details || 'N/A' }} |
-          
+
           ### Recovery Instructions
           \`\`\`bash
           # Download and restore this backup
@@ -259,7 +259,7 @@ jobs:
           ./scripts/restore-backup.sh ${{ needs.backup.outputs.backup_file }}.gz
           \`\`\`
           EOF
-          
+
           cat backup_report.md
 
       - name: 🏷️ Create GitHub Release
@@ -290,7 +290,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [backup, verify, release]
     if: always()
-    
+
     steps:
       - name: 📊 Determine overall status
         id: status
@@ -384,31 +384,31 @@ jobs:
             const title = `🚨 Database Backup Failed - ${new Date().toISOString().split('T')[0]}`;
             const body = `
             ## Backup Failure Alert
-            
+
             **Date:** ${new Date().toISOString()}
             **Workflow Run:** [View Details](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
-            
+
             ### Error Details
             - Backup Job: ${{ needs.backup.result }}
             - Verify Job: ${{ needs.verify.result }}
             - Release Job: ${{ needs.release.result }}
-            
+
             ### Recommended Actions
             1. Check the workflow logs for detailed error messages
             2. Verify DATABASE_URL secret is correctly configured
             3. Check Neon database status at https://console.neon.tech
             4. Run a manual backup once issue is resolved
-            
+
             ### Manual Backup Command
             \`\`\`bash
             export DATABASE_URL="your-connection-string"
             ./scripts/backup-database.sh
             \`\`\`
-            
+
             ---
             *This issue was automatically created by the backup workflow.*
             `;
-            
+
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,

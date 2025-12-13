@@ -248,6 +248,30 @@ export async function generateBatchNumber(supplierId: string, clientId: string, 
 }
 
 /**
+ * Check if a SKU/name is in use by any raw materials or finished products.
+ * Returns usage information for validation before deletion.
+ */
+export async function isSkuInUse(name: string, clientId: string): Promise<{
+  inUse: boolean;
+  rawMaterialCount: number;
+  finishedProductCount: number;
+}> {
+  const rawMaterialCount = await prisma.rawMaterial.count({
+    where: { name, clientId },
+  });
+
+  const finishedProductCount = await prisma.finishedProduct.count({
+    where: { name, clientId },
+  });
+
+  return {
+    inUse: rawMaterialCount > 0 || finishedProductCount > 0,
+    rawMaterialCount,
+    finishedProductCount,
+  };
+}
+
+/**
  * Safely delete a SKU mapping only if it's not in use by any products.
  * Throws an error if the SKU is still in use.
  */

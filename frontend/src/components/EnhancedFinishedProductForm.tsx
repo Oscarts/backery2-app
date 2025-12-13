@@ -23,7 +23,6 @@ import {
   Typography,
   Card,
   CardContent,
-  Divider,
   Skeleton,
   Table,
   TableBody,
@@ -39,7 +38,6 @@ import {
   Inventory2 as IngredientIcon,
   AttachMoney as CostIcon,
   Receipt as RecipeIcon,
-  Scale as ScaleIcon,
 } from '@mui/icons-material';
 import { CreateFinishedProductData, FinishedProduct, ProductStatus, MaterialBreakdown } from '../types';
 import api from '../utils/api';
@@ -938,7 +936,7 @@ const EnhancedFinishedProductForm: React.FC<EnhancedFinishedProductFormProps> = 
                                   </TableCell>
                                   <TableCell align="right">
                                     <Typography variant="body2">
-                                      {material.quantityUsed?.toFixed(2) || material.quantity?.toFixed(2) || '0'} {material.unit}
+                                      {material.quantityConsumed?.toFixed(2) || material.quantityAllocated?.toFixed(2) || '0'} {material.unit}
                                     </Typography>
                                   </TableCell>
                                   <TableCell align="right">

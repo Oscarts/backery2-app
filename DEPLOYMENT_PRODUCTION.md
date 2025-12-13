@@ -234,8 +234,8 @@ The backup workflow is already configured in `.github/workflows/backup-database.
 
 | Feature | Description |
 |---------|-------------|
-| **Frequency** | Daily at 2:00 AM UTC |
-| **Retention** | Last 7 backups kept |
+| **Frequency** | Weekly (Sunday 2:00 AM UTC) |
+| **Retention** | Last 4 backups kept |
 | **Verification** | Automatic test restore to temp database |
 | **Checksum** | SHA256 integrity verification |
 | **Alerting** | Slack, Discord, or GitHub Issues |
@@ -243,7 +243,7 @@ The backup workflow is already configured in `.github/workflows/backup-database.
 | Backup Type | Frequency | Retention | Recovery Time |
 |-------------|-----------|-----------|---------------|
 | Neon PITR | Continuous | 7 days | ~5 min |
-| GitHub Releases | Daily | 7 backups | ~15 min |
+| GitHub Releases | Weekly | 4 backups | ~15 min |
 | Manual Script | On-demand | Unlimited | ~15 min |
 
 ### Step 4.7: Alert Behavior

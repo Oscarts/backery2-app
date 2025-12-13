@@ -1,8 +1,18 @@
 import axios, { AxiosResponse } from 'axios';
 
+// Get API base URL from environment or use relative path for development
+const getBaseUrl = (): string => {
+  // In production, use the full URL from environment variable
+  if (import.meta.env.VITE_API_URL) {
+    return `${import.meta.env.VITE_API_URL}/api`;
+  }
+  // In development, use relative path (works with Vite proxy)
+  return '/api';
+};
+
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: getBaseUrl(),
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -143,11 +153,11 @@ export const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error) {
     return error.message;
   }
-  
+
   if (typeof error === 'string') {
     return error;
   }
-  
+
   if (error && typeof error === 'object') {
     // Check for API error response format
     if ('error' in error && typeof error.error === 'string') {
@@ -157,7 +167,7 @@ export const getErrorMessage = (error: unknown): string => {
       return error.message;
     }
   }
-  
+
   return 'An unexpected error occurred';
 };
 

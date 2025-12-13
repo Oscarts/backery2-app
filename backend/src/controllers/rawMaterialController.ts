@@ -350,7 +350,7 @@ export const rawMaterialController = {
       // Prepare update data
       const updateData: any = { ...value };
       if (value.name && value.name !== existingRawMaterial.name) {
-        updateData.sku = await resolveSkuOnRename(value.name);
+        updateData.sku = await resolveSkuOnRename(value.name, req.user!.clientId);
       } else if (value.sku) {
         // Validate provided SKU against name mapping
         updateData.sku = await validateOrAssignSku(value.name || existingRawMaterial.name, req.user!.clientId, value.sku);
@@ -685,7 +685,7 @@ export const rawMaterialController = {
     try {
       const { name } = req.params;
 
-      await deleteSkuMapping(name);
+      await deleteSkuMapping(name, req.user!.clientId);
 
       res.json({
         success: true,

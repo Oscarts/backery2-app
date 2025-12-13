@@ -274,7 +274,7 @@ export const finishedProductController = {
 
       // If name changed derive SKU accordingly; ignore manual sku changes
       if (value.name && value.name !== existingProduct.name) {
-        (value as any).sku = await resolveSkuOnRename(value.name);
+        (value as any).sku = await resolveSkuOnRename(value.name, req.user!.clientId);
       } else if (value.sku) {
         (value as any).sku = await validateOrAssignSku(value.name || existingProduct.name, req.user!.clientId, value.sku);
       }

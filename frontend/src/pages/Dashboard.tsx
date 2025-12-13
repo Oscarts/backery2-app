@@ -50,7 +50,6 @@ interface StatCardProps {
 }
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color, bgColor, onClick }) => {
-  const theme = useTheme();
 
   return (
     <Card
@@ -121,7 +120,6 @@ interface QuickActionProps {
 }
 
 const QuickActionCard: React.FC<QuickActionProps> = ({ title, description, icon, color, onClick }) => {
-  const theme = useTheme();
 
   return (
     <Card
