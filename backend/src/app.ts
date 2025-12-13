@@ -72,7 +72,7 @@ const createApp = (): Application => {
     customCss: '.swagger-ui .topbar { display: none }',
     customSiteTitle: 'RapidPro API Documentation',
   }));
-  
+
   // Serve OpenAPI spec as JSON
   app.get('/api-docs.json', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
