@@ -197,18 +197,20 @@ export const rawMaterialController = {
         });
       }
 
-      // Check if batch number already exists for this supplier
+      // Check if this exact combination already exists within this client
+      // Allow same name with different batches, but prevent duplicate name+batch
       const existingBatch = await prisma.rawMaterial.findFirst({
         where: {
+          clientId: req.user!.clientId, // CRITICAL: Multi-tenant isolation
+          name: value.name,
           batchNumber: value.batchNumber,
-          supplierId: value.supplierId,
         },
       });
 
       if (existingBatch) {
         return res.status(400).json({
           success: false,
-          error: 'Batch number already exists for this supplier',
+          error: `Raw material "${value.name}" with batch number "${value.batchNumber}" already exists`,
         });
       }
 

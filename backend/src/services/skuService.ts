@@ -36,26 +36,29 @@ export async function resolveSkuOnRename(newName: string, clientId: string): Pro
 /**
  * If an incoming SKU is supplied, ensure it is consistent with existing mapping for the name.
  * Rules:
- *  - If name already mapped (via any raw material or finished product) enforce existing SKU.
+ *  - Same name = same SKU (reusable across multiple items/batches)
+ *  - If name already has a SKU, reuse it (allow multiple items with same name/SKU)
  *  - If no mapping yet and incoming sku provided, normalize and use it.
  *  - If no mapping and no incoming sku, generate one.
- *  - If mapping exists but incoming differs, throw conflict error.
+ *  - Only throw conflict if user tries to assign DIFFERENT SKU to existing name.
  */
 export async function validateOrAssignSku(name: string, clientId: string, incomingSku?: string): Promise<string> {
   const existingSku = await getOrCreateSkuForName(name, clientId);
-  // If there was already a mapping (found among finished or raw materials)
+  // Check if this name already has a SKU assigned
   const raw: any = await prisma.rawMaterial.findFirst({ where: { name, clientId } });
   const finished: any = await prisma.finishedProduct.findFirst({ where: { name, clientId } });
   const mappingAlreadyExisted = !!(raw?.sku || finished?.sku);
 
   if (mappingAlreadyExisted) {
+    // Name already has a SKU - ensure incoming SKU matches (if provided)
     if (incomingSku && incomingSku.toUpperCase() !== existingSku) {
       throw Object.assign(new Error('SKU conflict: name already mapped to different SKU'), { status: 409 });
     }
+    // Return existing SKU - this allows multiple items with same name/SKU
     return existingSku;
   }
 
-  // No existing mapping yet
+  // No existing mapping yet - create new one
   if (incomingSku) {
     return generateSkuFromName(incomingSku); // Normalize user-provided value
   }
