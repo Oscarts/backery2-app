@@ -49,7 +49,7 @@ export interface StockCheckResult {
 }
 
 export class InventoryAllocationService {
-  
+
   /**
    * Check if all ingredients are available for production without allocating them
    * This should be called BEFORE creating a production run
@@ -57,7 +57,7 @@ export class InventoryAllocationService {
   async checkIngredientAvailability(recipeId: string, productionMultiplier: number = 1): Promise<StockCheckResult> {
     try {
       console.log(`🔍 Checking ingredient availability for recipe: ${recipeId}, multiplier: ${productionMultiplier}`);
-      
+
       const recipe = await prisma.recipe.findUnique({
         where: { id: recipeId },
         include: {
@@ -77,18 +77,34 @@ export class InventoryAllocationService {
       const availableIngredients: IngredientAvailability[] = [];
       const unavailableIngredients: IngredientAvailability[] = [];
 
-      // Check each ingredient
+      // Check each ingredient - AGGREGATE ACROSS ALL BATCHES
       for (const ingredient of recipe.ingredients) {
         const quantityNeeded = ingredient.quantity * productionMultiplier;
 
         if (ingredient.rawMaterial) {
-          const material = ingredient.rawMaterial;
-          const available = material.quantity - material.reservedQuantity;
+          // MULTI-BATCH: Check ALL batches with same name
+          const materialName = ingredient.rawMaterial.name;
+          const clientId = ingredient.rawMaterial.clientId;
+
+          // Query ALL raw materials with same name for this client
+          const allBatches = await prisma.rawMaterial.findMany({
+            where: {
+              name: materialName,
+              clientId: clientId,
+              isContaminated: false
+            }
+          });
+
+          // Sum available quantities across all batches
+          const available = allBatches.reduce((sum, batch) => {
+            return sum + (batch.quantity - batch.reservedQuantity);
+          }, 0);
+
           const isAvailable = available >= quantityNeeded;
-          
+
           const availability: IngredientAvailability = {
-            materialId: material.id,
-            materialName: material.name,
+            materialId: ingredient.rawMaterial.id,
+            materialName: materialName,
             materialType: 'RAW_MATERIAL',
             quantityNeeded,
             quantityAvailable: available,
@@ -102,14 +118,31 @@ export class InventoryAllocationService {
           } else {
             unavailableIngredients.push(availability);
           }
+
+          console.log(`📦 ${materialName}: ${allBatches.length} batch(es), ${available.toFixed(2)} ${ingredient.unit} available, ${quantityNeeded} needed`);
         } else if (ingredient.finishedProduct) {
-          const product = ingredient.finishedProduct;
-          const available = product.quantity - product.reservedQuantity;
+          // MULTI-BATCH: Check ALL batches with same name
+          const productName = ingredient.finishedProduct.name;
+          const clientId = ingredient.finishedProduct.clientId;
+
+          // Query ALL finished products with same name for this client
+          const allBatches = await prisma.finishedProduct.findMany({
+            where: {
+              name: productName,
+              clientId: clientId
+            }
+          });
+
+          // Sum available quantities across all batches
+          const available = allBatches.reduce((sum, batch) => {
+            return sum + (batch.quantity - batch.reservedQuantity);
+          }, 0);
+
           const isAvailable = available >= quantityNeeded;
-          
+
           const availability: IngredientAvailability = {
-            materialId: product.id,
-            materialName: product.name,
+            materialId: ingredient.finishedProduct.id,
+            materialName: productName,
             materialType: 'FINISHED_PRODUCT',
             quantityNeeded,
             quantityAvailable: available,
@@ -123,11 +156,13 @@ export class InventoryAllocationService {
           } else {
             unavailableIngredients.push(availability);
           }
+
+          console.log(`🏭 ${productName}: ${allBatches.length} batch(es), ${available.toFixed(2)} ${ingredient.unit} available, ${quantityNeeded} needed`);
         }
       }
 
       const allIngredientsAvailable = unavailableIngredients.length === 0;
-      
+
       let message = '';
       if (!allIngredientsAvailable) {
         const shortageList = unavailableIngredients
@@ -151,7 +186,7 @@ export class InventoryAllocationService {
       throw error;
     }
   }
-  
+
   /**
    * Allocate ingredients for a production run based on recipe requirements
    * NOTE: Call checkIngredientAvailability() first to verify stock before allocating
@@ -159,7 +194,7 @@ export class InventoryAllocationService {
   async allocateIngredients(productionRunId: string, recipeId: string, productionMultiplier: number = 1): Promise<MaterialAllocation[]> {
     try {
       console.log(`🔄 Allocating ingredients for production run: ${productionRunId}`);
-      
+
       const recipe = await prisma.recipe.findUnique({
         where: { id: recipeId },
         include: {
@@ -183,25 +218,27 @@ export class InventoryAllocationService {
         const quantityNeeded = ingredient.quantity * productionMultiplier;
 
         if (ingredient.rawMaterial) {
-          const allocation = await this.allocateRawMaterial(
+          // MULTI-BATCH: May return multiple allocations
+          const batchAllocations = await this.allocateRawMaterial(
             productionRunId,
             ingredient.rawMaterial,
             quantityNeeded,
             ingredient.unit
           );
-          allocations.push(allocation);
+          allocations.push(...batchAllocations);
         } else if (ingredient.finishedProduct) {
-          const allocation = await this.allocateFinishedProduct(
+          // MULTI-BATCH: May return multiple allocations
+          const batchAllocations = await this.allocateFinishedProduct(
             productionRunId,
             ingredient.finishedProduct,
             quantityNeeded,
             ingredient.unit
           );
-          allocations.push(allocation);
+          allocations.push(...batchAllocations);
         }
       }
 
-      console.log(`✅ Allocated ${allocations.length} ingredients for production run`);
+      console.log(`✅ Allocated ${allocations.length} batch allocation(s) for production run`);
       return allocations;
 
     } catch (error) {
@@ -211,119 +248,194 @@ export class InventoryAllocationService {
   }
 
   /**
-   * Allocate raw material for production
+   * Allocate raw material for production from multiple batches using FEFO
+   * Returns array of allocations (one per batch used)
    */
   private async allocateRawMaterial(
     productionRunId: string,
     material: any,
     quantityNeeded: number,
     unit: string
-  ): Promise<MaterialAllocation> {
-    // Check available stock
-    if (material.quantity - material.reservedQuantity < quantityNeeded) {
-      throw new Error(`Insufficient stock for ${material.name}. Available: ${material.quantity - material.reservedQuantity}, Needed: ${quantityNeeded}`);
+  ): Promise<MaterialAllocation[]> {
+    const materialName = material.name;
+    const clientId = material.clientId;
+
+    // Get ALL batches with same name, sorted by expiration date (FEFO)
+    const allBatches = await prisma.rawMaterial.findMany({
+      where: {
+        name: materialName,
+        clientId: clientId,
+        isContaminated: false
+      },
+      orderBy: {
+        expirationDate: 'asc' // First-Expired-First-Out
+      }
+    });
+
+    // Check total available
+    const totalAvailable = allBatches.reduce((sum, batch) => {
+      return sum + (batch.quantity - batch.reservedQuantity);
+    }, 0);
+
+    if (totalAvailable < quantityNeeded) {
+      throw new Error(`Insufficient stock for ${materialName}. Available: ${totalAvailable.toFixed(2)}, Needed: ${quantityNeeded}`);
     }
 
-    // Update reserved quantity
-    await prisma.rawMaterial.update({
-      where: { id: material.id },
-      data: {
-        reservedQuantity: material.reservedQuantity + quantityNeeded
-      }
-    });
+    const allocations: MaterialAllocation[] = [];
+    let remainingNeeded = quantityNeeded;
 
-    const unitCost = material.unitPrice || 0;
-    const totalCost = quantityNeeded * unitCost;
+    // Allocate from batches using FEFO until quantity is fulfilled
+    for (const batch of allBatches) {
+      if (remainingNeeded <= 0) break;
 
-    // Create allocation record
-    const allocation = await prisma.productionAllocation.create({
-      data: {
-        productionRunId,
+      const available = batch.quantity - batch.reservedQuantity;
+      if (available <= 0) continue; // Skip empty batches
+
+      const quantityFromThisBatch = Math.min(available, remainingNeeded);
+
+      // Update reserved quantity for this batch
+      await prisma.rawMaterial.update({
+        where: { id: batch.id },
+        data: {
+          reservedQuantity: batch.reservedQuantity + quantityFromThisBatch
+        }
+      });
+
+      const unitCost = batch.unitPrice || 0;
+      const totalCost = quantityFromThisBatch * unitCost;
+
+      // Create allocation record for this batch
+      const allocation = await prisma.productionAllocation.create({
+        data: {
+          productionRunId,
+          materialType: 'RAW_MATERIAL',
+          materialId: batch.id,
+          materialName: batch.name,
+          materialSku: batch.sku || `RM-${batch.id.substring(0, 8)}`,
+          materialBatchNumber: batch.batchNumber || 'NO-BATCH',
+          quantityAllocated: quantityFromThisBatch,
+          unit,
+          unitCost,
+          totalCost,
+          status: 'ALLOCATED'
+        }
+      });
+
+      allocations.push({
         materialType: 'RAW_MATERIAL',
-        materialId: material.id,
-        materialName: material.name,
-  materialSku: material.sku || `RM-${material.id.substring(0, 8)}`, // Use unified SKU if available
-        materialBatchNumber: material.batchNumber || 'NO-BATCH',
-        quantityAllocated: quantityNeeded,
+        materialId: batch.id,
+        materialName: batch.name,
+        materialSku: allocation.materialSku || batch.sku || 'N/A',
+        materialBatchNumber: batch.batchNumber || 'NO-BATCH',
+        quantityNeeded: quantityFromThisBatch,
+        quantityAllocated: quantityFromThisBatch,
         unit,
         unitCost,
-        totalCost,
-        status: 'ALLOCATED'
-      }
-    });
+        totalCost
+      });
 
-    console.log(`📦 Allocated ${quantityNeeded} ${unit} of ${material.name} (Batch: ${material.batchNumber})`);
+      remainingNeeded -= quantityFromThisBatch;
 
-    return {
-      materialType: 'RAW_MATERIAL',
-      materialId: material.id,
-      materialName: material.name,
-  materialSku: allocation.materialSku || material.sku || 'N/A',
-      materialBatchNumber: material.batchNumber || 'NO-BATCH',
-      quantityNeeded,
-      quantityAllocated: quantityNeeded,
-      unit,
-      unitCost,
-      totalCost
-    };
+      console.log(`📦 Allocated ${quantityFromThisBatch.toFixed(2)} ${unit} of ${batch.name} from batch ${batch.batchNumber} (expires: ${batch.expirationDate.toISOString().split('T')[0]})`);
+    }
+
+    console.log(`✅ Total: ${quantityNeeded} ${unit} of ${materialName} from ${allocations.length} batch(es)`);
+    return allocations;
   }
 
   /**
-   * Allocate finished product for production
+   * Allocate finished product for production from multiple batches using FIFO
+   * Returns array of allocations (one per batch used)
    */
   private async allocateFinishedProduct(
     productionRunId: string,
     material: any,
     quantityNeeded: number,
     unit: string
-  ): Promise<MaterialAllocation> {
-    // Check available stock
-    if (material.quantity - material.reservedQuantity < quantityNeeded) {
-      throw new Error(`Insufficient stock for ${material.name}. Available: ${material.quantity - material.reservedQuantity}, Needed: ${quantityNeeded}`);
+  ): Promise<MaterialAllocation[]> {
+    const productName = material.name;
+    const clientId = material.clientId;
+
+    // Get ALL batches with same name, sorted by production date (FIFO)
+    const allBatches = await prisma.finishedProduct.findMany({
+      where: {
+        name: productName,
+        clientId: clientId
+      },
+      orderBy: {
+        productionDate: 'asc' // First-In-First-Out
+      }
+    });
+
+    // Check total available
+    const totalAvailable = allBatches.reduce((sum, batch) => {
+      return sum + (batch.quantity - batch.reservedQuantity);
+    }, 0);
+
+    if (totalAvailable < quantityNeeded) {
+      throw new Error(`Insufficient stock for ${productName}. Available: ${totalAvailable.toFixed(2)}, Needed: ${quantityNeeded}`);
     }
 
-    // Update reserved quantity
-    await prisma.finishedProduct.update({
-      where: { id: material.id },
-      data: {
-        reservedQuantity: material.reservedQuantity + quantityNeeded
-      }
-    });
+    const allocations: MaterialAllocation[] = [];
+    let remainingNeeded = quantityNeeded;
 
-    const unitCost = material.costToProduce || 2.0; // Use cost to produce for finished products
-    const totalCost = quantityNeeded * unitCost;
+    // Allocate from batches using FIFO until quantity is fulfilled
+    for (const batch of allBatches) {
+      if (remainingNeeded <= 0) break;
 
-    // Create allocation record
-    const allocation = await prisma.productionAllocation.create({
-      data: {
-        productionRunId,
+      const available = batch.quantity - batch.reservedQuantity;
+      if (available <= 0) continue; // Skip empty batches
+
+      const quantityFromThisBatch = Math.min(available, remainingNeeded);
+
+      // Update reserved quantity for this batch
+      await prisma.finishedProduct.update({
+        where: { id: batch.id },
+        data: {
+          reservedQuantity: batch.reservedQuantity + quantityFromThisBatch
+        }
+      });
+
+      const unitCost = batch.costToProduce || 2.0;
+      const totalCost = quantityFromThisBatch * unitCost;
+
+      // Create allocation record for this batch
+      const allocation = await prisma.productionAllocation.create({
+        data: {
+          productionRunId,
+          materialType: 'FINISHED_PRODUCT',
+          materialId: batch.id,
+          materialName: batch.name,
+          materialSku: batch.sku,
+          materialBatchNumber: batch.batchNumber || 'NO-BATCH',
+          quantityAllocated: quantityFromThisBatch,
+          unit,
+          unitCost,
+          totalCost,
+          status: 'ALLOCATED'
+        }
+      });
+
+      allocations.push({
         materialType: 'FINISHED_PRODUCT',
-        materialId: material.id,
-        materialName: material.name,
-        materialSku: material.sku, // Use the finished product SKU
-        materialBatchNumber: material.batchNumber || 'NO-BATCH',
-        quantityAllocated: quantityNeeded,
+        materialId: batch.id,
+        materialName: batch.name,
+        materialSku: allocation.materialSku || 'N/A',
+        materialBatchNumber: batch.batchNumber || 'NO-BATCH',
+        quantityNeeded: quantityFromThisBatch,
+        quantityAllocated: quantityFromThisBatch,
         unit,
         unitCost,
-        totalCost,
-        status: 'ALLOCATED'
-      }
-    });
+        totalCost
+      });
 
-    console.log(`🏭 Allocated ${quantityNeeded} ${unit} of ${material.name} (Batch: ${material.batchNumber})`);
+      remainingNeeded -= quantityFromThisBatch;
 
-    return {
-  materialType: 'FINISHED_PRODUCT',
-      materialId: material.id,
-      materialName: material.name,
-      materialSku: allocation.materialSku || 'N/A',
-      materialBatchNumber: material.batchNumber || 'NO-BATCH',
-      quantityNeeded,
-      quantityAllocated: quantityNeeded,
-      unit,
-      unitCost,
-      totalCost
-    };
+      console.log(`🏭 Allocated ${quantityFromThisBatch.toFixed(2)} ${unit} of ${batch.name} from batch ${batch.batchNumber} (produced: ${batch.productionDate?.toISOString().split('T')[0] || 'N/A'})`);
+    }
+
+    console.log(`✅ Total: ${quantityNeeded} ${unit} of ${productName} from ${allocations.length} batch(es)`);
+    return allocations;
   }
 
   /**
@@ -409,7 +521,7 @@ export class InventoryAllocationService {
    */
   async calculateProductionCost(productionRunId: string): Promise<{ materialCost: number, overheadCost: number, totalCost: number, overheadPercentage: number, materials: any[] }> {
     const materials = await this.getMaterialUsage(productionRunId);
-    
+
     const materialCost = materials.reduce((total, material) => {
       const quantity = material.quantityConsumed || material.quantityAllocated || 0;
       const unitCost = material.unitCost || 0;
@@ -443,7 +555,7 @@ export class InventoryAllocationService {
   async releaseAllocatedIngredients(productionRunId: string): Promise<void> {
     try {
       const allocations = await prisma.productionAllocation.findMany({
-        where: { 
+        where: {
           productionRunId,
           status: 'ALLOCATED'
         }

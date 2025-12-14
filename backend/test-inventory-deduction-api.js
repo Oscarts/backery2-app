@@ -75,13 +75,13 @@ async function testInventoryDeductionFix() {
         // Calculate production multiplier (how many recipe batches to make)
         const targetQuantity = recipe.yieldQuantity || 1; // Produce full recipe batch
         const productionMultiplier = 1; // 1 full batch
-        
+
         console.log(`   Target Production: ${targetQuantity} ${recipe.unit || 'kg'} (${productionMultiplier}x recipe)`);
 
         // 3. Record initial inventory state
         console.log('\n3️⃣ Recording initial inventory state...');
         const initialState = {};
-        
+
         for (const ingredient of recipe.ingredients) {
             if (ingredient.rawMaterial) {
                 const material = ingredient.rawMaterial;
@@ -150,13 +150,13 @@ async function testInventoryDeductionFix() {
 
         for (let i = 0; i < steps.length; i++) {
             const step = steps[i];
-            
+
             // Start step
             await fetch(`${BASE_URL}/production/steps/${step.id}/start`, {
                 method: 'POST',
                 headers
             });
-            
+
             // Complete step
             await fetch(`${BASE_URL}/production/steps/${step.id}/complete`, {
                 method: 'POST',
@@ -202,7 +202,7 @@ async function testInventoryDeductionFix() {
                 const material = await prisma.rawMaterial.findUnique({
                     where: { id: ingredient.rawMaterial.id }
                 });
-                
+
                 finalState[material.id] = {
                     type: 'RAW_MATERIAL',
                     name: material.name,
@@ -232,7 +232,7 @@ async function testInventoryDeductionFix() {
                 const product = await prisma.finishedProduct.findUnique({
                     where: { id: ingredient.finishedProduct.id }
                 });
-                
+
                 finalState[product.id] = {
                     type: 'FINISHED_PRODUCT',
                     name: product.name,
@@ -283,7 +283,7 @@ async function testInventoryDeductionFix() {
         console.log('\n' + '='.repeat(70));
         console.log('📊 TEST SUMMARY');
         console.log('='.repeat(70));
-        
+
         if (allCorrect) {
             console.log('✅ SUCCESS: Inventory deduction working correctly!');
             console.log('   ✓ Materials were properly allocated');
@@ -298,12 +298,12 @@ async function testInventoryDeductionFix() {
 
         // 10. Cleanup
         console.log('\n🧹 Cleaning up test data...');
-        
+
         // Delete finished products created by this run
         const finishedProducts = await prisma.finishedProduct.findMany({
             where: { productionRunId: productionRun.id }
         });
-        
+
         for (const product of finishedProducts) {
             await prisma.finishedProduct.delete({
                 where: { id: product.id }

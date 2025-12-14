@@ -89,7 +89,7 @@ export class ProductionCompletionService {
                     fs.appendFileSync('/tmp/production-debug.log',
                         `${new Date().toISOString()} SERVICE: Allocated ${allocations.length} materials\n`
                     );
-                    
+
                     // Refresh allocations list
                     existingAllocations = await prisma.productionAllocation.findMany({
                         where: { productionRunId }
@@ -127,7 +127,7 @@ export class ProductionCompletionService {
                         }));
 
                         await inventoryAllocationService.recordMaterialConsumption(consumptions);
-                        
+
                         console.log(`✅ Consumed ${consumptions.length} materials successfully`);
                         fs.appendFileSync('/tmp/production-debug.log',
                             `${new Date().toISOString()} SERVICE: Consumed ${consumptions.length} materials\n`

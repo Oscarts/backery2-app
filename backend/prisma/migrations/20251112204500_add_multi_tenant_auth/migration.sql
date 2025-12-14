@@ -19,17 +19,17 @@
 
 */
 
--- DropIndex
-DROP INDEX "categories_name_key";
+-- DropIndex (if exists - avoid errors)
+DROP INDEX IF EXISTS "categories_name_key";
 
 -- DropIndex
-DROP INDEX "quality_statuses_name_key";
+DROP INDEX IF EXISTS "quality_statuses_name_key";
 
 -- DropIndex
-DROP INDEX "storage_locations_name_key";
+DROP INDEX IF EXISTS "storage_locations_name_key";
 
 -- DropIndex
-DROP INDEX "suppliers_name_key";
+DROP INDEX IF EXISTS "suppliers_name_key";
 
 -- CreateTable
 CREATE TABLE "clients" (

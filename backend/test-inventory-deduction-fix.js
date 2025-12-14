@@ -47,7 +47,7 @@ async function testInventoryDeductionFix() {
         // 2. Record initial inventory state
         console.log('\n2️⃣ Recording initial inventory state...');
         const initialState = {};
-        
+
         for (const ingredient of recipe.ingredients) {
             if (ingredient.rawMaterial) {
                 const material = ingredient.rawMaterial;
@@ -115,12 +115,12 @@ async function testInventoryDeductionFix() {
 
         // 4. Check inventory after allocation (should be reserved)
         console.log('\n4️⃣ Completing production (this will allocate materials)...');
-        
+
         const { ProductionCompletionService } = require('./src/services/productionCompletionService.ts');
         const completionService = new ProductionCompletionService();
-        
+
         const result = await completionService.completeProductionRun(productionRun.id, 1);
-        
+
         console.log(`✅ Production completed!`);
         console.log(`   Finished Product: ${result.finishedProduct.name}`);
         console.log(`   Quantity: ${result.finishedProduct.quantity} ${result.finishedProduct.unit}`);
@@ -135,7 +135,7 @@ async function testInventoryDeductionFix() {
                 const material = await prisma.rawMaterial.findUnique({
                     where: { id: ingredient.rawMaterial.id }
                 });
-                
+
                 finalState[material.id] = {
                     type: 'RAW_MATERIAL',
                     name: material.name,
@@ -165,7 +165,7 @@ async function testInventoryDeductionFix() {
                 const product = await prisma.finishedProduct.findUnique({
                     where: { id: ingredient.finishedProduct.id }
                 });
-                
+
                 finalState[product.id] = {
                     type: 'FINISHED_PRODUCT',
                     name: product.name,
@@ -216,7 +216,7 @@ async function testInventoryDeductionFix() {
         console.log('\n' + '='.repeat(70));
         console.log('📊 TEST SUMMARY');
         console.log('='.repeat(70));
-        
+
         if (allCorrect) {
             console.log('✅ SUCCESS: Inventory deduction working correctly!');
             console.log('   ✓ Materials were properly allocated');
@@ -231,7 +231,7 @@ async function testInventoryDeductionFix() {
 
         // 8. Cleanup
         console.log('\n🧹 Cleaning up test data...');
-        
+
         // Delete finished product
         if (result.finishedProduct) {
             await prisma.finishedProduct.delete({

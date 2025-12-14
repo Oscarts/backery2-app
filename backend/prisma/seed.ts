@@ -250,22 +250,33 @@ async function createRoleTemplates(systemClientId: string) {
     // Add permissions
     let addedCount = 0;
     for (const permDef of template.permissions) {
-      const permission = await prisma.permission.findFirst({
+      // Find or create permission
+      let permission = await prisma.permission.findFirst({
         where: {
           resource: permDef.resource,
           action: permDef.action,
         },
       });
 
-      if (permission) {
-        await prisma.rolePermission.create({
+      if (!permission) {
+        // Create permission if it doesn't exist
+        permission = await prisma.permission.create({
           data: {
-            roleId: role.id,
-            permissionId: permission.id,
+            resource: permDef.resource,
+            action: permDef.action,
+            description: `${permDef.action} ${permDef.resource}`,
           },
         });
-        addedCount++;
       }
+
+      // Link permission to role
+      await prisma.rolePermission.create({
+        data: {
+          roleId: role.id,
+          permissionId: permission.id,
+        },
+      });
+      addedCount++;
     }
 
     console.log(`   ✅ ${template.name}: ${addedCount} permissions`);
@@ -289,6 +300,12 @@ async function confirmDataWipe(): Promise<boolean> {
     return true;
   }
 
+  // Skip confirmation for development (set SKIP_CONFIRM=true in .env for faster workflow)
+  if (process.env.SKIP_CONFIRM === 'true') {
+    console.log('⚡ SKIP_CONFIRM=true - proceeding automatically');
+    return true;
+  }
+
   // Force confirmation flag
   if (process.argv.includes('--force') || process.argv.includes('-f')) {
     console.log('⚠️  --force flag detected - skipping confirmation');
@@ -300,7 +317,8 @@ async function confirmDataWipe(): Promise<boolean> {
     console.log('\n⚠️  ═══════════════════════════════════════════════════════════');
     console.log('⚠️  WARNING: You are about to DELETE ALL DATA in your database!');
     console.log('⚠️  Database:', dbUrl.split('@')[1]?.split('?')[0] || 'local');
-    console.log('⚠️  ═══════════════════════════════════════════════════════════\n');
+    console.log('⚠️  ═══════════════════════════════════════════════════════════');
+    console.log('⚠️  TIP: Add SKIP_CONFIRM=true to .env to skip this prompt\n');
 
     const rl = readline.createInterface({
       input: process.stdin,
@@ -562,37 +580,62 @@ async function main() {
 
   console.log(`✅ Created ${storageLocations.length} storage locations`);
 
-  // Create units
+  // Create standard units (comprehensive list for bakery operations)
+  console.log('📏 Creating standard units...');
   const units = await Promise.all([
-    // Weight units
+    // Weight units (metric)
     prisma.unit.create({
-      data: { name: 'Kilogram', symbol: 'kg', category: 'weight', description: 'Standard unit of mass' }
+      data: { name: 'Kilogram', symbol: 'kg', category: 'weight', description: 'Standard unit of mass (1000g)' }
     }),
     prisma.unit.create({
       data: { name: 'Gram', symbol: 'g', category: 'weight', description: 'Small unit of mass' }
     }),
     prisma.unit.create({
-      data: { name: 'Pound', symbol: 'lb', category: 'weight', description: 'Imperial unit of mass' }
+      data: { name: 'Milligram', symbol: 'mg', category: 'weight', description: 'Tiny unit of mass (for spices)' }
+    }),
+
+    // Weight units (imperial)
+    prisma.unit.create({
+      data: { name: 'Pound', symbol: 'lb', category: 'weight', description: 'Imperial unit of mass (16 oz)' }
     }),
     prisma.unit.create({
       data: { name: 'Ounce', symbol: 'oz', category: 'weight', description: 'Small imperial unit of mass' }
     }),
 
-    // Volume units
+    // Volume units (metric)
     prisma.unit.create({
-      data: { name: 'Liter', symbol: 'L', category: 'volume', description: 'Standard unit of volume' }
+      data: { name: 'Liter', symbol: 'L', category: 'volume', description: 'Standard unit of volume (1000ml)' }
     }),
     prisma.unit.create({
       data: { name: 'Milliliter', symbol: 'ml', category: 'volume', description: 'Small unit of volume' }
     }),
     prisma.unit.create({
-      data: { name: 'Cup', symbol: 'cup', category: 'volume', description: 'Cooking measurement' }
+      data: { name: 'Deciliter', symbol: 'dl', category: 'volume', description: 'Metric volume (100ml)' }
+    }),
+
+    // Volume units (cooking)
+    prisma.unit.create({
+      data: { name: 'Cup', symbol: 'cup', category: 'volume', description: 'Cooking measurement (~240ml)' }
     }),
     prisma.unit.create({
-      data: { name: 'Tablespoon', symbol: 'tbsp', category: 'volume', description: 'Small cooking measurement' }
+      data: { name: 'Tablespoon', symbol: 'tbsp', category: 'volume', description: 'Small cooking measurement (~15ml)' }
     }),
     prisma.unit.create({
-      data: { name: 'Teaspoon', symbol: 'tsp', category: 'volume', description: 'Smallest cooking measurement' }
+      data: { name: 'Teaspoon', symbol: 'tsp', category: 'volume', description: 'Smallest cooking measurement (~5ml)' }
+    }),
+
+    // Volume units (imperial)
+    prisma.unit.create({
+      data: { name: 'Gallon', symbol: 'gal', category: 'volume', description: 'Large imperial volume (~3.79L)' }
+    }),
+    prisma.unit.create({
+      data: { name: 'Quart', symbol: 'qt', category: 'volume', description: 'Imperial volume (~0.95L)' }
+    }),
+    prisma.unit.create({
+      data: { name: 'Pint', symbol: 'pt', category: 'volume', description: 'Imperial volume (~0.47L)' }
+    }),
+    prisma.unit.create({
+      data: { name: 'Fluid Ounce', symbol: 'fl oz', category: 'volume', description: 'Small imperial volume (~30ml)' }
     }),
 
     // Count units
@@ -604,10 +647,19 @@ async function main() {
     }),
     prisma.unit.create({
       data: { name: 'Package', symbol: 'pkg', category: 'count', description: 'Packaged items' }
+    }),
+    prisma.unit.create({
+      data: { name: 'Box', symbol: 'box', category: 'count', description: 'Boxed items' }
+    }),
+    prisma.unit.create({
+      data: { name: 'Bag', symbol: 'bag', category: 'count', description: 'Bagged items' }
+    }),
+    prisma.unit.create({
+      data: { name: 'Unit', symbol: 'unit', category: 'count', description: 'Generic unit' }
     })
   ]);
 
-  console.log(`✅ Created ${units.length} units`);
+  console.log(`✅ Created ${units.length} standard units (weight: ${units.filter(u => u.category === 'weight').length}, volume: ${units.filter(u => u.category === 'volume').length}, count: ${units.filter(u => u.category === 'count').length})`);
 
   // Create quality statuses
   const qualityStatuses = await Promise.all([
@@ -831,7 +883,30 @@ async function main() {
   // Verify created users
   await verifySeededUsers();
 
-  console.log('🎉 Seed completed successfully!');
+  // Final summary
+  console.log('\n' + '='.repeat(70));
+  console.log('🎉 DATABASE SEED COMPLETED SUCCESSFULLY!');
+  console.log('='.repeat(70));
+  console.log('\n📊 Summary:');
+  console.log('   • 2 Clients (System + Demo Bakery)');
+  console.log('   • 2 Users (superadmin + bakery admin)');
+  console.log(`   • ${categories.length} Categories`);
+  console.log(`   • ${suppliers.length} Suppliers`);
+  console.log(`   • ${storageLocations.length} Storage Locations`);
+  console.log(`   • ${units.length} Standard Units`);
+  console.log(`   • ${qualityStatuses.length} Quality Statuses`);
+  console.log(`   • ${recipes.length} Recipes`);
+  console.log(`   • ${rawMaterials.length} Raw Materials`);
+  console.log(`   • ${finishedProducts.length} Finished Products`);
+  console.log('   • 5 Role Templates (Super Admin + 4 Bakery roles)');
+  console.log('\n🔐 Login Credentials:');
+  console.log('   Platform Admin:');
+  console.log('     Email: superadmin@system.local');
+  console.log('     Password: super123');
+  console.log('   Bakery Admin:');
+  console.log('     Email: admin@demobakery.com');
+  console.log('     Password: admin123');
+  console.log('\n' + '='.repeat(70) + '\n');
 }
 
 /**

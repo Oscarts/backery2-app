@@ -54,21 +54,26 @@ npm run dev
 
 **MANDATORY READING ORDER:**
 
-1. **[Project Overview](./docs/project-overview.md)** - Complete project description and current status
+1. **[CODE_GUIDELINES.md](./CODE_GUIDELINES.md)** - Security audit checklist & data safety rules ⚠️
 2. **[Development Guidelines](./docs/development-guidelines.md)** - Critical coding standards and testing requirements
-3. **[Technical Architecture](./docs/technical-architecture.md)** - System architecture and technology details
+3. **[Technical Architecture](./docs/technical-architecture.md)** - System architecture and schema design
 4. **[API Reference](./docs/api-reference.md)** - Complete backend API documentation
-5. **[UI Guidelines](./docs/ui-guidelines.md)** - Frontend design patterns and Material-UI standards
+5. **[Project Overview](./docs/project-overview.md)** - Complete project description and status
 
-### Additional Documentation
+### Feature-Specific Guides
 
-- [Running with Data](./docs/running-with-data.md) - Detailed setup and data management guide
-- [Data Persistence](./docs/data-persistence.md) - Database schema and relationships
-- [Development Progress](./docs/development-progress.md) - Feature completion tracking
-- [Environment Configuration](./docs/env.md) - Environment setup and configuration
-- [Test Strategy](./docs/testing/test-strategy.md) - Testing approach and best practices
-- [Contributing Guide](./docs/CONTRIBUTING.md) - Guidelines for contributing to the project
-- [Changelog](./docs/CHANGELOG.md) - Version history and feature releases
+- **[Customer Orders Quick Start](./CUSTOMER_ORDERS_QUICK_START.md)** - Order management system
+- **[Customer Orders Testing Guide](./CUSTOMER_ORDERS_TESTING_GUIDE.md)** - Testing procedures
+- **[Role Templates Quick Start](./ROLE_TEMPLATES_QUICK_START.md)** - Permission system
+- **[Unit Management System](./UNIT_MANAGEMENT_SYSTEM.md)** - Unit conversion and management
+- **[Dynamic Step Management](./DYNAMIC_STEP_MANAGEMENT.md)** - Production workflow customization
+
+### Operations & Maintenance
+
+- **[Database Safety](./DATABASE_SAFETY.md)** - Backup/restore procedures ⚠️
+- **[Deployment Guide](./DEPLOYMENT_GUIDE.md)** - Production deployment
+- **[Super Admin Guide](./SUPER_ADMIN_GUIDE.md)** - Platform administration
+- **[Data Persistence](./docs/data-persistence.md)** - Database schema and relationships
 
 ## 🎯 Key Principles
 
@@ -117,8 +122,7 @@ RapidPro features a modern, rounded design system with consistent styling across
 
 **Documentation**:
 - 📘 [`frontend/DESIGN_SYSTEM.md`](./frontend/DESIGN_SYSTEM.md) - Complete design guidelines
-- 🎯 [`ROUNDED_DESIGN_UPDATE.md`](./ROUNDED_DESIGN_UPDATE.md) - Latest rounded design implementation
-- 🎨 [`frontend/src/theme/designTokens.ts`](./frontend/src/theme/designTokens.ts) - Design token source code
+-  [`frontend/src/theme/designTokens.ts`](./frontend/src/theme/designTokens.ts) - Design token source code
 
 ## 🚨 Critical Guidelines
 
@@ -205,7 +209,7 @@ Edit templates to change what permissions new clients get:
 
 **Important**: Changes to templates only affect NEW clients. Existing clients keep their current roles.
 
-**📖 Full Guide**: See [ROLE_TEMPLATE_SYSTEM_COMPLETE.md](./ROLE_TEMPLATE_SYSTEM_COMPLETE.md) for details.
+**📖 Full Guide**: See [ROLE_TEMPLATES_QUICK_START.md](./ROLE_TEMPLATES_QUICK_START.md) for details.
 
 ---
 ## �🔒 Database Safety & Backups
@@ -227,8 +231,8 @@ npm run db:restore
 # Restore from backup
 npm run db:restore /Users/oscar/backups/bakery_inventory/backup_YYYYMMDD_HHMMSS.sql.gz
 
-# Safe development seed (no data loss)
-npm run db:seed:dev
+# Quick seed (skip confirmation)
+npm run db:seed:force
 ```
 
 **📖 Full Documentation**: See [DATABASE_SAFETY.md](./DATABASE_SAFETY.md) for complete backup/restore procedures, emergency recovery, and safety features.

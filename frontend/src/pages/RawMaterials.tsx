@@ -255,7 +255,7 @@ const RawMaterials: React.FC = () => {
         gap={2}
       >
         <Box>
-          <Typography 
+          <Typography
             variant={isMobile ? "h4" : "h3"}
             sx={{
               fontWeight: 'bold',
