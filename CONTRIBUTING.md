@@ -320,6 +320,23 @@ find docs/archive-* scripts/archive-* -type d -mtime +90 -exec rm -rf {} \;
 - **Single source**: Consolidate, don't duplicate
 - **Delete obsolete**: Archive instead of keeping outdated docs
 
+### Deployment Documentation
+
+**Official Production Deployment**: [DEPLOYMENT_PRODUCTION.md](DEPLOYMENT_PRODUCTION.md)
+
+- ✅ **Architecture**: Vercel (frontend) + Render (backend) + Neon (database)
+- ✅ **Why this setup?** Independent database, free backups, better free tier limits
+- ✅ **Verification**: Use `./verify-production-deployment.sh` after deployment
+
+**Other deployment options** in [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) are for development/testing only.
+
+**Deployment documentation rules**:
+1. Keep DEPLOYMENT_PRODUCTION.md as single source of truth for production
+2. Update deployment docs whenever you change infrastructure
+3. Archive old deployment approaches (e.g., Railway files in `docs/archive-*`)
+4. Test deployment scripts before committing
+5. Include verification steps in all deployment docs
+
 ---
 
 ## 🙏 Thank You!

@@ -1,10 +1,30 @@
 # 🚀 Deployment Guide - Bakery Inventory Management System
 
-## Quick Deploy Options
+## ⚠️ Official Production Deployment
 
-### Option 1: Railway (Recommended - Easiest)
+**For production deployments, use:** [DEPLOYMENT_PRODUCTION.md](DEPLOYMENT_PRODUCTION.md)
 
-Railway provides free PostgreSQL database and hosting with automatic deployments.
+This guide documents our **official production architecture**:
+- **Frontend**: Vercel (static hosting)
+- **Backend**: Render (Node.js web service)
+- **Database**: Neon PostgreSQL (serverless, automatic backups)
+
+**Why this setup?**
+- ✅ Independent database (safer for production data)
+- ✅ Free automatic backups on Neon
+- ✅ 750 compute hours/month on Render (vs 500 on alternatives)
+- ✅ Professional separation of concerns
+- ✅ Easy to scale components independently
+
+---
+
+## Quick Deploy Options (Development/Testing)
+
+⚠️ **Note**: The options below are for development/testing environments only. For production, see [DEPLOYMENT_PRODUCTION.md](DEPLOYMENT_PRODUCTION.md).
+
+### Option 1: Railway (Development/Testing Only)
+
+Railway provides free PostgreSQL database and hosting with automatic deployments. Good for development branches.
 
 #### Steps:
 
@@ -14,15 +34,15 @@ Railway provides free PostgreSQL database and hosting with automatic deployments
 
 2. **Deploy from GitHub**
    ```bash
-   # Push your code to GitHub (already done with your sku branch)
-   git push origin sku
+   # Push your code to GitHub
+   git push origin your-feature-branch
    ```
 
 3. **Create New Project on Railway**
    - Click "New Project"
    - Select "Deploy from GitHub repo"
    - Choose `backery2-app` repository
-   - Select `sku` branch
+   - Select your branch
 
 4. **Add PostgreSQL Database**
    - In your Railway project, click "+ New"

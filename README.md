@@ -71,9 +71,23 @@ npm run dev
 ### Operations & Maintenance
 
 - **[Database Safety](./DATABASE_SAFETY.md)** - Backup/restore procedures ⚠️
-- **[Deployment Guide](./DEPLOYMENT_GUIDE.md)** - Production deployment
+- **[DEPLOYMENT_PRODUCTION.md](./DEPLOYMENT_PRODUCTION.md)** - 🚀 **Official Production Deployment** (Neon + Render + Vercel)
+- **[Deployment Guide](./DEPLOYMENT_GUIDE.md)** - Alternative deployment options (development/testing)
 - **[Super Admin Guide](./SUPER_ADMIN_GUIDE.md)** - Platform administration
 - **[Data Persistence](./docs/data-persistence.md)** - Database schema and relationships
+
+### Deployment Checklist
+
+**Ready to deploy to production?** Follow these steps:
+
+1. ✅ Read [DEPLOYMENT_PRODUCTION.md](./DEPLOYMENT_PRODUCTION.md) completely
+2. ✅ Create accounts: [Neon](https://neon.tech), [Render](https://render.com), [Vercel](https://vercel.com)
+3. ✅ Set up Neon PostgreSQL database (Phase 1)
+4. ✅ Deploy backend to Render (Phase 2)
+5. ✅ Deploy frontend to Vercel (Phase 3)
+6. ✅ Configure GitHub backups (Phase 4)
+7. ✅ Run deployment verification script
+8. ✅ Test production environment end-to-end
 
 ## 🎯 Key Principles
 
