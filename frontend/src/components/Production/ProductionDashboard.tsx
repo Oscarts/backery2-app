@@ -111,9 +111,17 @@ const ProductionDashboard: React.FC = () => {
             if (statsResponse.success && statsResponse.data) {
                 setProductionStats(statsResponse.data);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error loading productions:', error);
-            setError('Failed to load production runs');
+            
+            // Provide more specific error messages
+            if (error.response?.data?.error) {
+                setError(`Failed to load production runs: ${error.response.data.error}`);
+            } else if (error.message) {
+                setError(`Failed to load production runs: ${error.message}`);
+            } else {
+                setError('Failed to load production runs. Please check your connection and try again.');
+            }
         } finally {
             setLoading(false);
         }
@@ -152,9 +160,21 @@ const ProductionDashboard: React.FC = () => {
             } else {
                 setError('Failed to create production run');
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error creating production:', error);
-            setError('Failed to create production run');
+            
+            // Extract ingredient shortage details from error
+            if (error.response?.data?.details?.unavailableIngredients) {
+                const unavailable = error.response.data.details.unavailableIngredients;
+                const shortageMessages = unavailable.map((item: any) => 
+                    `${item.name}: need ${item.needed.toFixed(2)} ${item.unit}, have ${item.available.toFixed(2)} ${item.unit}, shortage ${item.shortage.toFixed(2)} ${item.unit}`
+                ).join('; ');
+                setError(`Cannot start production. Insufficient ingredients: ${shortageMessages}`);
+            } else if (error.response?.data?.error) {
+                setError(error.response.data.error);
+            } else {
+                setError('Failed to create production run');
+            }
         }
 
         setShowQuantitySelection(false);

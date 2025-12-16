@@ -15,6 +15,7 @@ import {
     Card,
     Chip,
     LinearProgress,
+    CircularProgress,
 } from '@mui/material';
 import {
     Close as CloseIcon,
@@ -25,10 +26,12 @@ import {
     Schedule as TimeIcon,
     AttachMoney as CostIcon,
     Kitchen as KitchenIcon,
+    Warning as WarningIcon,
 } from '@mui/icons-material';
 import { TransitionProps } from '@mui/material/transitions';
 import ProductionStepsDialog from './ProductionStepsDialog';
 import { CreateProductionStepData } from '../../types';
+import { recipesApi } from '../../services/realApi';
 
 const Transition = React.forwardRef(function Transition(
     props: TransitionProps & {
@@ -57,6 +60,33 @@ const QuantitySelectionDialog: React.FC<QuantitySelectionDialogProps> = ({
     const [quantity, setQuantity] = useState(recipe?.yieldQuantity || 12);
     const [showProductionStepsDialog, setShowProductionStepsDialog] = useState(false);
     const [customSteps, setCustomSteps] = useState<CreateProductionStepData[] | undefined>(undefined);
+    const [maxBatchesData, setMaxBatchesData] = useState<any>(null);
+    const [loadingMaxBatches, setLoadingMaxBatches] = useState(false);
+
+    // Fetch max batches when dialog opens or recipe changes
+    useEffect(() => {
+        if (recipe?.id && open) {
+            fetchMaxBatches();
+        }
+    }, [recipe?.id, open]);
+
+    const fetchMaxBatches = async () => {
+        if (!recipe?.id) return;
+        
+        try {
+            setLoadingMaxBatches(true);
+            const response = await recipesApi.calculateMaxBatches(recipe.id);
+            if (response.success && response.data) {
+                setMaxBatchesData(response.data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch max batches:', error);
+            // Fallback to recipe data if API fails
+            setMaxBatchesData(null);
+        } finally {
+            setLoadingMaxBatches(false);
+        }
+    };
 
     useEffect(() => {
         if (recipe) {
@@ -66,10 +96,17 @@ const QuantitySelectionDialog: React.FC<QuantitySelectionDialogProps> = ({
 
     if (!recipe) return null;
 
-    const maxQuantity = recipe.maxQuantity || recipe.yieldQuantity * 4;
+    // Use real maxBatches from API if available, otherwise fallback to recipe data or arbitrary limit
+    const realMaxBatches = maxBatchesData?.maxBatches ?? recipe.maxBatches;
+    const maxQuantity = realMaxBatches ? realMaxBatches * recipe.yieldQuantity : recipe.yieldQuantity * 4;
     const batchMultiplier = quantity / recipe.yieldQuantity;
     const estimatedTime = Math.round((recipe.estimatedTotalTime || 0) * batchMultiplier);
     const estimatedCost = (recipe.estimatedCost || 0) * batchMultiplier;
+    const limitingIngredient = maxBatchesData?.limitingIngredient;
+
+    // Warning thresholds
+    const isAtLimit = batchMultiplier >= (realMaxBatches || 4);
+    const isNearLimit = batchMultiplier >= ((realMaxBatches || 4) * 0.8);
 
     const handleQuantityChange = (newQuantity: number) => {
         const clampedQuantity = Math.min(Math.max(newQuantity, recipe.yieldQuantity), maxQuantity);
@@ -331,7 +368,52 @@ const QuantitySelectionDialog: React.FC<QuantitySelectionDialogProps> = ({
                         </Stack>
                     </Box>
 
-                    {/* Availability Warning */}
+                    {/* Loading Ingredient Analysis */}
+                    {loadingMaxBatches && (
+                        <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'center' }}>
+                            <CircularProgress size={20} />
+                            <Typography variant="body2" color="text.secondary">
+                                Checking ingredient availability...
+                            </Typography>
+                        </Box>
+                    )}
+
+                    {/* Ingredient Availability Warnings */}
+                    {maxBatchesData && limitingIngredient && (
+                        <Box sx={{ mb: 3 }}>
+                            {isAtLimit && (
+                                <Alert severity="error" icon={<WarningIcon />} sx={{ mb: 2 }}>
+                                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                                        ⚠️ Maximum Production Capacity Reached
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        You can make maximum <strong>{maxBatchesData.maxBatches} batches</strong> ({maxBatchesData.maxProducibleQuantity} {recipe.yieldUnit}).
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ mt: 1 }}>
+                                        Limited by: <strong>{limitingIngredient.name}</strong> 
+                                        {' '}(have {limitingIngredient.available.toFixed(2)} {limitingIngredient.unit}, need {limitingIngredient.neededPerBatch.toFixed(2)} {limitingIngredient.unit} per batch)
+                                    </Typography>
+                                </Alert>
+                            )}
+
+                            {!isAtLimit && isNearLimit && (
+                                <Alert severity="warning" icon={<WarningIcon />} sx={{ mb: 2 }}>
+                                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                                        ⚠️ Approaching Ingredient Limit
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        Maximum capacity: <strong>{maxBatchesData.maxBatches} batches</strong> ({maxBatchesData.maxProducibleQuantity} {recipe.yieldUnit})
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ mt: 1 }}>
+                                        Limiting ingredient: <strong>{limitingIngredient.name}</strong> 
+                                        {' '}(available: {limitingIngredient.available.toFixed(2)} {limitingIngredient.unit})
+                                    </Typography>
+                                </Alert>
+                            )}
+                        </Box>
+                    )}
+
+                    {/* Availability Warning (Legacy - keep for recipes without ingredient data) */}
                     {!recipe.canMake && (
                         <Alert severity="error" sx={{ mb: 3 }}>
                             <Typography variant="subtitle2" sx={{ mb: 1 }}>

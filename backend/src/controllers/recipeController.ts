@@ -674,3 +674,143 @@ export const updateAllRecipeCosts = async (req: Request, res: Response) => {
     });
   }
 };
+
+/**
+ * Calculate maximum batches producible for a specific recipe based on current inventory
+ * Returns detailed ingredient availability and limiting factors
+ */
+export const calculateMaxBatches = async (req: Request, res: Response) => {
+  try {
+    const { id: recipeId } = req.params;
+    const clientId = req.user!.clientId;
+
+    // Get recipe with ingredients
+    const recipe = await prisma.recipe.findFirst({
+      where: {
+        id: recipeId,
+        clientId // CRITICAL: Filter by tenant
+      },
+      include: {
+        ingredients: {
+          include: {
+            rawMaterial: true,
+            finishedProduct: true
+          }
+        }
+      }
+    });
+
+    if (!recipe) {
+      return res.status(404).json({
+        success: false,
+        error: 'Recipe not found'
+      });
+    }
+
+    // Get available inventory for all raw materials and finished products
+    const rawMaterials = await prisma.rawMaterial.findMany({
+      where: { 
+        clientId, // CRITICAL: Filter by tenant
+        isContaminated: false 
+      },
+      select: {
+        id: true,
+        name: true,
+        quantity: true,
+        reservedQuantity: true,
+        unit: true
+      }
+    });
+
+    const finishedProducts = await prisma.finishedProduct.findMany({
+      where: { clientId }, // CRITICAL: Filter by tenant
+      select: {
+        id: true,
+        name: true,
+        quantity: true,
+        reservedQuantity: true,
+        unit: true
+      }
+    });
+
+    // Build inventory maps (by name for multi-batch aggregation)
+    const rawMaterialInventory = new Map<string, number>();
+    rawMaterials.forEach(rm => {
+      const available = rm.quantity - rm.reservedQuantity;
+      rawMaterialInventory.set(rm.name, (rawMaterialInventory.get(rm.name) || 0) + available);
+    });
+
+    const finishedProductInventory = new Map<string, number>();
+    finishedProducts.forEach(fp => {
+      const available = fp.quantity - fp.reservedQuantity;
+      finishedProductInventory.set(fp.name, (finishedProductInventory.get(fp.name) || 0) + available);
+    });
+
+    // Calculate max batches and identify limiting ingredients
+    let maxBatches = Number.MAX_SAFE_INTEGER;
+    const ingredientDetails = [];
+    let limitingIngredient = null;
+
+    for (const ingredient of recipe.ingredients) {
+      let ingredientName = 'Unknown';
+      let availableQuantity = 0;
+      let neededPerBatch = ingredient.quantity;
+
+      if (ingredient.rawMaterial) {
+        ingredientName = ingredient.rawMaterial.name;
+        availableQuantity = rawMaterialInventory.get(ingredientName) || 0;
+      } else if (ingredient.finishedProduct) {
+        ingredientName = ingredient.finishedProduct.name;
+        availableQuantity = finishedProductInventory.get(ingredientName) || 0;
+      }
+
+      const batchesFromThisIngredient = Math.floor(availableQuantity / neededPerBatch);
+      
+      ingredientDetails.push({
+        name: ingredientName,
+        available: availableQuantity,
+        neededPerBatch: neededPerBatch,
+        unit: ingredient.unit,
+        maxBatchesFromThis: batchesFromThisIngredient
+      });
+
+      if (batchesFromThisIngredient < maxBatches) {
+        maxBatches = batchesFromThisIngredient;
+        limitingIngredient = {
+          name: ingredientName,
+          available: availableQuantity,
+          neededPerBatch: neededPerBatch,
+          unit: ingredient.unit
+        };
+      }
+    }
+
+    // Handle edge cases
+    if (maxBatches === Number.MAX_SAFE_INTEGER || maxBatches < 0) {
+      maxBatches = 0;
+    }
+
+    const maxProducibleQuantity = maxBatches * (recipe.yieldQuantity || 1);
+
+    res.json({
+      success: true,
+      data: {
+        recipeId: recipe.id,
+        recipeName: recipe.name,
+        yieldQuantity: recipe.yieldQuantity,
+        yieldUnit: recipe.yieldUnit,
+        maxBatches,
+        maxProducibleQuantity,
+        limitingIngredient,
+        ingredientDetails
+      }
+    });
+
+  } catch (error) {
+    console.error('Error calculating max batches:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to calculate maximum batches'
+    });
+  }
+};

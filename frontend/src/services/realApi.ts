@@ -371,6 +371,30 @@ export const recipesApi = {
 
   getWhatCanIMake: async (): Promise<ApiResponse<WhatCanIMakeAnalysis>> => {
     return apiCall<WhatCanIMakeAnalysis>('/recipes/what-can-i-make');
+  },
+
+  calculateMaxBatches: async (id: string): Promise<ApiResponse<{
+    recipeId: string;
+    recipeName: string;
+    yieldQuantity: number;
+    yieldUnit: string;
+    maxBatches: number;
+    maxProducibleQuantity: number;
+    limitingIngredient: {
+      name: string;
+      available: number;
+      neededPerBatch: number;
+      unit: string;
+    } | null;
+    ingredientDetails: Array<{
+      name: string;
+      available: number;
+      neededPerBatch: number;
+      unit: string;
+      maxBatchesFromThis: number;
+    }>;
+  }>> => {
+    return apiCall(`/recipes/${id}/calculate-max-batches`);
   }
 };
 

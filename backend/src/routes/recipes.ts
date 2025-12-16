@@ -8,7 +8,8 @@ import {
   getRecipeCost,
   updateRecipeCost,
   updateAllRecipeCosts,
-  getWhatCanIMake
+  getWhatCanIMake,
+  calculateMaxBatches
 } from '../controllers/recipeController';
 import { normalizeUnitsMiddleware } from '../middleware/unitValidation';
 
@@ -84,6 +85,54 @@ router.get('/', getRecipes);
  *                         type: string
  */
 router.get('/what-can-i-make', getWhatCanIMake);
+
+/**
+ * @swagger
+ * /recipes/{id}/calculate-max-batches:
+ *   get:
+ *     summary: Calculate maximum producible batches
+ *     description: Get maximum batches that can be produced based on current inventory
+ *     tags: [Recipes]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Recipe ID
+ *     responses:
+ *       200:
+ *         description: Maximum batches calculation with limiting factors
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     recipeId:
+ *                       type: string
+ *                     recipeName:
+ *                       type: string
+ *                     yieldQuantity:
+ *                       type: number
+ *                     yieldUnit:
+ *                       type: string
+ *                     maxBatches:
+ *                       type: number
+ *                     maxProducibleQuantity:
+ *                       type: number
+ *                     limitingIngredient:
+ *                       type: object
+ *                     ingredientDetails:
+ *                       type: array
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.get('/:id/calculate-max-batches', calculateMaxBatches);
 
 /**
  * @swagger
