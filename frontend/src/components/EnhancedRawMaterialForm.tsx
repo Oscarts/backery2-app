@@ -188,28 +188,53 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
     []
   );
 
-  const handleNameChange = (_event: any, newValue: string | SkuSuggestion | null) => {
+  const handleNameChange = async (_event: any, newValue: string | SkuSuggestion | null) => {
     if (typeof newValue === 'string') {
       // User typed a value
       setFormData((prev) => ({ ...prev, name: newValue }));
 
       // Auto-generate SKU if it's a new material
-      if (!material) {
-        // Generate SKU in format: RM-PRODUCTNAME-XXX
-        const cleanName = newValue
-          .trim()
-          .toUpperCase()
-          .replace(/[^A-Z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '')
-          .substring(0, 15); // Limit to 15 chars for readability
+      if (!material && newValue.length >= 2) {
+        // First, check if this name already exists and has a SKU
+        try {
+          const response = await api.get('/raw-materials/sku-suggestions', {
+            params: { name: newValue },
+          });
 
-        // Generate a 3-digit random number for uniqueness
-        const randomSuffix = Math.floor(Math.random() * 900 + 100); // 100-999
+          if (response.data.success && response.data.data.length > 0) {
+            // Material name already exists - reuse existing SKU
+            const existingSku = response.data.data[0].sku;
+            setFormData((prev) => ({ ...prev, sku: existingSku }));
+            setAutoFilledFields((prev) => new Set(prev).add('sku'));
+          } else {
+            // New material - generate SKU without random suffix
+            // Generate SKU in format: RM-PRODUCTNAME (consistent for same name)
+            const cleanName = newValue
+              .trim()
+              .toUpperCase()
+              .replace(/[^A-Z0-9]+/g, '-')
+              .replace(/^-+|-+$/g, '')
+              .substring(0, 20); // Allow more space for name
 
-        const generatedSku = `RM-${cleanName}-${randomSuffix}`;
+            const generatedSku = `RM-${cleanName}`;
 
-        setFormData((prev) => ({ ...prev, sku: generatedSku }));
-        setAutoFilledFields((prev) => new Set(prev).add('sku'));
+            setFormData((prev) => ({ ...prev, sku: generatedSku }));
+            setAutoFilledFields((prev) => new Set(prev).add('sku'));
+          }
+        } catch (error) {
+          console.error('Failed to check SKU:', error);
+          // Fallback: generate SKU without random suffix
+          const cleanName = newValue
+            .trim()
+            .toUpperCase()
+            .replace(/[^A-Z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .substring(0, 20);
+
+          const generatedSku = `RM-${cleanName}`;
+          setFormData((prev) => ({ ...prev, sku: generatedSku }));
+          setAutoFilledFields((prev) => new Set(prev).add('sku'));
+        }
       }
 
       // Fetch suggestions

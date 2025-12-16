@@ -25,15 +25,15 @@ let storageLocationId = '';
 let createdMaterialIds = [];
 
 async function login() {
-    console.log('🔐 Logging in...');
-    const response = await axios.post(`${API_BASE}/auth/login`, TEST_USER);
-    authToken = response.data.data.token;
-    console.log('✅ Logged in successfully\n');
+  console.log('🔐 Logging in...');
+  const response = await axios.post(`${API_BASE}/auth/login`, TEST_USER);
+  authToken = response.data.data.token;
+  console.log('✅ Logged in successfully\n');
 }
 
 async function getSupplierAndStorage() {
-    console.log('📦 Getting supplier and storage location...');
-    const config = { headers: { Authorization: `Bearer ${authToken}` } };
+  console.log('📦 Getting supplier and storage location...');
+  const config = { headers: { Authorization: `Bearer ${authToken}` } };
 
     const [suppliersRes, storageRes] = await Promise.all([
         axios.get(`${API_BASE}/suppliers`, config),
