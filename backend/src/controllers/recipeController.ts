@@ -709,9 +709,9 @@ export const calculateMaxBatches = async (req: Request, res: Response) => {
 
     // Get available inventory for all raw materials and finished products
     const rawMaterials = await prisma.rawMaterial.findMany({
-      where: { 
+      where: {
         clientId, // CRITICAL: Filter by tenant
-        isContaminated: false 
+        isContaminated: false
       },
       select: {
         id: true,
@@ -765,7 +765,7 @@ export const calculateMaxBatches = async (req: Request, res: Response) => {
       }
 
       const batchesFromThisIngredient = Math.floor(availableQuantity / neededPerBatch);
-      
+
       ingredientDetails.push({
         name: ingredientName,
         available: availableQuantity,

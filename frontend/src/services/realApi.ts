@@ -45,7 +45,13 @@ const apiCall = async <T>(endpoint: string, options?: RequestInit): Promise<ApiR
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      // Create an error that preserves the response data
+      const error: any = new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      error.response = {
+        status: response.status,
+        data: errorData
+      };
+      throw error;
     }
 
     return await response.json();

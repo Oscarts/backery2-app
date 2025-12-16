@@ -113,7 +113,7 @@ const ProductionDashboard: React.FC = () => {
             }
         } catch (error: any) {
             console.error('Error loading productions:', error);
-            
+
             // Provide more specific error messages
             if (error.response?.data?.error) {
                 setError(`Failed to load production runs: ${error.response.data.error}`);
@@ -158,20 +158,25 @@ const ProductionDashboard: React.FC = () => {
                 setSelectedProduction(response.data);
                 setShowProductionTracker(true);
             } else {
+                console.error('Production creation failed - response:', response);
                 setError('Failed to create production run');
             }
         } catch (error: any) {
             console.error('Error creating production:', error);
-            
+            console.error('Error response:', error.response);
+            console.error('Error response data:', error.response?.data);
+
             // Extract ingredient shortage details from error
             if (error.response?.data?.details?.unavailableIngredients) {
                 const unavailable = error.response.data.details.unavailableIngredients;
-                const shortageMessages = unavailable.map((item: any) => 
-                    `${item.name}: need ${item.needed.toFixed(2)} ${item.unit}, have ${item.available.toFixed(2)} ${item.unit}, shortage ${item.shortage.toFixed(2)} ${item.unit}`
+                const shortageMessages = unavailable.map((item: any) =>
+                    `${item.materialName}: need ${item.quantityNeeded.toFixed(2)} ${item.unit}, have ${item.quantityAvailable.toFixed(2)} ${item.unit}, shortage ${item.shortage.toFixed(2)} ${item.unit}`
                 ).join('; ');
                 setError(`Cannot start production. Insufficient ingredients: ${shortageMessages}`);
             } else if (error.response?.data?.error) {
-                setError(error.response.data.error);
+                setError(`Cannot create production: ${error.response.data.error}`);
+            } else if (error.message) {
+                setError(`Failed to create production run: ${error.message}`);
             } else {
                 setError('Failed to create production run');
             }
@@ -188,14 +193,14 @@ const ProductionDashboard: React.FC = () => {
                 '⏸️ This production is currently paused.\n\n' +
                 'Would you like to resume it before continuing?'
             );
-            
+
             if (resume) {
                 // Resume the production first
                 try {
                     const response = await productionApi.updateRun(production.id, {
                         status: ProductionStatus.IN_PROGRESS
                     });
-                    
+
                     if (response.success && response.data) {
                         // Update local state
                         setActiveProductions(activeProductions.map(p =>
@@ -226,7 +231,7 @@ const ProductionDashboard: React.FC = () => {
             const response = await productionApi.updateRun(productionId, {
                 status: ProductionStatus.ON_HOLD
             });
-            
+
             if (response.success && response.data) {
                 // Update local state with the response from server
                 setActiveProductions(activeProductions.map(p =>
@@ -245,7 +250,7 @@ const ProductionDashboard: React.FC = () => {
             const response = await productionApi.updateRun(productionId, {
                 status: ProductionStatus.IN_PROGRESS
             });
-            
+
             if (response.success && response.data) {
                 // Update local state with the response from server
                 setActiveProductions(activeProductions.map(p =>
@@ -268,7 +273,7 @@ const ProductionDashboard: React.FC = () => {
             const response = await productionApi.updateRun(productionId, {
                 status: ProductionStatus.CANCELLED
             });
-            
+
             if (response.success && response.data) {
                 // Update the production in the list with CANCELLED status
                 setActiveProductions(activeProductions.map(p =>
@@ -366,10 +371,10 @@ const ProductionDashboard: React.FC = () => {
         .filter(production => {
             // Search filter
             const matchesSearch = production.name.toLowerCase().includes(searchTerm.toLowerCase());
-            
+
             // Status filter
             const matchesStatus = statusFilter === 'all' || production.status === statusFilter;
-            
+
             return matchesSearch && matchesStatus;
         })
         .sort((a, b) => {
@@ -503,9 +508,9 @@ const ProductionDashboard: React.FC = () => {
                     </Grid>
 
                     {/* Search and Filter Bar */}
-                    <Paper 
+                    <Paper
                         elevation={2}
-                        sx={{ 
+                        sx={{
                             p: 2,
                             mb: 3,
                             borderRadius: borderRadius.lg, // 20px - Modern rounded search bar
@@ -535,7 +540,7 @@ const ProductionDashboard: React.FC = () => {
                                     }}
                                 />
                             </Grid>
-                            
+
                             <Grid item xs={12} sm={6} md={2}>
                                 <FormControl fullWidth>
                                     <InputLabel>Status</InputLabel>
@@ -573,9 +578,9 @@ const ProductionDashboard: React.FC = () => {
 
                             <Grid item xs={12} md={4}>
                                 <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                                    <IconButton 
+                                    <IconButton
                                         onClick={() => loadActiveProductions()}
-                                        sx={{ 
+                                        sx={{
                                             bgcolor: alpha(theme.palette.primary.main, 0.1),
                                             '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.2) }
                                         }}
@@ -598,8 +603,8 @@ const ProductionDashboard: React.FC = () => {
                                     {activeProductions.length === 0 ? 'No active productions' : 'No productions found'}
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
-                                    {activeProductions.length === 0 
-                                        ? 'Ready to start baking? Create your first production run!' 
+                                    {activeProductions.length === 0
+                                        ? 'Ready to start baking? Create your first production run!'
                                         : 'Try adjusting your search or filter criteria'}
                                 </Typography>
                                 {activeProductions.length === 0 && (
@@ -781,45 +786,45 @@ const ProductionDashboard: React.FC = () => {
 
                                                     {/* Cancel Production - Subtle button at the end */}
                                                     {(production.status === ProductionStatus.PLANNED ||
-                                                      production.status === ProductionStatus.IN_PROGRESS ||
-                                                      production.status === ProductionStatus.ON_HOLD) && (
-                                                        <Button
-                                                            size="small"
-                                                            startIcon={<BlockIcon />}
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleCancelProduction(production.id);
-                                                            }}
-                                                            sx={{
-                                                                color: 'text.secondary',
-                                                                minWidth: 'auto',
-                                                                px: 1.5,
-                                                                '&:hover': {
-                                                                    color: 'error.main',
-                                                                    bgcolor: 'error.lighter'
-                                                                }
-                                                            }}
-                                                        >
-                                                            Cancel
-                                                        </Button>
-                                                    )}
+                                                        production.status === ProductionStatus.IN_PROGRESS ||
+                                                        production.status === ProductionStatus.ON_HOLD) && (
+                                                            <Button
+                                                                size="small"
+                                                                startIcon={<BlockIcon />}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleCancelProduction(production.id);
+                                                                }}
+                                                                sx={{
+                                                                    color: 'text.secondary',
+                                                                    minWidth: 'auto',
+                                                                    px: 1.5,
+                                                                    '&:hover': {
+                                                                        color: 'error.main',
+                                                                        bgcolor: 'error.lighter'
+                                                                    }
+                                                                }}
+                                                            >
+                                                                Cancel
+                                                            </Button>
+                                                        )}
 
                                                     {/* Delete Button - Only for truly removing the record */}
                                                     {(production.status === ProductionStatus.CANCELLED ||
-                                                      production.status === ProductionStatus.PLANNED) && (
-                                                        <Tooltip title="Delete Production Run">
-                                                            <IconButton
-                                                                size="small"
-                                                                color="error"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleDeleteProduction(production.id);
-                                                                }}
-                                                            >
-                                                                <DeleteIcon />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                    )}
+                                                        production.status === ProductionStatus.PLANNED) && (
+                                                            <Tooltip title="Delete Production Run">
+                                                                <IconButton
+                                                                    size="small"
+                                                                    color="error"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleDeleteProduction(production.id);
+                                                                    }}
+                                                                >
+                                                                    <DeleteIcon />
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                        )}
 
                                                     {/* View action - only show for active productions */}
                                                     {production.status !== ProductionStatus.CANCELLED && (

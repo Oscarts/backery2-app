@@ -72,7 +72,7 @@ const QuantitySelectionDialog: React.FC<QuantitySelectionDialogProps> = ({
 
     const fetchMaxBatches = async () => {
         if (!recipe?.id) return;
-        
+
         try {
             setLoadingMaxBatches(true);
             const response = await recipesApi.calculateMaxBatches(recipe.id);
@@ -118,14 +118,23 @@ const QuantitySelectionDialog: React.FC<QuantitySelectionDialogProps> = ({
         handleQuantityChange(value);
     };
 
-    const quickQuantities = [
-        recipe.yieldQuantity,
-        recipe.yieldQuantity * 2,
-        recipe.yieldQuantity * 3,
-        recipe.yieldQuantity * 4,
-    ].filter(q => q <= maxQuantity);
+    // Generate quick quantities based on real max batches
+    const quickQuantities = (() => {
+        const actualMaxBatches = realMaxBatches || 4; // fallback to 4 if no data yet
+        const quantities = [];
+
+        for (let i = 1; i <= Math.min(actualMaxBatches, 4); i++) {
+            quantities.push(recipe.yieldQuantity * i);
+        }
+
+        return quantities.filter(q => q <= maxQuantity);
+    })();
 
     const handleConfirm = () => {
+        // Prevent confirmation if exceeding ingredient limits
+        if (realMaxBatches && batchMultiplier > realMaxBatches) {
+            return; // Button should already be disabled, but extra safety
+        }
         onConfirm(quantity, customSteps);
     };
 
@@ -190,6 +199,24 @@ const QuantitySelectionDialog: React.FC<QuantitySelectionDialogProps> = ({
 
                 {/* Main Content */}
                 <Box sx={{ p: 3 }}>
+                    {/* Critical Warning: No ingredients available */}
+                    {maxBatchesData && realMaxBatches === 0 && (
+                        <Alert severity="error" icon={<WarningIcon />} sx={{ mb: 3 }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                                🚫 Cannot Start Production
+                            </Typography>
+                            <Typography variant="body2">
+                                Insufficient ingredients to make even 1 batch.
+                            </Typography>
+                            {limitingIngredient && (
+                                <Typography variant="body2" sx={{ mt: 1 }}>
+                                    Missing: <strong>{limitingIngredient.name}</strong>
+                                    {' '}(need {limitingIngredient.neededPerBatch.toFixed(2)} {limitingIngredient.unit}, have {limitingIngredient.available.toFixed(2)} {limitingIngredient.unit})
+                                </Typography>
+                            )}
+                        </Alert>
+                    )}
+
                     {/* Quick Selection Buttons */}
                     <Box sx={{ mb: 4 }}>
                         <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
@@ -390,7 +417,7 @@ const QuantitySelectionDialog: React.FC<QuantitySelectionDialogProps> = ({
                                         You can make maximum <strong>{maxBatchesData.maxBatches} batches</strong> ({maxBatchesData.maxProducibleQuantity} {recipe.yieldUnit}).
                                     </Typography>
                                     <Typography variant="body2" sx={{ mt: 1 }}>
-                                        Limited by: <strong>{limitingIngredient.name}</strong> 
+                                        Limited by: <strong>{limitingIngredient.name}</strong>
                                         {' '}(have {limitingIngredient.available.toFixed(2)} {limitingIngredient.unit}, need {limitingIngredient.neededPerBatch.toFixed(2)} {limitingIngredient.unit} per batch)
                                     </Typography>
                                 </Alert>
@@ -405,7 +432,7 @@ const QuantitySelectionDialog: React.FC<QuantitySelectionDialogProps> = ({
                                         Maximum capacity: <strong>{maxBatchesData.maxBatches} batches</strong> ({maxBatchesData.maxProducibleQuantity} {recipe.yieldUnit})
                                     </Typography>
                                     <Typography variant="body2" sx={{ mt: 1 }}>
-                                        Limiting ingredient: <strong>{limitingIngredient.name}</strong> 
+                                        Limiting ingredient: <strong>{limitingIngredient.name}</strong>
                                         {' '}(available: {limitingIngredient.available.toFixed(2)} {limitingIngredient.unit})
                                     </Typography>
                                 </Alert>
@@ -460,7 +487,7 @@ const QuantitySelectionDialog: React.FC<QuantitySelectionDialogProps> = ({
                             <Button
                                 variant="contained"
                                 onClick={handleConfirm}
-                                disabled={!recipe.canMake}
+                                disabled={!recipe.canMake || (realMaxBatches !== null && realMaxBatches === 0) || isAtLimit && quantity > maxQuantity}
                                 sx={{ flex: 2 }}
                                 startIcon={<TrendingUpIcon />}
                             >
