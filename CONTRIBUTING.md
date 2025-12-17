@@ -68,6 +68,19 @@ mv check-something.js scripts/archive-$(date +%Y%m%d)/
 - Documentation: `docs/archive-YYYYMMDD/`
 - Scripts: `scripts/archive-YYYYMMDD/`
 
+Automated archiving
+-------------------
+To help enforce consistent archiving, we provide `scripts/archive-deprecated.sh` which moves common temporal and verification files (patterns: `check-*.js`, `debug-*.js`, `final-*.js`, `api-test-*.js`, `*_PROGRESS.md`, `*_STATUS.md`, `*_SUMMARY.md`, etc.) into `scripts/archive-YYYYMMDD/`.
+
+Usage:
+```bash
+./scripts/archive-deprecated.sh
+# review the archive directory and commit the moved files
+git add scripts/archive-$(date +%Y%m%d)/ && git rm <moved-files>
+```
+
+Run the script before large, destructive operations to avoid accidental execution of temporary scripts.
+
 ## 🗂️ File Organization
 
 ### Root Directory Structure

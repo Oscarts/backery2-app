@@ -9,6 +9,8 @@
 - **ALWAYS create backups before schema migrations or risky operations**
 - **NEVER assume the database is empty or test data**
 
+Note: See `docs/DB_RESET_INCIDENT.md` for a recent example of a migration failure and remediation steps. Use that document as a runbook when performing destructive DB operations.
+
 ### Development Process
 - **ALWAYS verify current state before making changes**
   - Check what exists in the database

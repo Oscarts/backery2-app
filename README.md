@@ -50,6 +50,8 @@ npm run dev
 
 ## 📚 Documentation
 
+## 🗄️ Database Reset Procedures
+
 ### Essential Reading for Development
 
 **MANDATORY READING ORDER:**
@@ -213,7 +215,51 @@ npm run db:seed
 # (happens automatically via clientController.ts)
 ```
 
-### Customizing Templates
+ **[Database Safety](./DATABASE_SAFETY.md)** - Backup/restore procedures ⚠️
+ 
+### Local Development Database Reset
+
+For a clean local database reset (drops, recreates, migrates, and seeds):
+
+```bash
+# Edit DB_USER in the script if needed
+./reset-db-local.sh
+```
+This script will:
+- Drop and recreate your local bakery_inventory database
+- Apply all migrations
+- Run the official seed script (backend/prisma/seed.ts)
+- Block if NODE_ENV=production for safety
+
+### Incident & Runbook
+
+If you encounter migration failures during a local reset (for example "relation \"categories\" already exists"), follow the incident runbook before retrying:
+
+- Create a backup: `cd backend && npm run db:backup` (backups stored under `/Users/oscar/backups/bakery_inventory/`).
+- Review the remediation document: `docs/DB_RESET_INCIDENT.md` for details and fixes applied.
+- Archive temporary verification/debug scripts before re-running destructive commands: `./scripts/archive-deprecated.sh` (review `scripts/archive-YYYYMMDD/` after running).
+- Apply migrations non-interactively: `cd backend && npx prisma migrate deploy --schema prisma/schema.prisma`.
+- Run the forced seed: `cd backend && npm run db:seed:force`.
+
+We added `scripts/archive-deprecated.sh` and `docs/DB_RESET_INCIDENT.md` to help prevent and document these failures — review them when performing destructive DB operations.
+
+### Production Database Reset (Destructive)
+
+**WARNING: This will erase ALL production data. Only use if you are 100% sure and have followed all safety protocols.**
+
+1. Backup production data if needed: `npm run db:backup`
+2. Drop and recreate the production database (see [DATABASE_SAFETY.md](./DATABASE_SAFETY.md) for SQL commands)
+3. Run:
+  ```bash
+  NODE_ENV=production ./reset-db-production.sh
+  ```
+  - This script will apply all migrations and seed the database from scratch.
+4. Verify application functionality and data integrity.
+
+**See [CODE_GUIDELINES.md](./CODE_GUIDELINES.md) and [CONTRIBUTING.md](./CONTRIBUTING.md) for security and maintenance rules.**
+
+**📖 Full Documentation**: See [DATABASE_SAFETY.md](./DATABASE_SAFETY.md) for complete backup/restore procedures, emergency recovery, and safety features.
+- API Testing Dashboard now includes traceability and production health checks—run regularly after backend changes.
 
 Edit templates to change what permissions new clients get:
 
