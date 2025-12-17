@@ -202,7 +202,8 @@ Complex multi-step workflow with dynamic step customization:
 **Database & Operations:**
 - Seed System: [backend/SEED_SYSTEM_VERIFIED.md](backend/SEED_SYSTEM_VERIFIED.md)
 - Database Safety: [DATABASE_SAFETY.md](DATABASE_SAFETY.md)
-- Deployment: [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
+- Production Deployment: [DEPLOYMENT_PRODUCTION.md](DEPLOYMENT_PRODUCTION.md) (Neon + Render + Vercel)
+- Dev/Test Deployment: [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
 
 ## Tech Stack Quick Reference
 
@@ -210,4 +211,5 @@ Complex multi-step workflow with dynamic step customization:
 - **Backend:** Express.js, TypeScript, Prisma ORM, JWT, Joi validation
 - **Database:** PostgreSQL with Prisma migrations
 - **Testing:** Jest (backend), Supertest (API testing)
-- **Deployment:** Railway/Vercel (see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md))
+- **Production Deployment:** Neon (database) + Render (backend) + Vercel (frontend)
+- **See:** [DEPLOYMENT_PRODUCTION.md](DEPLOYMENT_PRODUCTION.md) for production setup
