@@ -72,14 +72,25 @@ Automated archiving
 -------------------
 To help enforce consistent archiving, we provide `scripts/archive-deprecated.sh` which moves common temporal and verification files (patterns: `check-*.js`, `debug-*.js`, `final-*.js`, `api-test-*.js`, `*_PROGRESS.md`, `*_STATUS.md`, `*_SUMMARY.md`, etc.) into `scripts/archive-YYYYMMDD/`.
 
-Usage:
+Canonical DB reinit
+-------------------
+There is one supported, canonical reinitialization script for local development: `scripts/reinit-db.sh`. This script implements the tested sequence used for local development resets:
+
+- Create a backup using `backend/scripts/backup-local-db.sh`
+- Terminate connections to the database
+- Drop & recreate the `bakery_inventory` database via the `postgres` maintenance DB
+- Apply migrations non-interactively with `npx prisma migrate deploy`
+- Run the forced seed `npm run db:seed:force`
+
+Usage (local development):
+
 ```bash
-./scripts/archive-deprecated.sh
-# review the archive directory and commit the moved files
-git add scripts/archive-$(date +%Y%m%d)/ && git rm <moved-files>
+bash scripts/reinit-db.sh
 ```
 
-Run the script before large, destructive operations to avoid accidental execution of temporary scripts.
+Rationale: Having a single, well-tested script prevents inconsistent approaches and accidental data loss from ad-hoc or outdated reset scripts. Old reset scripts have been archived under `scripts/archive-YYYYMMDD/`.
+
+Production note: Full reinitialization in production is a high-risk operation and must follow the controlled runbook at `docs/PRODUCTION_REINIT.md`. Do not attempt to reinitialize production from ad-hoc scripts. The repository provides a guarded helper `scripts/reinit-db-production.sh` (requires explicit environment flags and allowfile) and a strict checklist — follow them and obtain required approvals before proceeding.
 
 ## 🗂️ File Organization
 

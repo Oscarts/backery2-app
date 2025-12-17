@@ -11,6 +11,14 @@
 
 Note: See `docs/DB_RESET_INCIDENT.md` for a recent example of a migration failure and remediation steps. Use that document as a runbook when performing destructive DB operations.
 
+Canonical reinit script
+-----------------------
+Use `scripts/reinit-db.sh` as the single supported way to reinitialize the local database. It performs a backup, terminates connections, drops/creates the DB via the `postgres` maintenance DB, applies migrations with `npx prisma migrate deploy`, and runs the forced seed. The script aborts if `NODE_ENV=production`.
+
+Production reinit: If a full production reinitialization is required (extremely rare), follow the controlled runbook in `docs/PRODUCTION_REINIT.md`. Production operations must follow a stricter checklist: explicit approvals, verified backups (cloud snapshot or DB dump), maintenance-mode, post-run verification, and a tested restore path. The repository includes a guarded helper `scripts/reinit-db-production.sh` that will refuse to execute unless multiple explicit conditions are met (for example `SKIP_CONFIRM=true` and presence of `/tmp/ALLOW_PROD_REINIT`).
+
+NEVER bypass these safeguards or attempt ad-hoc destructive commands in production. When in doubt, escalate to the Ops lead and use the documented recovery procedure in `DATABASE_SAFETY.md`.
+
 ### Development Process
 - **ALWAYS verify current state before making changes**
   - Check what exists in the database

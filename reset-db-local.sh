@@ -34,8 +34,8 @@ fi
 # Drop and recreate the database
 export PGPASSWORD="${PGPASSWORD:-}"
 echo "Dropping and recreating database $DB_NAME..."
-psql -U "$DB_USER" -h "$DB_HOST" -c "DROP DATABASE IF EXISTS \"$DB_NAME\";"
-psql -U "$DB_USER" -h "$DB_HOST" -c "CREATE DATABASE \"$DB_NAME\";"
+psql -U "$DB_USER" -h "$DB_HOST" -d postgres -c "DROP DATABASE IF EXISTS \"$DB_NAME\";"
+psql -U "$DB_USER" -h "$DB_HOST" -d postgres -c "CREATE DATABASE \"$DB_NAME\";"
 
 # Run migrations and seed
 cd "$(dirname "$0")/backend"
