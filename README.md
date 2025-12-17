@@ -50,6 +50,8 @@ npm run dev
 
 ## 📚 Documentation
 
+## 🗄️ Database Reset Procedures
+
 ### Essential Reading for Development
 
 **MANDATORY READING ORDER:**
@@ -213,7 +215,60 @@ npm run db:seed
 # (happens automatically via clientController.ts)
 ```
 
-### Customizing Templates
+ **[Database Safety](./DATABASE_SAFETY.md)** - Backup/restore procedures ⚠️
+ 
+### Local Development Database Reset
+
+For a clean local database reset (drops, recreates, migrates, and seeds) use the canonical helper:
+
+```bash
+# Run the canonical reinit script (creates backup, drops DB, applies migrations, seeds)
+bash scripts/reinit-db.sh
+```
+The canonical script performs these exact, tested steps:
+
+- Back up the current local DB (uses `backend/scripts/backup-local-db.sh`)
+- Terminate other connections to the `bakery_inventory` DB
+- Drop and recreate the `bakery_inventory` DB using the `postgres` maintenance DB
+- Apply migrations non-interactively with `npx prisma migrate deploy`
+- Run the forced seed `npm run db:seed:force`
+- Aborts if `NODE_ENV=production` for safety
+
+Notes:
+- Old scripts like `reset-db-local.sh` and `reset-and-start.sh` have been archived into `scripts/archive-YYYYMMDD/` to avoid accidental use. Use `scripts/reinit-db.sh` exclusively for reinitialization.
+
+### Incident & Runbook
+
+If you encounter migration failures during a local reset (for example "relation \"categories\" already exists"), follow the incident runbook before retrying:
+
+- Create a backup: `cd backend && npm run db:backup` (backups stored under `/Users/oscar/backups/bakery_inventory/`).
+- Review the remediation document: `docs/DB_RESET_INCIDENT.md` for details and fixes applied.
+- Archive temporary verification/debug scripts before re-running destructive commands: `./scripts/archive-deprecated.sh` (review `scripts/archive-YYYYMMDD/` after running).
+- Apply migrations non-interactively: `cd backend && npx prisma migrate deploy --schema prisma/schema.prisma`.
+- Run the forced seed: `cd backend && npm run db:seed:force`.
+
+We added `scripts/archive-deprecated.sh` and `docs/DB_RESET_INCIDENT.md` to help prevent and document these failures — review them when performing destructive DB operations.
+
+### Production Database Reset (Destructive)
+
+**WARNING: This will erase ALL production data. Only perform a full reinitialization in production after following the runbook, obtaining explicit approvals, and creating verified backups.**
+
+We provide a controlled, auditable procedure for production reinitialization located in `docs/PRODUCTION_REINIT.md`. Follow that runbook exactly — it lists pre-flight checks, required approvals, backup steps, maintenance-mode recommendations, post-run verification, and rollback instructions.
+
+Key safeguards (summary):
+
+- Always create and verify a backup before any destructive operation (`npm run db:backup` or cloud snapshot).
+- Only run the production reinit helper when the following are true:
+  - You have explicit written approval from the release owner or Ops lead.
+  - A verified backup is available and accessible.
+  - The environment is in maintenance mode (no user traffic).
+  - You have a validated restore plan and test restore procedure.
+- The repository contains a guarded helper script `scripts/reinit-db-production.sh` which refuses to run unless multiple explicit safeguards are present (`SKIP_CONFIRM=true` and a local allowfile `/tmp/ALLOW_PROD_REINIT`), and it logs every step.
+
+DO NOT run production resets ad-hoc. Review `docs/PRODUCTION_REINIT.md` and coordinate with your team.
+
+See [CODE_GUIDELINES.md](./CODE_GUIDELINES.md) and [CONTRIBUTING.md](./CONTRIBUTING.md) for security and maintenance rules. For full backup/restore procedures consult [DATABASE_SAFETY.md](./DATABASE_SAFETY.md).
+- API Testing Dashboard now includes traceability and production health checks—run regularly after backend changes.
 
 Edit templates to change what permissions new clients get:
 
