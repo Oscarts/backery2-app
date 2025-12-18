@@ -26,7 +26,10 @@ import {
   OrderExportFilters
 } from '../types';
 
-const API_BASE_URL = 'http://localhost:8000/api';
+// Use Vite runtime env `VITE_API_URL` (set in build environment) and append `/api`.
+// Example: VITE_API_URL=https://rapidpro-api.onrender.com
+const rawBase = (import.meta.env && (import.meta.env.VITE_API_URL as string)) || process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_BASE_URL = rawBase.replace(/\/+$/, '') + '/api';
 
 // Helper function for API calls
 const apiCall = async <T>(endpoint: string, options?: RequestInit): Promise<ApiResponse<T>> => {
