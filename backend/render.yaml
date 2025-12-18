@@ -18,7 +18,7 @@ services:
       - key: DATABASE_URL
         sync: false # Set manually from Neon
       - key: JWT_SECRET
-        generateValue: false
+        sync: false # Set a strong secret, before generateValue: false
       - key: JWT_EXPIRES_IN
         value: 7d
       - key: CORS_ORIGIN
