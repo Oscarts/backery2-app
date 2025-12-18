@@ -153,6 +153,17 @@ export const tenantContext = (
 
   console.log('tenantContext middleware - Set global clientId to:', req.user.clientId);
 
+  // Ensure we clear the global clientId after the response completes to avoid
+  // leaking tenant context between requests in long-running processes.
+  res.on('finish', () => {
+    try {
+      (global as any).__currentClientId = undefined;
+      console.log('tenantContext middleware - Cleared global clientId after response');
+    } catch (e) {
+      // ignore
+    }
+  });
+
   next();
 };
 

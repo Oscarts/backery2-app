@@ -91,6 +91,14 @@ export const authenticate = async (
           error: 'Token expired',
         });
       } else if (error instanceof jwt.JsonWebTokenError) {
+        // Log the JWT error and a decoded payload (if any) to aid debugging
+        try {
+          const decoded = jwt.decode(token);
+          console.error('JWT verification failed:', (error as Error).message, 'decodedPayload:', decoded);
+        } catch (e) {
+          console.error('JWT verification failed and decode also failed:', (error as Error).message);
+        }
+
         res.status(401).json({
           success: false,
           error: 'Invalid token',
