@@ -82,6 +82,11 @@ NEVER bypass these safeguards or attempt ad-hoc destructive commands in producti
 - [ ] Role-based permissions checked where needed
 - [ ] Password hashing uses bcrypt with salt rounds >= 10
 
+### Rate limiting (Auth endpoints)
+- [ ] Authentication rate limiting MUST be tenant-scoped (include `clientId`) or per-username+IP to avoid cross-tenant/user lockouts
+- [ ] Do NOT count successful login requests towards the failed-attempt limit — use `skipSuccessfulRequests: true` or equivalent so normal login/logout activity doesn't trigger lockouts
+- [ ] For clustered deployments, use a shared store (Redis) for rate-limit state (e.g., `rate-limit-redis`) and ensure keys include tenant identifier
+
 ## 💻 Code Quality Standards
 
 ### TypeScript Best Practices:

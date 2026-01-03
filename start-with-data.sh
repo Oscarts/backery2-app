@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Print commands before executing and exit on any error
-set -ex
+# Safe mode: exit on error but don't print every command (reduces noise)
+set -e
 
 echo "🚀 Starting Bakery App with Complete Data Setup..."
 
@@ -45,12 +45,16 @@ echo "🗃️ Setting up database..."
 
 # Check if PostgreSQL is running
 if command_exists pg_isready; then
-    if ! pg_isready; then
-        echo "❌ PostgreSQL is not running. Please start PostgreSQL first."
+    if ! pg_isready -h localhost -p 5432; then
+        echo "❌ PostgreSQL is not running on localhost:5432. Please start PostgreSQL first."
         exit 1
     fi
 else
-    echo "⚠️ pg_isready command not found. Assuming PostgreSQL is running..."
+    echo "⚠️ pg_isready command not found. Checking with psql..."
+    if ! psql "postgresql://oscar@localhost:5432/bakery_inventory" -c "\q" 2>/dev/null; then
+        echo "❌ Cannot connect to database. Please ensure PostgreSQL is running and database exists."
+        exit 1
+    fi
 fi
 
 # Generate Prisma client
@@ -69,23 +73,15 @@ if ! grep -q "prisma" package.json || ! grep -q "seed" package.json; then
     jq '.prisma = {"seed": "tsx prisma/seed.ts"}' package.json > "$TMP_FILE" && mv "$TMP_FILE" package.json
 fi
 
-# Check if database is already seeded
+# Check if database is already seeded (simplified check)
 echo "🔍 Checking if database is already seeded..."
-CATEGORY_COUNT=$(cd .. && npx -y tsx -e "
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
-async function check() {
-  try {
-    const count = await prisma.category.count();
-    console.log(count);
-  } catch (error) {
-    console.log(0);
-  } finally {
-    await prisma.\$disconnect();
-  }
-}
-check();
-" 2>/dev/null || echo 0)
+if command_exists psql; then
+    CATEGORY_COUNT=$(psql "postgresql://oscar@localhost:5432/bakery_inventory" -t -c "SELECT COUNT(*) FROM category;" 2>/dev/null || echo 0)
+    CATEGORY_COUNT=$(echo "$CATEGORY_COUNT" | tr -d ' ')
+else
+    echo "⚠️ psql not available, will attempt to seed..."
+    CATEGORY_COUNT=0
+fi
 
 if [ "$CATEGORY_COUNT" -gt "0" ]; then
   echo "✅ Database already contains data. Skipping seed."
