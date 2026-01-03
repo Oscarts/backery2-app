@@ -345,6 +345,16 @@ feat(scope): brief description
 9. **Missing API Structure Tests** - Add tests to validate response structures
 10. **Nullable Values Handling** - Always handle potential null/undefined values
 
+## 🔧 Troubleshooting
+
+### VS Code Freezing or Performance Issues
+
+If VS Code freezes when running dev servers, see [Troubleshooting VS Code](./troubleshooting-vscode-freeze.md) for:
+- Fixing multiple concurrent process conflicts
+- Resolving rate limiter configuration errors
+- Prevention best practices
+- Recovery procedures
+
 ## 🎯 Quality Gates
 
 **Before any code can be considered complete:**

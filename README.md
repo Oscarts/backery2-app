@@ -77,6 +77,7 @@ npm run dev
 - **[Deployment Guide](./DEPLOYMENT_GUIDE.md)** - Alternative deployment options (development/testing)
 - **[Super Admin Guide](./SUPER_ADMIN_GUIDE.md)** - Platform administration
 - **[Data Persistence](./docs/data-persistence.md)** - Database schema and relationships
+- **[Troubleshooting VS Code](./docs/troubleshooting-vscode-freeze.md)** - Fix VS Code freezing and performance issues
 
 ### Deployment Checklist
 

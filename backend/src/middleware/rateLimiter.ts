@@ -1,5 +1,10 @@
 import rateLimit from 'express-rate-limit';
 
+// Helper to extract IP from request (handles IPv6)
+const getIpFromRequest = (req: any): string => {
+    return req.ip || req.connection?.remoteAddress || 'unknown';
+};
+
 /**
  * Rate Limiting Configuration for RapidPro API
  * 
@@ -41,7 +46,20 @@ export const authLimiter = rateLimit({
     },
     standardHeaders: true,
     legacyHeaders: false,
-    skipSuccessfulRequests: false, // Count all requests, not just failed ones
+    // Don't count successful login requests towards the limit so normal
+    // login/logout activity won't cause accidental lockouts.
+    // Only failed authentication attempts should be counted.
+    skipSuccessfulRequests: true,
+    // Use a key that scopes attempts to tenant+username when available so
+    // users sharing an IP (office/home) don't cause global lockouts for one another.
+    keyGenerator: (req: any) => {
+        const body: any = (req && req.body) || {};
+        const username = String(body.email || body.username || body.login || '');
+        const clientId = String(body.clientId || (req && req.headers && (req.headers as any)['x-client-id']) || '');
+        if (clientId || username) return `${clientId}:${username}`;
+        // Use helper function for proper IP handling
+        return getIpFromRequest(req);
+    },
 });
 
 // Signup rate limiter - 3 signups per hour per IP (30 in dev)
