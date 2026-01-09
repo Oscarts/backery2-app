@@ -16,21 +16,29 @@ A comprehensive, full-stack inventory management solution designed specifically 
 
 ## 🚀 Quick Start
 
-### Automated Setup (Recommended)
+### Running Locally (Daily Development)
+
+**Default method - Preserves your existing data:**
 
 ```bash
-# Clone the repository
+# Clone the repository (first time only)
 git clone [repository-url]
 cd backery2-app
 
-# Start with existing data (recommended for daily use)
+# Start with existing data (RECOMMENDED - keeps all your data)
 ./start-with-data.sh
 
-# OR reset database and start fresh
-./reset-and-start.sh
-
-# OR just run development servers
+# OR if servers are already configured, just run:
 npm run dev
+```
+
+### ⚠️ Reset Database (Only when needed)
+
+**WARNING: This deletes all data!** Only use when troubleshooting or starting fresh:
+
+```bash
+# ❌ Drops database, recreates schema, seeds demo data
+./reset-and-start.sh
 ```
 
 **Access the application:**
