@@ -47,6 +47,7 @@ model Client {
   suppliers           Supplier[]
   storageLocations    StorageLocation[]
   qualityStatuses     QualityStatus[]
+  skuMappings         SkuMapping[]
   
   @@map("clients")
 }
@@ -208,15 +209,20 @@ model Unit {
 
 model SkuMapping {
   id          String   @id @default(cuid())
-  name        String   @unique // Product/material name (unique across system)
-  sku         String   @unique // Auto-generated or manually set SKU
+  name        String   // Product/material name (unique per client)
+  sku         String   // Auto-generated or manually set SKU
   description String?
   category    String?  // General category hint
+  clientId    String   // Multi-tenant isolation
+  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  @@unique([name, clientId]) // Name must be unique per client
+  @@unique([sku, clientId])  // SKU must be unique per client
   @@index([name])
   @@index([sku])
+  @@index([clientId])
   @@map("sku_mappings")
 }
 

@@ -235,7 +235,7 @@ export const finishedProductController = {
       });
 
       // Persist SKU mapping to ensure it remains even if this finished product is deleted
-      await persistSkuMapping(finishedProduct.name, finishedProduct.sku, finishedProduct.category?.name);
+      await persistSkuMapping(finishedProduct.name, finishedProduct.sku, req.user!.clientId, finishedProduct.category?.name);
 
       res.status(201).json({
         success: true,
@@ -327,7 +327,7 @@ export const finishedProductController = {
 
       // Persist SKU mapping to ensure it remains even if this finished product is deleted
       if (finishedProduct.sku) {
-        await persistSkuMapping(finishedProduct.name, finishedProduct.sku, finishedProduct.category?.name);
+        await persistSkuMapping(finishedProduct.name, finishedProduct.sku, req.user!.clientId, finishedProduct.category?.name);
       }
 
       res.json({

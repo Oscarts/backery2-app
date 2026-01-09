@@ -283,7 +283,7 @@ export const rawMaterialController = {
       });
 
       // Persist SKU mapping to ensure it remains even if this raw material is deleted
-      await persistSkuMapping(rawMaterial.name, rawMaterial.sku || derivedSku, rawMaterial.category?.name);
+      await persistSkuMapping(rawMaterial.name, rawMaterial.sku || derivedSku, req.user!.clientId, rawMaterial.category?.name);
 
       // Get unit details
       let unitDetails = null;
@@ -388,7 +388,7 @@ export const rawMaterialController = {
 
       // Persist SKU mapping to ensure it remains even if this raw material is deleted
       if (rawMaterial.sku) {
-        await persistSkuMapping(rawMaterial.name, rawMaterial.sku, rawMaterial.category?.name);
+        await persistSkuMapping(rawMaterial.name, rawMaterial.sku, req.user!.clientId, rawMaterial.category?.name);
       }
 
       // Get unit details

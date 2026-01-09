@@ -70,12 +70,14 @@ export async function validateOrAssignSku(name: string, clientId: string, incomi
  * This ensures the SKU reference remains even if all items with this name are deleted.
  * Uses upsert to avoid duplicates.
  */
-export async function persistSkuMapping(name: string, sku: string, category?: string): Promise<void> {
+export async function persistSkuMapping(name: string, sku: string, clientId: string, category?: string): Promise<void> {
   try {
     await prisma.skuMapping.upsert({
-      where: { name },
+      where: {
+        name_clientId: { name, clientId }
+      },
       update: { sku, category: category || null, updatedAt: new Date() },
-      create: { name, sku, category: category || null },
+      create: { name, sku, clientId, category: category || null },
     });
   } catch (error: any) {
     // If there's a unique constraint error on SKU, try with just the name
@@ -159,8 +161,9 @@ export async function getAllSkuMappings(clientId: string): Promise<Array<{ name:
     orderBy: { name: 'asc' },
   });
 
-  // Get from persisted SkuMapping table (global reference)
+  // Get from persisted SkuMapping table (tenant-filtered)
   const persistedMappings = await prisma.skuMapping.findMany({
+    where: { clientId },
     select: { name: true, sku: true },
     orderBy: { name: 'asc' },
   });
@@ -288,6 +291,8 @@ export async function deleteSkuMapping(name: string, clientId: string): Promise<
     );
   }
 
-  // Note: Not deleting from SkuMapping table since it's global and other tenants might use it
-  // Just validate that this tenant is not using it anymore
+  // Delete from SkuMapping table (tenant-filtered)
+  await prisma.skuMapping.deleteMany({
+    where: { name, clientId }
+  });
 }
