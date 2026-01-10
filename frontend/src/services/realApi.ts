@@ -3,6 +3,10 @@ import {
   Category,
   StorageLocation,
   Unit,
+  SkuReference,
+  CreateSkuReferenceData,
+  UpdateSkuReferenceData,
+  SkuReferenceUsage,
   RawMaterial,
   CreateRawMaterialData,
   UpdateRawMaterialData,
@@ -154,6 +158,47 @@ export const unitsApi = {
     return apiCall<void>(`/units/${id}`, {
       method: 'DELETE',
     });
+  },
+};
+
+// SKU References API
+export const skuReferencesApi = {
+  getAll: async (params?: { search?: string; categoryId?: string; storageLocationId?: string }): Promise<ApiResponse<SkuReference[]>> => {
+    const queryParams = new URLSearchParams();
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.categoryId) queryParams.append('categoryId', params.categoryId);
+    if (params?.storageLocationId) queryParams.append('storageLocationId', params.storageLocationId);
+    
+    const queryString = queryParams.toString();
+    return apiCall<SkuReference[]>(`/sku-references${queryString ? `?${queryString}` : ''}`);
+  },
+
+  getById: async (id: string): Promise<ApiResponse<SkuReference>> => {
+    return apiCall<SkuReference>(`/sku-references/${id}`);
+  },
+
+  create: async (data: CreateSkuReferenceData): Promise<ApiResponse<SkuReference>> => {
+    return apiCall<SkuReference>('/sku-references', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  update: async (id: string, data: UpdateSkuReferenceData): Promise<ApiResponse<SkuReference>> => {
+    return apiCall<SkuReference>(`/sku-references/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  delete: async (id: string): Promise<ApiResponse<void>> => {
+    return apiCall<void>(`/sku-references/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  checkUsage: async (id: string): Promise<ApiResponse<SkuReferenceUsage>> => {
+    return apiCall<SkuReferenceUsage>(`/sku-references/${id}/usage`);
   },
 };
 

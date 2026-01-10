@@ -128,6 +128,7 @@ model Category {
   // intermediateProducts removed
   rawMaterials         RawMaterial[]
   recipes              Recipe[]
+  skuMappings          SkuMapping[]          // SKU references using this category
   
   client               Client                @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
@@ -165,6 +166,7 @@ model StorageLocation {
   finishedProducts     FinishedProduct[]
   // intermediateProducts removed
   rawMaterials         RawMaterial[]
+  skuMappings          SkuMapping[]          // SKU references using this storage location
   
   client               Client                @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
@@ -208,21 +210,37 @@ model Unit {
 }
 
 model SkuMapping {
-  id          String   @id @default(cuid())
-  name        String   // Product/material name (unique per client)
-  sku         String   // Auto-generated or manually set SKU
-  description String?
-  category    String?  // General category hint
-  clientId    String   // Multi-tenant isolation
-  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
+  id                String            @id @default(cuid())
+  name              String            // Product/material name (unique per client)
+  sku               String            // Auto-generated or manually set SKU
+  description       String?
+  
+  // Master template fields
+  unitPrice         Float?            @map("unit_price") // Default price per unit
+  unit              String?           // Default unit (kg, L, pcs, etc.)
+  reorderLevel      Float?            @map("reorder_level") // Minimum stock level
+  storageLocationId String?           @map("storage_location_id") // Default storage location
+  categoryId        String?           @map("category_id") // Category reference
+  
+  // Multi-tenant isolation
+  clientId          String
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  // Relations
+  client            Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  storageLocation   StorageLocation?  @relation(fields: [storageLocationId], references: [id], onDelete: SetNull)
+  category          Category?         @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  rawMaterials      RawMaterial[]     @relation("SkuReferenceToRawMaterial")
+  finishedProducts  FinishedProduct[] @relation("SkuReferenceToFinishedProduct")
+  
   @@unique([name, clientId]) // Name must be unique per client
   @@unique([sku, clientId])  // SKU must be unique per client
   @@index([name])
   @@index([sku])
   @@index([clientId])
+  @@index([categoryId])
+  @@index([storageLocationId])
   @@map("sku_mappings")
 }
 
@@ -231,6 +249,7 @@ model RawMaterial {
   name              String
   // Shared SKU logic: materials with the same name share the same SKU as finished products
   sku               String?
+  skuReferenceId    String?            @map("sku_reference_id") // Link to SKU reference template
   description       String?
   categoryId        String?
   supplierId        String
@@ -252,6 +271,7 @@ model RawMaterial {
   storageLocation   StorageLocation    @relation(fields: [storageLocationId], references: [id])
   supplier          Supplier           @relation(fields: [supplierId], references: [id])
   qualityStatus     QualityStatus?     @relation(fields: [qualityStatusId], references: [id])
+  skuReference      SkuMapping?        @relation("SkuReferenceToRawMaterial", fields: [skuReferenceId], references: [id], onDelete: SetNull)
   client            Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
   recipeIngredients RecipeIngredient[]
 
@@ -261,6 +281,7 @@ model RawMaterial {
   @@index([batchNumber])
   @@index([supplierId])
   @@index([expirationDate])
+  @@index([skuReferenceId])
   @@map("raw_materials")
 }
 
@@ -270,6 +291,7 @@ model FinishedProduct {
   name              String
   description       String?
   sku               String           // No longer unique: multiple batches of same product share SKU
+  skuReferenceId    String?          @map("sku_reference_id") // Link to SKU reference template
   categoryId        String?
   batchNumber       String
   productionDate    DateTime
@@ -294,10 +316,12 @@ model FinishedProduct {
   storageLocation   StorageLocation? @relation(fields: [storageLocationId], references: [id])
   qualityStatus     QualityStatus?   @relation(fields: [qualityStatusId], references: [id])
   productionRun     ProductionRun?   @relation(fields: [productionRunId], references: [id])
+  skuReference      SkuMapping?      @relation("SkuReferenceToFinishedProduct", fields: [skuReferenceId], references: [id], onDelete: SetNull)
   client            Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
   recipeIngredients RecipeIngredient[]
 
   @@index([clientId])
+  @@index([skuReferenceId])
   @@map("finished_products")
 }
 

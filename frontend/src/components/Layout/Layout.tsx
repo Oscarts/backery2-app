@@ -59,8 +59,8 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/', resource: 'dashboard' },
-  { text: 'Raw Materials', icon: <InventoryIcon />, path: '/raw-materials', resource: 'raw-materials' },
   { text: 'SKU Reference', icon: <LabelIcon />, path: '/sku-reference', resource: 'raw-materials' },
+  { text: 'Raw Materials', icon: <InventoryIcon />, path: '/raw-materials', resource: 'raw-materials' },
   { text: 'Finished Products', icon: <LocalDiningIcon />, path: '/finished-products', resource: 'finished-products' },
   { text: 'Recipes', icon: <MenuBookIcon />, path: '/recipes', resource: 'recipes' },
   { text: 'Production', icon: <FactoryIcon />, path: '/production', resource: 'production' },

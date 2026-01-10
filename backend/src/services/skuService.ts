@@ -69,6 +69,7 @@ export async function validateOrAssignSku(name: string, clientId: string, incomi
  * Persist a SKU mapping to the SkuMapping table.
  * This ensures the SKU reference remains even if all items with this name are deleted.
  * Uses upsert to avoid duplicates.
+ * Note: category field is now a relation to Category table, not a string
  */
 export async function persistSkuMapping(name: string, sku: string, clientId: string, category?: string): Promise<void> {
   try {
@@ -76,8 +77,8 @@ export async function persistSkuMapping(name: string, sku: string, clientId: str
       where: {
         name_clientId: { name, clientId }
       },
-      update: { sku, category: category || null, updatedAt: new Date() },
-      create: { name, sku, clientId, category: category || null },
+      update: { sku, updatedAt: new Date() },
+      create: { name, sku, clientId },
     });
   } catch (error: any) {
     // If there's a unique constraint error on SKU, try with just the name

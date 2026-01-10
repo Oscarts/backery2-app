@@ -34,6 +34,7 @@ import userRoutes from './routes/users';
 import roleRoutes from './routes/roles';
 import permissionRoutes from './routes/permissions';
 import clientRoutes from './routes/clients';
+import skuReferenceRoutes from './routes/skuReferences';
 import { createAdminUser } from './controllers/clientController';
 
 // Initialize Prisma Client
@@ -94,6 +95,7 @@ const createApp = (): Application => {
   // for stricter protection in production once auth issues are resolved.
   app.use('/api/units', optionalAuthenticate, unitRoutes); // Global reference data - Super Admin only for write operations
   app.use('/api/categories', authenticate, tenantContext, categoryRoutes);
+  app.use('/api/sku-references', authenticate, tenantContext, skuReferenceRoutes);
   app.use('/api/raw-materials', authenticate, tenantContext, rawMaterialRoutes);
   app.use('/api/finished-products', authenticate, tenantContext, finishedProductRoutes);
   app.use('/api/recipes', authenticate, tenantContext, recipeRoutes);

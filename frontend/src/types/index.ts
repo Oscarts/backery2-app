@@ -64,6 +64,68 @@ export interface Unit {
   updatedAt: string;
 }
 
+// SKU Reference types
+export interface SkuReference {
+  id: string;
+  name: string;
+  sku: string;
+  description?: string;
+  unitPrice?: number;
+  unit?: string;
+  reorderLevel?: number;
+  storageLocationId?: string;
+  categoryId?: string;
+  clientId: string;
+  createdAt: string;
+  updatedAt: string;
+  
+  // Relations
+  category?: Category;
+  storageLocation?: StorageLocation;
+  _count?: {
+    rawMaterials: number;
+    finishedProducts: number;
+  };
+}
+
+export interface CreateSkuReferenceData {
+  name: string;
+  sku?: string;
+  description?: string;
+  unitPrice?: number;
+  unit?: string;
+  reorderLevel?: number;
+  storageLocationId?: string;
+  categoryId?: string;
+}
+
+export interface UpdateSkuReferenceData extends Partial<CreateSkuReferenceData> {}
+
+export interface SkuReferenceUsage {
+  skuReference: {
+    id: string;
+    name: string;
+    sku: string;
+  };
+  usage: {
+    rawMaterials: Array<{
+      id: string;
+      name: string;
+      batchNumber: string;
+      quantity: number;
+      unit: string;
+    }>;
+    finishedProducts: Array<{
+      id: string;
+      name: string;
+      batchNumber: string;
+      quantity: number;
+      unit: string;
+    }>;
+    totalCount: number;
+  };
+}
+
 export enum ProductStatus {
   PLANNED = 'PLANNED',
   IN_PROGRESS = 'IN_PROGRESS',
