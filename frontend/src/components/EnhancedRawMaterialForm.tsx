@@ -631,8 +631,8 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
                 <InputLabel>Unit</InputLabel>
                 <Select value={formData.unit} label="Unit" onChange={handleChange('unit')}>
                   {units.map((unit) => (
-                    <MenuItem key={unit.id} value={unit.name}>
-                      {unit.name}
+                    <MenuItem key={unit.id} value={unit.symbol}>
+                      {unit.name} ({unit.symbol})
                     </MenuItem>
                   ))}
                 </Select>
