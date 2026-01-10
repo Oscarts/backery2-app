@@ -66,19 +66,48 @@ export async function validateOrAssignSku(name: string, clientId: string, incomi
 }
 
 /**
- * Persist a SKU mapping to the SkuMapping table.
+ * Persist a SKU mapping to the SkuMapping table with complete information.
  * This ensures the SKU reference remains even if all items with this name are deleted.
  * Uses upsert to avoid duplicates.
- * Note: category field is now a relation to Category table, not a string
  */
-export async function persistSkuMapping(name: string, sku: string, clientId: string, category?: string): Promise<void> {
+export async function persistSkuMapping(
+  name: string,
+  sku: string,
+  clientId: string,
+  options: {
+    unitPrice?: number;
+    unit?: string;
+    reorderLevel?: number;
+    categoryId?: string;
+    storageLocationId?: string;
+    description?: string;
+  } = {}
+): Promise<void> {
   try {
+    const updateData = {
+      sku,
+      updatedAt: new Date(),
+      ...(options.unitPrice !== undefined && { unitPrice: options.unitPrice }),
+      ...(options.unit && { unit: options.unit }),
+      ...(options.reorderLevel !== undefined && { reorderLevel: options.reorderLevel }),
+      ...(options.categoryId && { categoryId: options.categoryId }),
+      ...(options.storageLocationId && { storageLocationId: options.storageLocationId }),
+      ...(options.description && { description: options.description }),
+    };
+
+    const createData = {
+      name,
+      sku,
+      clientId,
+      ...updateData,
+    };
+
     await prisma.skuMapping.upsert({
       where: {
         name_clientId: { name, clientId }
       },
-      update: { sku, updatedAt: new Date() },
-      create: { name, sku, clientId },
+      update: updateData,
+      create: createData,
     });
   } catch (error: any) {
     // If there's a unique constraint error on SKU, try with just the name

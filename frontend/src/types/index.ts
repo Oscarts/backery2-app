@@ -78,7 +78,7 @@ export interface SkuReference {
   clientId: string;
   createdAt: string;
   updatedAt: string;
-  
+
   // Relations
   category?: Category;
   storageLocation?: StorageLocation;
@@ -99,7 +99,7 @@ export interface CreateSkuReferenceData {
   categoryId?: string;
 }
 
-export interface UpdateSkuReferenceData extends Partial<CreateSkuReferenceData> {}
+export interface UpdateSkuReferenceData extends Partial<CreateSkuReferenceData> { }
 
 export interface SkuReferenceUsage {
   skuReference: {
