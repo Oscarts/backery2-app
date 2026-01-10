@@ -309,8 +309,8 @@ export const rawMaterialController = {
         unitPrice: rawMaterial.unitPrice,
         unit: rawMaterial.unit,
         reorderLevel: rawMaterial.reorderLevel,
-        categoryId: rawMaterial.categoryId,
-        storageLocationId: rawMaterial.storageLocationId,
+        categoryId: rawMaterial.categoryId ?? undefined,
+        storageLocationId: rawMaterial.storageLocationId ?? undefined,
         description: `Auto-generated from raw material: ${rawMaterial.name}`,
       });
 
@@ -441,8 +441,8 @@ export const rawMaterialController = {
           unitPrice: rawMaterial.unitPrice,
           unit: rawMaterial.unit,
           reorderLevel: rawMaterial.reorderLevel,
-          categoryId: rawMaterial.categoryId,
-          storageLocationId: rawMaterial.storageLocationId,
+          categoryId: rawMaterial.categoryId ?? undefined,
+          storageLocationId: rawMaterial.storageLocationId ?? undefined,
           description: `Auto-generated from raw material: ${rawMaterial.name}`,
         });
       }

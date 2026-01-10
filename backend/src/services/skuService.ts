@@ -97,7 +97,6 @@ export async function persistSkuMapping(
 
     const createData = {
       name,
-      sku,
       clientId,
       ...updateData,
     };
