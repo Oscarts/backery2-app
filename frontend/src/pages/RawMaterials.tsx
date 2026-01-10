@@ -49,6 +49,7 @@ import {
   Inventory as InventoryIcon,
   Schedule as ScheduleIcon,
   TrendingDown as TrendingDownIcon,
+  Label as LabelIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { rawMaterialsApi, categoriesApi, storageLocationsApi, unitsApi, suppliersApi, qualityStatusApi, skuReferencesApi } from '../services/realApi';
@@ -609,6 +610,7 @@ const RawMaterials: React.FC = () => {
               <TableHead>
                 <TableRow>
                   <TableCell width="20%">Material</TableCell>
+                  {!isMobile && <TableCell width="10%">SKU Ref</TableCell>}
                   {!isMobile && <TableCell width="12%">SKU/Batch</TableCell>}
                   {!isMobile && <TableCell width="15%">Supplier</TableCell>}
                   <TableCell width="10%" align="center">Quantity</TableCell>
@@ -653,6 +655,46 @@ const RawMaterials: React.FC = () => {
                             </Typography>
                           </Box>
                         </TableCell>
+                        {!isMobile && (
+                          <TableCell>
+                            {material.skuReference ? (
+                              <Tooltip
+                                title={
+                                  <Box>
+                                    <Typography variant="caption" display="block" fontWeight="bold">
+                                      {material.skuReference.name}
+                                    </Typography>
+                                    <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+                                      <strong>SKU:</strong> {material.skuReference.sku}
+                                    </Typography>
+                                    {material.skuReference.unitPrice && (
+                                      <Typography variant="caption" display="block">
+                                        <strong>Unit Price:</strong> ${material.skuReference.unitPrice}
+                                      </Typography>
+                                    )}
+                                    {material.skuReference.reorderLevel && (
+                                      <Typography variant="caption" display="block">
+                                        <strong>Reorder Level:</strong> {material.skuReference.reorderLevel}
+                                      </Typography>
+                                    )}
+                                  </Box>
+                                }
+                                arrow
+                              >
+                                <Chip
+                                  label={material.skuReference.sku}
+                                  size="small"
+                                  icon={<LabelIcon />}
+                                  color="primary"
+                                  variant="outlined"
+                                  sx={{ cursor: 'help' }}
+                                />
+                              </Tooltip>
+                            ) : (
+                              <Typography variant="body2" color="text.secondary">-</Typography>
+                            )}
+                          </TableCell>
+                        )}
                         {!isMobile && (
                           <TableCell>
                             <Box>
