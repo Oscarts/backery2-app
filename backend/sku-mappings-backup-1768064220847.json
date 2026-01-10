@@ -1,0 +1,46 @@
+{
+  "timestamp": "2026-01-10T16:57:00.847Z",
+  "count": 4,
+  "data": [
+    {
+      "id": "cmjykpk4q003cwelhztn7nsdf",
+      "name": "Areparina",
+      "sku": "RM-AREPARINA",
+      "description": null,
+      "category": "Ingredient",
+      "clientId": "cmk7c7a2d00556sn5qb3hv5m3",
+      "createdAt": "2026-01-03T17:25:09.291Z",
+      "updatedAt": "2026-01-03T17:25:09.291Z"
+    },
+    {
+      "id": "cmjykqc2b003fwelh6zmcumq1",
+      "name": "Agua",
+      "sku": "RM-AGUA",
+      "description": null,
+      "category": "Ingredient",
+      "clientId": "cmk7c7a2d00556sn5qb3hv5m3",
+      "createdAt": "2026-01-03T17:25:45.492Z",
+      "updatedAt": "2026-01-03T17:25:57.001Z"
+    },
+    {
+      "id": "cmk7dlzxz003dbol93i5lnv4o",
+      "name": "agia",
+      "sku": "RM-AGIA",
+      "description": null,
+      "category": "Ingredient",
+      "clientId": "cmk7dl0ww0000bol9o3nr9olu",
+      "createdAt": "2026-01-09T21:16:21.431Z",
+      "updatedAt": "2026-01-09T21:16:21.431Z"
+    },
+    {
+      "id": "cmk7dm8dw003fbol9o008hhki",
+      "name": "agua",
+      "sku": "AGUA",
+      "description": null,
+      "category": "Ingredient",
+      "clientId": "cmk7dl0ww0000bol9o3nr9olu",
+      "createdAt": "2026-01-09T21:16:32.372Z",
+      "updatedAt": "2026-01-09T21:16:32.372Z"
+    }
+  ]
+}

@@ -16,6 +16,7 @@ const getDefaultQualityStatus = async () => {
 const createRawMaterialSchema = Joi.object({
   name: Joi.string().required().min(1).max(255),
   sku: Joi.string().optional(), // Ignored if provided; system derives from name or reuses existing
+  skuReferenceId: Joi.string().optional().allow(null, ''), // OPTIONAL: Link to SKU reference
   categoryId: Joi.string().optional().allow('').allow(null),
   supplierId: Joi.string().required(),
   batchNumber: Joi.string().required().min(1).max(100),
@@ -88,6 +89,7 @@ export const rawMaterialController = {
           supplier: true,
           storageLocation: true,
           qualityStatus: true,
+          skuReference: true, // Include SKU reference
         },
         orderBy: { createdAt: 'desc' },
         skip,
@@ -155,6 +157,7 @@ export const rawMaterialController = {
           supplier: true,
           storageLocation: true,
           qualityStatus: true,
+          skuReference: true, // Include SKU reference
         },
       });
 
@@ -224,6 +227,23 @@ export const rawMaterialController = {
         category = await prisma.category.findUnique({ where: { id: value.categoryId } });
       }
 
+      // CRITICAL: If skuReferenceId provided, verify it belongs to this tenant
+      if (value.skuReferenceId) {
+        const skuReference = await prisma.skuMapping.findFirst({
+          where: {
+            id: value.skuReferenceId,
+            clientId: req.user!.clientId, // Multi-tenant security check
+          },
+        });
+
+        if (!skuReference) {
+          return res.status(400).json({
+            success: false,
+            error: 'Invalid SKU reference or not found',
+          });
+        }
+      }
+
       // Only validate category if categoryId was provided
       if (value.categoryId && !category) {
         return res.status(400).json({
@@ -268,6 +288,7 @@ export const rawMaterialController = {
         expirationDate: new Date(value.expirationDate),
         unitPrice: value.costPerUnit, // Map costPerUnit to unitPrice
         qualityStatusId: defaultQualityStatusId, // Use provided or default quality status
+        skuReferenceId: value.skuReferenceId || null, // OPTIONAL: Link to SKU reference (nullable)
         clientId // Explicitly add clientId
       };
       delete createData.costPerUnit; // Remove the frontend field
@@ -279,6 +300,7 @@ export const rawMaterialController = {
           supplier: true,
           storageLocation: true,
           qualityStatus: true,
+          skuReference: true, // Include SKU reference in response
         },
       });
 
@@ -349,6 +371,25 @@ export const rawMaterialController = {
         }
       }
 
+      // CRITICAL: If changing SKU reference, verify it belongs to this tenant
+      if (value.skuReferenceId !== undefined) {
+        if (value.skuReferenceId) {
+          const skuReference = await prisma.skuMapping.findFirst({
+            where: {
+              id: value.skuReferenceId,
+              clientId: req.user!.clientId, // Multi-tenant security check
+            },
+          });
+
+          if (!skuReference) {
+            return res.status(400).json({
+              success: false,
+              error: 'Invalid SKU reference or not found',
+            });
+          }
+        }
+      }
+
       // Prepare update data
       const updateData: any = { ...value };
       if (value.name && value.name !== existingRawMaterial.name) {
@@ -383,6 +424,7 @@ export const rawMaterialController = {
           supplier: true,
           storageLocation: true,
           qualityStatus: true,
+          skuReference: true, // Include SKU reference
         },
       });
 

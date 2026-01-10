@@ -15,9 +15,10 @@ import {
   Box,
   Chip,
   Alert,
+  Typography,
 } from '@mui/material';
-import { AutoAwesome as AutoIcon, CheckCircle as CheckIcon } from '@mui/icons-material';
-import { CreateRawMaterialData, RawMaterial } from '../types';
+import { AutoAwesome as AutoIcon, CheckCircle as CheckIcon, Label as LabelIcon } from '@mui/icons-material';
+import { CreateRawMaterialData, RawMaterial, SkuReference } from '../types';
 import api from '../utils/api';
 
 interface EnhancedRawMaterialFormProps {
@@ -30,6 +31,7 @@ interface EnhancedRawMaterialFormProps {
   storageLocations: any[];
   units: any[];
   qualityStatuses: any[];
+  skuReferences?: SkuReference[];
 }
 
 interface SkuSuggestion {
@@ -55,6 +57,7 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
   storageLocations,
   units,
   qualityStatuses,
+  skuReferences = [],
 }) => {
   const [formData, setFormData] = useState<CreateRawMaterialData>({
     name: '',
@@ -77,6 +80,9 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
   const [defaults, setDefaults] = useState<Defaults | null>(null);
   const [loadingDefaults, setLoadingDefaults] = useState(false);
   const [autoFilledFields, setAutoFilledFields] = useState<Set<string>>(new Set());
+
+  // SKU Reference selection state
+  const [selectedSku, setSelectedSku] = useState<SkuReference | null>(null);
 
   // Load defaults on mount
   useEffect(() => {
@@ -268,6 +274,64 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
     }
   };
 
+  // SKU Reference auto-fill handler
+  const handleSkuSelect = (sku: SkuReference | null) => {
+    setSelectedSku(sku);
+
+    if (!sku) {
+      // User cleared selection - keep existing form data, just remove auto-fill indicators
+      setAutoFilledFields(prev => {
+        const newSet = new Set(prev);
+        ['name', 'categoryId', 'storageLocationId', 'unit', 'costPerUnit', 'reorderLevel'].forEach(field => newSet.delete(field));
+        return newSet;
+      });
+      return;
+    }
+
+    // Auto-fill fields from SKU reference
+    const fieldsToFill = new Set<string>();
+    const updates: Partial<CreateRawMaterialData> = {};
+
+    if (sku.name) {
+      updates.name = sku.name;
+      fieldsToFill.add('name');
+    }
+
+    if (sku.categoryId) {
+      updates.categoryId = sku.categoryId;
+      fieldsToFill.add('categoryId');
+    }
+
+    if (sku.storageLocationId) {
+      updates.storageLocationId = sku.storageLocationId;
+      fieldsToFill.add('storageLocationId');
+    }
+
+    if (sku.unit) {
+      updates.unit = sku.unit;
+      fieldsToFill.add('unit');
+    }
+
+    if (sku.unitPrice !== null && sku.unitPrice !== undefined) {
+      updates.costPerUnit = sku.unitPrice;
+      fieldsToFill.add('costPerUnit');
+    }
+
+    if (sku.reorderLevel !== null && sku.reorderLevel !== undefined) {
+      updates.reorderLevel = sku.reorderLevel;
+      fieldsToFill.add('reorderLevel');
+    }
+
+    // Also copy the SKU field itself
+    if (sku.sku) {
+      updates.sku = sku.sku;
+      fieldsToFill.add('sku');
+    }
+
+    setFormData(prev => ({ ...prev, ...updates }));
+    setAutoFilledFields(fieldsToFill);
+  };
+
   const handleSupplierChange = async (event: any) => {
     const newSupplierId = event.target.value;
     setFormData((prev) => ({ ...prev, supplierId: newSupplierId }));
@@ -352,6 +416,50 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
           )}
 
           <Grid container spacing={2} sx={{ mt: 1 }}>
+            {/* SKU Reference Selector - OPTIONAL speed enhancement */}
+            {!material && skuReferences.length > 0 && (
+              <Grid item xs={12}>
+                <Autocomplete
+                  options={skuReferences}
+                  getOptionLabel={(option) => `${option.sku} - ${option.name}`}
+                  value={selectedSku}
+                  onChange={(_, newValue) => handleSkuSelect(newValue)}
+                  renderOption={(props, option) => (
+                    <Box component="li" {...props}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Chip label={option.sku} size="small" color="primary" variant="outlined" />
+                          <Typography variant="body2" fontWeight="medium">{option.name}</Typography>
+                        </Box>
+                        {option.unitPrice && (
+                          <Typography variant="caption" color="text.secondary">
+                            ${option.unitPrice}/{option.unit} · Reorder: {option.reorderLevel}
+                          </Typography>
+                        )}
+                      </Box>
+                    </Box>
+                  )}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="SKU Reference (Optional)"
+                      placeholder="Search by SKU or product name"
+                      helperText="Select an SKU to auto-fill product details and speed up data entry"
+                      InputProps={{
+                        ...params.InputProps,
+                        startAdornment: (
+                          <Box sx={{ display: 'flex', alignItems: 'center', pl: 1 }}>
+                            <LabelIcon sx={{ color: 'action.active', mr: 0.5 }} />
+                            {params.InputProps.startAdornment}
+                          </Box>
+                        ),
+                      }}
+                    />
+                  )}
+                />
+              </Grid>
+            )}
+
             {/* Name with Autocomplete */}
             <Grid item xs={12} sm={6}>
               <Autocomplete

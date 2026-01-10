@@ -51,7 +51,7 @@ import {
   TrendingDown as TrendingDownIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { rawMaterialsApi, categoriesApi, storageLocationsApi, unitsApi, suppliersApi, qualityStatusApi } from '../services/realApi';
+import { rawMaterialsApi, categoriesApi, storageLocationsApi, unitsApi, suppliersApi, qualityStatusApi, skuReferencesApi } from '../services/realApi';
 import { RawMaterial, CategoryType, UpdateRawMaterialData } from '../types';
 import { borderRadius } from '../theme/designTokens';
 import { formatDate, isExpired, isExpiringSoon, getDaysUntilExpiration, getErrorMessage } from '../utils/api';
@@ -112,12 +112,14 @@ const RawMaterials: React.FC = () => {
   const { data: unitsResponse } = useQuery(['units'], unitsApi.getAll);
   const { data: suppliersResponse } = useQuery(['suppliers'], suppliersApi.getAll);
   const { data: qualityStatusResponse } = useQuery(['qualityStatuses'], qualityStatusApi.getAll);
+  const { data: skuReferencesResponse } = useQuery(['sku-references'], () => skuReferencesApi.getAll());
 
   const categories = categoriesResponse?.data?.filter(c => c.type === CategoryType.RAW_MATERIAL);
   const storageLocations = storageLocationsResponse?.data;
   const units = unitsResponse?.data;
   const suppliers = suppliersResponse?.data;
   const qualityStatuses = (qualityStatusResponse?.data as any[]) || [];
+  const skuReferences = skuReferencesResponse?.data || [];
 
 
 
@@ -1012,6 +1014,7 @@ const RawMaterials: React.FC = () => {
         units={units || []}
         suppliers={suppliers || []}
         qualityStatuses={qualityStatuses || []}
+        skuReferences={skuReferences}
         onSubmit={(data) => {
           if (editingMaterial) {
             updateMutation.mutate({ id: editingMaterial.id, data });

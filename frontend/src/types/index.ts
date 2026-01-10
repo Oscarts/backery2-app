@@ -139,6 +139,7 @@ export interface RawMaterial {
   id: string;
   name: string;
   sku?: string; // Unified SKU shared with finished products by name
+  skuReferenceId?: string | null; // OPTIONAL: Link to SKU reference template
   description?: string;
   categoryId: string;
   supplierId: string;
@@ -161,11 +162,13 @@ export interface RawMaterial {
   supplier?: Supplier;
   storageLocation?: StorageLocation;
   qualityStatus?: QualityStatus;
+  skuReference?: SkuReference | null; // OPTIONAL: Populated SKU reference data
 }
 
 export interface CreateRawMaterialData {
   name: string;
   sku?: string;
+  skuReferenceId?: string | null; // OPTIONAL: Link to SKU reference
   categoryId: string;
   supplierId: string;
   batchNumber: string;
