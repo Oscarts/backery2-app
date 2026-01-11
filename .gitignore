@@ -89,3 +89,9 @@ prisma/migrations/
 /frontend/playwright-report/
 /frontend/blob-report/
 /frontend/playwright/.cache/
+
+# Temporal documentation (per copilot-instructions.md)
+*_PROGRESS.md
+*_STATUS.md
+*_SUMMARY.md
+*_SESSION.md

@@ -4,6 +4,32 @@
 
 A comprehensive, full-stack inventory management solution designed specifically for bakery and chocolate businesses with real-time production tracking, quality management, and business analytics.
 
+## 🚧 Work In Progress
+
+**Branch:** `feature/full-sku-reference-entity`
+
+### Current Status
+- ✅ Test infrastructure fixed - **203/209 tests passing (97%)**
+- ✅ E2E test plan documented in [docs/E2E_TEST_PLAN.md](docs/E2E_TEST_PLAN.md)
+
+### Remaining Work
+1. **Fix 6 failing tests** (business logic issues, not infrastructure):
+   - `client-creation.test.ts` - category name expectations
+   - `productionRunCustomSteps.test.ts` - API response format
+   - `customer-orders.test.ts` - cost calculation logic
+
+2. **Implement E2E Test** - Full business workflow test covering:
+   - Tenant creation → SKU/Raw materials → Recipes → Production → Customer → Order fulfillment
+   - See [E2E_TEST_PLAN.md](docs/E2E_TEST_PLAN.md) for full specification
+
+### Key Fixes Made (Jan 2026)
+- Fixed app import pattern: `createApp()` instead of importing `app` directly
+- Added null safety to tenant isolation middleware
+- Fixed test authentication (superadmin password: `super123`)
+- Jest config: `maxWorkers: 1`, `forceExit: true`, increased timeout
+
+---
+
 ## ✨ Key Features
 
 - 🍞 **Complete Inventory Management** - Raw materials, intermediate products, and finished goods
