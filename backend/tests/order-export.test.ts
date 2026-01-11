@@ -1,5 +1,5 @@
 import request from 'supertest';
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import {
   exportOrderPDF,
@@ -22,9 +22,23 @@ import {
 
 const prisma = getPrismaClient();
 
+// Store test clientId
+let testClientId: string;
+
 // Create Express app for testing
 const app = express();
 app.use(express.json());
+
+// Mock authentication middleware - inject req.user for tests
+app.use(async (req: Request, _res: Response, next: NextFunction) => {
+  if (!testClientId) {
+    const client = await prisma.client.findFirst({ where: { isActive: true } });
+    testClientId = client?.id || '';
+  }
+  // @ts-ignore - Mocking req.user for tests
+  req.user = { clientId: testClientId, role: 'admin' };
+  next();
+});
 
 // Setup routes
 app.get('/api/customer-orders/:id/export/pdf', exportOrderPDF);
@@ -66,13 +80,13 @@ describe('Order Export Service', () => {
 
       expect(pdfBuffer).toBeInstanceOf(Buffer);
       expect(pdfBuffer.length).toBeGreaterThan(0);
-      
+
       // Verify it's a PDF (starts with %PDF)
       expect(pdfBuffer.toString('utf8', 0, 4)).toBe('%PDF');
     });
 
     it('should include order details in PDF', async () => {
-      const customer = await createTestCustomer({ 
+      const customer = await createTestCustomer({
         name: 'John Doe',
         email: 'john@example.com',
         phone: '555-1234'
@@ -553,7 +567,7 @@ describe('Order Export Service', () => {
       // Verify totals from test helper
       expect(updatedOrder?.totalProductionCost).toBe(100.0);
       expect(updatedOrder?.totalPrice).toBe(130.0);
-      
+
       // Verify items exist
       expect(updatedOrder?.items).toHaveLength(2);
 

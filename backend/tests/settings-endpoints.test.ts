@@ -5,9 +5,10 @@
 
 import request from 'supertest';
 import { PrismaClient } from '@prisma/client';
-import app from '../src/app';
+import createApp from '../src/app';
 
 const prisma = new PrismaClient();
+const app = createApp();
 
 describe('Settings Endpoints - Multi-Tenant Isolation', () => {
     let authToken: string;
@@ -23,7 +24,7 @@ describe('Settings Endpoints - Multi-Tenant Isolation', () => {
             .post('/api/auth/login')
             .send({
                 email: 'superadmin@system.local',
-                password: 'admin123',
+                password: 'super123',
             });
 
         expect(loginResponse.status).toBe(200);

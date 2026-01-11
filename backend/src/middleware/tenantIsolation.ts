@@ -54,6 +54,11 @@ export const setupTenantIsolation = (prisma: PrismaClient) => {
     if (tenantModels.includes(params.model || '') && currentClientId) {
       // Add clientId filter for read operations
       if (params.action === 'findMany' || params.action === 'findFirst') {
+        // Ensure params.args exists
+        if (!params.args) {
+          params.args = {};
+        }
+
         if (params.args.where) {
           // If where clause exists, add clientId to it
           if (!params.args.where.clientId) {
@@ -67,6 +72,11 @@ export const setupTenantIsolation = (prisma: PrismaClient) => {
 
       // Add clientId for count operations
       if (params.action === 'count') {
+        // Ensure params.args exists
+        if (!params.args) {
+          params.args = {};
+        }
+
         if (params.args?.where) {
           if (!params.args.where.clientId) {
             params.args.where.clientId = currentClientId;

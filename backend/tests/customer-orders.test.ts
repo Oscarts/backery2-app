@@ -1,5 +1,5 @@
 import request from 'supertest';
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import {
   getOrders,
@@ -23,9 +23,23 @@ import {
 
 const prisma = getPrismaClient();
 
+// Store test clientId
+let testClientId: string;
+
 // Create Express app for testing
 const app = express();
 app.use(express.json());
+
+// Mock authentication middleware - inject req.user for tests
+app.use(async (req: Request, _res: Response, next: NextFunction) => {
+  if (!testClientId) {
+    const client = await prisma.client.findFirst({ where: { isActive: true } });
+    testClientId = client?.id || '';
+  }
+  // @ts-ignore - Mocking req.user for tests
+  req.user = { clientId: testClientId, role: 'admin' };
+  next();
+});
 
 // Setup routes
 app.get('/api/customer-orders', getOrders);

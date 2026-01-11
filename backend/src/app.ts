@@ -37,9 +37,11 @@ import clientRoutes from './routes/clients';
 import skuReferenceRoutes from './routes/skuReferences';
 import { createAdminUser } from './controllers/clientController';
 
-// Initialize Prisma Client
+// Initialize Prisma Client - only log in non-test environments
+const isTestEnv = process.env.NODE_ENV === 'test';
+
 export const prisma = new PrismaClient({
-  log: ['query', 'info', 'warn', 'error'],
+  log: isTestEnv ? [] : ['query', 'info', 'warn', 'error'],
 });
 
 // Setup tenant isolation middleware on Prisma

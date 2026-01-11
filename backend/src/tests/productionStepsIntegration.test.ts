@@ -5,16 +5,43 @@
 
 import request from 'supertest';
 import createApp from '../app';
+import { prisma } from '../app';
 
 const app = createApp();
 
+// Set timeout for all tests in this file
+jest.setTimeout(30000);
+
 describe('Production Steps Customization - End to End', () => {
+    let authToken: string;
+
+    beforeAll(async () => {
+        // Login to get auth token
+        const loginRes = await request(app)
+            .post('/api/auth/login')
+            .send({
+                email: 'admin@demobakery.com',
+                password: 'admin123',
+            })
+            .timeout(10000);
+
+        if (!loginRes.body.data?.token) {
+            throw new Error(`Login failed: ${JSON.stringify(loginRes.body)}`);
+        }
+
+        authToken = loginRes.body.data.token;
+    });
+
+    afterAll(async () => {
+        await prisma.$disconnect();
+    });
 
     describe('POST /api/production/runs - Custom Steps Integration', () => {
         test('should create production run with custom steps from frontend', async () => {
             // First, get a recipe to use for testing
             const recipesResponse = await request(app)
-                .get('/api/recipes')
+                .get('/api/recipes').set('Authorization', `Bearer ${authToken}`)
+                .set('Authorization', `Bearer ${authToken}`)
                 .expect(200);
 
             const recipes = recipesResponse.body.data;
@@ -65,7 +92,7 @@ describe('Production Steps Customization - End to End', () => {
 
             // Create the production run
             const response = await request(app)
-                .post('/api/production/runs')
+                .post('/api/production/runs').set('Authorization', `Bearer ${authToken}`)
                 .send(productionRunData)
                 .expect(201);
 
@@ -93,7 +120,7 @@ describe('Production Steps Customization - End to End', () => {
 
         test('should handle empty custom steps array and use defaults', async () => {
             const recipesResponse = await request(app)
-                .get('/api/recipes')
+                .get('/api/recipes').set('Authorization', `Bearer ${authToken}`)
                 .expect(200);
 
             const recipe = recipesResponse.body.data[0];
@@ -107,7 +134,7 @@ describe('Production Steps Customization - End to End', () => {
             };
 
             const response = await request(app)
-                .post('/api/production/runs')
+                .post('/api/production/runs').set('Authorization', `Bearer ${authToken}`)
                 .send(productionRunData)
                 .expect(201);
 
@@ -129,7 +156,7 @@ describe('Production Steps Customization - End to End', () => {
 
         test('should handle missing customSteps property and use defaults', async () => {
             const recipesResponse = await request(app)
-                .get('/api/recipes')
+                .get('/api/recipes').set('Authorization', `Bearer ${authToken}`)
                 .expect(200);
 
             const recipe = recipesResponse.body.data[0];
@@ -143,7 +170,7 @@ describe('Production Steps Customization - End to End', () => {
             };
 
             const response = await request(app)
-                .post('/api/production/runs')
+                .post('/api/production/runs').set('Authorization', `Bearer ${authToken}`)
                 .send(productionRunData)
                 .expect(201);
 
@@ -161,7 +188,7 @@ describe('Production Steps Customization - End to End', () => {
 
         test('should validate custom steps structure', async () => {
             const recipesResponse = await request(app)
-                .get('/api/recipes')
+                .get('/api/recipes').set('Authorization', `Bearer ${authToken}`)
                 .expect(200);
 
             const recipe = recipesResponse.body.data[0];
@@ -185,7 +212,7 @@ describe('Production Steps Customization - End to End', () => {
             };
 
             const response = await request(app)
-                .post('/api/production/runs')
+                .post('/api/production/runs').set('Authorization', `Bearer ${authToken}`)
                 .send(productionRunData)
                 .expect(201);
 
@@ -197,7 +224,7 @@ describe('Production Steps Customization - End to End', () => {
 
         test('should preserve step order in custom steps', async () => {
             const recipesResponse = await request(app)
-                .get('/api/recipes')
+                .get('/api/recipes').set('Authorization', `Bearer ${authToken}`)
                 .expect(200);
 
             const recipe = recipesResponse.body.data[0];
@@ -232,7 +259,7 @@ describe('Production Steps Customization - End to End', () => {
             };
 
             const response = await request(app)
-                .post('/api/production/runs')
+                .post('/api/production/runs').set('Authorization', `Bearer ${authToken}`)
                 .send(productionRunData)
                 .expect(201);
 

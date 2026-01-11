@@ -1,15 +1,42 @@
 import request from 'supertest';
 import createApp from '../app';
+import { prisma } from '../app';
 
 const app = createApp();
 
+// Set timeout for all tests in this file
+jest.setTimeout(30000);
+
 describe('Production Run Custom Steps API', () => {
+    let authToken: string;
+
+    beforeAll(async () => {
+        // Login to get auth token
+        const loginRes = await request(app)
+            .post('/api/auth/login')
+            .send({
+                email: 'admin@demobakery.com',
+                password: 'admin123',
+            })
+            .timeout(10000);
+
+        if (!loginRes.body.data?.token) {
+            throw new Error(`Login failed: ${JSON.stringify(loginRes.body)}`);
+        }
+
+        authToken = loginRes.body.data.token;
+    });
+
+    afterAll(async () => {
+        await prisma.$disconnect();
+    });
 
     describe('POST /api/production/runs with custom steps', () => {
         test('should create production run with custom steps', async () => {
             // First, get a recipe to use for testing
             const recipesResponse = await request(app)
                 .get('/api/recipes')
+                .set('Authorization', `Bearer ${authToken}`)
                 .expect(200);
 
             const recipes = recipesResponse.body.data;
@@ -51,6 +78,7 @@ describe('Production Run Custom Steps API', () => {
 
             const response = await request(app)
                 .post('/api/production/runs')
+                .set('Authorization', `Bearer ${authToken}`)
                 .send(productionData)
                 .expect(201);
 
@@ -79,6 +107,7 @@ describe('Production Run Custom Steps API', () => {
             // Get a recipe to use for testing
             const recipesResponse = await request(app)
                 .get('/api/recipes')
+                .set('Authorization', `Bearer ${authToken}`)
                 .expect(200);
 
             const recipes = recipesResponse.body.data;
@@ -99,6 +128,7 @@ describe('Production Run Custom Steps API', () => {
 
             const response = await request(app)
                 .post('/api/production/runs')
+                .set('Authorization', `Bearer ${authToken}`)
                 .send(productionData)
                 .expect(201);
 
@@ -116,6 +146,7 @@ describe('Production Run Custom Steps API', () => {
         test('should handle invalid custom steps gracefully', async () => {
             const recipesResponse = await request(app)
                 .get('/api/recipes')
+                .set('Authorization', `Bearer ${authToken}`)
                 .expect(200);
 
             const recipes = recipesResponse.body.data;
@@ -136,6 +167,7 @@ describe('Production Run Custom Steps API', () => {
 
             const response = await request(app)
                 .post('/api/production/runs')
+                .set('Authorization', `Bearer ${authToken}`)
                 .send(productionData)
                 .expect(201);
 
@@ -155,6 +187,7 @@ describe('Production Run Custom Steps API', () => {
 
             const response = await request(app)
                 .post('/api/production/runs')
+                .set('Authorization', `Bearer ${authToken}`)
                 .send(invalidData)
                 .expect(400);
 

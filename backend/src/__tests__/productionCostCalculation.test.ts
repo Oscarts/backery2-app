@@ -19,7 +19,7 @@ import {
     createCompleteTestEnvironment,
     cleanupTestEnvironment,
     disconnectTestPrisma,
-} from './utils/testFixtures';
+} from './utils/fixtures';
 
 // Type for our test environment
 type TestEnvironment = Awaited<ReturnType<typeof createCompleteTestEnvironment>>;

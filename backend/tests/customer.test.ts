@@ -1,5 +1,5 @@
 import request from 'supertest';
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import {
   getCustomers,
@@ -12,9 +12,23 @@ import { cleanupTestData, createTestCustomer, createTestOrder, disconnectPrisma 
 
 const prisma = new PrismaClient();
 
+// Store test clientId
+let testClientId: string;
+
 // Create Express app for testing
 const app = express();
 app.use(express.json());
+
+// Mock authentication middleware - inject req.user for tests
+app.use(async (req: Request, _res: Response, next: NextFunction) => {
+  if (!testClientId) {
+    const client = await prisma.client.findFirst({ where: { isActive: true } });
+    testClientId = client?.id || '';
+  }
+  // @ts-ignore - Mocking req.user for tests
+  req.user = { clientId: testClientId, role: 'admin' };
+  next();
+});
 
 // Setup routes
 app.get('/api/customers', getCustomers);
@@ -76,13 +90,13 @@ describe('Customer API', () => {
     });
 
     it('should filter customers by email search term', async () => {
-      await createTestCustomer({ 
-        name: 'Test User', 
-        email: 'test-unique@example.com' 
+      await createTestCustomer({
+        name: 'Test User',
+        email: 'test-unique@example.com'
       });
-      await createTestCustomer({ 
-        name: 'Another User', 
-        email: 'test-another@example.com' 
+      await createTestCustomer({
+        name: 'Another User',
+        email: 'test-another@example.com'
       });
 
       const response = await request(app)
@@ -95,13 +109,13 @@ describe('Customer API', () => {
     });
 
     it('should filter customers by phone search term', async () => {
-      await createTestCustomer({ 
-        name: 'Customer 1', 
-        phone: '555-1234' 
+      await createTestCustomer({
+        name: 'Customer 1',
+        phone: '555-1234'
       });
-      await createTestCustomer({ 
-        name: 'Customer 2', 
-        phone: '555-5678' 
+      await createTestCustomer({
+        name: 'Customer 2',
+        phone: '555-5678'
       });
 
       const response = await request(app)
@@ -360,16 +374,16 @@ describe('Customer API', () => {
     });
 
     it('should allow updating same customer email (no change)', async () => {
-      const customer = await createTestCustomer({ 
+      const customer = await createTestCustomer({
         name: 'Customer',
-        email: 'test-same@example.com' 
+        email: 'test-same@example.com'
       });
 
       const response = await request(app)
         .put(`/api/customers/${customer.id}`)
-        .send({ 
+        .send({
           name: 'Updated Name',
-          email: 'test-same@example.com' 
+          email: 'test-same@example.com'
         })
         .expect(200);
 
@@ -390,7 +404,7 @@ describe('Customer API', () => {
     });
 
     it('should update only provided fields', async () => {
-      const customer = await createTestCustomer({ 
+      const customer = await createTestCustomer({
         name: 'Original Name',
         email: 'test-original@example.com',
         phone: '555-1111'
@@ -398,10 +412,10 @@ describe('Customer API', () => {
 
       const response = await request(app)
         .put(`/api/customers/${customer.id}`)
-        .send({ 
+        .send({
           name: 'New Name',
           email: customer.email,
-          phone: customer.phone 
+          phone: customer.phone
         })
         .expect(200);
 
@@ -503,7 +517,7 @@ describe('Customer API', () => {
     });
 
     it('should handle null phone and address gracefully', async () => {
-      const customer = await createTestCustomer({ 
+      const customer = await createTestCustomer({
         name: 'Customer',
         phone: '555-1234',
         address: '123 Street'
@@ -511,7 +525,7 @@ describe('Customer API', () => {
 
       const response = await request(app)
         .put(`/api/customers/${customer.id}`)
-        .send({ 
+        .send({
           phone: null,
           address: null
         })
@@ -523,9 +537,9 @@ describe('Customer API', () => {
     });
 
     it('should handle case-insensitive email search', async () => {
-      await createTestCustomer({ 
+      await createTestCustomer({
         name: 'Customer',
-        email: 'test-case@example.com' 
+        email: 'test-case@example.com'
       });
 
       const response = await request(app)
