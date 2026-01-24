@@ -279,7 +279,6 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
 
   // SKU Reference auto-fill handler
   const handleSkuSelect = (sku: SkuReference | null) => {
-    console.log('🔍 SKU Selected:', sku);
     setSelectedSku(sku);
 
     if (!sku) {
@@ -303,7 +302,6 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
 
     // Handle category - check both direct categoryId and nested category.id
     const categoryId = sku.categoryId || sku.category?.id;
-    console.log('📦 Category ID from SKU:', categoryId, 'Direct:', sku.categoryId, 'Nested:', sku.category?.id);
 
     if (categoryId) {
       updates.categoryId = categoryId;
@@ -336,9 +334,7 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
       fieldsToFill.add('sku');
     }
 
-    console.log('✅ Updates to apply:', updates);
-    console.log('🏷️ Fields to mark as auto-filled:', Array.from(fieldsToFill));
-
+    // Apply the updates to form data
     setFormData(prev => ({ ...prev, ...updates }));
     setAutoFilledFields(fieldsToFill);
   };
@@ -438,6 +434,8 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
       quantity: typeof formData.quantity === 'string' ? parseFloat(formData.quantity) || 0 : formData.quantity,
       costPerUnit: typeof formData.costPerUnit === 'string' ? parseFloat(formData.costPerUnit) || 0 : formData.costPerUnit,
       reorderLevel: typeof formData.reorderLevel === 'string' ? parseFloat(formData.reorderLevel) || 0 : formData.reorderLevel,
+      // Include skuReferenceId if an SKU reference is selected (for create) or if editing material with SKU reference
+      skuReferenceId: selectedSku?.id || material?.skuReferenceId || null,
     };
 
     onSubmit(submissionData);
@@ -477,6 +475,42 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
         </DialogTitle>
 
         <DialogContent sx={{ p: { xs: 2, sm: 3 } }}>
+          {/* Edit Mode: Show warning if material has SKU reference */}
+          {material && material.skuReferenceId && (
+            <Alert severity="warning" sx={{ mb: 3 }} icon={<LockIcon />}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box>
+                  <Typography variant="body2" fontWeight="medium">
+                    Product details are locked from SKU Reference
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Only purchase details (supplier, batch, quantity, dates, storage, status) can be edited
+                  </Typography>
+                </Box>
+                <Tooltip title="Edit SKU Reference to change product details">
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<EditIcon />}
+                    onClick={() => {
+                      onClose();
+                      navigate('/sku-reference', {
+                        state: {
+                          openEditDialog: true,
+                          skuId: material.skuReferenceId
+                        }
+                      });
+                    }}
+                    sx={{ ml: 2, flexShrink: 0 }}
+                  >
+                    Edit SKU
+                  </Button>
+                </Tooltip>
+              </Box>
+            </Alert>
+          )}
+
+          {/* Create Mode: SKU selection */}
           {!material && (
             <>
               {!selectedSku && (
@@ -593,281 +627,289 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
 
           {/* Two-Panel Layout: SKU Data (Left) vs Purchase Data (Right) */}
           <Box sx={{ display: 'flex', gap: { xs: 2, sm: 3 }, mt: 2, flexDirection: { xs: 'column', md: 'row' } }}>
-            {/* LEFT PANEL: SKU Reference Data (Locked when SKU selected) */}
-            <Box sx={{
-              flex: 1,
-              p: { xs: 2, sm: 3 },
-              borderRadius: { xs: 2, sm: 3 },
-              border: selectedSku ? '2px solid' : '1px dashed',
-              borderColor: selectedSku ? 'primary.light' : 'divider',
-              background: selectedSku
-                ? 'linear-gradient(135deg, rgba(103, 58, 183, 0.03) 0%, rgba(63, 81, 181, 0.03) 100%)'
-                : 'transparent',
-              boxShadow: selectedSku ? '0 4px 12px rgba(103, 58, 183, 0.08)' : 'none'
-            }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: { xs: 1.5, sm: 2 } }}>
-                <LabelIcon color="primary" fontSize="small" />
-                <Typography variant="h6" sx={{ fontSize: { xs: '0.95rem', sm: '1rem' }, fontWeight: 600 }}>
-                  Product Definition {selectedSku && '🔒'}
-                </Typography>
-              </Box>
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: { xs: 1.5, sm: 2 }, fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}>
-                {selectedSku ? 'Locked fields from SKU Reference - ensures consistency' : 'Define product details or use SKU reference'}
-              </Typography>
+            {/* LEFT PANEL: SKU Reference Data (Locked when SKU selected or editing with SKU reference) */}
+            {(() => {
+              // Helper: Check if SKU-related fields should be locked
+              const isSkuLocked = !material ? !!selectedSku : !!material?.skuReferenceId;
 
-              <Grid container spacing={{ xs: 1.5, sm: 2 }}>
-                {/* Name - Read-only if SKU selected */}
-                <Grid item xs={12}>
-                  {selectedSku ? (
-                    <TextField
-                      fullWidth
-                      label="Product Name"
-                      value={formData.name}
-                      required
-                      disabled
-                      InputProps={{
-                        startAdornment: (
-                          <LockIcon sx={{ mr: 1, color: 'primary.main', opacity: 0.6 }} fontSize="small" />
-                        ),
-                      }}
-                      helperText="🔒 Locked from SKU Reference"
-                      sx={{
-                        '& .MuiInputBase-root': {
-                          bgcolor: 'rgba(103, 58, 183, 0.04)',
-                          borderRadius: 2,
-                          '& fieldset': { borderColor: 'rgba(103, 58, 183, 0.2)' }
-                        },
-                        '& .Mui-disabled': {
-                          color: 'text.primary',
-                          WebkitTextFillColor: 'text.primary'
-                        }
-                      }}
-                    />
-                  ) : (
-                    <Autocomplete
-                      freeSolo
-                      options={skuSuggestions}
-                      getOptionLabel={(option) =>
-                        typeof option === 'string' ? option : `${option.name} (${option.sku})`
-                      }
-                      value={formData.name}
-                      onChange={handleNameChange}
-                      onInputChange={(event, newInputValue) => {
-                        handleNameChange(event, newInputValue);
-                      }}
-                      loading={loadingSuggestions}
-                      renderInput={(params) => (
+              return (
+                <Box sx={{
+                  flex: 1,
+                  p: { xs: 2, sm: 3 },
+                  borderRadius: { xs: 2, sm: 3 },
+                  border: isSkuLocked ? '2px solid' : '1px dashed',
+                  borderColor: isSkuLocked ? 'primary.light' : 'divider',
+                  background: isSkuLocked
+                    ? 'linear-gradient(135deg, rgba(103, 58, 183, 0.03) 0%, rgba(63, 81, 181, 0.03) 100%)'
+                    : 'transparent',
+                  boxShadow: isSkuLocked ? '0 4px 12px rgba(103, 58, 183, 0.08)' : 'none'
+                }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: { xs: 1.5, sm: 2 } }}>
+                    <LabelIcon color="primary" fontSize="small" />
+                    <Typography variant="h6" sx={{ fontSize: { xs: '0.95rem', sm: '1rem' }, fontWeight: 600 }}>
+                      Product Definition {isSkuLocked && '🔒'}
+                    </Typography>
+                  </Box>
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: { xs: 1.5, sm: 2 }, fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}>
+                    {isSkuLocked ? 'Locked fields from SKU Reference - ensures consistency' : 'Define product details or use SKU reference'}
+                  </Typography>
+
+                  <Grid container spacing={{ xs: 1.5, sm: 2 }}>
+                    {/* Name - Read-only if SKU locked */}
+                    <Grid item xs={12}>
+                      {isSkuLocked ? (
                         <TextField
-                          {...params}
+                          fullWidth
                           label="Product Name"
+                          value={formData.name}
                           required
-                          helperText="Start typing to see suggestions from existing materials"
+                          disabled
                           InputProps={{
-                            ...params.InputProps,
-                            endAdornment: (
-                              <>
-                                {loadingSuggestions ? <CircularProgress color="inherit" size={20} /> : null}
-                                {params.InputProps.endAdornment}
-                              </>
+                            startAdornment: (
+                              <LockIcon sx={{ mr: 1, color: 'primary.main', opacity: 0.6 }} fontSize="small" />
                             ),
                           }}
+                          helperText="🔒 Locked from SKU Reference"
+                          sx={{
+                            '& .MuiInputBase-root': {
+                              bgcolor: 'rgba(103, 58, 183, 0.04)',
+                              borderRadius: 2,
+                              '& fieldset': { borderColor: 'rgba(103, 58, 183, 0.2)' }
+                            },
+                            '& .Mui-disabled': {
+                              color: 'text.primary',
+                              WebkitTextFillColor: 'text.primary'
+                            }
+                          }}
+                        />
+                      ) : (
+                        <Autocomplete
+                          freeSolo
+                          options={skuSuggestions}
+                          getOptionLabel={(option) =>
+                            typeof option === 'string' ? option : `${option.name} (${option.sku})`
+                          }
+                          value={formData.name}
+                          onChange={handleNameChange}
+                          onInputChange={(event, newInputValue) => {
+                            handleNameChange(event, newInputValue);
+                          }}
+                          loading={loadingSuggestions}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              label="Product Name"
+                              required
+                              helperText="Start typing to see suggestions from existing materials"
+                              InputProps={{
+                                ...params.InputProps,
+                                endAdornment: (
+                                  <>
+                                    {loadingSuggestions ? <CircularProgress color="inherit" size={20} /> : null}
+                                    {params.InputProps.endAdornment}
+                                  </>
+                                ),
+                              }}
+                            />
+                          )}
                         />
                       )}
-                    />
-                  )}
-                </Grid>
+                    </Grid>
 
-                {/* SKU - Read-only if SKU selected */}
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="SKU Code"
-                    value={formData.sku || ''}
-                    onChange={handleChange('sku')}
-                    disabled={selectedSku !== null}
-                    required
-                    helperText={
-                      selectedSku
-                        ? '🔒 Locked from SKU Reference'
-                        : autoFilledFields.has('sku')
-                          ? '✨ Auto-generated from name'
-                          : 'Will be auto-generated from product name'
-                    }
-                    InputProps={{
-                      startAdornment: selectedSku ? (
-                        <LockIcon sx={{ mr: 1, color: 'primary.main', opacity: 0.6 }} fontSize="small" />
-                      ) : null,
-                      endAdornment: autoFilledFields.has('sku') && !selectedSku ? (
-                        <Chip size="small" label="Auto" icon={<CheckIcon />} color="primary" />
-                      ) : null,
-                    }}
-                    sx={selectedSku ? {
-                      '& .MuiInputBase-root': {
-                        bgcolor: 'rgba(103, 58, 183, 0.04)',
-                        borderRadius: 2,
-                        '& fieldset': { borderColor: 'rgba(103, 58, 183, 0.2)' }
-                      },
-                      '& .Mui-disabled': {
-                        color: 'text.primary',
-                        WebkitTextFillColor: 'text.primary'
-                      }
-                    } : {}}
-                  />
-                </Grid>
-
-                {/* Category - Read-only if SKU selected */}
-                <Grid item xs={12}>
-                  {selectedSku ? (
-                    <TextField
-                      fullWidth
-                      label="Category"
-                      value={
-                        selectedSku.category?.name ||
-                        categories.find(c => c.id === formData.categoryId)?.name ||
-                        'None'
-                      }
-                      disabled
-                      InputProps={{
-                        startAdornment: (
-                          <LockIcon sx={{ mr: 1, color: 'primary.main', opacity: 0.6 }} fontSize="small" />
-                        ),
-                      }}
-                      helperText="🔒 Locked from SKU Reference"
-                      sx={{
-                        '& .MuiInputBase-root': {
-                          bgcolor: 'rgba(103, 58, 183, 0.04)',
-                          borderRadius: 2,
-                          '& fieldset': { borderColor: 'rgba(103, 58, 183, 0.2)' }
-                        },
-                        '& .Mui-disabled': {
-                          color: 'text.primary',
-                          WebkitTextFillColor: 'text.primary'
+                    {/* SKU - Read-only if SKU locked */}
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        label="SKU Code"
+                        value={formData.sku || ''}
+                        onChange={handleChange('sku')}
+                        disabled={isSkuLocked}
+                        required
+                        helperText={
+                          isSkuLocked
+                            ? '🔒 Locked from SKU Reference'
+                            : autoFilledFields.has('sku')
+                              ? '✨ Auto-generated from name'
+                              : 'Will be auto-generated from product name'
                         }
-                      }}
-                    />
-                  ) : (
-                    <FormControl fullWidth>
-                      <InputLabel>Category</InputLabel>
-                      <Select value={formData.categoryId} label="Category" onChange={handleChange('categoryId')}>
-                        <MenuItem value="">
-                          <em>None</em>
-                        </MenuItem>
-                        {categories.map((category) => (
-                          <MenuItem key={category.id} value={category.id}>
-                            {category.name}
-                            {autoFilledFields.has('categoryId') && category.id === formData.categoryId && (
-                              <Chip size="small" label="Auto" icon={<CheckIcon />} color="primary" sx={{ ml: 1 }} />
-                            )}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  )}
-                </Grid>
+                        InputProps={{
+                          startAdornment: isSkuLocked ? (
+                            <LockIcon sx={{ mr: 1, color: 'primary.main', opacity: 0.6 }} fontSize="small" />
+                          ) : null,
+                          endAdornment: autoFilledFields.has('sku') && !isSkuLocked ? (
+                            <Chip size="small" label="Auto" icon={<CheckIcon />} color="primary" />
+                          ) : null,
+                        }}
+                        sx={isSkuLocked ? {
+                          '& .MuiInputBase-root': {
+                            bgcolor: 'rgba(103, 58, 183, 0.04)',
+                            borderRadius: 2,
+                            '& fieldset': { borderColor: 'rgba(103, 58, 183, 0.2)' }
+                          },
+                          '& .Mui-disabled': {
+                            color: 'text.primary',
+                            WebkitTextFillColor: 'text.primary'
+                          }
+                        } : {}}
+                      />
+                    </Grid>
 
-                {/* Unit - Read-only if SKU selected */}
-                <Grid item xs={12}>
-                  {selectedSku ? (
-                    <TextField
-                      fullWidth
-                      label="Unit"
-                      value={formData.unit || ''}
-                      required
-                      disabled
-                      InputProps={{
-                        startAdornment: (
-                          <LockIcon sx={{ mr: 1, color: 'primary.main', opacity: 0.6 }} fontSize="small" />
-                        ),
-                      }}
-                      helperText="🔒 Locked from SKU Reference"
-                      sx={{
-                        '& .MuiInputBase-root': {
-                          bgcolor: 'rgba(103, 58, 183, 0.04)',
-                          borderRadius: 2,
-                          '& fieldset': { borderColor: 'rgba(103, 58, 183, 0.2)' }
-                        },
-                        '& .Mui-disabled': {
-                          color: 'text.primary',
-                          WebkitTextFillColor: 'text.primary'
-                        }
-                      }}
-                    />
-                  ) : (
-                    <FormControl fullWidth required>
-                      <InputLabel>Unit</InputLabel>
-                      <Select value={formData.unit} label="Unit" onChange={handleChange('unit')}>
-                        {units.map((unit) => (
-                          <MenuItem key={unit.id} value={unit.symbol}>
-                            {unit.name} ({unit.symbol})
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  )}
-                </Grid>
+                    {/* Category - Read-only if SKU locked */}
+                    <Grid item xs={12}>
+                      {isSkuLocked ? (
+                        <TextField
+                          fullWidth
+                          label="Category"
+                          value={
+                            categories.find(c => c.id === formData.categoryId)?.name ||
+                            (material?.category?.name) ||
+                            (selectedSku?.category?.name) ||
+                            'None'
+                          }
+                          disabled
+                          InputProps={{
+                            startAdornment: (
+                              <LockIcon sx={{ mr: 1, color: 'primary.main', opacity: 0.6 }} fontSize="small" />
+                            ),
+                          }}
+                          helperText="🔒 Locked from SKU Reference"
+                          sx={{
+                            '& .MuiInputBase-root': {
+                              bgcolor: 'rgba(103, 58, 183, 0.04)',
+                              borderRadius: 2,
+                              '& fieldset': { borderColor: 'rgba(103, 58, 183, 0.2)' }
+                            },
+                            '& .Mui-disabled': {
+                              color: 'text.primary',
+                              WebkitTextFillColor: 'text.primary'
+                            }
+                          }}
+                        />
+                      ) : (
+                        <FormControl fullWidth>
+                          <InputLabel>Category</InputLabel>
+                          <Select value={formData.categoryId} label="Category" onChange={handleChange('categoryId')}>
+                            <MenuItem value="">
+                              <em>None</em>
+                            </MenuItem>
+                            {categories.map((category) => (
+                              <MenuItem key={category.id} value={category.id}>
+                                {category.name}
+                                {autoFilledFields.has('categoryId') && category.id === formData.categoryId && (
+                                  <Chip size="small" label="Auto" icon={<CheckIcon />} color="primary" sx={{ ml: 1 }} />
+                                )}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      )}
+                    </Grid>
 
-                {/* Cost Per Unit - Read-only if SKU selected */}
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    required
-                    type="number"
-                    label="Cost Per Unit"
-                    value={formData.costPerUnit}
-                    onChange={handleChange('costPerUnit')}
-                    disabled={selectedSku !== null}
-                    inputProps={{ min: 0, step: 0.01 }}
-                    InputProps={{
-                      startAdornment: selectedSku ? (
-                        <LockIcon sx={{ mr: 1, color: 'primary.main', opacity: 0.6 }} fontSize="small" />
-                      ) : null,
-                    }}
-                    helperText={selectedSku ? '🔒 Locked from SKU Reference' : 'Price per unit'}
-                    sx={selectedSku ? {
-                      '& .MuiInputBase-root': {
-                        bgcolor: 'rgba(103, 58, 183, 0.04)',
-                        borderRadius: 2,
-                        '& fieldset': { borderColor: 'rgba(103, 58, 183, 0.2)' }
-                      },
-                      '& .Mui-disabled': {
-                        color: 'text.primary',
-                        WebkitTextFillColor: 'text.primary'
-                      }
-                    } : {}}
-                  />
-                </Grid>
+                    {/* Unit - Read-only if SKU locked */}
+                    <Grid item xs={12}>
+                      {isSkuLocked ? (
+                        <TextField
+                          fullWidth
+                          label="Unit"
+                          value={formData.unit || ''}
+                          required
+                          disabled
+                          InputProps={{
+                            startAdornment: (
+                              <LockIcon sx={{ mr: 1, color: 'primary.main', opacity: 0.6 }} fontSize="small" />
+                            ),
+                          }}
+                          helperText="🔒 Locked from SKU Reference"
+                          sx={{
+                            '& .MuiInputBase-root': {
+                              bgcolor: 'rgba(103, 58, 183, 0.04)',
+                              borderRadius: 2,
+                              '& fieldset': { borderColor: 'rgba(103, 58, 183, 0.2)' }
+                            },
+                            '& .Mui-disabled': {
+                              color: 'text.primary',
+                              WebkitTextFillColor: 'text.primary'
+                            }
+                          }}
+                        />
+                      ) : (
+                        <FormControl fullWidth required>
+                          <InputLabel>Unit</InputLabel>
+                          <Select value={formData.unit} label="Unit" onChange={handleChange('unit')}>
+                            {units.map((unit) => (
+                              <MenuItem key={unit.id} value={unit.symbol}>
+                                {unit.name} ({unit.symbol})
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      )}
+                    </Grid>
 
-                {/* Reorder Level - Read-only if SKU selected */}
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    type="number"
-                    label="Reorder Level"
-                    value={formData.reorderLevel}
-                    onChange={handleChange('reorderLevel')}
-                    disabled={selectedSku !== null}
-                    inputProps={{ min: 0, step: 0.01 }}
-                    InputProps={{
-                      startAdornment: selectedSku ? (
-                        <LockIcon sx={{ mr: 1, color: 'primary.main', opacity: 0.6 }} fontSize="small" />
-                      ) : null,
-                    }}
-                    helperText={selectedSku ? '🔒 Locked from SKU Reference' : 'Minimum stock level to trigger alert'}
-                    sx={selectedSku ? {
-                      '& .MuiInputBase-root': {
-                        bgcolor: 'rgba(103, 58, 183, 0.04)',
-                        borderRadius: 2,
-                        '& fieldset': { borderColor: 'rgba(103, 58, 183, 0.2)' }
-                      },
-                      '& .Mui-disabled': {
-                        color: 'text.primary',
-                        WebkitTextFillColor: 'text.primary'
-                      }
-                    } : {}}
-                  />
-                </Grid>
-              </Grid>
-            </Box>
+                    {/* Cost Per Unit - Read-only if SKU locked */}
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        required
+                        type="number"
+                        label="Cost Per Unit"
+                        value={formData.costPerUnit}
+                        onChange={handleChange('costPerUnit')}
+                        disabled={isSkuLocked}
+                        inputProps={{ min: 0, step: 0.01 }}
+                        InputProps={{
+                          startAdornment: isSkuLocked ? (
+                            <LockIcon sx={{ mr: 1, color: 'primary.main', opacity: 0.6 }} fontSize="small" />
+                          ) : null,
+                        }}
+                        helperText={isSkuLocked ? '🔒 Locked from SKU Reference' : 'Price per unit'}
+                        sx={isSkuLocked ? {
+                          '& .MuiInputBase-root': {
+                            bgcolor: 'rgba(103, 58, 183, 0.04)',
+                            borderRadius: 2,
+                            '& fieldset': { borderColor: 'rgba(103, 58, 183, 0.2)' }
+                          },
+                          '& .Mui-disabled': {
+                            color: 'text.primary',
+                            WebkitTextFillColor: 'text.primary'
+                          }
+                        } : {}}
+                      />
+                    </Grid>
+
+                    {/* Reorder Level - Read-only if SKU locked */}
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        type="number"
+                        label="Reorder Level"
+                        value={formData.reorderLevel}
+                        onChange={handleChange('reorderLevel')}
+                        disabled={isSkuLocked}
+                        inputProps={{ min: 0, step: 0.01 }}
+                        InputProps={{
+                          startAdornment: isSkuLocked ? (
+                            <LockIcon sx={{ mr: 1, color: 'primary.main', opacity: 0.6 }} fontSize="small" />
+                          ) : null,
+                        }}
+                        helperText={isSkuLocked ? '🔒 Locked from SKU Reference' : 'Minimum stock level to trigger alert'}
+                        sx={isSkuLocked ? {
+                          '& .MuiInputBase-root': {
+                            bgcolor: 'rgba(103, 58, 183, 0.04)',
+                            borderRadius: 2,
+                            '& fieldset': { borderColor: 'rgba(103, 58, 183, 0.2)' }
+                          },
+                          '& .Mui-disabled': {
+                            color: 'text.primary',
+                            WebkitTextFillColor: 'text.primary'
+                          }
+                        } : {}}
+                      />
+                    </Grid>
+                  </Grid>
+                </Box>
+              );
+            })()}
 
             {/* RIGHT PANEL: Purchase-Specific Data (Always Editable) */}
             <Box sx={{

@@ -49,7 +49,6 @@ import {
   Inventory as InventoryIcon,
   Schedule as ScheduleIcon,
   TrendingDown as TrendingDownIcon,
-  Label as LabelIcon,
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { rawMaterialsApi, categoriesApi, storageLocationsApi, unitsApi, suppliersApi, qualityStatusApi, skuReferencesApi } from '../services/realApi';
@@ -610,7 +609,6 @@ const RawMaterials: React.FC = () => {
               <TableHead>
                 <TableRow>
                   <TableCell width="20%">Material</TableCell>
-                  {!isMobile && <TableCell width="10%">SKU Ref</TableCell>}
                   {!isMobile && <TableCell width="12%">SKU/Batch</TableCell>}
                   {!isMobile && <TableCell width="15%">Supplier</TableCell>}
                   <TableCell width="10%" align="center">Quantity</TableCell>
@@ -657,46 +655,6 @@ const RawMaterials: React.FC = () => {
                         </TableCell>
                         {!isMobile && (
                           <TableCell>
-                            {material.skuReference ? (
-                              <Tooltip
-                                title={
-                                  <Box>
-                                    <Typography variant="caption" display="block" fontWeight="bold">
-                                      {material.skuReference.name}
-                                    </Typography>
-                                    <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
-                                      <strong>SKU:</strong> {material.skuReference.sku}
-                                    </Typography>
-                                    {material.skuReference.unitPrice && (
-                                      <Typography variant="caption" display="block">
-                                        <strong>Unit Price:</strong> ${material.skuReference.unitPrice}
-                                      </Typography>
-                                    )}
-                                    {material.skuReference.reorderLevel && (
-                                      <Typography variant="caption" display="block">
-                                        <strong>Reorder Level:</strong> {material.skuReference.reorderLevel}
-                                      </Typography>
-                                    )}
-                                  </Box>
-                                }
-                                arrow
-                              >
-                                <Chip
-                                  label={material.skuReference.sku}
-                                  size="small"
-                                  icon={<LabelIcon />}
-                                  color="primary"
-                                  variant="outlined"
-                                  sx={{ cursor: 'help' }}
-                                />
-                              </Tooltip>
-                            ) : (
-                              <Typography variant="body2" color="text.secondary">-</Typography>
-                            )}
-                          </TableCell>
-                        )}
-                        {!isMobile && (
-                          <TableCell>
                             <Box>
                               <Typography variant="body2">{material.sku || '-'}</Typography>
                               <Typography variant="caption" color="text.secondary">{material.batchNumber}</Typography>
@@ -730,11 +688,11 @@ const RawMaterials: React.FC = () => {
                         {!isMobile && (
                           <TableCell align="center">
                             {material.quantity <= 0 ? (
-                              <Chip label="OUT OF STOCK" color="error" size="small" />
+                              <Chip label="OUT OF STOCK" size="small" variant="outlined" sx={{ borderColor: 'error.main', color: 'error.main' }} />
                             ) : material.quantity <= material.reorderLevel ? (
-                              <Chip label="LOW STOCK" color="warning" size="small" />
+                              <Chip label="LOW STOCK" size="small" variant="outlined" sx={{ borderColor: 'warning.main', color: 'warning.main' }} />
                             ) : (
-                              <Chip label="In Stock" color="success" size="small" />
+                              <Chip label="In Stock" size="small" variant="outlined" sx={{ borderColor: 'success.main', color: 'success.main' }} />
                             )}
                           </TableCell>
                         )}
