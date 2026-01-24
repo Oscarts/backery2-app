@@ -1,5 +1,5 @@
 import express from 'express';
-import * as skuReferenceController from '../controllers/skuReferenceController';
+import { skuReferenceController } from '../controllers/skuReferenceController';
 import { authenticate } from '../middleware/auth';
 
 const router = express.Router();

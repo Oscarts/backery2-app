@@ -33,7 +33,8 @@ A comprehensive, full-stack inventory management solution designed specifically 
 ## ✨ Key Features
 
 - 🍞 **Complete Inventory Management** - Raw materials, intermediate products, and finished goods
-- 🏭 **Production Workflow Engine** - Real-time production run tracking with customizable steps
+- �️ **Industry-Standard SKU System** - Auto-generated SKU codes with `PREFIX-CATEGORY-PRODUCTCODE-SEQUENCE` format
+- �🏭 **Production Workflow Engine** - Real-time production run tracking with customizable steps
 - 📊 **Business Analytics** - Real-time dashboard with inventory metrics and production insights
 - 🔍 **Quality Management** - Comprehensive quality tracking and contamination monitoring
 - 📝 **Recipe Management** - Advanced cost calculation with overhead, SKU system, and "What Can I Make?" functionality

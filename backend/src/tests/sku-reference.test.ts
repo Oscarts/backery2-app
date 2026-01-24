@@ -79,7 +79,8 @@ describe('SKU Reference API', () => {
             expect(res.body.success).toBe(true);
             expect(res.body.data).toHaveProperty('id');
             expect(res.body.data.name).toBe('Test Product');
-            expect(res.body.data.sku).toBe('TEST-PRODUCT');
+            // Verify industry-standard SKU format: SKU-CATEGORY-###
+            expect(res.body.data.sku).toMatch(/^SKU-[A-Z0-9]+-\d{3}$/);
             expect(res.body.data.unitPrice).toBe(10.5);
             expect(res.body.data.unit).toBe('kg');
 
@@ -106,17 +107,32 @@ describe('SKU Reference API', () => {
         });
 
         it('should reject duplicate SKU for same client', async () => {
+            // First create a SKU with custom SKU
+            const firstRes = await request(app)
+                .post('/api/sku-references')
+                .set('Authorization', `Bearer ${authToken}`)
+                .send({
+                    name: 'First Product',
+                    sku: 'TEST-DUPLICATE-SKU',
+                });
+
+            expect(firstRes.status).toBe(201);
+
+            // Try to create another with the same SKU
             const res = await request(app)
                 .post('/api/sku-references')
                 .set('Authorization', `Bearer ${authToken}`)
                 .send({
                     name: 'Another Product',
-                    sku: 'TEST-PRODUCT', // Duplicate SKU
+                    sku: 'TEST-DUPLICATE-SKU', // Duplicate SKU
                 });
 
             expect(res.status).toBe(409);
             expect(res.body.success).toBe(false);
             expect(res.body.error).toContain('already in use');
+
+            // Cleanup
+            await prisma.skuMapping.delete({ where: { id: firstRes.body.data.id } });
         });
 
         it('should reject duplicate name for same client', async () => {
