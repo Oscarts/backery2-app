@@ -279,6 +279,7 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
 
   // SKU Reference auto-fill handler
   const handleSkuSelect = (sku: SkuReference | null) => {
+    console.log('🔍 SKU Selected:', sku);
     setSelectedSku(sku);
 
     if (!sku) {
@@ -300,8 +301,12 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
       fieldsToFill.add('name');
     }
 
-    if (sku.categoryId) {
-      updates.categoryId = sku.categoryId;
+    // Handle category - check both direct categoryId and nested category.id
+    const categoryId = sku.categoryId || sku.category?.id;
+    console.log('📦 Category ID from SKU:', categoryId, 'Direct:', sku.categoryId, 'Nested:', sku.category?.id);
+
+    if (categoryId) {
+      updates.categoryId = categoryId;
       fieldsToFill.add('categoryId');
     }
 
@@ -330,6 +335,9 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
       updates.sku = sku.sku;
       fieldsToFill.add('sku');
     }
+
+    console.log('✅ Updates to apply:', updates);
+    console.log('🏷️ Fields to mark as auto-filled:', Array.from(fieldsToFill));
 
     setFormData(prev => ({ ...prev, ...updates }));
     setAutoFilledFields(fieldsToFill);
@@ -369,13 +377,48 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
     }
   };
 
+  // Handle numeric input with validation (no negative numbers, only digits and decimal point)
+  const handleNumericChange = (field: keyof CreateRawMaterialData) => (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const value = event.target.value;
+
+    // Allow empty string for clearing the field
+    if (value === '') {
+      setFormData((prev) => ({ ...prev, [field]: 0 }));
+      return;
+    }
+
+    // Only allow numbers and one decimal point
+    const regex = /^\d*\.?\d*$/;
+    if (!regex.test(value)) {
+      return; // Reject invalid characters
+    }
+
+    // Parse and validate
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue) && numValue >= 0) {
+      setFormData((prev) => ({ ...prev, [field]: value })); // Store as string to preserve decimal input
+    } else if (value.endsWith('.') || value.endsWith('0')) {
+      // Allow trailing dot or zero for better UX while typing
+      setFormData((prev) => ({ ...prev, [field]: value }));
+    }
+
+    // Remove auto-fill indicator if user manually changes
+    setAutoFilledFields((prev) => {
+      const newSet = new Set(prev);
+      newSet.delete(field);
+      return newSet;
+    });
+  };
+
   const handleChange = (field: keyof CreateRawMaterialData) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | any
   ) => {
     const value = event.target.value;
     setFormData((prev) => ({
       ...prev,
-      [field]: ['quantity', 'costPerUnit', 'reorderLevel'].includes(field) ? parseFloat(value) || 0 : value,
+      [field]: value,
     }));
 
     // Remove auto-fill indicator if user manually changes
@@ -388,7 +431,16 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+
+    // Convert string numbers to actual numbers before submitting
+    const submissionData = {
+      ...formData,
+      quantity: typeof formData.quantity === 'string' ? parseFloat(formData.quantity) || 0 : formData.quantity,
+      costPerUnit: typeof formData.costPerUnit === 'string' ? parseFloat(formData.costPerUnit) || 0 : formData.costPerUnit,
+      reorderLevel: typeof formData.reorderLevel === 'string' ? parseFloat(formData.reorderLevel) || 0 : formData.reorderLevel,
+    };
+
+    onSubmit(submissionData);
   };
 
   return (
@@ -429,12 +481,8 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
             <>
               {!selectedSku && (
                 <Alert severity="info" sx={{ mb: 3 }} icon={<AutoIcon />}>
-                  <Typography variant="body2" fontWeight="medium" gutterBottom>
-                    🚀 Start by selecting an SKU Reference (recommended)
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    SKU references auto-fill and lock product details like name, SKU, category, unit, and price.
-                    This ensures consistency across your inventory. If you can't find one, you can create it on the SKU Reference page first.
+                  <Typography variant="body2" fontWeight="medium">
+                    Select an SKU Reference to auto-fill product details
                   </Typography>
                 </Alert>
               )}
@@ -443,11 +491,8 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
                 <Alert severity="success" sx={{ mb: 3 }} icon={<LockIcon />}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Box>
-                      <Typography variant="body2" fontWeight="medium" gutterBottom>
-                        🔒 Product details locked from SKU Reference
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Name, SKU, Category, Unit, Price, and Reorder Level are locked for consistency. Only purchase-specific fields can be edited.
+                      <Typography variant="body2" fontWeight="medium">
+                        Product details locked from SKU Reference
                       </Typography>
                     </Box>
                     <Tooltip title="Edit SKU Reference to change product details">
@@ -676,7 +721,11 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
                     <TextField
                       fullWidth
                       label="Category"
-                      value={selectedSku.category?.name || formData.categoryId || 'None'}
+                      value={
+                        selectedSku.category?.name ||
+                        categories.find(c => c.id === formData.categoryId)?.name ||
+                        'None'
+                      }
                       disabled
                       InputProps={{
                         startAdornment: (
@@ -867,11 +916,16 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
                   <TextField
                     fullWidth
                     required
-                    type="number"
+                    type="text"
                     label="Quantity"
                     value={formData.quantity}
-                    onChange={handleChange('quantity')}
-                    inputProps={{ min: 0, step: 0.01 }}
+                    onChange={handleNumericChange('quantity')}
+                    placeholder="Enter quantity"
+                    helperText="Enter a positive number"
+                    inputProps={{
+                      inputMode: 'decimal',
+                      pattern: '[0-9]*\\.?[0-9]*',
+                    }}
                   />
                 </Grid>
 
