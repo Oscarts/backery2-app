@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Container,
   Typography,
@@ -64,6 +65,7 @@ import { getErrorMessage } from '../utils/api';
 const SkuReferencePage: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const location = useLocation();
 
   const queryClient = useQueryClient();
 
@@ -185,6 +187,18 @@ const SkuReferencePage: React.FC = () => {
       showSnackbar(errorMessage, 'error');
     },
   });
+
+  // Handle navigation state to auto-open edit dialog
+  useEffect(() => {
+    if (location.state?.openEditDialog && location.state?.skuId && skuReferences.length > 0) {
+      const skuToEdit = skuReferences.find((sku) => sku.id === location.state.skuId);
+      if (skuToEdit) {
+        handleOpenDialog(skuToEdit);
+        // Clear the state to prevent reopening on subsequent renders
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [location.state, skuReferences]);
 
   // Filter data
   const filteredSkuReferences = skuReferences.filter((item) => {
@@ -354,642 +368,466 @@ const SkuReferencePage: React.FC = () => {
     }
   };
 
-    const handleDelete = () => {
-      if (deletingItem) {
-        deleteMutation.mutate(deletingItem.id);
-      }
-    };
-
-    if (isLoading) {
-      return (
-        <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-          <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-            <CircularProgress />
-          </Box>
-        </Container>
-      );
+  const handleDelete = () => {
+    if (deletingItem) {
+      deleteMutation.mutate(deletingItem.id);
     }
+  };
 
+  if (isLoading) {
     return (
       <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-        {/* Header with responsive design */}
-        <Box
-          display="flex"
-          flexDirection={{ xs: 'column', sm: 'row' }}
-          justifyContent="space-between"
-          alignItems={{ xs: 'flex-start', sm: 'center' }}
-          mb={3}
-          gap={2}
-        >
-          <Box>
-            <Typography
-              variant={isMobile ? "h4" : "h3"}
-              sx={{
-                fontWeight: 'bold',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                mb: 1
-              }}
-            >
-              <LabelIcon sx={{ fontSize: '1.2em', color: 'primary.main' }} />
-              SKU Reference
-            </Typography>
-            <Typography variant="subtitle1" color="text.secondary">
-              Manage standardized product identifiers and specifications
-            </Typography>
-          </Box>
-
-          <Box display="flex" gap={1} width={{ xs: '100%', sm: 'auto' }}>
-            {/* View Toggle Buttons */}
-            <Box
-              sx={{
-                display: { xs: 'flex', md: 'flex' },
-                border: 1,
-                borderColor: 'divider',
-                borderRadius: borderRadius.base,
-                mr: 1
-              }}
-            >
-              <Tooltip title="List View">
-                <IconButton
-                  color={viewMode === 'list' ? 'primary' : 'default'}
-                  onClick={() => setViewMode('list')}
-                  sx={{
-                    borderRadius: `${borderRadius.base} 0 0 ${borderRadius.base}`,
-                    bgcolor: viewMode === 'list' ? 'action.selected' : 'transparent'
-                  }}
-                >
-                  <ListViewIcon />
-                </IconButton>
-              </Tooltip>
-              <Tooltip title="Card View">
-                <IconButton
-                  color={viewMode === 'card' ? 'primary' : 'default'}
-                  onClick={() => setViewMode('card')}
-                  sx={{
-                    borderRadius: `0 ${borderRadius.base} ${borderRadius.base} 0`,
-                    bgcolor: viewMode === 'card' ? 'action.selected' : 'transparent'
-                  }}
-                >
-                  <GridViewIcon />
-                </IconButton>
-              </Tooltip>
-            </Box>
-
-            {/* Add SKU Reference Button */}
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => handleOpenDialog()}
-              sx={{
-                flexGrow: { xs: 1, sm: 0 },
-                whiteSpace: 'nowrap'
-              }}
-            >
-              {!isMobile ? 'Add SKU Reference' : 'Add'}
-            </Button>
-
-            {/* Filter Toggle Button for Mobile */}
-            {isMobile && (
-              <Button
-                variant="outlined"
-                startIcon={<FilterIcon />}
-                onClick={() => setFiltersOpen(!filtersOpen)}
-              >
-                Filters
-              </Button>
-            )}
-          </Box>
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+          <CircularProgress />
         </Box>
+      </Container>
+    );
+  }
 
-        {/* KPI Cards */}
-        <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
-          <Grid item xs={12} sm={4} md={4}>
-            <Card
-              elevation={1}
-              sx={{
-                borderRadius: borderRadius.md,
-                p: 0.5,
-                border: 1,
-                borderColor: 'primary.main',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                '&:hover': {
-                  transform: 'translateY(-2px)',
-                  boxShadow: 2,
-                  borderColor: 'primary.main'
-                },
-                backgroundColor: 'primary.50',
-                minHeight: '64px',
-                display: 'flex',
-              }}
-            >
-              <CardContent sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1.5,
-                p: 1.25,
-                pb: '8px !important',
-                width: '100%'
-              }}>
-                <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.contrastText', width: 32, height: 32 }}>
-                  <LabelIcon sx={{ fontSize: '1rem' }} />
-                </Avatar>
-                <Box flexGrow={1} sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                    <Typography variant="caption" color="text.secondary">Total SKUs</Typography>
-                    <Typography variant="h6" sx={{ ml: 1, fontWeight: 'bold' }}>{totalCount}</Typography>
-                  </Box>
-                  <Typography variant="caption" color="primary.dark" sx={{ fontSize: '0.7rem', lineHeight: 1 }}>
-                    Active references
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={4} md={4}>
-            <Card
-              elevation={1}
-              sx={{
-                borderRadius: borderRadius.md,
-                p: 0.5,
-                border: 1,
-                borderColor: withCategoryCount > 0 ? 'success.main' : 'divider',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                '&:hover': {
-                  transform: 'translateY(-2px)',
-                  boxShadow: 2,
-                  borderColor: 'success.main'
-                },
-                backgroundColor: 'white',
-                minHeight: '64px',
-                display: 'flex',
-              }}
-            >
-              <CardContent sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1.5,
-                p: 1.25,
-                pb: '8px !important',
-                width: '100%'
-              }}>
-                <Avatar sx={{ bgcolor: 'success.light', color: 'success.contrastText', width: 32, height: 32 }}>
-                  <CategoryIcon sx={{ fontSize: '1rem' }} />
-                </Avatar>
-                <Box flexGrow={1} sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                    <Typography variant="caption" color="text.secondary">Categorized</Typography>
-                    <Typography variant="h6" color="success.main" sx={{ ml: 1, fontWeight: 'bold' }}>{withCategoryCount}</Typography>
-                  </Box>
-                  <Typography variant="caption" color="success.dark" sx={{ fontSize: '0.7rem', lineHeight: 1 }}>
-                    With categories
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={4} md={4}>
-            <Card
-              elevation={1}
-              sx={{
-                borderRadius: borderRadius.md,
-                p: 0.5,
-                border: 1,
-                borderColor: withPriceCount > 0 ? 'info.main' : 'divider',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                '&:hover': {
-                  transform: 'translateY(-2px)',
-                  boxShadow: 2,
-                  borderColor: 'info.main'
-                },
-                backgroundColor: 'white',
-                minHeight: '64px',
-                display: 'flex',
-              }}
-            >
-              <CardContent sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1.5,
-                p: 1.25,
-                pb: '8px !important',
-                width: '100%'
-              }}>
-                <Avatar sx={{ bgcolor: 'info.light', color: 'info.contrastText', width: 32, height: 32 }}>
-                  <InventoryIcon sx={{ fontSize: '1rem' }} />
-                </Avatar>
-                <Box flexGrow={1} sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                    <Typography variant="caption" color="text.secondary">With Prices</Typography>
-                    <Typography variant="h6" color="info.main" sx={{ ml: 1, fontWeight: 'bold' }}>{withPriceCount}</Typography>
-                  </Box>
-                  <Typography variant="caption" color="info.dark" sx={{ fontSize: '0.7rem', lineHeight: 1 }}>
-                    Have pricing data
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-
-        {/* Filters - Regular view on larger screens, drawer on mobile */}
-        {!isMobile ? (
-          <Paper sx={{ p: 2, mb: 3 }}>
-            <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} md={4}>
-                <TextField
-                  fullWidth
-                  placeholder="Search SKU references..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon color="action" />
-                      </InputAdornment>
-                    ),
-                  }}
-                  size={isMobile ? "small" : "medium"}
-                />
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <FormControl fullWidth size={isMobile ? "small" : "medium"}>
-                  <InputLabel>Category</InputLabel>
-                  <Select
-                    value={categoryFilter}
-                    onChange={(e) => setCategoryFilter(e.target.value)}
-                    label="Category"
-                  >
-                    <MenuItem value="">All Categories</MenuItem>
-                    {categories.map((category) => (
-                      <MenuItem key={category.id} value={category.id}>
-                        {category.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <FormControl fullWidth size={isMobile ? "small" : "medium"}>
-                  <InputLabel>Storage Location</InputLabel>
-                  <Select
-                    value={storageFilter}
-                    onChange={(e) => setStorageFilter(e.target.value)}
-                    label="Storage Location"
-                  >
-                    <MenuItem value="">All Locations</MenuItem>
-                    {storageLocations.map((location) => (
-                      <MenuItem key={location.id} value={location.id}>
-                        {location.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-            </Grid>
-          </Paper>
-        ) : (
-          <Drawer
-            anchor="bottom"
-            open={filtersOpen}
-            onClose={() => setFiltersOpen(false)}
-            PaperProps={{
-              sx: {
-                borderTopLeftRadius: 16,
-                borderTopRightRadius: 16,
-                pt: 1
-              }
+  return (
+    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
+      {/* Header with responsive design */}
+      <Box
+        display="flex"
+        flexDirection={{ xs: 'column', sm: 'row' }}
+        justifyContent="space-between"
+        alignItems={{ xs: 'flex-start', sm: 'center' }}
+        mb={3}
+        gap={2}
+      >
+        <Box>
+          <Typography
+            variant={isMobile ? "h4" : "h3"}
+            sx={{
+              fontWeight: 'bold',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              mb: 1
             }}
           >
-            <Box sx={{ p: 2, pb: 4 }}>
-              <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                <Typography variant="h6">Filters</Typography>
-                <IconButton onClick={() => setFiltersOpen(false)}>
-                  <CloseIcon />
-                </IconButton>
+            <LabelIcon sx={{ fontSize: '1.2em', color: 'primary.main' }} />
+            SKU Reference
+          </Typography>
+          <Typography variant="subtitle1" color="text.secondary">
+            Manage standardized product identifiers and specifications
+          </Typography>
+        </Box>
+
+        <Box display="flex" gap={1} width={{ xs: '100%', sm: 'auto' }}>
+          {/* View Toggle Buttons */}
+          <Box
+            sx={{
+              display: { xs: 'flex', md: 'flex' },
+              border: 1,
+              borderColor: 'divider',
+              borderRadius: borderRadius.base,
+              mr: 1
+            }}
+          >
+            <Tooltip title="List View">
+              <IconButton
+                color={viewMode === 'list' ? 'primary' : 'default'}
+                onClick={() => setViewMode('list')}
+                sx={{
+                  borderRadius: `${borderRadius.base} 0 0 ${borderRadius.base}`,
+                  bgcolor: viewMode === 'list' ? 'action.selected' : 'transparent'
+                }}
+              >
+                <ListViewIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Card View">
+              <IconButton
+                color={viewMode === 'card' ? 'primary' : 'default'}
+                onClick={() => setViewMode('card')}
+                sx={{
+                  borderRadius: `0 ${borderRadius.base} ${borderRadius.base} 0`,
+                  bgcolor: viewMode === 'card' ? 'action.selected' : 'transparent'
+                }}
+              >
+                <GridViewIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
+
+          {/* Add SKU Reference Button */}
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => handleOpenDialog()}
+            sx={{
+              flexGrow: { xs: 1, sm: 0 },
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {!isMobile ? 'Add SKU Reference' : 'Add'}
+          </Button>
+
+          {/* Filter Toggle Button for Mobile */}
+          {isMobile && (
+            <Button
+              variant="outlined"
+              startIcon={<FilterIcon />}
+              onClick={() => setFiltersOpen(!filtersOpen)}
+            >
+              Filters
+            </Button>
+          )}
+        </Box>
+      </Box>
+
+      {/* KPI Cards */}
+      <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
+        <Grid item xs={12} sm={4} md={4}>
+          <Card
+            elevation={1}
+            sx={{
+              borderRadius: borderRadius.md,
+              p: 0.5,
+              border: 1,
+              borderColor: 'primary.main',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: 2,
+                borderColor: 'primary.main'
+              },
+              backgroundColor: 'primary.50',
+              minHeight: '64px',
+              display: 'flex',
+            }}
+          >
+            <CardContent sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              p: 1.25,
+              pb: '8px !important',
+              width: '100%'
+            }}>
+              <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.contrastText', width: 32, height: 32 }}>
+                <LabelIcon sx={{ fontSize: '1rem' }} />
+              </Avatar>
+              <Box flexGrow={1} sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <Typography variant="caption" color="text.secondary">Total SKUs</Typography>
+                  <Typography variant="h6" sx={{ ml: 1, fontWeight: 'bold' }}>{totalCount}</Typography>
+                </Box>
+                <Typography variant="caption" color="primary.dark" sx={{ fontSize: '0.7rem', lineHeight: 1 }}>
+                  Active references
+                </Typography>
               </Box>
+            </CardContent>
+          </Card>
+        </Grid>
 
-              <Stack spacing={2}>
-                <TextField
-                  fullWidth
-                  placeholder="Search SKU references..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  InputProps={{
-                    startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment>,
-                  }}
-                  size="small"
-                />
+        <Grid item xs={12} sm={4} md={4}>
+          <Card
+            elevation={1}
+            sx={{
+              borderRadius: borderRadius.md,
+              p: 0.5,
+              border: 1,
+              borderColor: withCategoryCount > 0 ? 'success.main' : 'divider',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: 2,
+                borderColor: 'success.main'
+              },
+              backgroundColor: 'white',
+              minHeight: '64px',
+              display: 'flex',
+            }}
+          >
+            <CardContent sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              p: 1.25,
+              pb: '8px !important',
+              width: '100%'
+            }}>
+              <Avatar sx={{ bgcolor: 'success.light', color: 'success.contrastText', width: 32, height: 32 }}>
+                <CategoryIcon sx={{ fontSize: '1rem' }} />
+              </Avatar>
+              <Box flexGrow={1} sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <Typography variant="caption" color="text.secondary">Categorized</Typography>
+                  <Typography variant="h6" color="success.main" sx={{ ml: 1, fontWeight: 'bold' }}>{withCategoryCount}</Typography>
+                </Box>
+                <Typography variant="caption" color="success.dark" sx={{ fontSize: '0.7rem', lineHeight: 1 }}>
+                  With categories
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
 
-                <FormControl fullWidth size="small">
-                  <InputLabel>Category</InputLabel>
-                  <Select
-                    value={categoryFilter}
-                    label="Category"
-                    onChange={(e) => setCategoryFilter(e.target.value)}
-                  >
-                    <MenuItem value="">All Categories</MenuItem>
-                    {categories.map((category) => (
-                      <MenuItem key={category.id} value={category.id}>
-                        {category.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+        <Grid item xs={12} sm={4} md={4}>
+          <Card
+            elevation={1}
+            sx={{
+              borderRadius: borderRadius.md,
+              p: 0.5,
+              border: 1,
+              borderColor: withPriceCount > 0 ? 'info.main' : 'divider',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: 2,
+                borderColor: 'info.main'
+              },
+              backgroundColor: 'white',
+              minHeight: '64px',
+              display: 'flex',
+            }}
+          >
+            <CardContent sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1.5,
+              p: 1.25,
+              pb: '8px !important',
+              width: '100%'
+            }}>
+              <Avatar sx={{ bgcolor: 'info.light', color: 'info.contrastText', width: 32, height: 32 }}>
+                <InventoryIcon sx={{ fontSize: '1rem' }} />
+              </Avatar>
+              <Box flexGrow={1} sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <Typography variant="caption" color="text.secondary">With Prices</Typography>
+                  <Typography variant="h6" color="info.main" sx={{ ml: 1, fontWeight: 'bold' }}>{withPriceCount}</Typography>
+                </Box>
+                <Typography variant="caption" color="info.dark" sx={{ fontSize: '0.7rem', lineHeight: 1 }}>
+                  Have pricing data
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
-                <FormControl fullWidth size="small">
-                  <InputLabel>Storage Location</InputLabel>
-                  <Select
-                    value={storageFilter}
-                    label="Storage Location"
-                    onChange={(e) => setStorageFilter(e.target.value)}
-                  >
-                    <MenuItem value="">All Locations</MenuItem>
-                    {storageLocations.map((location) => (
-                      <MenuItem key={location.id} value={location.id}>
-                        {location.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                <Button
-                  variant="contained"
-                  onClick={() => setFiltersOpen(false)}
-                  fullWidth
+      {/* Filters - Regular view on larger screens, drawer on mobile */}
+      {!isMobile ? (
+        <Paper sx={{ p: 2, mb: 3 }}>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                placeholder="Search SKU references..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon color="action" />
+                    </InputAdornment>
+                  ),
+                }}
+                size={isMobile ? "small" : "medium"}
+              />
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <FormControl fullWidth size={isMobile ? "small" : "medium"}>
+                <InputLabel>Category</InputLabel>
+                <Select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  label="Category"
                 >
-                  Apply Filters
-                </Button>
-              </Stack>
+                  <MenuItem value="">All Categories</MenuItem>
+                  {categories.map((category) => (
+                    <MenuItem key={category.id} value={category.id}>
+                      {category.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <FormControl fullWidth size={isMobile ? "small" : "medium"}>
+                <InputLabel>Storage Location</InputLabel>
+                <Select
+                  value={storageFilter}
+                  onChange={(e) => setStorageFilter(e.target.value)}
+                  label="Storage Location"
+                >
+                  <MenuItem value="">All Locations</MenuItem>
+                  {storageLocations.map((location) => (
+                    <MenuItem key={location.id} value={location.id}>
+                      {location.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+        </Paper>
+      ) : (
+        <Drawer
+          anchor="bottom"
+          open={filtersOpen}
+          onClose={() => setFiltersOpen(false)}
+          PaperProps={{
+            sx: {
+              borderTopLeftRadius: 16,
+              borderTopRightRadius: 16,
+              pt: 1
+            }
+          }}
+        >
+          <Box sx={{ p: 2, pb: 4 }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+              <Typography variant="h6">Filters</Typography>
+              <IconButton onClick={() => setFiltersOpen(false)}>
+                <CloseIcon />
+              </IconButton>
             </Box>
-          </Drawer>
-        )}
 
-        {/* Display either List View or Card View based on viewMode state */}
-        {viewMode === 'list' ? (
-          // List/Table View
-          <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
-            <TableContainer>
-              <Table size="small" sx={{ '& .MuiTableCell-root': { px: 2, py: 1.5, whiteSpace: 'nowrap' } }}>
-                <TableHead>
-                  <TableRow>
-                    <TableCell width="20%">Name</TableCell>
-                    <TableCell width="15%">SKU</TableCell>
-                    {!isMobile && <TableCell width="20%">Description</TableCell>}
-                    {!isMobile && <TableCell width="10%">Unit</TableCell>}
-                    {!isMobile && <TableCell width="10%" align="center">Price</TableCell>}
-                    {!isMobile && <TableCell width="10%">Category</TableCell>}
-                    <TableCell width="15%" align="right">Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredSkuReferences
-                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((item) => (
-                      <TableRow
-                        key={item.id}
-                        onClick={() => handleOpenDialog(item)}
-                        sx={{
-                          cursor: 'pointer',
-                          '&:hover': { bgcolor: 'action.hover' },
-                        }}
-                      >
-                        <TableCell>
-                          <Box>
-                            <Typography variant="subtitle2">
-                              {item.name}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {item.category?.name || 'Uncategorized'}
-                            </Typography>
-                          </Box>
-                        </TableCell>
+            <Stack spacing={2}>
+              <TextField
+                fullWidth
+                placeholder="Search SKU references..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                InputProps={{
+                  startAdornment: <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment>,
+                }}
+                size="small"
+              />
 
-                        <TableCell>
-                          <Chip
-                            label={item.sku}
-                            variant="outlined"
-                            size="small"
-                            color="primary"
-                          />
-                        </TableCell>
+              <FormControl fullWidth size="small">
+                <InputLabel>Category</InputLabel>
+                <Select
+                  value={categoryFilter}
+                  label="Category"
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                >
+                  <MenuItem value="">All Categories</MenuItem>
+                  {categories.map((category) => (
+                    <MenuItem key={category.id} value={category.id}>
+                      {category.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
 
-                        {!isMobile && (
-                          <TableCell>
-                            <Typography variant="body2" noWrap>
-                              {item.description || '-'}
-                            </Typography>
-                          </TableCell>
-                        )}
+              <FormControl fullWidth size="small">
+                <InputLabel>Storage Location</InputLabel>
+                <Select
+                  value={storageFilter}
+                  label="Storage Location"
+                  onChange={(e) => setStorageFilter(e.target.value)}
+                >
+                  <MenuItem value="">All Locations</MenuItem>
+                  {storageLocations.map((location) => (
+                    <MenuItem key={location.id} value={location.id}>
+                      {location.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
 
-                        {!isMobile && (
-                          <TableCell>
-                            <Typography variant="body2">
-                              {item.unit || '-'}
-                            </Typography>
-                          </TableCell>
-                        )}
+              <Button
+                variant="contained"
+                onClick={() => setFiltersOpen(false)}
+                fullWidth
+              >
+                Apply Filters
+              </Button>
+            </Stack>
+          </Box>
+        </Drawer>
+      )}
 
-                        {!isMobile && (
-                          <TableCell align="center">
-                            <Typography variant="body2">
-                              {item.unitPrice ? `$${item.unitPrice.toFixed(2)}` : '-'}
-                            </Typography>
-                          </TableCell>
-                        )}
-
-                        {!isMobile && (
-                          <TableCell>
-                            <Typography variant="body2">
-                              {item.category?.name || '-'}
-                            </Typography>
-                          </TableCell>
-                        )}
-
-                        <TableCell align="right">
-                          <Box display="flex" gap={0.5} justifyContent="flex-end">
-                            <Tooltip title="Check Usage">
-                              <IconButton
-                                size="small"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleCheckUsage(item);
-                                }}
-                              >
-                                <InfoIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Edit">
-                              <IconButton
-                                size="small"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleOpenDialog(item);
-                                }}
-                              >
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Delete">
-                              <IconButton
-                                size="small"
-                                color="error"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleOpenDeleteDialog(item);
-                                }}
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          </Box>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-
-            <TablePagination
-              rowsPerPageOptions={[5, 10, 25, 50]}
-              component="div"
-              count={filteredSkuReferences.length}
-              rowsPerPage={rowsPerPage}
-              page={page}
-              onPageChange={handleChangePage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-            />
-          </Paper>
-        ) : (
-          // Card View
-          <Box>
-            <Grid container spacing={2}>
-              {filteredSkuReferences
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((item) => (
-                  <Grid item xs={12} sm={6} md={4} key={item.id}>
-                    <Card
-                      sx={{
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        '&:hover': {
-                          transform: 'translateY(-2px)',
-                          boxShadow: 3,
-                        },
-                        borderRadius: borderRadius.md,
-                      }}
+      {/* Display either List View or Card View based on viewMode state */}
+      {viewMode === 'list' ? (
+        // List/Table View
+        <Paper sx={{ borderRadius: 2, overflow: 'hidden' }}>
+          <TableContainer>
+            <Table size="small" sx={{ '& .MuiTableCell-root': { px: 2, py: 1.5, whiteSpace: 'nowrap' } }}>
+              <TableHead>
+                <TableRow>
+                  <TableCell width="20%">Name</TableCell>
+                  <TableCell width="15%">SKU</TableCell>
+                  {!isMobile && <TableCell width="20%">Description</TableCell>}
+                  {!isMobile && <TableCell width="10%">Unit</TableCell>}
+                  {!isMobile && <TableCell width="10%" align="center">Price</TableCell>}
+                  {!isMobile && <TableCell width="10%">Category</TableCell>}
+                  <TableCell width="15%" align="right">Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredSkuReferences
+                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                  .map((item) => (
+                    <TableRow
+                      key={item.id}
                       onClick={() => handleOpenDialog(item)}
+                      sx={{
+                        cursor: 'pointer',
+                        '&:hover': { bgcolor: 'action.hover' },
+                      }}
                     >
-                      <CardHeader
-                        avatar={
-                          <Avatar sx={{ bgcolor: 'primary.main' }}>
-                            <LabelIcon />
-                          </Avatar>
-                        }
-                        title={
-                          <Typography
-                            variant="subtitle1"
-                            sx={{
-                              fontWeight: 'medium',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              display: '-webkit-box',
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: 'vertical',
-                              lineHeight: 1.2,
-                              height: 'auto',
-                            }}
-                          >
+                      <TableCell>
+                        <Box>
+                          <Typography variant="subtitle2">
                             {item.name}
                           </Typography>
-                        }
-                        subheader={
-                          <Box sx={{ mt: 0.5 }}>
-                            <Chip
-                              label={item.sku}
-                              variant="outlined"
-                              size="small"
-                              color="primary"
-                            />
-                          </Box>
-                        }
-                        action={null}
-                        sx={{ pb: 1 }}
-                      />
+                          <Typography variant="caption" color="text.secondary">
+                            {item.category?.name || 'Uncategorized'}
+                          </Typography>
+                        </Box>
+                      </TableCell>
 
-                      <Divider />
+                      <TableCell>
+                        <Chip
+                          label={item.sku}
+                          variant="outlined"
+                          size="small"
+                          color="primary"
+                        />
+                      </TableCell>
 
-                      <CardContent sx={{ pt: 2, pb: 1, flexGrow: 1 }}>
-                        <Grid container spacing={2}>
-                          <Grid item xs={6}>
-                            <Typography variant="subtitle2" color="text.secondary">
-                              Unit
-                            </Typography>
-                            <Typography variant="body1">
-                              {item.unit || '-'}
-                            </Typography>
-                          </Grid>
+                      {!isMobile && (
+                        <TableCell>
+                          <Typography variant="body2" noWrap>
+                            {item.description || '-'}
+                          </Typography>
+                        </TableCell>
+                      )}
 
-                          <Grid item xs={6}>
-                            <Typography variant="subtitle2" color="text.secondary">
-                              Price
-                            </Typography>
-                            <Typography variant="body1">
-                              {item.unitPrice ? `$${item.unitPrice.toFixed(2)}` : '-'}
-                            </Typography>
-                          </Grid>
+                      {!isMobile && (
+                        <TableCell>
+                          <Typography variant="body2">
+                            {item.unit || '-'}
+                          </Typography>
+                        </TableCell>
+                      )}
 
-                          <Grid item xs={6}>
-                            <Typography variant="subtitle2" color="text.secondary">
-                              Category
-                            </Typography>
-                            <Typography variant="body2">
-                              {item.category?.name || 'Uncategorized'}
-                            </Typography>
-                          </Grid>
+                      {!isMobile && (
+                        <TableCell align="center">
+                          <Typography variant="body2">
+                            {item.unitPrice ? `$${item.unitPrice.toFixed(2)}` : '-'}
+                          </Typography>
+                        </TableCell>
+                      )}
 
-                          <Grid item xs={6}>
-                            <Typography variant="subtitle2" color="text.secondary">
-                              Reorder Level
-                            </Typography>
-                            <Typography variant="body2">
-                              {item.reorderLevel || '-'}
-                            </Typography>
-                          </Grid>
+                      {!isMobile && (
+                        <TableCell>
+                          <Typography variant="body2">
+                            {item.category?.name || '-'}
+                          </Typography>
+                        </TableCell>
+                      )}
 
-                          {item.description && (
-                            <Grid item xs={12}>
-                              <Typography variant="subtitle2" color="text.secondary">
-                                Description
-                              </Typography>
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  display: '-webkit-box',
-                                  WebkitLineClamp: 2,
-                                  WebkitBoxOrient: 'vertical',
-                                }}
-                              >
-                                {item.description}
-                              </Typography>
-                            </Grid>
-                          )}
-                        </Grid>
-                      </CardContent>
-
-                      <CardActions sx={{ justifyContent: 'space-between', pt: 0 }}>
-                        <Box>
+                      <TableCell align="right">
+                        <Box display="flex" gap={0.5} justifyContent="flex-end">
                           <Tooltip title="Check Usage">
                             <IconButton
                               size="small"
@@ -1025,296 +863,472 @@ const SkuReferencePage: React.FC = () => {
                             </IconButton>
                           </Tooltip>
                         </Box>
-                      </CardActions>
-                    </Card>
-                  </Grid>
-                ))}
-            </Grid>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
 
-            <Box mt={3} display="flex" justifyContent="center">
-              <TablePagination
-                rowsPerPageOptions={[5, 10, 25, 50]}
-                component="div"
-                count={filteredSkuReferences.length}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                onPageChange={handleChangePage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-              />
-            </Box>
-          </Box>
-        )}
-
-        {/* Create/Edit Dialog */}
-        <Dialog
-          open={dialogOpen}
-          onClose={handleCloseDialog}
-          maxWidth="md"
-          fullWidth
-          fullScreen={isMobile}
-        >
-          <DialogTitle>
-            {editingItem ? 'Edit SKU Reference' : 'Create New SKU Reference'}
-          </DialogTitle>
-          <DialogContent>
-            {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
-              </Alert>
-            )}
-
-            <Grid container spacing={2} sx={{ mt: 1 }}>
-              {/* Name - First field */}
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Name *"
-                  value={formData.name}
-                  onChange={(e) => handleNameChange(e.target.value)}
-                  placeholder="Enter product name"
-                />
-              </Grid>
-
-              {/* Category - Second field (used for SKU generation) */}
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Category</InputLabel>
-                  <Select
-                    value={formData.categoryId}
-                    onChange={(e) => handleCategoryChange(e.target.value)}
-                    label="Category"
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25, 50]}
+            component="div"
+            count={filteredSkuReferences.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+          />
+        </Paper>
+      ) : (
+        // Card View
+        <Box>
+          <Grid container spacing={2}>
+            {filteredSkuReferences
+              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+              .map((item) => (
+                <Grid item xs={12} sm={6} md={4} key={item.id}>
+                  <Card
+                    sx={{
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: 3,
+                      },
+                      borderRadius: borderRadius.md,
+                    }}
+                    onClick={() => handleOpenDialog(item)}
                   >
-                    <MenuItem value="">Select Category</MenuItem>
-                    {categories.map((category) => (
-                      <MenuItem key={category.id} value={category.id}>
-                        {category.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
+                    <CardHeader
+                      avatar={
+                        <Avatar sx={{ bgcolor: 'primary.main' }}>
+                          <LabelIcon />
+                        </Avatar>
+                      }
+                      title={
+                        <Typography
+                          variant="subtitle1"
+                          sx={{
+                            fontWeight: 'medium',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            lineHeight: 1.2,
+                            height: 'auto',
+                          }}
+                        >
+                          {item.name}
+                        </Typography>
+                      }
+                      subheader={
+                        <Box sx={{ mt: 0.5 }}>
+                          <Chip
+                            label={item.sku}
+                            variant="outlined"
+                            size="small"
+                            color="primary"
+                          />
+                        </Box>
+                      }
+                      action={null}
+                      sx={{ pb: 1 }}
+                    />
 
-              {/* Unit - Third field */}
-              <Grid item xs={12} sm={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Unit</InputLabel>
-                  <Select
-                    value={formData.unit}
-                    onChange={(e) => setFormData(prev => ({ ...prev, unit: e.target.value }))}
-                    label="Unit"
-                  >
-                    <MenuItem value="">Select Unit</MenuItem>
-                    {units.map((unit) => (
-                      <MenuItem key={unit.id} value={unit.symbol}>
-                        {unit.name} ({unit.symbol})
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
+                    <Divider />
 
-              {/* Description */}
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Description"
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  multiline
-                  rows={3}
-                  placeholder="Enter product description"
-                />
-              </Grid>
+                    <CardContent sx={{ pt: 2, pb: 1, flexGrow: 1 }}>
+                      <Grid container spacing={2}>
+                        <Grid item xs={6}>
+                          <Typography variant="subtitle2" color="text.secondary">
+                            Unit
+                          </Typography>
+                          <Typography variant="body1">
+                            {item.unit || '-'}
+                          </Typography>
+                        </Grid>
 
-              {/* Unit Price */}
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Unit Price"
-                  type="number"
-                  value={formData.unitPrice || ''}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    unitPrice: e.target.value ? parseFloat(e.target.value) : undefined
-                  }))}
-                  placeholder="0.00"
-                  inputProps={{ step: "0.01", min: "0" }}
-                />
-              </Grid>
+                        <Grid item xs={6}>
+                          <Typography variant="subtitle2" color="text.secondary">
+                            Price
+                          </Typography>
+                          <Typography variant="body1">
+                            {item.unitPrice ? `$${item.unitPrice.toFixed(2)}` : '-'}
+                          </Typography>
+                        </Grid>
 
-              {/* Reorder Level */}
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Reorder Level"
-                  type="number"
-                  value={formData.reorderLevel || ''}
-                  onChange={(e) => setFormData(prev => ({
-                    ...prev,
-                    reorderLevel: e.target.value ? parseFloat(e.target.value) : undefined
-                  }))}
-                  placeholder="0"
-                  inputProps={{ min: "0" }}
-                />
-              </Grid>
+                        <Grid item xs={6}>
+                          <Typography variant="subtitle2" color="text.secondary">
+                            Category
+                          </Typography>
+                          <Typography variant="body2">
+                            {item.category?.name || 'Uncategorized'}
+                          </Typography>
+                        </Grid>
 
-              {/* Storage Location */}
-              <Grid item xs={12}>
-                <FormControl fullWidth>
-                  <InputLabel>Storage Location</InputLabel>
-                  <Select
-                    value={formData.storageLocationId}
-                    onChange={(e) => setFormData(prev => ({ ...prev, storageLocationId: e.target.value }))}
-                    label="Storage Location"
-                  >
-                    <MenuItem value="">Select Storage Location</MenuItem>
-                    {storageLocations.map((location) => (
-                      <MenuItem key={location.id} value={location.id}>
-                        {location.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
+                        <Grid item xs={6}>
+                          <Typography variant="subtitle2" color="text.secondary">
+                            Reorder Level
+                          </Typography>
+                          <Typography variant="body2">
+                            {item.reorderLevel || '-'}
+                          </Typography>
+                        </Grid>
 
-              {/* SKU - Last field (auto-generated from above fields) */}
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="SKU *"
-                  value={formData.sku}
-                  onChange={(e) => handleSkuChange(e.target.value)}
-                  placeholder="Auto-generated from name and category"
-                  helperText={autoGeneratedSku
-                    ? "✓ Auto-generated (you can edit if needed)"
-                    : "Manual SKU - ensure uniqueness"}
-                  InputProps={{
-                    endAdornment: autoGeneratedSku ? (
-                      <Box sx={{ display: 'flex', alignItems: 'center', color: 'success.main', mr: 1 }}>
-                        <CheckCircleIcon fontSize="small" />
+                        {item.description && (
+                          <Grid item xs={12}>
+                            <Typography variant="subtitle2" color="text.secondary">
+                              Description
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical',
+                              }}
+                            >
+                              {item.description}
+                            </Typography>
+                          </Grid>
+                        )}
+                      </Grid>
+                    </CardContent>
+
+                    <CardActions sx={{ justifyContent: 'space-between', pt: 0 }}>
+                      <Box>
+                        <Tooltip title="Check Usage">
+                          <IconButton
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCheckUsage(item);
+                            }}
+                          >
+                            <InfoIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Edit">
+                          <IconButton
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenDialog(item);
+                            }}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete">
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenDeleteDialog(item);
+                            }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
                       </Box>
-                    ) : null
-                  }}
-                />
-              </Grid>
+                    </CardActions>
+                  </Card>
+                </Grid>
+              ))}
+          </Grid>
+
+          <Box mt={3} display="flex" justifyContent="center">
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 50]}
+              component="div"
+              count={filteredSkuReferences.length}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+            />
+          </Box>
+        </Box>
+      )}
+
+      {/* Create/Edit Dialog */}
+      <Dialog
+        open={dialogOpen}
+        onClose={handleCloseDialog}
+        maxWidth="md"
+        fullWidth
+        fullScreen={isMobile}
+      >
+        <DialogTitle>
+          {editingItem ? 'Edit SKU Reference' : 'Create New SKU Reference'}
+        </DialogTitle>
+        <DialogContent>
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            {/* Name - First field */}
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Name *"
+                value={formData.name}
+                onChange={(e) => handleNameChange(e.target.value)}
+                placeholder="Enter product name"
+              />
             </Grid>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseDialog}>Cancel</Button>
-            <Button
-              onClick={handleSubmit}
-              variant="contained"
-              disabled={createMutation.isPending || updateMutation.isPending}
-            >
-              {createMutation.isPending || updateMutation.isPending ? (
-                <CircularProgress size={20} />
-              ) : (
-                editingItem ? 'Update' : 'Create'
-              )}
-            </Button>
-          </DialogActions>
-        </Dialog>
 
-        {/* Delete Confirmation Dialog */}
-        <Dialog
-          open={deleteDialogOpen}
-          onClose={handleCloseDeleteDialog}
-          maxWidth="sm"
-          fullWidth
-        >
-          <DialogTitle>Confirm Delete</DialogTitle>
-          <DialogContent>
-            <Typography>
-              Are you sure you want to delete the SKU reference "{deletingItem?.name}"?
-              This action cannot be undone.
-            </Typography>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseDeleteDialog}>Cancel</Button>
-            <Button
-              onClick={handleDelete}
-              color="error"
-              variant="contained"
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? <CircularProgress size={20} /> : 'Delete'}
-            </Button>
-          </DialogActions>
-        </Dialog>
+            {/* Category - Second field (used for SKU generation) */}
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Category</InputLabel>
+                <Select
+                  value={formData.categoryId}
+                  onChange={(e) => handleCategoryChange(e.target.value)}
+                  label="Category"
+                >
+                  <MenuItem value="">Select Category</MenuItem>
+                  {categories.map((category) => (
+                    <MenuItem key={category.id} value={category.id}>
+                      {category.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
 
-        {/* Usage Details Dialog */}
-        <Dialog
-          open={usageDialogOpen}
-          onClose={() => setUsageDialogOpen(false)}
-          maxWidth="md"
-          fullWidth
-        >
-          <DialogTitle>SKU Usage Details</DialogTitle>
-          <DialogContent>
-            {usageData && (
-              <>
-                <Typography variant="h6" gutterBottom>
-                  Usage Summary
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  Total occurrences: {usageData.usage.totalCount}
-                </Typography>
+            {/* Unit - Third field */}
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Unit</InputLabel>
+                <Select
+                  value={formData.unit}
+                  onChange={(e) => setFormData(prev => ({ ...prev, unit: e.target.value }))}
+                  label="Unit"
+                >
+                  <MenuItem value="">Select Unit</MenuItem>
+                  {units.map((unit) => (
+                    <MenuItem key={unit.id} value={unit.symbol}>
+                      {unit.name} ({unit.symbol})
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
 
-                {usageData.usage.rawMaterials.length > 0 && (
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="subtitle2" fontWeight="bold">
-                      Raw Materials ({usageData.usage.rawMaterials.length})
-                    </Typography>
-                    {usageData.usage.rawMaterials.map((item: any) => (
-                      <Typography key={item.id} variant="body2">
-                        • {item.name} - {item.batchNumber} ({item.quantity} {item.unit})
-                      </Typography>
-                    ))}
-                  </Box>
-                )}
+            {/* Description */}
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Description"
+                value={formData.description}
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                multiline
+                rows={3}
+                placeholder="Enter product description"
+              />
+            </Grid>
 
-                {usageData.usage.finishedProducts.length > 0 && (
-                  <Box sx={{ mt: 2 }}>
-                    <Typography variant="subtitle2" fontWeight="bold">
-                      Finished Products ({usageData.usage.finishedProducts.length})
-                    </Typography>
-                    {usageData.usage.finishedProducts.map((item: any) => (
-                      <Typography key={item.id} variant="body2">
-                        • {item.name} - {item.batchNumber} ({item.quantity} {item.unit})
-                      </Typography>
-                    ))}
-                  </Box>
-                )}
+            {/* Unit Price */}
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Unit Price"
+                type="number"
+                value={formData.unitPrice || ''}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  unitPrice: e.target.value ? parseFloat(e.target.value) : undefined
+                }))}
+                placeholder="0.00"
+                inputProps={{ step: "0.01", min: "0" }}
+              />
+            </Grid>
 
-                {usageData.usage.totalCount === 0 && (
-                  <Alert severity="info" sx={{ mt: 2 }}>
-                    This SKU reference is not currently in use.
-                  </Alert>
-                )}
-              </>
-            )}
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setUsageDialogOpen(false)}>Close</Button>
-          </DialogActions>
-        </Dialog>
+            {/* Reorder Level */}
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Reorder Level"
+                type="number"
+                value={formData.reorderLevel || ''}
+                onChange={(e) => setFormData(prev => ({
+                  ...prev,
+                  reorderLevel: e.target.value ? parseFloat(e.target.value) : undefined
+                }))}
+                placeholder="0"
+                inputProps={{ min: "0" }}
+              />
+            </Grid>
 
-        {/* Snackbar */}
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={6000}
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-        >
-          <Alert
-            onClose={() => setSnackbar({ ...snackbar, open: false })}
-            severity={snackbar.severity}
-            sx={{ width: '100%' }}
+            {/* Storage Location */}
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel>Storage Location</InputLabel>
+                <Select
+                  value={formData.storageLocationId}
+                  onChange={(e) => setFormData(prev => ({ ...prev, storageLocationId: e.target.value }))}
+                  label="Storage Location"
+                >
+                  <MenuItem value="">Select Storage Location</MenuItem>
+                  {storageLocations.map((location) => (
+                    <MenuItem key={location.id} value={location.id}>
+                      {location.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            {/* SKU - Last field (auto-generated from above fields) */}
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="SKU *"
+                value={formData.sku}
+                onChange={(e) => handleSkuChange(e.target.value)}
+                placeholder="Auto-generated from name and category"
+                helperText={autoGeneratedSku
+                  ? "✓ Auto-generated (you can edit if needed)"
+                  : "Manual SKU - ensure uniqueness"}
+                InputProps={{
+                  endAdornment: autoGeneratedSku ? (
+                    <Box sx={{ display: 'flex', alignItems: 'center', color: 'success.main', mr: 1 }}>
+                      <CheckCircleIcon fontSize="small" />
+                    </Box>
+                  ) : null
+                }}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog}>Cancel</Button>
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
+            disabled={createMutation.isPending || updateMutation.isPending}
           >
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
-      </Container>
-    );
-  };
+            {createMutation.isPending || updateMutation.isPending ? (
+              <CircularProgress size={20} />
+            ) : (
+              editingItem ? 'Update' : 'Create'
+            )}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleCloseDeleteDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete the SKU reference "{deletingItem?.name}"?
+            This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteDialog}>Cancel</Button>
+          <Button
+            onClick={handleDelete}
+            color="error"
+            variant="contained"
+            disabled={deleteMutation.isPending}
+          >
+            {deleteMutation.isPending ? <CircularProgress size={20} /> : 'Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Usage Details Dialog */}
+      <Dialog
+        open={usageDialogOpen}
+        onClose={() => setUsageDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>SKU Usage Details</DialogTitle>
+        <DialogContent>
+          {usageData && (
+            <>
+              <Typography variant="h6" gutterBottom>
+                Usage Summary
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Total occurrences: {usageData.usage.totalCount}
+              </Typography>
+
+              {usageData.usage.rawMaterials.length > 0 && (
+                <Box sx={{ mb: 2 }}>
+                  <Typography variant="subtitle2" fontWeight="bold">
+                    Raw Materials ({usageData.usage.rawMaterials.length})
+                  </Typography>
+                  {usageData.usage.rawMaterials.map((item: any) => (
+                    <Typography key={item.id} variant="body2">
+                      • {item.name} - {item.batchNumber} ({item.quantity} {item.unit})
+                    </Typography>
+                  ))}
+                </Box>
+              )}
+
+              {usageData.usage.finishedProducts.length > 0 && (
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="subtitle2" fontWeight="bold">
+                    Finished Products ({usageData.usage.finishedProducts.length})
+                  </Typography>
+                  {usageData.usage.finishedProducts.map((item: any) => (
+                    <Typography key={item.id} variant="body2">
+                      • {item.name} - {item.batchNumber} ({item.quantity} {item.unit})
+                    </Typography>
+                  ))}
+                </Box>
+              )}
+
+              {usageData.usage.totalCount === 0 && (
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  This SKU reference is not currently in use.
+                </Alert>
+              )}
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setUsageDialogOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Container>
+  );
+};
 
 export default SkuReferencePage;

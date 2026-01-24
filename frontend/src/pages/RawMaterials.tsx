@@ -1046,7 +1046,7 @@ const RawMaterials: React.FC = () => {
         </Box>
       )}
 
-      {/* Enhanced Form Dialog with Smart Defaults */}
+      {/* Enhanced Form Dialog with Smart Defaults - Improved Wizard for Creating (with SKU search first) */}
       <EnhancedRawMaterialForm
         open={openForm}
         onClose={handleCloseForm}

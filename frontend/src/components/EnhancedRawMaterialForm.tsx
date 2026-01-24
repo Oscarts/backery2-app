@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
   DialogTitle,
@@ -16,8 +17,9 @@ import {
   Chip,
   Alert,
   Typography,
+  Tooltip,
 } from '@mui/material';
-import { AutoAwesome as AutoIcon, CheckCircle as CheckIcon, Label as LabelIcon } from '@mui/icons-material';
+import { AutoAwesome as AutoIcon, CheckCircle as CheckIcon, Label as LabelIcon, Lock as LockIcon, Edit as EditIcon } from '@mui/icons-material';
 import { CreateRawMaterialData, RawMaterial, SkuReference } from '../types';
 import api from '../utils/api';
 
@@ -59,6 +61,7 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
   qualityStatuses,
   skuReferences = [],
 }) => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<CreateRawMaterialData>({
     name: '',
     sku: '',
@@ -389,337 +392,603 @@ const EnhancedRawMaterialForm: React.FC<EnhancedRawMaterialFormProps> = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="lg"
+      fullWidth
+      fullScreen={false}
+      PaperProps={{
+        sx: {
+          borderRadius: { xs: 0, sm: 3 },
+          m: { xs: 0, sm: 2 },
+          maxHeight: { xs: '100vh', sm: '90vh' }
+        }
+      }}
+    >
       <form onSubmit={handleSubmit}>
-        <DialogTitle>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
+        <DialogTitle sx={{ p: { xs: 2, sm: 3 } }}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1}>
             <Box display="flex" alignItems="center" gap={1}>
-              {material ? 'Edit Raw Material' : 'Add New Raw Material'}
+              <Typography variant="h6" sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
+                {material ? 'Edit Raw Material' : 'Add New Raw Material'}
+              </Typography>
               {!material && loadingDefaults && <CircularProgress size={20} />}
             </Box>
-            <Box>
-              <Button onClick={onClose} sx={{ mr: 1 }}>Cancel</Button>
-              <Button type="submit" variant="contained" color="primary">
+            <Box display="flex" gap={1}>
+              <Button onClick={onClose} size="small">Cancel</Button>
+              <Button type="submit" variant="contained" color="primary" size="small">
                 {material ? 'Update' : 'Create'}
               </Button>
             </Box>
           </Box>
         </DialogTitle>
 
-        <DialogContent>
-          {!material && defaults && (
-            <Alert severity="info" sx={{ mb: 2 }} icon={<AutoIcon />}>
-              Smart defaults applied! Fields marked with{' '}
-              <Chip size="small" label="Auto" icon={<CheckIcon />} color="primary" sx={{ mx: 0.5 }} />{' '}
-              have been pre-filled. You can edit them as needed.
-            </Alert>
+        <DialogContent sx={{ p: { xs: 2, sm: 3 } }}>
+          {!material && (
+            <>
+              {!selectedSku && (
+                <Alert severity="info" sx={{ mb: 3 }} icon={<AutoIcon />}>
+                  <Typography variant="body2" fontWeight="medium" gutterBottom>
+                    🚀 Start by selecting an SKU Reference (recommended)
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    SKU references auto-fill and lock product details like name, SKU, category, unit, and price.
+                    This ensures consistency across your inventory. If you can't find one, you can create it on the SKU Reference page first.
+                  </Typography>
+                </Alert>
+              )}
+
+              {selectedSku && (
+                <Alert severity="success" sx={{ mb: 3 }} icon={<LockIcon />}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Box>
+                      <Typography variant="body2" fontWeight="medium" gutterBottom>
+                        🔒 Product details locked from SKU Reference
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Name, SKU, Category, Unit, Price, and Reorder Level are locked for consistency. Only purchase-specific fields can be edited.
+                      </Typography>
+                    </Box>
+                    <Tooltip title="Edit SKU Reference to change product details">
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<EditIcon />}
+                        onClick={() => {
+                          onClose(); // Close the current dialog
+                          navigate('/sku-reference', {
+                            state: {
+                              openEditDialog: true,
+                              skuId: selectedSku.id
+                            }
+                          });
+                        }}
+                        sx={{ ml: 2, whiteSpace: 'nowrap' }}
+                      >
+                        Edit SKU
+                      </Button>
+                    </Tooltip>
+                  </Box>
+                </Alert>
+              )}
+
+              {skuReferences.length > 0 && (
+                <Box sx={{
+                  mb: 3,
+                  p: 3,
+                  background: 'linear-gradient(135deg, rgba(25, 118, 210, 0.05) 0%, rgba(156, 39, 176, 0.05) 100%)',
+                  borderRadius: 3,
+                  border: '2px solid',
+                  borderColor: 'primary.light',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+                }}>
+                  <Autocomplete
+                    options={skuReferences}
+                    getOptionLabel={(option) => `${option.sku} - ${option.name}`}
+                    value={selectedSku}
+                    onChange={(_, newValue) => handleSkuSelect(newValue)}
+                    renderOption={(props, option) => (
+                      <Box component="li" {...props}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, width: '100%' }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Chip label={option.sku} size="small" color="primary" variant="outlined" />
+                            <Typography variant="body2" fontWeight="medium">{option.name}</Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                            {option.category && (
+                              <Typography variant="caption" color="text.secondary">
+                                📦 {option.category.name}
+                              </Typography>
+                            )}
+                            {option.unit && option.unitPrice && (
+                              <Typography variant="caption" color="text.secondary">
+                                💰 ${option.unitPrice?.toFixed(2)}/{option.unit}
+                              </Typography>
+                            )}
+                            {option.reorderLevel && (
+                              <Typography variant="caption" color="text.secondary">
+                                🔔 Reorder: {option.reorderLevel}
+                              </Typography>
+                            )}
+                          </Box>
+                        </Box>
+                      </Box>
+                    )}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="🔍 Search SKU Reference"
+                        placeholder="Type product name or SKU code..."
+                        helperText={selectedSku ? "✅ SKU selected! Fields below are auto-filled." : "Select to auto-fill name, category, unit, price, and reorder level"}
+                        InputProps={{
+                          ...params.InputProps,
+                          startAdornment: (
+                            <Box sx={{ display: 'flex', alignItems: 'center', pl: 1 }}>
+                              <LabelIcon sx={{ color: 'primary.main', mr: 0.5 }} />
+                              {params.InputProps.startAdornment}
+                            </Box>
+                          ),
+                        }}
+                      />
+                    )}
+                  />
+                </Box>
+              )}
+
+              {defaults && !selectedSku && (
+                <Alert severity="success" sx={{ mb: 2 }} icon={<CheckIcon />}>
+                  Smart defaults applied! Fields marked with{' '}
+                  <Chip size="small" label="Auto" icon={<CheckIcon />} color="primary" sx={{ mx: 0.5 }} />{' '}
+                  have been pre-filled.
+                </Alert>
+              )}
+            </>
           )}
 
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            {/* SKU Reference Selector - OPTIONAL speed enhancement */}
-            {!material && skuReferences.length > 0 && (
-              <Grid item xs={12}>
-                <Autocomplete
-                  options={skuReferences}
-                  getOptionLabel={(option) => `${option.sku} - ${option.name}`}
-                  value={selectedSku}
-                  onChange={(_, newValue) => handleSkuSelect(newValue)}
-                  renderOption={(props, option) => (
-                    <Box component="li" {...props}>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Chip label={option.sku} size="small" color="primary" variant="outlined" />
-                          <Typography variant="body2" fontWeight="medium">{option.name}</Typography>
-                        </Box>
-                        {option.unitPrice && (
-                          <Typography variant="caption" color="text.secondary">
-                            ${option.unitPrice}/{option.unit} · Reorder: {option.reorderLevel}
-                          </Typography>
-                        )}
-                      </Box>
-                    </Box>
-                  )}
-                  renderInput={(params) => (
+          {/* Two-Panel Layout: SKU Data (Left) vs Purchase Data (Right) */}
+          <Box sx={{ display: 'flex', gap: { xs: 2, sm: 3 }, mt: 2, flexDirection: { xs: 'column', md: 'row' } }}>
+            {/* LEFT PANEL: SKU Reference Data (Locked when SKU selected) */}
+            <Box sx={{
+              flex: 1,
+              p: { xs: 2, sm: 3 },
+              borderRadius: { xs: 2, sm: 3 },
+              border: selectedSku ? '2px solid' : '1px dashed',
+              borderColor: selectedSku ? 'primary.light' : 'divider',
+              background: selectedSku
+                ? 'linear-gradient(135deg, rgba(103, 58, 183, 0.03) 0%, rgba(63, 81, 181, 0.03) 100%)'
+                : 'transparent',
+              boxShadow: selectedSku ? '0 4px 12px rgba(103, 58, 183, 0.08)' : 'none'
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: { xs: 1.5, sm: 2 } }}>
+                <LabelIcon color="primary" fontSize="small" />
+                <Typography variant="h6" sx={{ fontSize: { xs: '0.95rem', sm: '1rem' }, fontWeight: 600 }}>
+                  Product Definition {selectedSku && '🔒'}
+                </Typography>
+              </Box>
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: { xs: 1.5, sm: 2 }, fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}>
+                {selectedSku ? 'Locked fields from SKU Reference - ensures consistency' : 'Define product details or use SKU reference'}
+              </Typography>
+
+              <Grid container spacing={{ xs: 1.5, sm: 2 }}>
+                {/* Name - Read-only if SKU selected */}
+                <Grid item xs={12}>
+                  {selectedSku ? (
                     <TextField
-                      {...params}
-                      label="SKU Reference (Optional)"
-                      placeholder="Search by SKU or product name"
-                      helperText="Select an SKU to auto-fill product details and speed up data entry"
+                      fullWidth
+                      label="Product Name"
+                      value={formData.name}
+                      required
+                      disabled
                       InputProps={{
-                        ...params.InputProps,
                         startAdornment: (
-                          <Box sx={{ display: 'flex', alignItems: 'center', pl: 1 }}>
-                            <LabelIcon sx={{ color: 'action.active', mr: 0.5 }} />
-                            {params.InputProps.startAdornment}
-                          </Box>
+                          <LockIcon sx={{ mr: 1, color: 'primary.main', opacity: 0.6 }} fontSize="small" />
                         ),
                       }}
+                      helperText="🔒 Locked from SKU Reference"
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          bgcolor: 'rgba(103, 58, 183, 0.04)',
+                          borderRadius: 2,
+                          '& fieldset': { borderColor: 'rgba(103, 58, 183, 0.2)' }
+                        },
+                        '& .Mui-disabled': {
+                          color: 'text.primary',
+                          WebkitTextFillColor: 'text.primary'
+                        }
+                      }}
                     />
-                  )}
-                />
-              </Grid>
-            )}
-
-            {/* Name with Autocomplete */}
-            <Grid item xs={12} sm={6}>
-              <Autocomplete
-                freeSolo
-                options={skuSuggestions}
-                getOptionLabel={(option) =>
-                  typeof option === 'string' ? option : `${option.name} (${option.sku})`
-                }
-                value={formData.name}
-                onChange={handleNameChange}
-                onInputChange={(event, newInputValue) => {
-                  handleNameChange(event, newInputValue);
-                }}
-                loading={loadingSuggestions}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Name"
-                    required
-                    helperText="Start typing to see suggestions from existing materials"
-                    InputProps={{
-                      ...params.InputProps,
-                      endAdornment: (
-                        <>
-                          {loadingSuggestions ? <CircularProgress color="inherit" size={20} /> : null}
-                          {params.InputProps.endAdornment}
-                        </>
-                      ),
-                    }}
-                  />
-                )}
-              />
-            </Grid>
-
-            {/* SKU */}
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                label="SKU"
-                value={formData.sku || ''}
-                onChange={handleChange('sku')}
-                helperText={
-                  autoFilledFields.has('sku')
-                    ? 'Auto-generated from name'
-                    : 'Editable – must remain consistent for same name'
-                }
-                InputProps={{
-                  endAdornment: autoFilledFields.has('sku') ? (
-                    <Chip size="small" label="Auto" icon={<CheckIcon />} color="primary" />
-                  ) : null,
-                }}
-              />
-            </Grid>
-
-            {/* Supplier */}
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth required>
-                <InputLabel>Supplier</InputLabel>
-                <Select
-                  value={formData.supplierId}
-                  label="Supplier"
-                  onChange={handleSupplierChange}
-                >
-                  {suppliers.map((supplier) => (
-                    <MenuItem key={supplier.id} value={supplier.id}>
-                      {supplier.name}
-                      {autoFilledFields.has('supplierId') && supplier.id === formData.supplierId && (
-                        <Chip size="small" label="Default" icon={<CheckIcon />} color="primary" sx={{ ml: 1 }} />
-                      )}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            {/* Category */}
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Category</InputLabel>
-                <Select value={formData.categoryId} label="Category" onChange={handleChange('categoryId')}>
-                  <MenuItem value="">
-                    <em>None</em>
-                  </MenuItem>
-                  {categories.map((category) => (
-                    <MenuItem key={category.id} value={category.id}>
-                      {category.name}
-                      {autoFilledFields.has('categoryId') && category.id === formData.categoryId && (
-                        <Chip size="small" label="Default" icon={<CheckIcon />} color="primary" sx={{ ml: 1 }} />
-                      )}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            {/* Purchase Date */}
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                required
-                type="date"
-                label="Purchase Date"
-                value={formData.purchaseDate}
-                onChange={handleChange('purchaseDate')}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-
-            {/* Expiration Date - MOVED BEFORE BATCH NUMBER */}
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                required
-                type="date"
-                label="Expiration Date"
-                value={formData.expirationDate}
-                onChange={handleExpirationDateChange}
-                InputLabelProps={{ shrink: true }}
-                helperText={
-                  autoFilledFields.has('expirationDate')
-                    ? 'Auto-set to 30 days from now'
-                    : 'Used to generate batch number. Must be after purchase date'
-                }
-                InputProps={{
-                  endAdornment: autoFilledFields.has('expirationDate') ? (
-                    <Chip size="small" label="Auto" icon={<CheckIcon />} color="primary" />
-                  ) : null,
-                }}
-              />
-            </Grid>
-
-            {/* Batch Number - MOVED AFTER EXPIRATION DATE */}
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                required
-                label="Batch Number"
-                value={formData.batchNumber}
-                onChange={handleChange('batchNumber')}
-                helperText={
-                  autoFilledFields.has('batchNumber')
-                    ? 'Auto-generated from expiration date'
-                    : 'Format: SUPPLIER-YYYYMMDD-SEQ (based on expiration)'
-                }
-                InputProps={{
-                  endAdornment: autoFilledFields.has('batchNumber') ? (
-                    <Chip size="small" label="Auto" icon={<CheckIcon />} color="primary" />
-                  ) : null,
-                }}
-              />
-            </Grid>
-
-            {/* Quantity */}
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                required
-                type="number"
-                label="Quantity"
-                value={formData.quantity}
-                onChange={handleChange('quantity')}
-                inputProps={{ min: 0, step: 0.01 }}
-              />
-            </Grid>
-
-            {/* Unit */}
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth required>
-                <InputLabel>Unit</InputLabel>
-                <Select value={formData.unit} label="Unit" onChange={handleChange('unit')}>
-                  {units.map((unit) => (
-                    <MenuItem key={unit.id} value={unit.symbol}>
-                      {unit.name} ({unit.symbol})
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            {/* Cost Per Unit */}
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                required
-                type="number"
-                label="Cost Per Unit"
-                value={formData.costPerUnit}
-                onChange={handleChange('costPerUnit')}
-                inputProps={{ min: 0, step: 0.01 }}
-              />
-            </Grid>
-
-            {/* Reorder Level */}
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                type="number"
-                label="Reorder Level"
-                value={formData.reorderLevel}
-                onChange={handleChange('reorderLevel')}
-                inputProps={{ min: 0, step: 0.01 }}
-                helperText="Leave 0 for no reorder alerts"
-              />
-            </Grid>
-
-            {/* Storage Location */}
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth required>
-                <InputLabel>Storage Location</InputLabel>
-                <Select
-                  value={formData.storageLocationId}
-                  label="Storage Location"
-                  onChange={handleChange('storageLocationId')}
-                >
-                  {storageLocations.map((location) => (
-                    <MenuItem key={location.id} value={location.id}>
-                      {location.name}
-                      {autoFilledFields.has('storageLocationId') && location.id === formData.storageLocationId && (
-                        <Chip size="small" label="Default" icon={<CheckIcon />} color="primary" sx={{ ml: 1 }} />
-                      )}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            {/* Quality Status */}
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth>
-                <InputLabel>Quality Status</InputLabel>
-                <Select
-                  value={formData.qualityStatusId}
-                  label="Quality Status"
-                  onChange={handleChange('qualityStatusId')}
-                >
-                  <MenuItem value="">
-                    <em>None</em>
-                  </MenuItem>
-                  {qualityStatuses.map((status) => (
-                    <MenuItem key={status.id} value={status.id}>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Box
-                          sx={{
-                            width: 12,
-                            height: 12,
-                            borderRadius: '50%',
-                            backgroundColor: status.color,
+                  ) : (
+                    <Autocomplete
+                      freeSolo
+                      options={skuSuggestions}
+                      getOptionLabel={(option) =>
+                        typeof option === 'string' ? option : `${option.name} (${option.sku})`
+                      }
+                      value={formData.name}
+                      onChange={handleNameChange}
+                      onInputChange={(event, newInputValue) => {
+                        handleNameChange(event, newInputValue);
+                      }}
+                      loading={loadingSuggestions}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          label="Product Name"
+                          required
+                          helperText="Start typing to see suggestions from existing materials"
+                          InputProps={{
+                            ...params.InputProps,
+                            endAdornment: (
+                              <>
+                                {loadingSuggestions ? <CircularProgress color="inherit" size={20} /> : null}
+                                {params.InputProps.endAdornment}
+                              </>
+                            ),
                           }}
                         />
-                        {status.name}
-                        {autoFilledFields.has('qualityStatusId') && status.id === formData.qualityStatusId && (
-                          <Chip size="small" label="Default" icon={<CheckIcon />} color="primary" sx={{ ml: 1 }} />
-                        )}
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-          </Grid>
+                      )}
+                    />
+                  )}
+                </Grid>
+
+                {/* SKU - Read-only if SKU selected */}
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    label="SKU Code"
+                    value={formData.sku || ''}
+                    onChange={handleChange('sku')}
+                    disabled={selectedSku !== null}
+                    required
+                    helperText={
+                      selectedSku
+                        ? '🔒 Locked from SKU Reference'
+                        : autoFilledFields.has('sku')
+                          ? '✨ Auto-generated from name'
+                          : 'Will be auto-generated from product name'
+                    }
+                    InputProps={{
+                      startAdornment: selectedSku ? (
+                        <LockIcon sx={{ mr: 1, color: 'primary.main', opacity: 0.6 }} fontSize="small" />
+                      ) : null,
+                      endAdornment: autoFilledFields.has('sku') && !selectedSku ? (
+                        <Chip size="small" label="Auto" icon={<CheckIcon />} color="primary" />
+                      ) : null,
+                    }}
+                    sx={selectedSku ? {
+                      '& .MuiInputBase-root': {
+                        bgcolor: 'rgba(103, 58, 183, 0.04)',
+                        borderRadius: 2,
+                        '& fieldset': { borderColor: 'rgba(103, 58, 183, 0.2)' }
+                      },
+                      '& .Mui-disabled': {
+                        color: 'text.primary',
+                        WebkitTextFillColor: 'text.primary'
+                      }
+                    } : {}}
+                  />
+                </Grid>
+
+                {/* Category - Read-only if SKU selected */}
+                <Grid item xs={12}>
+                  {selectedSku ? (
+                    <TextField
+                      fullWidth
+                      label="Category"
+                      value={selectedSku.category?.name || formData.categoryId || 'None'}
+                      disabled
+                      InputProps={{
+                        startAdornment: (
+                          <LockIcon sx={{ mr: 1, color: 'primary.main', opacity: 0.6 }} fontSize="small" />
+                        ),
+                      }}
+                      helperText="🔒 Locked from SKU Reference"
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          bgcolor: 'rgba(103, 58, 183, 0.04)',
+                          borderRadius: 2,
+                          '& fieldset': { borderColor: 'rgba(103, 58, 183, 0.2)' }
+                        },
+                        '& .Mui-disabled': {
+                          color: 'text.primary',
+                          WebkitTextFillColor: 'text.primary'
+                        }
+                      }}
+                    />
+                  ) : (
+                    <FormControl fullWidth>
+                      <InputLabel>Category</InputLabel>
+                      <Select value={formData.categoryId} label="Category" onChange={handleChange('categoryId')}>
+                        <MenuItem value="">
+                          <em>None</em>
+                        </MenuItem>
+                        {categories.map((category) => (
+                          <MenuItem key={category.id} value={category.id}>
+                            {category.name}
+                            {autoFilledFields.has('categoryId') && category.id === formData.categoryId && (
+                              <Chip size="small" label="Auto" icon={<CheckIcon />} color="primary" sx={{ ml: 1 }} />
+                            )}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  )}
+                </Grid>
+
+                {/* Unit - Read-only if SKU selected */}
+                <Grid item xs={12}>
+                  {selectedSku ? (
+                    <TextField
+                      fullWidth
+                      label="Unit"
+                      value={formData.unit || ''}
+                      required
+                      disabled
+                      InputProps={{
+                        startAdornment: (
+                          <LockIcon sx={{ mr: 1, color: 'primary.main', opacity: 0.6 }} fontSize="small" />
+                        ),
+                      }}
+                      helperText="🔒 Locked from SKU Reference"
+                      sx={{
+                        '& .MuiInputBase-root': {
+                          bgcolor: 'rgba(103, 58, 183, 0.04)',
+                          borderRadius: 2,
+                          '& fieldset': { borderColor: 'rgba(103, 58, 183, 0.2)' }
+                        },
+                        '& .Mui-disabled': {
+                          color: 'text.primary',
+                          WebkitTextFillColor: 'text.primary'
+                        }
+                      }}
+                    />
+                  ) : (
+                    <FormControl fullWidth required>
+                      <InputLabel>Unit</InputLabel>
+                      <Select value={formData.unit} label="Unit" onChange={handleChange('unit')}>
+                        {units.map((unit) => (
+                          <MenuItem key={unit.id} value={unit.symbol}>
+                            {unit.name} ({unit.symbol})
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  )}
+                </Grid>
+
+                {/* Cost Per Unit - Read-only if SKU selected */}
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    required
+                    type="number"
+                    label="Cost Per Unit"
+                    value={formData.costPerUnit}
+                    onChange={handleChange('costPerUnit')}
+                    disabled={selectedSku !== null}
+                    inputProps={{ min: 0, step: 0.01 }}
+                    InputProps={{
+                      startAdornment: selectedSku ? (
+                        <LockIcon sx={{ mr: 1, color: 'primary.main', opacity: 0.6 }} fontSize="small" />
+                      ) : null,
+                    }}
+                    helperText={selectedSku ? '🔒 Locked from SKU Reference' : 'Price per unit'}
+                    sx={selectedSku ? {
+                      '& .MuiInputBase-root': {
+                        bgcolor: 'rgba(103, 58, 183, 0.04)',
+                        borderRadius: 2,
+                        '& fieldset': { borderColor: 'rgba(103, 58, 183, 0.2)' }
+                      },
+                      '& .Mui-disabled': {
+                        color: 'text.primary',
+                        WebkitTextFillColor: 'text.primary'
+                      }
+                    } : {}}
+                  />
+                </Grid>
+
+                {/* Reorder Level - Read-only if SKU selected */}
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Reorder Level"
+                    value={formData.reorderLevel}
+                    onChange={handleChange('reorderLevel')}
+                    disabled={selectedSku !== null}
+                    inputProps={{ min: 0, step: 0.01 }}
+                    InputProps={{
+                      startAdornment: selectedSku ? (
+                        <LockIcon sx={{ mr: 1, color: 'primary.main', opacity: 0.6 }} fontSize="small" />
+                      ) : null,
+                    }}
+                    helperText={selectedSku ? '🔒 Locked from SKU Reference' : 'Minimum stock level to trigger alert'}
+                    sx={selectedSku ? {
+                      '& .MuiInputBase-root': {
+                        bgcolor: 'rgba(103, 58, 183, 0.04)',
+                        borderRadius: 2,
+                        '& fieldset': { borderColor: 'rgba(103, 58, 183, 0.2)' }
+                      },
+                      '& .Mui-disabled': {
+                        color: 'text.primary',
+                        WebkitTextFillColor: 'text.primary'
+                      }
+                    } : {}}
+                  />
+                </Grid>
+              </Grid>
+            </Box>
+
+            {/* RIGHT PANEL: Purchase-Specific Data (Always Editable) */}
+            <Box sx={{
+              flex: 1,
+              p: { xs: 2, sm: 3 },
+              borderRadius: { xs: 2, sm: 3 },
+              border: '2px solid',
+              borderColor: 'success.light',
+              background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.02) 0%, rgba(139, 195, 74, 0.02) 100%)',
+              boxShadow: '0 4px 12px rgba(76, 175, 80, 0.06)'
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: { xs: 1.5, sm: 2 } }}>
+                <CheckIcon color="success" fontSize="small" />
+                <Typography variant="h6" sx={{ fontSize: { xs: '0.95rem', sm: '1rem' }, fontWeight: 600 }}>
+                  Purchase Details ✅
+                </Typography>
+              </Box>
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: { xs: 1.5, sm: 2 }, fontSize: { xs: '0.75rem', sm: '0.8125rem' } }}>
+                These fields are always editable - enter purchase-specific information
+              </Typography>
+
+              <Grid container spacing={{ xs: 1.5, sm: 2 }}>
+                {/* Supplier */}
+                <Grid item xs={12}>
+                  <FormControl fullWidth required>
+                    <InputLabel>Supplier</InputLabel>
+                    <Select
+                      value={formData.supplierId}
+                      label="Supplier"
+                      onChange={handleSupplierChange}
+                    >
+                      {suppliers.map((supplier) => (
+                        <MenuItem key={supplier.id} value={supplier.id}>
+                          {supplier.name}
+                          {autoFilledFields.has('supplierId') && supplier.id === formData.supplierId && (
+                            <Chip size="small" label="Default" icon={<CheckIcon />} color="primary" sx={{ ml: 1 }} />
+                          )}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                {/* Quantity */}
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    required
+                    type="number"
+                    label="Quantity"
+                    value={formData.quantity}
+                    onChange={handleChange('quantity')}
+                    inputProps={{ min: 0, step: 0.01 }}
+                  />
+                </Grid>
+
+                {/* Purchase Date */}
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    required
+                    type="date"
+                    label="Purchase Date"
+                    value={formData.purchaseDate}
+                    onChange={handleChange('purchaseDate')}
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+
+                {/* Expiration Date */}
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    required
+                    type="date"
+                    label="Expiration Date"
+                    value={formData.expirationDate}
+                    onChange={handleExpirationDateChange}
+                    InputLabelProps={{ shrink: true }}
+                    helperText={
+                      autoFilledFields.has('expirationDate')
+                        ? '\u2728 Auto-set to 30 days from now'
+                        : 'Used to generate batch number'
+                    }
+                    InputProps={{
+                      endAdornment: autoFilledFields.has('expirationDate') ? (
+                        <Chip size="small" label="Auto" icon={<CheckIcon />} color="success" />
+                      ) : null,
+                    }}
+                  />
+                </Grid>
+
+                {/* Batch Number */}
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    required
+                    label="Batch Number"
+                    value={formData.batchNumber}
+                    onChange={handleChange('batchNumber')}
+                    helperText={
+                      autoFilledFields.has('batchNumber')
+                        ? '\u2728 Auto-generated from expiration date'
+                        : 'Format: SUPPLIER-YYYYMMDD-SEQ'
+                    }
+                    InputProps={{
+                      endAdornment: autoFilledFields.has('batchNumber') ? (
+                        <Chip size="small" label="Auto" icon={<CheckIcon />} color="success" />
+                      ) : null,
+                    }}
+                  />
+                </Grid>
+
+                {/* Storage Location */}
+                <Grid item xs={12}>
+                  <FormControl fullWidth required>
+                    <InputLabel>Storage Location</InputLabel>
+                    <Select
+                      value={formData.storageLocationId}
+                      label="Storage Location"
+                      onChange={handleChange('storageLocationId')}
+                    >
+                      {storageLocations.map((location) => (
+                        <MenuItem key={location.id} value={location.id}>
+                          {location.name}
+                          {autoFilledFields.has('storageLocationId') && location.id === formData.storageLocationId && (
+                            <Chip size="small" label="Default" icon={<CheckIcon />} color="success" sx={{ ml: 1 }} />
+                          )}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                {/* Quality Status */}
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <InputLabel>Quality Status</InputLabel>
+                    <Select
+                      value={formData.qualityStatusId}
+                      label="Quality Status"
+                      onChange={handleChange('qualityStatusId')}
+                    >
+                      <MenuItem value="">
+                        <em>None</em>
+                      </MenuItem>
+                      {qualityStatuses.map((status) => (
+                        <MenuItem key={status.id} value={status.id}>
+                          <Box display="flex" alignItems="center" gap={1}>
+                            <Box
+                              sx={{
+                                width: 12,
+                                height: 12,
+                                borderRadius: '50%',
+                                backgroundColor: status.color,
+                              }}
+                            />
+                            {status.name}
+                            {autoFilledFields.has('qualityStatusId') && status.id === formData.qualityStatusId && (
+                              <Chip size="small" label="Default" icon={<CheckIcon />} color="success" sx={{ ml: 1 }} />
+                            )}
+                          </Box>
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+              </Grid>
+            </Box>
+          </Box>
         </DialogContent>
       </form>
     </Dialog>
