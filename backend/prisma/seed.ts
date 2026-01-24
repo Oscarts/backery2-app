@@ -880,6 +880,47 @@ async function main() {
 
   console.log(`✅ Created ${finishedProducts.length} finished products`);
 
+  // Create SKU mappings from raw materials and finished products
+  console.log('\n📦 Creating SKU mappings...');
+  const skuMappingsToCreate = [];
+
+  // Add raw materials to SKU mappings
+  for (const material of rawMaterials) {
+    skuMappingsToCreate.push({
+      name: material.name,
+      sku: material.sku || material.name.toUpperCase().replace(/[^A-Z0-9\s]/g, '').replace(/\s+/g, '-'),
+      description: material.description,
+      categoryId: material.categoryId,
+      storageLocationId: material.storageLocationId,
+      unitPrice: material.unitPrice,
+      unit: material.unit,
+      reorderLevel: material.reorderLevel,
+      clientId: client.id,
+    });
+  }
+
+  // Add finished products to SKU mappings
+  for (const product of finishedProducts) {
+    skuMappingsToCreate.push({
+      name: product.name,
+      sku: product.sku || product.name.toUpperCase().replace(/[^A-Z0-9\s]/g, '').replace(/\s+/g, '-'),
+      description: product.description,
+      categoryId: product.categoryId,
+      storageLocationId: product.storageLocationId,
+      unitPrice: product.salePrice,
+      unit: product.unit,
+      reorderLevel: undefined,
+      clientId: client.id,
+    });
+  }
+
+  // Create all SKU mappings
+  const createdSkuMappings = await Promise.all(
+    skuMappingsToCreate.map((mapping) => prisma.skuMapping.create({ data: mapping }))
+  );
+
+  console.log(`✅ Created ${createdSkuMappings.length} SKU mappings`);
+
   // Verify created users
   await verifySeededUsers();
 
@@ -898,6 +939,7 @@ async function main() {
   console.log(`   • ${recipes.length} Recipes`);
   console.log(`   • ${rawMaterials.length} Raw Materials`);
   console.log(`   • ${finishedProducts.length} Finished Products`);
+  console.log(`   • ${rawMaterials.length + finishedProducts.length} SKU Mappings`);
   console.log('   • 5 Role Templates (Super Admin + 4 Bakery roles)');
   console.log('\n🔐 Login Credentials:');
   console.log('   Platform Admin:');

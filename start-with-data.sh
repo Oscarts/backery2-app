@@ -3,7 +3,7 @@
 # Safe mode: exit on error but don't print every command (reduces noise)
 set -e
 
-echo "🚀 Starting Bakery App with Complete Data Setup..."
+echo "🚀 Starting Bakery App (Preserving Existing Data)..."
 
 # Function to check if command exists
 command_exists() {
@@ -21,8 +21,8 @@ if ! command_exists npm; then
     exit 1
 fi
 
-# Install dependencies
-echo "📦 Installing dependencies..."
+# Install root dependencies
+echo "📦 Installing root dependencies..."
 npm install
 
 # Setup backend environment
@@ -35,13 +35,14 @@ npm install
 # Setup environment if it doesn't exist
 if [ ! -f .env ]; then
     echo "🔧 Creating backend .env file..."
-    echo "DATABASE_URL=\"postgresql://postgres:postgres@localhost:5432/bakery_db\"" > .env
-    echo "JWT_SECRET=\"your-secret-key\"" >> .env
+    echo "DATABASE_URL=\"postgresql://oscar@localhost:5432/bakery_inventory\"" > .env
+    echo "JWT_SECRET=\"your-secret-key-min-32-chars-long-12345\"" >> .env
     echo "PORT=8000" >> .env
+    echo "NODE_ENV=development" >> .env
 fi
 
 # Database operations
-echo "🗃️ Setting up database..."
+echo "🗃️ Checking database connection..."
 
 # Check if PostgreSQL is running
 if command_exists pg_isready; then
@@ -52,43 +53,37 @@ if command_exists pg_isready; then
 else
     echo "⚠️ pg_isready command not found. Checking with psql..."
     if ! psql "postgresql://oscar@localhost:5432/bakery_inventory" -c "\q" 2>/dev/null; then
-        echo "❌ Cannot connect to database. Please ensure PostgreSQL is running and database exists."
+        echo "❌ Cannot connect to database. Please ensure PostgreSQL is running."
         exit 1
     fi
 fi
 
-# Generate Prisma client
+# Generate Prisma client (required after schema changes)
 echo "🔄 Generating Prisma client..."
 npx prisma generate
 
-# Run database migrations
-echo "🔄 Running database migrations..."
+# Run database migrations (non-destructive - only applies new migrations)
+echo "🔄 Applying pending migrations (preserves existing data)..."
 npx prisma migrate deploy
 
-# Fix Prisma seed configuration
-echo "🛠️ Setting up seed configuration..."
-if ! grep -q "prisma" package.json || ! grep -q "seed" package.json; then
-    # Add prisma.seed to package.json if not present
-    TMP_FILE=$(mktemp)
-    jq '.prisma = {"seed": "tsx prisma/seed.ts"}' package.json > "$TMP_FILE" && mv "$TMP_FILE" package.json
-fi
+# Check if database needs initial seeding
+echo "🔍 Checking database state..."
+CLIENT_COUNT=$(psql "postgresql://oscar@localhost:5432/bakery_inventory" -t -c "SELECT COUNT(*) FROM client;" 2>/dev/null | tr -d ' ' || echo "0")
 
-# Check if database is already seeded (simplified check)
-echo "🔍 Checking if database is already seeded..."
-if command_exists psql; then
-    CATEGORY_COUNT=$(psql "postgresql://oscar@localhost:5432/bakery_inventory" -t -c "SELECT COUNT(*) FROM category;" 2>/dev/null || echo 0)
-    CATEGORY_COUNT=$(echo "$CATEGORY_COUNT" | tr -d ' ')
-else
-    echo "⚠️ psql not available, will attempt to seed..."
-    CATEGORY_COUNT=0
-fi
-
-if [ "$CATEGORY_COUNT" -gt "0" ]; then
-  echo "✅ Database already contains data. Skipping seed."
-else
-  # Seed the database
-  echo "🌱 Seeding the database..."
+if [ "$CLIENT_COUNT" = "0" ]; then
+  echo "📊 Database is empty. Running initial seed..."
   npx prisma db seed
+else
+  echo "✅ Database contains data ($CLIENT_COUNT clients). Preserving existing data."
+  echo "💡 To reset database, use: ./reset-and-start.sh"
+fi
+
+if [ "$CLIENT_COUNT" = "0" ]; then
+  echo "📊 Database is empty. Running initial seed..."
+  npx prisma db seed
+else
+  echo "✅ Database contains data ($CLIENT_COUNT clients). Preserving existing data."
+  echo "💡 To reset database, use: ./reset-and-start.sh"
 fi
 
 # Go back to root directory
@@ -111,9 +106,12 @@ fi
 cd ..
 
 # Start development servers
+echo ""
 echo "🚀 Starting development servers..."
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "✨ Backend: http://localhost:8000"
+echo "✨ Frontend: http://localhost:3002"
+echo "✨ Health: http://localhost:8000/health"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
 npm run dev
-
-echo "✅ Setup complete! The app should be running at:"
-echo "Frontend: http://localhost:3002"
-echo "Backend: http://localhost:8000"
