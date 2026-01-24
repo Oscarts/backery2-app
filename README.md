@@ -11,6 +11,26 @@ A comprehensive, full-stack inventory management solution designed specifically 
 ### Current Status
 - ✅ Test infrastructure fixed - **203/209 tests passing (97%)**
 - ✅ E2E test plan documented in [docs/E2E_TEST_PLAN.md](docs/E2E_TEST_PLAN.md)
+- ✅ SKU Reference UX improvements completed (Jan 24, 2026)
+
+### Recent Improvements (Jan 24, 2026)
+
+**Raw Materials Management:**
+- ✅ Removed spinner arrows from quantity field with smart numeric validation
+- ✅ Simplified verbose alert messages for better UX
+- ✅ Fixed category autofill from SKU reference selection
+- ✅ Fixed critical bug: SKU reference data now properly fills all fields
+- ✅ Implemented proper field locking in edit mode (SKU fields locked when linked)
+- ✅ Added skuReferenceId persistence to database
+- ✅ Removed redundant "SKU Ref" column from table view
+- ✅ Softened Stock Level chip colors (outlined variant)
+- ✅ Enforced SKU reference requirement workflow (safer creation process)
+
+**SKU Reference Management:**
+- ✅ Auto-open create dialog when navigating from raw materials
+- ✅ Fixed dialog not closing after create/update operations
+- ✅ Removed spinner arrows from Unit Price and Reorder Level fields
+- ✅ Added numeric validation preventing negative values and non-numeric input
 
 ### Remaining Work
 1. **Fix 6 failing tests** (business logic issues, not infrastructure):
