@@ -188,8 +188,9 @@ const SkuReferencePage: React.FC = () => {
     },
   });
 
-  // Handle navigation state to auto-open edit dialog
+  // Handle navigation state to auto-open edit or create dialog
   useEffect(() => {
+    // Auto-open edit dialog
     if (location.state?.openEditDialog && location.state?.skuId && skuReferences.length > 0) {
       const skuToEdit = skuReferences.find((sku) => sku.id === location.state.skuId);
       if (skuToEdit) {
@@ -197,6 +198,13 @@ const SkuReferencePage: React.FC = () => {
         // Clear the state to prevent reopening on subsequent renders
         window.history.replaceState({}, document.title);
       }
+    }
+
+    // Auto-open create dialog
+    if (location.state?.openCreateDialog) {
+      handleOpenDialog(undefined);
+      // Clear the state to prevent reopening on subsequent renders
+      window.history.replaceState({}, document.title);
     }
   }, [location.state, skuReferences]);
 
