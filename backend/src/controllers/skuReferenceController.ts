@@ -76,13 +76,13 @@ async function generateSkuWithSequence(
  * Legacy simple SKU generation (fallback)
  * Used when category-based generation is not possible
  */
-  function generateSimpleSku(name: string): string {
-    return name
-      .toUpperCase()
-      .replace(/[^A-Z0-9\s]/g, '')
-      .replace(/\s+/g, '-')
-      .substring(0, 50);
-  }
+function generateSimpleSku(name: string): string {
+  return name
+    .toUpperCase()
+    .replace(/[^A-Z0-9\s]/g, '')
+    .replace(/\s+/g, '-')
+    .substring(0, 50);
+}
 
 export const skuReferenceController = {
   /**
