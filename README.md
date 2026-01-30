@@ -39,6 +39,15 @@ A comprehensive, full-stack inventory management solution designed specifically 
 - ✅ Removed spinner arrows from Unit Price and Reorder Level fields
 - ✅ Added numeric validation preventing negative values and non-numeric input
 
+**Hierarchical SKU System (Jan 30, 2026):**
+- ✅ Implemented industry-standard hierarchical SKU format for all new raw materials and finished products
+- ✅ Format: FP-CAT-PROD-SEQ (e.g., FP-CAK-EMPA-001), RM-CAT-PROD-SEQ (e.g., RM-CAK-TEST-001)
+- ✅ Auto-incremented sequence numbers per category for uniqueness
+- ✅ Manual SKU reference creation and production runs now use hierarchical SKUs
+- ✅ Backward compatible: legacy SKUs remain valid, new items use hierarchical format
+- ✅ Comprehensive tests for SKU format, prefix, category code, and sequence
+- ✅ Benefits: clear type identification, category organization, scalable, professional, and traceable
+
 ### Remaining Work
 1. **Fix 6 failing tests** (business logic issues, not infrastructure):
    - `client-creation.test.ts` - category name expectations
