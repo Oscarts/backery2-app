@@ -488,9 +488,9 @@ const Recipes: React.FC = () => {
 
   const addIngredient = () => {
     // Support both SKU-based (new) and item-based (legacy) selection
-    const hasValidIngredient = (ingredientForm.type === 'SKU' && ingredientForm.skuMappingId) || 
-                                (ingredientForm.type !== 'SKU' && ingredientForm.itemId);
-    
+    const hasValidIngredient = (ingredientForm.type === 'SKU' && ingredientForm.skuMappingId) ||
+      (ingredientForm.type !== 'SKU' && ingredientForm.itemId);
+
     if (hasValidIngredient && ingredientForm.quantity > 0) {
       // Create clean ingredient object with only backend-required fields
       const newIngredient: any = {
@@ -553,7 +553,7 @@ const Recipes: React.FC = () => {
       }
       return 'SKU Ingredient (loading...)';
     }
-    
+
     // Fallback to legacy format
     if (ingredient.rawMaterialId) {
       const rawMaterial = rawMaterials.find(rm => rm.id === ingredient.rawMaterialId);
@@ -1486,7 +1486,7 @@ const Recipes: React.FC = () => {
                   <Grid item xs={12} sm={6}>
                     <Autocomplete
                       options={skuMappings}
-                      getOptionLabel={(option) => 
+                      getOptionLabel={(option) =>
                         `${option.sku} - ${option.name} (${option.unit || 'unit'})`
                       }
                       renderOption={(props, option) => (
@@ -1513,9 +1513,9 @@ const Recipes: React.FC = () => {
                         });
                       }}
                       renderInput={(params) => (
-                        <TextField 
-                          {...params} 
-                          label="Select Ingredient (by SKU or Name)" 
+                        <TextField
+                          {...params}
+                          label="Select Ingredient (by SKU or Name)"
                           placeholder="Search SKU or name..."
                         />
                       )}

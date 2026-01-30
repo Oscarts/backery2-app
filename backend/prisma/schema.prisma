@@ -209,11 +209,18 @@ model Unit {
   @@map("units")
 }
 
+// SKU types for business logic enforcement
+enum SkuItemType {
+  RAW_MATERIAL
+  FINISHED_PRODUCT
+}
+
 model SkuMapping {
   id                String            @id @default(cuid())
   name              String            // Product/material name (unique per client)
   sku               String            // Auto-generated or manually set SKU
   description       String?
+  itemType          SkuItemType       @default(RAW_MATERIAL) // Enforce: RAW_MATERIAL or FINISHED_PRODUCT only
   
   // Master template fields
   unitPrice         Float?            @map("unit_price") // Default price per unit

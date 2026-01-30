@@ -65,11 +65,17 @@ export interface Unit {
 }
 
 // SKU Reference types
+export enum SkuItemType {
+  RAW_MATERIAL = 'RAW_MATERIAL',
+  FINISHED_PRODUCT = 'FINISHED_PRODUCT'
+}
+
 export interface SkuReference {
   id: string;
   name: string;
   sku: string;
   description?: string;
+  itemType: SkuItemType;
   unitPrice?: number;
   unit?: string;
   reorderLevel?: number;
@@ -92,6 +98,7 @@ export interface CreateSkuReferenceData {
   name: string;
   sku?: string;
   description?: string;
+  itemType: SkuItemType;
   unitPrice?: number;
   unit?: string;
   reorderLevel?: number;

@@ -58,7 +58,7 @@ import {
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { skuReferencesApi, categoriesApi, storageLocationsApi, unitsApi } from '../services/realApi';
-import { SkuReference, CreateSkuReferenceData } from '../types';
+import { SkuReference, CreateSkuReferenceData, SkuItemType } from '../types';
 import { borderRadius } from '../theme/designTokens';
 import { getErrorMessage } from '../utils/api';
 
@@ -96,6 +96,7 @@ const SkuReferencePage: React.FC = () => {
     name: '',
     sku: '',
     description: '',
+    itemType: SkuItemType.RAW_MATERIAL,
     unit: '',
     unitPrice: undefined,
     reorderLevel: undefined,
@@ -246,6 +247,7 @@ const SkuReferencePage: React.FC = () => {
         name: item.name || '',
         sku: item.sku || '',
         description: item.description || '',
+        itemType: item.itemType,
         unit: item.unit || '',
         unitPrice: item.unitPrice,
         reorderLevel: item.reorderLevel,
@@ -258,6 +260,7 @@ const SkuReferencePage: React.FC = () => {
         name: '',
         sku: '',
         description: '',
+        itemType: SkuItemType.RAW_MATERIAL,
         unit: '',
         unitPrice: undefined,
         reorderLevel: undefined,
@@ -279,6 +282,7 @@ const SkuReferencePage: React.FC = () => {
       name: '',
       sku: '',
       description: '',
+      itemType: SkuItemType.RAW_MATERIAL,
       unit: '',
       unitPrice: undefined,
       reorderLevel: undefined,
@@ -782,7 +786,8 @@ const SkuReferencePage: React.FC = () => {
                 <TableRow>
                   <TableCell width="20%">Name</TableCell>
                   <TableCell width="15%">SKU</TableCell>
-                  {!isMobile && <TableCell width="20%">Description</TableCell>}
+                  <TableCell width="12%">Type</TableCell>
+                  {!isMobile && <TableCell width="18%">Description</TableCell>}
                   {!isMobile && <TableCell width="10%">Unit</TableCell>}
                   {!isMobile && <TableCell width="10%" align="center">Price</TableCell>}
                   {!isMobile && <TableCell width="10%">Category</TableCell>}
@@ -818,6 +823,15 @@ const SkuReferencePage: React.FC = () => {
                           variant="outlined"
                           size="small"
                           color="primary"
+                        />
+                      </TableCell>
+
+                      <TableCell>
+                        <Chip
+                          label={item.itemType === SkuItemType.RAW_MATERIAL ? 'Raw Material' : 'Finished Product'}
+                          variant="outlined"
+                          size="small"
+                          color={item.itemType === SkuItemType.RAW_MATERIAL ? 'warning' : 'secondary'}
                         />
                       </TableCell>
 
@@ -991,6 +1005,18 @@ const SkuReferencePage: React.FC = () => {
 
                         <Grid item xs={6}>
                           <Typography variant="subtitle2" color="text.secondary">
+                            Type
+                          </Typography>
+                          <Chip
+                            label={item.itemType === SkuItemType.RAW_MATERIAL ? 'Raw Material' : 'Finished Product'}
+                            variant="outlined"
+                            size="small"
+                            color={item.itemType === SkuItemType.RAW_MATERIAL ? 'warning' : 'secondary'}
+                          />
+                        </Grid>
+
+                        <Grid item xs={6}>
+                          <Typography variant="subtitle2" color="text.secondary">
                             Category
                           </Typography>
                           <Typography variant="body2">
@@ -1106,7 +1132,7 @@ const SkuReferencePage: React.FC = () => {
 
           <Grid container spacing={2} sx={{ mt: 1 }}>
             {/* Name - First field */}
-            <Grid item xs={12}>
+            <Grid item xs={12} sm={8}>
               <TextField
                 fullWidth
                 label="Name *"
@@ -1114,6 +1140,21 @@ const SkuReferencePage: React.FC = () => {
                 onChange={(e) => handleNameChange(e.target.value)}
                 placeholder="Enter product name"
               />
+            </Grid>
+
+            {/* Item Type - Second field */}
+            <Grid item xs={12} sm={4}>
+              <FormControl fullWidth>
+                <InputLabel>Item Type *</InputLabel>
+                <Select
+                  value={formData.itemType}
+                  onChange={(e) => setFormData(prev => ({ ...prev, itemType: e.target.value as SkuItemType }))}
+                  label="Item Type *"
+                >
+                  <MenuItem value={SkuItemType.RAW_MATERIAL}>Raw Material</MenuItem>
+                  <MenuItem value={SkuItemType.FINISHED_PRODUCT}>Finished Product</MenuItem>
+                </Select>
+              </FormControl>
             </Grid>
 
             {/* Category - Second field (used for SKU generation) */}

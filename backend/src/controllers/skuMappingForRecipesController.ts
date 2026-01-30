@@ -62,7 +62,7 @@ export const getSkuMappingsForRecipes = async (req: Request, res: Response, next
             const finishedPrices = sku.finishedProducts
                 .map(fp => fp.costToProduce)
                 .filter((p): p is number => p !== null && p !== undefined && p > 0);
-            
+
             const allPrices = [...rawPrices, ...finishedPrices];
             const avgPrice = allPrices.length > 0
                 ? allPrices.reduce((a, b) => a + b, 0) / allPrices.length

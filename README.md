@@ -13,7 +13,14 @@ A comprehensive, full-stack inventory management solution designed specifically 
 - ✅ E2E test plan documented in [docs/E2E_TEST_PLAN.md](docs/E2E_TEST_PLAN.md)
 - ✅ SKU Reference UX improvements completed (Jan 24, 2026)
 
-### Recent Improvements (Jan 24, 2026)
+### Recent Improvements (Jan 24-30, 2026)
+
+**Recipe Management - SKU-Based Ingredients (Jan 30, 2026):**
+- ✅ **NEW: SKU-Based Ingredient Selection** - Unified ingredient picker eliminates duplicate entries
+- ✅ Autocomplete interface replacing Type+Item dropdowns for cleaner UX  
+- ✅ Backward compatibility with existing raw materials and finished products
+- ✅ Real-time availability and pricing aggregation across all SKU items
+- ✅ Professional QA completed - all TypeScript compilation errors fixed
 
 **Raw Materials Management:**
 - ✅ Removed spinner arrows from quantity field with smart numeric validation
@@ -57,7 +64,8 @@ A comprehensive, full-stack inventory management solution designed specifically 
 - �🏭 **Production Workflow Engine** - Real-time production run tracking with customizable steps
 - 📊 **Business Analytics** - Real-time dashboard with inventory metrics and production insights
 - 🔍 **Quality Management** - Comprehensive quality tracking and contamination monitoring
-- 📝 **Recipe Management** - Advanced cost calculation with overhead, SKU system, and "What Can I Make?" functionality
+- 📝 **Recipe Management** - Advanced cost calculation with overhead, SKU-based ingredient selection, and "What Can I Make?" functionality
+- 🧬 **SKU-Based Ingredients** - Unified ingredient selection eliminating duplicate entries for cleaner recipe management
 - 🔐 **User Authentication** - JWT-based security with role-based access control
 - 🎉 **Interactive UI** - Material-UI design with celebration animations and responsive layout
 
@@ -121,6 +129,8 @@ npm run dev
 
 - **[Customer Orders Quick Start](./CUSTOMER_ORDERS_QUICK_START.md)** - Order management system
 - **[Customer Orders Testing Guide](./CUSTOMER_ORDERS_TESTING_GUIDE.md)** - Testing procedures
+- **[Recipe SKU Implementation](./RECIPE_SKU_IMPLEMENTATION_SUMMARY.md)** - SKU-based ingredient selection system
+- **[Recipe SKU Feature Complete](./RECIPE_SKU_FEATURE_COMPLETE.md)** - Testing and deployment guide
 - **[Role Templates Quick Start](./ROLE_TEMPLATES_QUICK_START.md)** - Permission system
 - **[Unit Management System](./UNIT_MANAGEMENT_SYSTEM.md)** - Unit conversion and management
 - **[Dynamic Step Management](./DYNAMIC_STEP_MANAGEMENT.md)** - Production workflow customization
@@ -169,7 +179,10 @@ npm run dev
   - Inline Materials tab with real-time cost & traceability summary
   - Refresh button to re-fetch material/cost breakdown
   - In-production warning prompting completion before trusting costs
-- Recipe management
+- Recipe management with SKU-based ingredient selection
+  - Unified ingredient picker eliminates duplicate SKU entries
+  - Backward compatible with existing raw/finished product references
+  - Advanced cost calculation with real-time pricing
 - Quality status monitoring
 - Storage location management
 - Supplier management
