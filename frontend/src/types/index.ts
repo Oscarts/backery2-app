@@ -471,7 +471,7 @@ export interface SkuMappingForRecipe {
   createdAt: string;
   updatedAt: string;
 }
-  notes?: string;
+notes ?: string;
 }
 
 // Production types

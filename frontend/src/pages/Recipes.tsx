@@ -40,7 +40,8 @@ import {
   CardHeader,
   Divider,
   Avatar,
-  Tooltip
+  Tooltip,
+  Autocomplete
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -62,7 +63,8 @@ import {
   WhatCanIMakeAnalysis,
   Unit,
   RecipeIngredientType,
-  IngredientCost
+  IngredientCost,
+  SkuMappingForRecipe
 } from '../types';
 import {
   recipesApi,
@@ -140,15 +142,14 @@ const Recipes: React.FC = () => {
     imageUrl: ''
   });
   const [ingredientForm, setIngredientForm] = useState({
-    type: 'RAW' as RecipeIngredientType,
+    type: 'SKU' as RecipeIngredientType,
+    skuMappingId: '',
     itemId: '',
     quantity: 0,
     unit: '',
     notes: ''
   });
   const [instructionText, setInstructionText] = useState('');
-  // Ingredient selection search (by name or SKU)
-  const [ingredientSearchTerm, setIngredientSearchTerm] = useState('');
 
   // Fetch data
   const { data: recipesResponse, isLoading: recipesLoading, refetch: refetchRecipes } = useQuery({
@@ -175,6 +176,11 @@ const Recipes: React.FC = () => {
   const { data: unitsResponse } = useQuery({
     queryKey: ['units'],
     queryFn: () => unitsApi.getAll()
+  });
+
+  const { data: skuMappingsResponse } = useQuery({
+    queryKey: ['sku-mappings-for-recipes'],
+    queryFn: () => recipesApi.getSkuMappingsForRecipes()
   });
 
   const { data: whatCanIMakeResponse } = useQuery({
@@ -284,6 +290,7 @@ const Recipes: React.FC = () => {
   const rawMaterials: RawMaterial[] = rawMaterialsResponse?.data || [];
   const finishedProducts = finishedProductsResponse?.data || [];
   const units: Unit[] = unitsResponse?.data || [];
+  const skuMappings: SkuMappingForRecipe[] = skuMappingsResponse?.data || [];
 
   // Handle special case responses
   const whatCanIMake = whatCanIMakeResponse?.data || {
@@ -334,14 +341,27 @@ const Recipes: React.FC = () => {
         prepTime: recipe.prepTime || 0,
         cookTime: recipe.cookTime || 0,
         instructions: instructions,
-        ingredients: recipe.ingredients?.map(ing => ({
-          rawMaterialId: ing.rawMaterialId || undefined,
-          finishedProductId: (ing as any).finishedProductId || undefined,
-          ingredientType: ing.rawMaterialId ? 'RAW' : 'FINISHED',
-          quantity: ing.quantity,
-          unit: ing.unit,
-          notes: ing.notes
-        })) || [],
+        ingredients: recipe.ingredients?.map(ing => {
+          // Support both new SKU-based and legacy formats
+          if (ing.skuMappingId) {
+            return {
+              skuMappingId: ing.skuMappingId,
+              ingredientType: 'SKU' as RecipeIngredientType,
+              quantity: ing.quantity,
+              unit: ing.unit,
+              notes: ing.notes
+            };
+          } else {
+            return {
+              rawMaterialId: ing.rawMaterialId || undefined,
+              finishedProductId: (ing as any).finishedProductId || undefined,
+              ingredientType: ing.rawMaterialId ? 'RAW' as RecipeIngredientType : 'FINISHED' as RecipeIngredientType,
+              quantity: ing.quantity,
+              unit: ing.unit,
+              notes: ing.notes
+            };
+          }
+        }) || [],
         isActive: recipe.isActive,
         imageUrl: recipe.imageUrl || ''
       });
@@ -369,7 +389,8 @@ const Recipes: React.FC = () => {
     setEditingRecipe(null);
     setInstructionText('');
     setIngredientForm({
-      type: 'RAW',
+      type: 'SKU',
+      skuMappingId: '',
       itemId: '',
       quantity: 0,
       unit: '',
@@ -406,8 +427,10 @@ const Recipes: React.FC = () => {
           unit: ing.unit
         };
 
-        // Add the appropriate ID field based on what's present
-        if (ing.rawMaterialId) {
+        // Add the appropriate ID field based on what's present (prefer SKU mapping)
+        if (ing.skuMappingId) {
+          cleaned.skuMappingId = ing.skuMappingId;
+        } else if (ing.rawMaterialId) {
           cleaned.rawMaterialId = ing.rawMaterialId;
         } else if (ing.finishedProductId) {
           cleaned.finishedProductId = ing.finishedProductId;
@@ -464,7 +487,11 @@ const Recipes: React.FC = () => {
   };
 
   const addIngredient = () => {
-    if (ingredientForm.itemId && ingredientForm.quantity > 0) {
+    // Support both SKU-based (new) and item-based (legacy) selection
+    const hasValidIngredient = (ingredientForm.type === 'SKU' && ingredientForm.skuMappingId) || 
+                                (ingredientForm.type !== 'SKU' && ingredientForm.itemId);
+    
+    if (hasValidIngredient && ingredientForm.quantity > 0) {
       // Create clean ingredient object with only backend-required fields
       const newIngredient: any = {
         quantity: ingredientForm.quantity,
@@ -472,8 +499,11 @@ const Recipes: React.FC = () => {
         notes: ingredientForm.notes
       };
 
-      // Add the appropriate ID field
-      if (ingredientForm.type === 'RAW') {
+      // Add the appropriate ID field based on type
+      if (ingredientForm.type === 'SKU') {
+        newIngredient.skuMappingId = ingredientForm.skuMappingId;
+        console.log('🎯 ADDING SKU INGREDIENT - skuMappingId:', ingredientForm.skuMappingId);
+      } else if (ingredientForm.type === 'RAW') {
         newIngredient.rawMaterialId = ingredientForm.itemId;
         console.log('🔴 ADDING RAW MATERIAL - rawMaterialId:', ingredientForm.itemId);
       } else {
@@ -492,7 +522,8 @@ const Recipes: React.FC = () => {
         ingredients: [...(prev.ingredients || []), newIngredient]
       }));
       setIngredientForm({
-        type: 'RAW',
+        type: 'SKU',
+        skuMappingId: '',
         itemId: '',
         quantity: 0,
         unit: '',
@@ -514,6 +545,16 @@ const Recipes: React.FC = () => {
   };
 
   const getIngredientName = (ingredient: any) => {
+    // Prefer SKU mapping (new format)
+    if (ingredient.skuMappingId) {
+      const sku = skuMappings.find(s => s.id === ingredient.skuMappingId);
+      if (sku) {
+        return `${sku.sku} – ${sku.name}`;
+      }
+      return 'SKU Ingredient (loading...)';
+    }
+    
+    // Fallback to legacy format
     if (ingredient.rawMaterialId) {
       const rawMaterial = rawMaterials.find(rm => rm.id === ingredient.rawMaterialId);
       if (!rawMaterial) return 'Unknown Raw Material';
@@ -1441,77 +1482,52 @@ const Recipes: React.FC = () => {
                 <Typography variant="subtitle2" sx={{ mb: 1 }}>
                   Add New Ingredient
                 </Typography>
-                {/* Filter field for ingredients by name or SKU */}
-                <Grid container spacing={2} sx={{ mb: 1 }}>
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Filter Items (name or SKU)"
-                      value={ingredientSearchTerm}
-                      onChange={(e) => setIngredientSearchTerm(e.target.value)}
-                      placeholder="Type to filter by name or SKU"
+                <Grid container spacing={2} sx={{ mb: 2 }}>
+                  <Grid item xs={12} sm={6}>
+                    <Autocomplete
+                      options={skuMappings}
+                      getOptionLabel={(option) => 
+                        `${option.sku} - ${option.name} (${option.unit || 'unit'})`
+                      }
+                      renderOption={(props, option) => (
+                        <Box component="li" {...props} key={option.id}>
+                          <Box sx={{ flexGrow: 1 }}>
+                            <Typography variant="body2">
+                              <strong>{option.sku}</strong> - {option.name}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              Available: {option.availableQuantity.toFixed(2)} {option.unit}
+                              {option.estimatedPrice > 0 && ` • $${option.estimatedPrice.toFixed(2)}/${option.unit}`}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      )}
+                      value={skuMappings.find(s => s.id === ingredientForm.skuMappingId) || null}
+                      onChange={(_, value) => {
+                        setIngredientForm({
+                          ...ingredientForm,
+                          type: 'SKU',
+                          skuMappingId: value?.id || '',
+                          unit: value?.unit || '',
+                          quantity: 0
+                        });
+                      }}
+                      renderInput={(params) => (
+                        <TextField 
+                          {...params} 
+                          label="Select Ingredient (by SKU or Name)" 
+                          placeholder="Search SKU or name..."
+                        />
+                      )}
+                      filterOptions={(options, { inputValue }) => {
+                        const searchTerm = inputValue.toLowerCase();
+                        return options.filter(option =>
+                          option.name.toLowerCase().includes(searchTerm) ||
+                          option.sku.toLowerCase().includes(searchTerm)
+                        );
+                      }}
                       size="small"
                     />
-                  </Grid>
-                </Grid>
-                <Grid container spacing={2} sx={{ mb: 2 }}>
-                  <Grid item xs={12} sm={3}>
-                    <FormControl fullWidth>
-                      <InputLabel>Type</InputLabel>
-                      <Select
-                        value={ingredientForm.type}
-                        label="Type"
-                        onChange={(e) => {
-                          const nextType = e.target.value as RecipeIngredientType;
-                          setIngredientForm(prev => ({ ...prev, type: nextType, itemId: '', unit: '', quantity: 0 }));
-                        }}
-                      >
-                        <MenuItem value="RAW">Raw Material</MenuItem>
-                        <MenuItem value="FINISHED">Finished Product</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <FormControl fullWidth>
-                      <InputLabel>Item</InputLabel>
-                      <Select
-                        value={ingredientForm.itemId}
-                        label="Item"
-                        onChange={(e) => {
-                          const id = e.target.value;
-                          let unit = '';
-                          if (id) {
-                            if (ingredientForm.type === 'RAW') {
-                              const rm = rawMaterials.find(r => r.id === id);
-                              unit = rm?.unit || '';
-                            } else {
-                              const fp = finishedProducts.find((f: any) => f.id === id);
-                              unit = fp?.unit || '';
-                            }
-                          }
-                          setIngredientForm(prev => ({ ...prev, itemId: id, unit }));
-                        }}
-                        displayEmpty
-                      >
-                        <MenuItem value="">
-                          <em>Select item</em>
-                        </MenuItem>
-                        {(() => {
-                          const items = ingredientForm.type === 'RAW' ? rawMaterials : finishedProducts;
-                          const term = ingredientSearchTerm.trim().toLowerCase();
-                          const filtered = items.filter((item: any) => {
-                            if (!term) return true;
-                            const sku = (item.sku || (item as any).sku || '').toLowerCase();
-                            return item.name.toLowerCase().includes(term) || sku.includes(term);
-                          });
-                          return filtered.map((item: any) => (
-                            <MenuItem key={item.id} value={item.id}>
-                              {(item.sku || (item as any).sku) ? `${(item.sku || (item as any).sku)} – ${item.name} (${item.unit})` : `${item.name} (${item.unit})`}
-                            </MenuItem>
-                          ));
-                        })()}
-                      </Select>
-                    </FormControl>
                   </Grid>
                   <Grid item xs={6} sm={2}>
                     <TextField
@@ -1520,6 +1536,7 @@ const Recipes: React.FC = () => {
                       type="number"
                       value={ingredientForm.quantity}
                       onChange={(e) => setIngredientForm(prev => ({ ...prev, quantity: Number(e.target.value) }))}
+                      size="small"
                     />
                   </Grid>
                   <Grid item xs={6} sm={2}>
@@ -1532,15 +1549,24 @@ const Recipes: React.FC = () => {
                         style: { backgroundColor: '#f5f5f5', cursor: 'not-allowed' }
                       }}
                       disabled
-                      helperText={ingredientForm.itemId ? "Auto-filled from ingredient" : "Select an ingredient first"}
+                      helperText={ingredientForm.skuMappingId ? "Auto-filled from SKU" : "Select an ingredient first"}
                       sx={{
                         '& .MuiInputBase-input': {
                           cursor: 'not-allowed !important'
                         }
                       }}
+                      size="small"
                     />
                   </Grid>
-                  <Grid item xs={12} sm={6} md={8}>
+                  <Grid item xs={12} sm={2}>
+                    <TextField
+                      fullWidth
+                      label="Notes"
+                      value={ingredientForm.notes}
+                      onChange={(e) => setIngredientForm(prev => ({ ...prev, notes: e.target.value }))}
+                      size="small"
+                    />
+                  </Grid>
                     <TextField
                       fullWidth
                       label="Notes"
@@ -1553,7 +1579,7 @@ const Recipes: React.FC = () => {
                       onClick={addIngredient}
                       variant="outlined"
                       fullWidth
-                      disabled={!ingredientForm.itemId || ingredientForm.quantity <= 0}
+                      disabled={!ingredientForm.skuMappingId || ingredientForm.quantity <= 0}
                     >
                       Add
                     </Button>

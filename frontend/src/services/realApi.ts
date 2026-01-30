@@ -174,7 +174,7 @@ export const skuReferencesApi = {
     if (params?.search) queryParams.append('search', params.search);
     if (params?.categoryId) queryParams.append('categoryId', params.categoryId);
     if (params?.storageLocationId) queryParams.append('storageLocationId', params.storageLocationId);
-    
+
     const queryString = queryParams.toString();
     return apiCall<SkuReference[]>(`/sku-references${queryString ? `?${queryString}` : ''}`);
   },

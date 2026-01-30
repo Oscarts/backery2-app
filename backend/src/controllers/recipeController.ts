@@ -173,7 +173,7 @@ export const createRecipe = async (req: Request, res: Response) => {
         for (let i = 0; i < ingredients.length; i++) {
           const ing = ingredients[i];
           console.log(`📋 Ingredient ${i}:`, JSON.stringify(ing, null, 2));
-          
+
           const hasSkuMapping = !!ing.skuMappingId;
           const hasRawMaterial = !!ing.rawMaterialId;
           const hasFinishedProduct = !!ing.finishedProductId;
@@ -198,7 +198,7 @@ export const createRecipe = async (req: Request, res: Response) => {
             }
           }
         }
-        
+
         await tx.recipeIngredient.createMany({
           data: ingredients.map((ingredient: any) => ({
             recipeId: newRecipe.id,
