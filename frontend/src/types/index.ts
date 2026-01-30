@@ -358,6 +358,7 @@ export interface Recipe {
 export interface RecipeIngredient {
   id: string;
   recipeId: string;
+  skuMappingId?: string;
   rawMaterialId?: string;
   finishedProductId?: string;
   intermediateProductId?: string;
@@ -365,6 +366,7 @@ export interface RecipeIngredient {
   unit: string;
   notes?: string;
   createdAt: string;
+  skuMapping?: SkuMapping;
   rawMaterial?: RawMaterial;
   finishedProduct?: FinishedProduct;
 }
@@ -438,14 +440,37 @@ export interface CreateRecipeData {
   imageUrl?: string;
 }
 
-export type RecipeIngredientType = 'RAW' | 'FINISHED';
+export type RecipeIngredientType = 'RAW' | 'FINISHED' | 'SKU';
 
 export interface CreateRecipeIngredientData {
-  rawMaterialId?: string; // present when ingredientType === 'RAW'
-  finishedProductId?: string; // present when ingredientType === 'FINISHED'
+  skuMappingId?: string; // present when ingredientType === 'SKU'
+  rawMaterialId?: string; // present when ingredientType === 'RAW' (legacy)
+  finishedProductId?: string; // present when ingredientType === 'FINISHED' (legacy)
   ingredientType: RecipeIngredientType;
   quantity: number;
   unit: string;
+  notes?: string;
+}
+
+// SKU Mapping for recipe ingredient selection
+export interface SkuMappingForRecipe {
+  id: string;
+  name: string;
+  sku: string;
+  description?: string;
+  unit?: string;
+  category?: Category;
+  availableQuantity: number;
+  estimatedPrice: number;
+  itemType: 'raw_material' | 'finished_product' | 'both' | 'none';
+  hasRawMaterials: boolean;
+  hasFinishedProducts: boolean;
+  rawMaterialCount: number;
+  finishedProductCount: number;
+  earliestExpiration?: string;
+  createdAt: string;
+  updatedAt: string;
+}
   notes?: string;
 }
 

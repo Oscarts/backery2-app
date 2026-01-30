@@ -15,6 +15,11 @@ export const getRecipes = async (req: Request, res: Response) => {
         category: true,
         ingredients: {
           include: {
+            skuMapping: {
+              include: {
+                category: true
+              }
+            },
             rawMaterial: {
               include: {
                 category: true,
@@ -57,6 +62,11 @@ export const getRecipeById = async (req: Request, res: Response) => {
         category: true,
         ingredients: {
           include: {
+            skuMapping: {
+              include: {
+                category: true
+              }
+            },
             rawMaterial: {
               include: {
                 category: true,
@@ -159,22 +169,40 @@ export const createRecipe = async (req: Request, res: Response) => {
       if (ingredients && ingredients.length > 0) {
         console.log('📝 Ingredients received:', JSON.stringify(ingredients, null, 2));
 
-        // Validate each ingredient - exactly one of rawMaterialId or finishedProductId
+        // Validate each ingredient - must have ONE of: skuMappingId, rawMaterialId, or finishedProductId
         for (let i = 0; i < ingredients.length; i++) {
           const ing = ingredients[i];
           console.log(`📋 Ingredient ${i}:`, JSON.stringify(ing, null, 2));
+          
+          const hasSkuMapping = !!ing.skuMappingId;
+          const hasRawMaterial = !!ing.rawMaterialId;
+          const hasFinishedProduct = !!ing.finishedProductId;
+          const fieldCount = [hasSkuMapping, hasRawMaterial, hasFinishedProduct].filter(Boolean).length;
+
+          console.log(`  - skuMappingId: ${ing.skuMappingId}`);
           console.log(`  - rawMaterialId: ${ing.rawMaterialId}`);
           console.log(`  - finishedProductId: ${ing.finishedProductId}`);
-          console.log(`  - has both? ${!!(ing.rawMaterialId && ing.finishedProductId)}`);
-          console.log(`  - has neither? ${!!(!ing.rawMaterialId && !ing.finishedProductId)}`);
+          console.log(`  - field count: ${fieldCount}`);
 
-          if ((!ing.rawMaterialId && !ing.finishedProductId) || (ing.rawMaterialId && ing.finishedProductId)) {
-            throw new Error('Each ingredient must have exactly one of rawMaterialId or finishedProductId');
+          if (fieldCount !== 1) {
+            throw new Error('Each ingredient must have exactly one of: skuMappingId, rawMaterialId, or finishedProductId');
+          }
+
+          // If using skuMappingId, verify it exists and belongs to client
+          if (hasSkuMapping) {
+            const skuMapping = await tx.skuMapping.findFirst({
+              where: { id: ing.skuMappingId, clientId }
+            });
+            if (!skuMapping) {
+              throw new Error(`SKU mapping ${ing.skuMappingId} not found or doesn't belong to your organization`);
+            }
           }
         }
+        
         await tx.recipeIngredient.createMany({
           data: ingredients.map((ingredient: any) => ({
             recipeId: newRecipe.id,
+            skuMappingId: ingredient.skuMappingId || null,
             rawMaterialId: ingredient.rawMaterialId || null,
             finishedProductId: ingredient.finishedProductId || null,
             quantity: ingredient.quantity,
@@ -191,6 +219,11 @@ export const createRecipe = async (req: Request, res: Response) => {
           category: true,
           ingredients: {
             include: {
+              skuMapping: {
+                include: {
+                  category: true
+                }
+              },
               rawMaterial: {
                 include: {
                   category: true,

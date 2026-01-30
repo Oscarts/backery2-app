@@ -233,6 +233,7 @@ model SkuMapping {
   category          Category?         @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   rawMaterials      RawMaterial[]     @relation("SkuReferenceToRawMaterial")
   finishedProducts  FinishedProduct[] @relation("SkuReferenceToFinishedProduct")
+  recipeIngredients RecipeIngredient[] // NEW: Recipes can reference SKU directly
   
   @@unique([name, clientId]) // Name must be unique per client
   @@unique([sku, clientId])  // SKU must be unique per client
@@ -365,16 +366,19 @@ model Recipe {
 model RecipeIngredient {
   id                    String               @id @default(cuid())
   recipeId              String
-  rawMaterialId         String?
-    finishedProductId    String?
+  skuMappingId          String?              @map("sku_mapping_id") // NEW: Reference to SKU template (preferred)
+  rawMaterialId         String?              @map("raw_material_id") // Legacy: kept for backward compatibility
+  finishedProductId     String?              @map("finished_product_id") // Legacy: kept for backward compatibility
   quantity              Float
   unit                  String
   notes                 String?
-  createdAt             DateTime             @default(now())
+  createdAt             DateTime             @default(now()) @map("created_at")
   recipe                Recipe               @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  skuMapping            SkuMapping?          @relation(fields: [skuMappingId], references: [id], onDelete: SetNull)
   rawMaterial           RawMaterial?         @relation(fields: [rawMaterialId], references: [id])
-    finishedProduct      FinishedProduct?     @relation(fields: [finishedProductId], references: [id])
+  finishedProduct       FinishedProduct?     @relation(fields: [finishedProductId], references: [id])
 
+  @@index([skuMappingId])
   @@map("recipe_ingredients")
 }
 

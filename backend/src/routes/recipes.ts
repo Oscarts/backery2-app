@@ -11,9 +11,14 @@ import {
   getWhatCanIMake,
   calculateMaxBatches
 } from '../controllers/recipeController';
+import skuMappingController from '../controllers/skuMappingForRecipesController';
 import { normalizeUnitsMiddleware } from '../middleware/unitValidation';
 
 const router = Router();
+
+// SKU mappings for recipe ingredient selection (before other routes to avoid conflicts)
+router.get('/sku-mappings', skuMappingController.getSkuMappingsForRecipes);
+router.get('/sku-mappings/:id', skuMappingController.getSkuMappingDetails);
 
 /**
  * @swagger

@@ -4,6 +4,8 @@ import {
   StorageLocation,
   Unit,
   SkuReference,
+  SkuMapping,
+  SkuMappingForRecipe,
   CreateSkuReferenceData,
   UpdateSkuReferenceData,
   SkuReferenceUsage,
@@ -27,7 +29,11 @@ import {
   CustomerOrder,
   CreateOrderData,
   OrderInventoryCheck,
-  OrderExportFilters
+  OrderExportFilters,
+  Recipe,
+  CreateRecipeData,
+  RecipeCostAnalysis,
+  WhatCanIMakeAnalysis
 } from '../types';
 
 // Use Vite runtime env `VITE_API_URL` (set in build environment) and append `/api`.
@@ -425,6 +431,15 @@ export const recipesApi = {
 
   getWhatCanIMake: async (): Promise<ApiResponse<WhatCanIMakeAnalysis>> => {
     return apiCall<WhatCanIMakeAnalysis>('/recipes/what-can-i-make');
+  },
+
+  // Get SKU mappings for recipe ingredient selection
+  getSkuMappingsForRecipes: async (): Promise<ApiResponse<SkuMappingForRecipe[]>> => {
+    return apiCall<SkuMappingForRecipe[]>('/recipes/sku-mappings');
+  },
+
+  getSkuMappingDetails: async (id: string): Promise<ApiResponse<SkuMapping>> => {
+    return apiCall<SkuMapping>(`/recipes/sku-mappings/${id}`);
   },
 
   calculateMaxBatches: async (id: string): Promise<ApiResponse<{
