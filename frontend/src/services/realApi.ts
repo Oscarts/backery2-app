@@ -4,7 +4,6 @@ import {
   StorageLocation,
   Unit,
   SkuReference,
-  SkuMapping,
   SkuMappingForRecipe,
   CreateSkuReferenceData,
   UpdateSkuReferenceData,
@@ -394,8 +393,6 @@ export const qualityStatusApi = {
 };
 
 // Recipe API
-import { Recipe, CreateRecipeData, RecipeCostAnalysis, WhatCanIMakeAnalysis } from '../types';
-
 export const recipesApi = {
   getAll: async (): Promise<ApiResponse<Recipe[]>> => {
     return apiCall<Recipe[]>('/recipes');
@@ -438,8 +435,8 @@ export const recipesApi = {
     return apiCall<SkuMappingForRecipe[]>('/recipes/sku-mappings');
   },
 
-  getSkuMappingDetails: async (id: string): Promise<ApiResponse<SkuMapping>> => {
-    return apiCall<SkuMapping>(`/recipes/sku-mappings/${id}`);
+  getSkuMappingDetails: async (id: string): Promise<ApiResponse<any>> => {
+    return apiCall<any>(`/recipes/sku-mappings/${id}`);
   },
 
   calculateMaxBatches: async (id: string): Promise<ApiResponse<{

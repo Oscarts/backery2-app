@@ -1567,13 +1567,6 @@ const Recipes: React.FC = () => {
                       size="small"
                     />
                   </Grid>
-                    <TextField
-                      fullWidth
-                      label="Notes"
-                      value={ingredientForm.notes}
-                      onChange={(e) => setIngredientForm(prev => ({ ...prev, notes: e.target.value }))}
-                    />
-                  </Grid>
                   <Grid item xs={12} sm={2} md={2}>
                     <Button
                       onClick={addIngredient}

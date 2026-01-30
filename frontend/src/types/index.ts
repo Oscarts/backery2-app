@@ -355,6 +355,25 @@ export interface Recipe {
   ingredients?: RecipeIngredient[];
 }
 
+export interface SkuMappingForRecipe {
+  id: string;
+  name: string;
+  sku: string;
+  description?: string;
+  unit?: string;
+  category?: Category;
+  availableQuantity: number;
+  estimatedPrice: number;
+  itemType: 'raw_material' | 'finished_product' | 'both' | 'none';
+  hasRawMaterials: boolean;
+  hasFinishedProducts: boolean;
+  rawMaterialCount: number;
+  finishedProductCount: number;
+  earliestExpiration?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface RecipeIngredient {
   id: string;
   recipeId: string;
@@ -366,7 +385,7 @@ export interface RecipeIngredient {
   unit: string;
   notes?: string;
   createdAt: string;
-  skuMapping?: SkuMapping;
+  skuMapping?: SkuMappingForRecipe;
   rawMaterial?: RawMaterial;
   finishedProduct?: FinishedProduct;
 }
@@ -450,28 +469,6 @@ export interface CreateRecipeIngredientData {
   quantity: number;
   unit: string;
   notes?: string;
-}
-
-// SKU Mapping for recipe ingredient selection
-export interface SkuMappingForRecipe {
-  id: string;
-  name: string;
-  sku: string;
-  description?: string;
-  unit?: string;
-  category?: Category;
-  availableQuantity: number;
-  estimatedPrice: number;
-  itemType: 'raw_material' | 'finished_product' | 'both' | 'none';
-  hasRawMaterials: boolean;
-  hasFinishedProducts: boolean;
-  rawMaterialCount: number;
-  finishedProductCount: number;
-  earliestExpiration?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-notes ?: string;
 }
 
 // Production types
