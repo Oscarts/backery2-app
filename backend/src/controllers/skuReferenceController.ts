@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import Joi from 'joi';
+import { generateNewHierarchicalSku } from '../services/skuService';
 
 const prisma = new PrismaClient();
 
@@ -116,6 +117,20 @@ export const skuReferenceController = {
         include: {
           category: true,
           storageLocation: true,
+          rawMaterials: {
+            select: {
+              quantity: true,
+              reservedQuantity: true,
+              unit: true,
+            },
+          },
+          finishedProducts: {
+            select: {
+              quantity: true,
+              reservedQuantity: true,
+              unit: true,
+            },
+          },
           _count: {
             select: {
               rawMaterials: true,
@@ -126,7 +141,55 @@ export const skuReferenceController = {
         orderBy: { name: 'asc' },
       });
 
-      res.json({ success: true, data: skuReferences });
+      // Calculate stock aggregations for each SKU
+      const enrichedSkuReferences = skuReferences.map(sku => {
+        // Aggregate from raw materials
+        const rawMaterialStock = sku.rawMaterials.reduce((acc, rm) => ({
+          total: acc.total + rm.quantity,
+          reserved: acc.reserved + rm.reservedQuantity,
+        }), { total: 0, reserved: 0 });
+
+        // Aggregate from finished products
+        const finishedProductStock = sku.finishedProducts.reduce((acc, fp) => ({
+          total: acc.total + fp.quantity,
+          reserved: acc.reserved + fp.reservedQuantity,
+        }), { total: 0, reserved: 0 });
+
+        // Combined totals
+        const totalQuantity = rawMaterialStock.total + finishedProductStock.total;
+        const totalReserved = rawMaterialStock.reserved + finishedProductStock.reserved;
+        const availableQuantity = totalQuantity - totalReserved;
+
+        // Determine stock status
+        let stockStatus: 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK' | 'RESERVED' = 'OUT_OF_STOCK';
+        if (availableQuantity > 0) {
+          if (sku.reorderLevel && availableQuantity <= sku.reorderLevel) {
+            stockStatus = 'LOW_STOCK';
+          } else {
+            stockStatus = 'IN_STOCK';
+          }
+        } else if (totalQuantity > 0 && totalReserved > 0) {
+          stockStatus = 'RESERVED';
+        }
+
+        // Return enriched SKU with stock data (excluding raw arrays)
+        return {
+          ...sku,
+          rawMaterials: undefined,
+          finishedProducts: undefined,
+          stockSummary: {
+            totalQuantity,
+            reservedQuantity: totalReserved,
+            availableQuantity,
+            unit: sku.unit || 'units',
+            stockStatus,
+            rawMaterialCount: sku._count.rawMaterials,
+            finishedProductCount: sku._count.finishedProducts,
+          },
+        };
+      });
+
+      res.json({ success: true, data: enrichedSkuReferences });
     } catch (error) {
       next(error);
     }
@@ -151,8 +214,12 @@ export const skuReferenceController = {
               name: true,
               batchNumber: true,
               quantity: true,
+              reservedQuantity: true,
               unit: true,
+              expirationDate: true,
+              storageLocationId: true,
             },
+            orderBy: { expirationDate: 'asc' },
           },
           finishedProducts: {
             select: {
@@ -160,8 +227,62 @@ export const skuReferenceController = {
               name: true,
               batchNumber: true,
               quantity: true,
+              reservedQuantity: true,
               unit: true,
+              productionDate: true,
+              expirationDate: true,
             },
+            orderBy: { productionDate: 'desc' },
+          },
+        },
+      });
+
+      if (!skuReference) {
+        return res.status(404).json({
+          success: false,
+          error: 'SKU reference not found',
+        });
+      }
+
+      // Calculate stock aggregations
+      const rawMaterialStock = skuReference.rawMaterials.reduce((acc, rm) => ({
+        total: acc.total + rm.quantity,
+        reserved: acc.reserved + rm.reservedQuantity,
+      }), { total: 0, reserved: 0 });
+
+      const finishedProductStock = skuReference.finishedProducts.reduce((acc, fp) => ({
+        total: acc.total + fp.quantity,
+        reserved: acc.reserved + fp.reservedQuantity,
+      }), { total: 0, reserved: 0 });
+
+      const totalQuantity = rawMaterialStock.total + finishedProductStock.total;
+      const totalReserved = rawMaterialStock.reserved + finishedProductStock.reserved;
+      const availableQuantity = totalQuantity - totalReserved;
+
+      // Enrich items with availability calculation
+      const enrichedRawMaterials = skuReference.rawMaterials.map(rm => ({
+        ...rm,
+        availableQuantity: rm.quantity - rm.reservedQuantity,
+      }));
+
+      const enrichedFinishedProducts = skuReference.finishedProducts.map(fp => ({
+        ...fp,
+        availableQuantity: fp.quantity - fp.reservedQuantity,
+      }));
+
+      res.json({
+        success: true,
+        data: {
+          ...skuReference,
+          rawMaterials: enrichedRawMaterials,
+          finishedProducts: enrichedFinishedProducts,
+          stockSummary: {
+            totalQuantity,
+            reservedQuantity: totalReserved,
+            availableQuantity,
+            unit: skuReference.unit || 'units',
+            rawMaterialStock,
+            finishedProductStock,
           },
         },
       });
@@ -195,27 +316,17 @@ export const skuReferenceController = {
         });
       }
 
-      // Generate SKU if not provided
+      // Generate hierarchical SKU if not provided
       let sku = value.sku;
 
       if (!sku) {
-        // Get category name if categoryId is provided
-        let categoryName: string | null = null;
-        if (value.categoryId) {
-          const category = await prisma.category.findUnique({
-            where: { id: value.categoryId },
-            select: { name: true },
-          });
-          categoryName = category?.name || null;
-        }
-
-        // Count existing SKU references for sequence generation
-        const existingCount = await prisma.skuMapping.count({
-          where: { clientId },
-        });
-
-        // Generate industry-standard SKU
-        sku = await generateSkuWithSequence(value.name, categoryName, clientId, existingCount);
+        // Generate hierarchical SKU: FP-CAT-PROD-001 or RM-CAT-PROD-001
+        sku = await generateNewHierarchicalSku(
+          value.name,
+          value.itemType, // 'FINISHED_PRODUCT' or 'RAW_MATERIAL'
+          clientId,
+          value.categoryId
+        );
       }
 
       // Check for duplicate name

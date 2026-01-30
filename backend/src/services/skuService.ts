@@ -3,7 +3,54 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 /**
- * Generate a canonical SKU slug from a product/material name.
+ * Generate hierarchical SKU: PREFIX-CATEGORY-PRODUCT-SEQUENCE
+ * Format: FP-CAK-CHOC-001 (Finished Product - Cake - Chocolate - Sequence 001)
+ *         RM-FLR-WHEAT-023 (Raw Material - Flour - Wheat - Sequence 023)
+ * 
+ * @param name - Product/material name
+ * @param itemType - 'FINISHED_PRODUCT' or 'RAW_MATERIAL'
+ * @param categoryName - Category name for middle section
+ * @param sequence - Sequential number for uniqueness
+ * @returns Hierarchical SKU string
+ */
+export function generateHierarchicalSku(
+  name: string,
+  itemType: 'FINISHED_PRODUCT' | 'RAW_MATERIAL',
+  categoryName: string | null | undefined,
+  sequence: number
+): string {
+  // Prefix based on item type
+  const prefix = itemType === 'FINISHED_PRODUCT' ? 'FP' : 'RM';
+  
+  // Category code (3 letters, uppercase)
+  let categoryCode = 'GEN'; // Default: GENERAL
+  if (categoryName) {
+    categoryCode = categoryName
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '')
+      .substring(0, 3)
+      .padEnd(3, 'X'); // Pad if less than 3 chars
+  }
+  
+  // Product code (3-4 letters from first words)
+  const productCode = name
+    .toUpperCase()
+    .replace(/[^A-Z0-9\s]/g, '')
+    .split(/\s+/)
+    .filter(word => word.length > 0)
+    .slice(0, 2) // Take first 2 words
+    .join('')
+    .substring(0, 4)
+    .padEnd(3, 'X'); // Ensure minimum 3 chars
+  
+  // Sequence (3 digits, zero-padded)
+  const seqStr = String(sequence).padStart(3, '0');
+  
+  return `${prefix}-${categoryCode}-${productCode}-${seqStr}`;
+}
+
+/**
+ * Legacy SKU generation (backward compatibility)
  * Non-alphanumeric characters become '-', collapsed, uppercased.
  */
 export function generateSkuFromName(name: string): string {
@@ -15,15 +62,111 @@ export function generateSkuFromName(name: string): string {
 }
 
 /**
- * Retrieve existing SKU for a name across raw materials and finished products, or generate a new one.
+ * Retrieve existing SKU for a name across raw materials and finished products, or generate a new hierarchical one.
  * Priority: finished products (stable) then raw materials.
+ * 
+ * @param name - Product/material name
+ * @param clientId - Client ID for multi-tenant isolation
+ * @param itemType - 'FINISHED_PRODUCT' or 'RAW_MATERIAL' (for new SKU generation)
+ * @param categoryId - Category ID (optional, for hierarchical SKU)
+ * @returns Existing SKU or newly generated hierarchical SKU
  */
-export async function getOrCreateSkuForName(name: string, clientId: string): Promise<string> {
-  const existingFinished = await prisma.finishedProduct.findFirst({ where: { name, clientId }, select: { sku: true } });
+export async function getOrCreateSkuForName(
+  name: string,
+  clientId: string,
+  itemType?: 'FINISHED_PRODUCT' | 'RAW_MATERIAL',
+  categoryId?: string
+): Promise<string> {
+  // Check existing finished products first
+  const existingFinished = await prisma.finishedProduct.findFirst({ 
+    where: { name, clientId }, 
+    select: { sku: true } 
+  });
   if (existingFinished?.sku) return existingFinished.sku;
-  const existingRaw: any = await prisma.rawMaterial.findFirst({ where: { name, clientId } });
+  
+  // Check existing raw materials
+  const existingRaw: any = await prisma.rawMaterial.findFirst({ 
+    where: { name, clientId },
+    select: { sku: true }
+  });
   if (existingRaw?.sku) return existingRaw.sku as string;
+  
+  // Check SKU mapping table
+  const existingMapping = await prisma.skuMapping.findFirst({
+    where: { name, clientId },
+    select: { sku: true }
+  });
+  if (existingMapping?.sku) return existingMapping.sku;
+  
+  // Generate new hierarchical SKU if item type provided
+  if (itemType) {
+    return await generateNewHierarchicalSku(name, itemType, clientId, categoryId);
+  }
+  
+  // Fallback to legacy generation
   return generateSkuFromName(name);
+}
+
+/**
+ * Generate a new hierarchical SKU with auto-incremented sequence number
+ * Format: PREFIX-CATEGORY-PRODUCT-SEQUENCE
+ */
+export async function generateNewHierarchicalSku(
+  name: string,
+  itemType: 'FINISHED_PRODUCT' | 'RAW_MATERIAL',
+  clientId: string,
+  categoryId?: string
+): Promise<string> {
+  // Get category name if provided
+  let categoryName: string | null = null;
+  if (categoryId) {
+    const category = await prisma.category.findFirst({
+      where: { id: categoryId, clientId },
+      select: { name: true }
+    });
+    categoryName = category?.name || null;
+  }
+  
+  // Generate category code for pattern matching
+  const prefix = itemType === 'FINISHED_PRODUCT' ? 'FP' : 'RM';
+  let categoryCode = 'GEN';
+  if (categoryName) {
+    categoryCode = categoryName
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '')
+      .substring(0, 3)
+      .padEnd(3, 'X');
+  }
+  
+  // Count existing SKUs with this prefix-category pattern to determine sequence
+  const pattern = `${prefix}-${categoryCode}-%`;
+  
+  // Count from all sources
+  const [finishedCount, rawCount, mappingCount] = await Promise.all([
+    prisma.finishedProduct.count({
+      where: { 
+        clientId,
+        sku: { startsWith: `${prefix}-${categoryCode}-` }
+      }
+    }),
+    prisma.rawMaterial.count({
+      where: { 
+        clientId,
+        sku: { startsWith: `${prefix}-${categoryCode}-` }
+      }
+    }),
+    prisma.skuMapping.count({
+      where: { 
+        clientId,
+        sku: { startsWith: `${prefix}-${categoryCode}-` }
+      }
+    })
+  ]);
+  
+  // Use the highest count + 1 as sequence
+  const sequence = Math.max(finishedCount, rawCount, mappingCount) + 1;
+  
+  return generateHierarchicalSku(name, itemType, categoryName, sequence);
 }
 
 /**

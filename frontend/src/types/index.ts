@@ -70,6 +70,26 @@ export enum SkuItemType {
   FINISHED_PRODUCT = 'FINISHED_PRODUCT'
 }
 
+export type StockStatus = 'IN_STOCK' | 'LOW_STOCK' | 'OUT_OF_STOCK' | 'RESERVED';
+
+export interface StockSummary {
+  totalQuantity: number;
+  reservedQuantity: number;
+  availableQuantity: number;
+  unit: string;
+  stockStatus: StockStatus;
+  rawMaterialCount: number;
+  finishedProductCount: number;
+  rawMaterialStock?: {
+    total: number;
+    reserved: number;
+  };
+  finishedProductStock?: {
+    total: number;
+    reserved: number;
+  };
+}
+
 export interface SkuReference {
   id: string;
   name: string;
@@ -92,6 +112,33 @@ export interface SkuReference {
     rawMaterials: number;
     finishedProducts: number;
   };
+  
+  // Stock aggregation
+  stockSummary?: StockSummary;
+  
+  // Detailed items (only in getById)
+  rawMaterials?: Array<{
+    id: string;
+    name: string;
+    batchNumber: string;
+    quantity: number;
+    reservedQuantity: number;
+    availableQuantity: number;
+    unit: string;
+    expirationDate: string;
+    storageLocationId?: string;
+  }>;
+  finishedProducts?: Array<{
+    id: string;
+    name: string;
+    batchNumber: string;
+    quantity: number;
+    reservedQuantity: number;
+    availableQuantity: number;
+    unit: string;
+    productionDate?: string;
+    expirationDate?: string;
+  }>;
 }
 
 export interface CreateSkuReferenceData {

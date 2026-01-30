@@ -3,7 +3,7 @@
 
 import { Prisma, PrismaClient } from '@prisma/client';
 import InventoryAllocationService from './inventoryAllocationService';
-import { getOrCreateSkuForName } from './skuService';
+import { getOrCreateSkuForName, generateNewHierarchicalSku } from './skuService';
 import { recipeCostService } from './recipeCostService';
 import {
     ProductionCostCalculation,
@@ -14,6 +14,70 @@ import {
 const prisma = new PrismaClient();
 
 const inventoryAllocationService = new InventoryAllocationService();
+
+/**
+ * Create or get existing SkuMapping for finished products from production
+ * Ensures finished products appear in the SKU Reference page
+ */
+async function getOrCreateSkuMappingForFinishedProduct(
+    name: string, 
+    clientId: string,
+    unit: string,
+    categoryId?: string
+): Promise<string> {
+    // Check if SkuMapping already exists for this name
+    const existingMapping = await prisma.skuMapping.findFirst({
+        where: { 
+            name, 
+            clientId,
+            itemType: 'FINISHED_PRODUCT'
+        }
+    });
+    
+    if (existingMapping) {
+        // Update unit if it's missing
+        if (!existingMapping.unit) {
+            await prisma.skuMapping.update({
+                where: { id: existingMapping.id },
+                data: { unit }
+            });
+        }
+        return existingMapping.id;
+    }
+    
+    // Generate hierarchical SKU for finished product: FP-CAT-PROD-001
+    const sku = await generateNewHierarchicalSku(
+        name,
+        'FINISHED_PRODUCT',
+        clientId,
+        categoryId
+    );
+    
+    // Check if this SKU is already taken
+    const existingBySku = await prisma.skuMapping.findFirst({
+        where: { sku, clientId }
+    });
+    
+    if (existingBySku) {
+        // SKU exists but for different name or type - link to existing mapping
+        return existingBySku.id;
+    }
+    
+    // Create new SkuMapping for finished product
+    const newMapping = await prisma.skuMapping.create({
+        data: {
+            name,
+            sku,
+            itemType: 'FINISHED_PRODUCT',
+            unit, // Include unit from production run
+            clientId,
+            categoryId: categoryId || null,
+            description: `Auto-generated from production: ${name}`
+        }
+    });
+    
+    return newMapping.id;
+}
 
 export class ProductionCompletionService {
 
@@ -211,7 +275,21 @@ export class ProductionCompletionService {
             const defaultLocation = await this.getOrCreateDefaultStorageLocation(clientId);
 
             // Derive/reuse stable SKU (independent of batch)
-            const sku = await getOrCreateSkuForName(productionRun.recipe.name, clientId);
+            // Generate hierarchical SKU for finished product
+            const sku = await generateNewHierarchicalSku(
+                productionRun.recipe.name,
+                'FINISHED_PRODUCT',
+                clientId,
+                productionRun.recipe.categoryId
+            );
+            
+            // Create or get SkuMapping for this finished product
+            const skuReferenceId = await getOrCreateSkuMappingForFinishedProduct(
+                productionRun.recipe.name,
+                clientId,
+                productionRun.targetUnit, // Pass the unit from the production run
+                productionRun.recipe.categoryId
+            );
 
             // Calculate production cost and sale price from recipe
             const productionCostCalc = await this.calculateProductionCost(productionRun);
@@ -225,6 +303,7 @@ export class ProductionCompletionService {
                         name: productionRun.recipe.name,
                         description: `Produced from recipe: ${productionRun.recipe.name}`,
                         sku,
+                        skuReferenceId, // Link to SkuMapping record
                         batchNumber,
                         productionDate,
                         expirationDate: finalExpirationDate,

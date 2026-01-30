@@ -58,9 +58,40 @@ import {
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { skuReferencesApi, categoriesApi, storageLocationsApi, unitsApi } from '../services/realApi';
-import { SkuReference, CreateSkuReferenceData, SkuItemType } from '../types';
+import { SkuReference, CreateSkuReferenceData, SkuItemType, StockStatus } from '../types';
 import { borderRadius } from '../theme/designTokens';
 import { getErrorMessage } from '../utils/api';
+
+// Stock status helper
+const getStockStatusColor = (status: StockStatus) => {
+  switch (status) {
+    case 'IN_STOCK':
+      return 'success';
+    case 'LOW_STOCK':
+      return 'warning';
+    case 'OUT_OF_STOCK':
+      return 'error';
+    case 'RESERVED':
+      return 'info';
+    default:
+      return 'default';
+  }
+};
+
+const getStockStatusLabel = (status: StockStatus) => {
+  switch (status) {
+    case 'IN_STOCK':
+      return 'In Stock';
+    case 'LOW_STOCK':
+      return 'Low Stock';
+    case 'OUT_OF_STOCK':
+      return 'Out of Stock';
+    case 'RESERVED':
+      return 'Fully Reserved';
+    default:
+      return 'Unknown';
+  }
+};
 
 const SkuReferencePage: React.FC = () => {
   const theme = useTheme();
@@ -784,14 +815,15 @@ const SkuReferencePage: React.FC = () => {
             <Table size="small" sx={{ '& .MuiTableCell-root': { px: 2, py: 1.5, whiteSpace: 'nowrap' } }}>
               <TableHead>
                 <TableRow>
-                  <TableCell width="20%">Name</TableCell>
-                  <TableCell width="15%">SKU</TableCell>
-                  <TableCell width="12%">Type</TableCell>
-                  {!isMobile && <TableCell width="18%">Description</TableCell>}
-                  {!isMobile && <TableCell width="10%">Unit</TableCell>}
-                  {!isMobile && <TableCell width="10%" align="center">Price</TableCell>}
-                  {!isMobile && <TableCell width="10%">Category</TableCell>}
-                  <TableCell width="15%" align="right">Actions</TableCell>
+                  <TableCell width="16%">Name</TableCell>
+                  <TableCell width="12%">SKU</TableCell>
+                  <TableCell width="10%">Type</TableCell>
+                  {!isMobile && <TableCell width="12%" align="center">Current Stock</TableCell>}
+                  {!isMobile && <TableCell width="10%" align="center">Reserved</TableCell>}
+                  {!isMobile && <TableCell width="10%" align="center">Available</TableCell>}
+                  {!isMobile && <TableCell width="10%" align="center">Status</TableCell>}
+                  {!isMobile && <TableCell width="8%" align="center">Price</TableCell>}
+                  <TableCell width="12%" align="right">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -836,17 +868,50 @@ const SkuReferencePage: React.FC = () => {
                       </TableCell>
 
                       {!isMobile && (
-                        <TableCell>
-                          <Typography variant="body2" noWrap>
-                            {item.description || '-'}
+                        <TableCell align="center">
+                          <Typography variant="body2" fontWeight="medium">
+                            {item.stockSummary?.totalQuantity.toFixed(2) || '0.00'} {item.stockSummary?.unit || item.unit || ''}
                           </Typography>
                         </TableCell>
                       )}
 
                       {!isMobile && (
-                        <TableCell>
+                        <TableCell align="center">
+                          <Typography variant="body2" color="warning.main">
+                            {item.stockSummary?.reservedQuantity.toFixed(2) || '0.00'}
+                          </Typography>
+                        </TableCell>
+                      )}
+
+                      {!isMobile && (
+                        <TableCell align="center">
+                          <Typography 
+                            variant="body2" 
+                            fontWeight="medium"
+                            color={item.stockSummary?.availableQuantity && item.stockSummary.availableQuantity > 0 ? 'success.main' : 'text.secondary'}
+                          >
+                            {item.stockSummary?.availableQuantity.toFixed(2) || '0.00'}
+                          </Typography>
+                        </TableCell>
+                      )}
+
+                      {!isMobile && (
+                        <TableCell align="center">
+                          {item.stockSummary?.stockStatus && (
+                            <Chip
+                              label={getStockStatusLabel(item.stockSummary.stockStatus)}
+                              color={getStockStatusColor(item.stockSummary.stockStatus)}
+                              size="small"
+                              variant="outlined"
+                            />
+                          )}
+                        </TableCell>
+                      )}
+
+                      {!isMobile && (
+                        <TableCell align="center">
                           <Typography variant="body2">
-                            {item.unit || '-'}
+                            {item.unitPrice ? `$${item.unitPrice.toFixed(2)}` : '-'}
                           </Typography>
                         </TableCell>
                       )}
@@ -985,23 +1050,58 @@ const SkuReferencePage: React.FC = () => {
 
                     <CardContent sx={{ pt: 2, pb: 1, flexGrow: 1 }}>
                       <Grid container spacing={2}>
-                        <Grid item xs={6}>
-                          <Typography variant="subtitle2" color="text.secondary">
-                            Unit
-                          </Typography>
-                          <Typography variant="body1">
-                            {item.unit || '-'}
-                          </Typography>
-                        </Grid>
-
-                        <Grid item xs={6}>
-                          <Typography variant="subtitle2" color="text.secondary">
-                            Price
-                          </Typography>
-                          <Typography variant="body1">
-                            {item.unitPrice ? `$${item.unitPrice.toFixed(2)}` : '-'}
-                          </Typography>
-                        </Grid>
+                        {/* Stock Summary Section */}
+                        {item.stockSummary && (
+                          <>
+                            <Grid item xs={12}>
+                              <Box sx={{ 
+                                bgcolor: 'background.default', 
+                                borderRadius: 1, 
+                                p: 1.5,
+                                border: '1px solid',
+                                borderColor: 'divider'
+                              }}>
+                                <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+                                  STOCK STATUS
+                                </Typography>
+                                <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+                                  <Chip
+                                    label={getStockStatusLabel(item.stockSummary.stockStatus)}
+                                    color={getStockStatusColor(item.stockSummary.stockStatus)}
+                                    size="small"
+                                    variant="filled"
+                                  />
+                                </Stack>
+                                <Grid container spacing={1}>
+                                  <Grid item xs={4}>
+                                    <Typography variant="caption" color="text.secondary">Total</Typography>
+                                    <Typography variant="body2" fontWeight="medium">
+                                      {item.stockSummary.totalQuantity.toFixed(2)}
+                                    </Typography>
+                                  </Grid>
+                                  <Grid item xs={4}>
+                                    <Typography variant="caption" color="warning.main">Reserved</Typography>
+                                    <Typography variant="body2" fontWeight="medium" color="warning.main">
+                                      {item.stockSummary.reservedQuantity.toFixed(2)}
+                                    </Typography>
+                                  </Grid>
+                                  <Grid item xs={4}>
+                                    <Typography variant="caption" color="success.main">Available</Typography>
+                                    <Typography variant="body2" fontWeight="medium" color="success.main">
+                                      {item.stockSummary.availableQuantity.toFixed(2)}
+                                    </Typography>
+                                  </Grid>
+                                </Grid>
+                                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                                  Unit: {item.stockSummary.unit}
+                                </Typography>
+                              </Box>
+                            </Grid>
+                            <Grid item xs={12}>
+                              <Divider />
+                            </Grid>
+                          </>
+                        )}
 
                         <Grid item xs={6}>
                           <Typography variant="subtitle2" color="text.secondary">
@@ -1013,6 +1113,15 @@ const SkuReferencePage: React.FC = () => {
                             size="small"
                             color={item.itemType === SkuItemType.RAW_MATERIAL ? 'warning' : 'secondary'}
                           />
+                        </Grid>
+
+                        <Grid item xs={6}>
+                          <Typography variant="subtitle2" color="text.secondary">
+                            Price
+                          </Typography>
+                          <Typography variant="body1">
+                            {item.unitPrice ? `$${item.unitPrice.toFixed(2)}` : '-'}
+                          </Typography>
                         </Grid>
 
                         <Grid item xs={6}>
