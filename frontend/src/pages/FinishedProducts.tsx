@@ -55,6 +55,8 @@ import { FinishedProduct, CategoryType, UpdateFinishedProductData, ProductStatus
 import { formatDate, isExpired, isExpiringSoon, getDaysUntilExpiration, formatCurrency, getErrorMessage } from '../utils/api';
 import { borderRadius } from '../theme/designTokens';
 import EnhancedFinishedProductForm from '../components/EnhancedFinishedProductForm';
+import ConfirmationDialog from '../components/dialogs/ConfirmationDialog';
+import { useConfirmationDialog } from '../hooks/useConfirmationDialog';
 
 // Status display helper functions
 
@@ -144,6 +146,13 @@ const FinishedProducts: React.FC = () => {
 
   const queryClient = useQueryClient();
 
+  const {
+    dialogState,
+    closeConfirmationDialog,
+    handleConfirm,
+    confirmInventoryModification
+  } = useConfirmationDialog();
+
   // Fetch data
   const { data: products } = useQuery(['finishedProducts'], finishedProductsApi.getAll);
   const { data: categoriesResponse } = useQuery(['categories'], () => categoriesApi.getAll());
@@ -160,7 +169,6 @@ const FinishedProducts: React.FC = () => {
   const createMutation = useMutation(finishedProductsApi.create, {
     onSuccess: () => {
       queryClient.invalidateQueries(['finishedProducts']);
-      handleCloseForm();
       showSnackbar('Finished product created successfully', 'success');
     },
     onError: (error: unknown) => {
@@ -177,7 +185,6 @@ const FinishedProducts: React.FC = () => {
       if ((vars.data.status as any) === (ProductStatus.COMPLETED as any) && vars.id === selectedProductId) {
         queryClient.invalidateQueries(['materialBreakdown', vars.id]);
       }
-      handleCloseForm();
       showSnackbar('Finished product updated successfully', 'success');
     },
     onError: (error: unknown) => {
@@ -237,9 +244,24 @@ const FinishedProducts: React.FC = () => {
   };
 
   const handleDelete = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this finished product?')) {
-      deleteMutation.mutate(id);
-    }
+    // Find the product to get its name for the confirmation
+    const product = products?.data?.find(p => p.id === id);
+    const productName = product?.name || 'this product';
+
+    confirmInventoryModification(
+      'delete',
+      'Finished Product',
+      productName,
+      `This will remove "${productName}" from your finished products inventory.`,
+      [
+        'Customer orders may be affected',
+        'Sales reports will exclude this product',
+        'Historical data will be preserved for audit purposes'
+      ],
+      async () => {
+        await deleteMutation.mutateAsync(id);
+      }
+    );
   };
 
   // Clear selection when closing form
@@ -1144,9 +1166,40 @@ const FinishedProducts: React.FC = () => {
         qualityStatuses={qualityStatuses || []}
         onSubmit={(data) => {
           if (editingProduct) {
-            updateMutation.mutate({ id: editingProduct.id, data });
+            confirmInventoryModification(
+              'update',
+              'Finished Product',
+              data.name || editingProduct.name,
+              `This will update "${data.name || editingProduct.name}" in your finished products.`,
+              [
+                'Product pricing and specifications may change',
+                'Customer orders may be affected',
+                'Sales reporting will be updated'
+              ],
+              async () => {
+                await updateMutation.mutateAsync({
+                  id: editingProduct.id,
+                  data
+                });
+                handleCloseForm();
+              }
+            );
           } else {
-            createMutation.mutate(data);
+            confirmInventoryModification(
+              'create',
+              'Finished Product',
+              data.name,
+              `This will add "${data.name}" to your finished products inventory.`,
+              [
+                'New product will be available for orders',
+                'Sales tracking will begin immediately',
+                'Cost calculations will include this product'
+              ],
+              async () => {
+                await createMutation.mutateAsync(data);
+                handleCloseForm();
+              }
+            );
           }
         }}
       />
@@ -1160,6 +1213,25 @@ const FinishedProducts: React.FC = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        open={dialogState.open}
+        onClose={closeConfirmationDialog}
+        onConfirm={handleConfirm}
+        title={dialogState.title}
+        message={dialogState.message}
+        confirmText={dialogState.confirmText}
+        cancelText={dialogState.cancelText}
+        variant={dialogState.variant}
+        severity={dialogState.severity}
+        loading={dialogState.loading}
+        itemType={dialogState.itemType}
+        itemName={dialogState.itemName}
+        action={dialogState.action}
+        consequences={dialogState.consequences}
+        additionalInfo={dialogState.additionalInfo}
+      />
 
       {/* Legacy MaterialBreakdownDialog removed; using inline Materials tab */}
     </Container>

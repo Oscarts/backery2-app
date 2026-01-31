@@ -55,6 +55,8 @@ import { rawMaterialsApi, categoriesApi, storageLocationsApi, unitsApi, supplier
 import { RawMaterial, CategoryType, UpdateRawMaterialData } from '../types';
 import { borderRadius } from '../theme/designTokens';
 import { formatDate, isExpired, isExpiringSoon, getDaysUntilExpiration, getErrorMessage } from '../utils/api';
+import ConfirmationDialog from '../components/dialogs/ConfirmationDialog';
+import { useConfirmationDialog } from '../hooks/useConfirmationDialog';
 
 const RawMaterials: React.FC = () => {
   const theme = useTheme();
@@ -105,6 +107,14 @@ const RawMaterials: React.FC = () => {
 
   const queryClient = useQueryClient();
 
+  // Confirmation dialog hook
+  const {
+    dialogState,
+    closeConfirmationDialog,
+    handleConfirm,
+    confirmInventoryModification
+  } = useConfirmationDialog();
+
   // Fetch data
   const { data: materials } = useQuery(['rawMaterials'], rawMaterialsApi.getAll);
   const { data: categoriesResponse } = useQuery(['categories'], () => categoriesApi.getAll());
@@ -127,7 +137,6 @@ const RawMaterials: React.FC = () => {
   const createMutation = useMutation(rawMaterialsApi.create, {
     onSuccess: () => {
       queryClient.invalidateQueries(['rawMaterials']);
-      handleCloseForm();
       showSnackbar('Raw material created successfully', 'success');
     },
     onError: (error: unknown) => {
@@ -140,7 +149,6 @@ const RawMaterials: React.FC = () => {
       rawMaterialsApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries(['rawMaterials']);
-      handleCloseForm();
       showSnackbar('Raw material updated successfully', 'success');
     },
     onError: (error: unknown) => {
@@ -234,9 +242,20 @@ const RawMaterials: React.FC = () => {
   };
 
   const handleDelete = (material: RawMaterial) => {
-    if (window.confirm(`Are you sure you want to delete "${material.name}"?`)) {
-      deleteMutation.mutate(material.id);
-    }
+    confirmInventoryModification(
+      'delete',
+      'Raw Material',
+      material.name,
+      `This will remove "${material.name}" from your inventory. Any production recipes or orders using this material may be affected.`,
+      [
+        'Production recipes may need to be updated',
+        'Stock reports will exclude this material',
+        'Historical data will be preserved for audit purposes'
+      ],
+      async () => {
+        await deleteMutation.mutateAsync(material.id);
+      }
+    );
   };
 
   const showSnackbar = (message: string, severity: 'success' | 'error') => {
@@ -1017,9 +1036,40 @@ const RawMaterials: React.FC = () => {
         skuReferences={skuReferences}
         onSubmit={(data) => {
           if (editingMaterial) {
-            updateMutation.mutate({ id: editingMaterial.id, data });
+            confirmInventoryModification(
+              'update',
+              'Raw Material',
+              data.name || editingMaterial.name,
+              `This will update "${data.name || editingMaterial.name}" in your inventory.`,
+              [
+                'Stock levels and pricing may change',
+                'Production cost calculations may be affected',
+                'Supply chain data will be updated'
+              ],
+              async () => {
+                await updateMutation.mutateAsync({
+                  id: editingMaterial.id,
+                  data
+                });
+                handleCloseForm();
+              }
+            );
           } else {
-            createMutation.mutate(data);
+            confirmInventoryModification(
+              'create',
+              'Raw Material',
+              data.name,
+              `This will add "${data.name}" to your raw materials inventory.`,
+              [
+                'New material will be available for recipes',
+                'Stock tracking will begin immediately',
+                'Cost calculations will include this material'
+              ],
+              async () => {
+                await createMutation.mutateAsync(data);
+                handleCloseForm();
+              }
+            );
           }
         }}
       />
@@ -1038,6 +1088,25 @@ const RawMaterials: React.FC = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        open={dialogState.open}
+        onClose={closeConfirmationDialog}
+        onConfirm={handleConfirm}
+        title={dialogState.title}
+        message={dialogState.message}
+        confirmText={dialogState.confirmText}
+        cancelText={dialogState.cancelText}
+        variant={dialogState.variant}
+        severity={dialogState.severity}
+        loading={dialogState.loading}
+        itemType={dialogState.itemType}
+        itemName={dialogState.itemName}
+        action={dialogState.action}
+        consequences={dialogState.consequences}
+        additionalInfo={dialogState.additionalInfo}
+      />
     </Container>
   );
 };

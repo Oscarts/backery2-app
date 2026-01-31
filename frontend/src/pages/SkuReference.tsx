@@ -61,6 +61,8 @@ import { skuReferencesApi, categoriesApi, storageLocationsApi, unitsApi } from '
 import { SkuReference, CreateSkuReferenceData, SkuItemType, StockStatus } from '../types';
 import { borderRadius } from '../theme/designTokens';
 import { getErrorMessage } from '../utils/api';
+import ConfirmationDialog from '../components/dialogs/ConfirmationDialog';
+import { useConfirmationDialog } from '../hooks/useConfirmationDialog';
 
 // Stock status helper
 const getStockStatusColor = (status: StockStatus) => {
@@ -99,6 +101,13 @@ const SkuReferencePage: React.FC = () => {
   const location = useLocation();
 
   const queryClient = useQueryClient();
+
+  const {
+    dialogState,
+    closeConfirmationDialog,
+    handleConfirm,
+    confirmSkuModification
+  } = useConfirmationDialog();
 
   // View state
   const [viewMode, setViewMode] = useState<'list' | 'card'>(isMobile ? 'card' : 'list');
@@ -181,7 +190,6 @@ const SkuReferencePage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sku-references'] });
       showSnackbar('SKU reference created successfully', 'success');
-      handleCloseDialog();
       setError('');
     },
     onError: (error: any) => {
@@ -196,7 +204,6 @@ const SkuReferencePage: React.FC = () => {
       skuReferencesApi.update(id, data),
     onSuccess: () => {
       showSnackbar('SKU reference updated successfully', 'success');
-      handleCloseDialog();
       queryClient.invalidateQueries({ queryKey: ['sku-references'] });
     },
     onError: (error: any) => {
@@ -210,7 +217,6 @@ const SkuReferencePage: React.FC = () => {
     mutationFn: (id: string) => skuReferencesApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sku-references'] });
-      handleCloseDeleteDialog();
       showSnackbar('SKU reference deleted successfully', 'success');
     },
     onError: (error: any) => {
@@ -424,15 +430,42 @@ const SkuReferencePage: React.FC = () => {
     }
 
     if (editingItem) {
-      updateMutation.mutate({ id: editingItem.id, data: formData });
+      confirmSkuModification(
+        'update',
+        formData.name || editingItem.name,
+        `This will update the SKU reference "${formData.name || editingItem.name}". Related inventory items and production recipes may be affected.`,
+        async () => {
+          await updateMutation.mutateAsync({
+            id: editingItem.id,
+            data: formData
+          });
+          handleCloseDialog();
+        }
+      );
     } else {
-      createMutation.mutate(formData);
+      confirmSkuModification(
+        'create',
+        formData.name,
+        `This will create a new SKU reference "${formData.name}". This SKU will be available for inventory and production management.`,
+        async () => {
+          await createMutation.mutateAsync(formData);
+          handleCloseDialog();
+        }
+      );
     }
   };
 
   const handleDelete = () => {
     if (deletingItem) {
-      deleteMutation.mutate(deletingItem.id);
+      confirmSkuModification(
+        'delete',
+        deletingItem.name,
+        `This will permanently delete the SKU reference "${deletingItem.name}". All associated inventory items and production recipes may be affected.`,
+        async () => {
+          await deleteMutation.mutateAsync(deletingItem.id);
+          handleCloseDeleteDialog();
+        }
+      );
     }
   };
 
@@ -885,8 +918,8 @@ const SkuReferencePage: React.FC = () => {
 
                       {!isMobile && (
                         <TableCell align="center">
-                          <Typography 
-                            variant="body2" 
+                          <Typography
+                            variant="body2"
                             fontWeight="medium"
                             color={item.stockSummary?.availableQuantity && item.stockSummary.availableQuantity > 0 ? 'success.main' : 'text.secondary'}
                           >
@@ -1054,9 +1087,9 @@ const SkuReferencePage: React.FC = () => {
                         {item.stockSummary && (
                           <>
                             <Grid item xs={12}>
-                              <Box sx={{ 
-                                bgcolor: 'background.default', 
-                                borderRadius: 1, 
+                              <Box sx={{
+                                bgcolor: 'background.default',
+                                borderRadius: 1,
                                 p: 1.5,
                                 border: '1px solid',
                                 borderColor: 'divider'
@@ -1516,6 +1549,19 @@ const SkuReferencePage: React.FC = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        open={dialogState.open}
+        onClose={closeConfirmationDialog}
+        onConfirm={handleConfirm}
+        title={dialogState.title}
+        message={dialogState.message}
+        variant={dialogState.variant}
+        confirmText={dialogState.confirmText}
+        cancelText={dialogState.cancelText}
+        consequences={dialogState.consequences}
+      />
     </Container>
   );
 };
